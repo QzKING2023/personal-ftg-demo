@@ -70,7 +70,7 @@ func _test_hit_lands_on_first_active_frame() -> void:
 	session.dummy_position = session.player_position + Vector2(70, 0)
 	var hit_frames: Array[int] = []
 	var recovered_frames: Array[int] = []
-	for frame in range(1, 26):
+	for frame in range(1, 41):
 		var events := session.step(FrameInput.make(0, false, frame == 1))
 		for event in events:
 			if event.type == CombatEvent.Type.HIT:
@@ -78,7 +78,8 @@ func _test_hit_lands_on_first_active_frame() -> void:
 			elif event.type == CombatEvent.Type.DUMMY_RECOVERED:
 				recovered_frames.append(frame)
 	_check(hit_frames.size() == 1 and hit_frames[0] == 6, "hit lands exactly on the first active frame (frame 6 after press)")
-	_check(recovered_frames.size() == 1 and recovered_frames[0] == 17, "dummy recovers exactly hitstun frames after the hit")
+	# 滞空 10 帧（第 7-16 帧）+ 落地后 12 帧硬直：第 27 帧自然受身。
+	_check(recovered_frames.size() == 1 and recovered_frames[0] == 27, "dummy recovers after airborne pause plus hitstun frames")
 	_check(session.dummy_hp == GameParams.DUMMY_MAX_HP - GameParams.ATTACK_DAMAGE, "hit applies base damage once")
 
 
@@ -111,7 +112,7 @@ func _test_configurable_move_data() -> void:
 	var hit_frames: Array[int] = []
 	var recovered_frames: Array[int] = []
 	var phase_after := {}
-	for frame in range(1, 10):
+	for frame in range(1, 20):
 		var events := session.step(FrameInput.make(0, false, frame == 1))
 		phase_after[frame] = session.player_phase
 		for event in events:
@@ -123,7 +124,7 @@ func _test_configurable_move_data() -> void:
 	_check(session.dummy_hp == GameParams.DUMMY_MAX_HP - 7, "custom move applies its own base damage")
 	_check(phase_after[2] == CombatSession.PlayerPhase.ACTIVE and phase_after[5] == CombatSession.PlayerPhase.RECOVERY, "custom windows drive phase transitions")
 	_check(phase_after[9] == CombatSession.PlayerPhase.NEUTRAL, "custom move ends after its own total frames")
-	_check(recovered_frames == [7], "custom hitstun frames drive recovery timing")
+	_check(recovered_frames == [17], "custom hitstun counts down after landing (hit 3, lands 13, hitstun 5)")
 
 
 func _test_hitstun_recovery() -> void:
@@ -134,13 +135,21 @@ func _test_hitstun_recovery() -> void:
 		session.step(FrameInput.new())
 	# 第 6 帧（首个判定帧）命中。
 	_check(session.dummy_state == CombatSession.DummyState.GROUND_HITSTUN, "dummy enters ground hitstun on hit")
-	_check(session.dummy_hitstun_left == GameParams.HITSTUN_FRAMES - 1, "hit frame already counts down one hitstun frame")
-	for i in range(10):
-		session.step(FrameInput.new())
-	_check(session.dummy_state == CombatSession.DummyState.GROUND_HITSTUN, "dummy still in hitstun one frame before recovery")
-	_check(session.dummy_hitstun_left == 1, "hitstun counts down to the last frame")
-	session.step(FrameInput.new())
+	_check(not session.dummy_on_ground, "ground hit lifts the dummy briefly")
+	_check(session.dummy_hitstun_left == GameParams.HITSTUN_FRAMES, "airborne frames pause the hitstun countdown")
+	var steps_after_hit := 0
+	var steps_to_landing := -1
+	var recovered_events := 0
+	while session.dummy_state == CombatSession.DummyState.GROUND_HITSTUN and steps_after_hit < 60:
+		var events := session.step(FrameInput.new())
+		steps_after_hit += 1
+		recovered_events += _count_events(events, CombatEvent.Type.DUMMY_RECOVERED)
+		if steps_to_landing == -1 and session.dummy_on_ground:
+			steps_to_landing = steps_after_hit
 	_check(session.dummy_state == CombatSession.DummyState.NEUTRAL, "hitstun reaching zero returns dummy to neutral")
+	_check(steps_to_landing > 0, "dummy lands before recovering")
+	_check(steps_after_hit - steps_to_landing == GameParams.HITSTUN_FRAMES - 1, "remaining hitstun counts down exactly hitstun frames from the landing frame")
+	_check(recovered_events == 1, "recovery emits exactly one event")
 	_check(session.dummy_hitstun_left == 0, "hitstun left is zero after recovery")
 
 

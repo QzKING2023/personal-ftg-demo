@@ -17,7 +17,7 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . --editor --quit
 # 主场景无头运行若干帧（冒烟）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . --quit-after 300
 
-# 战斗会话 seam 测试（66 项：逐帧输入 → 可观察状态与事件）
+# 战斗会话 seam 测试（68 项：逐帧输入 → 可观察状态与事件）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_combat_session.gd
 
 # 训练场集成测试（28 项：注入输入 + 真实物理帧）
@@ -55,8 +55,9 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/te
 ## 手感参数
 
 全部集中在 `scripts/game_params.gd`：移动速度/加速度/摩擦、跳跃初速度、重力、
-攻击三段窗口（startup 5 帧 / active 7 帧 / recovery 13 帧，60 物理帧/秒）、
-伤害、击退、硬直（12 帧）、闪白时长、木桩血量与摩擦、舞台尺寸，以及所有颜色。
+攻击三段窗口（startup 5 帧 / active 7 帧 / recovery 13 帧，60 物理帧/秒，引擎
+物理帧率已在 project.godot 固定为 60）、伤害、击退、硬直（12 帧，滞空暂停、
+落地继续消耗）、闪白时长、木桩血量与摩擦、舞台尺寸，以及所有颜色。
 招式窗口与伤害在 `MoveData` 中按招式配置，默认值取自 GameParams；改帧数/伤害
 不需要动结算逻辑。角色共用同一套形状结构（`native_shapes.gd`），只换颜色。
 

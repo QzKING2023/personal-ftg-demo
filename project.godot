@@ -26,6 +26,10 @@ window/stretch/aspect="keep"
 
 project/assembly_name="ftgdemo"
 
+[physics]
+
+common/physics_ticks_per_second=60
+
 [input]
 
 move_left={

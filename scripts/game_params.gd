@@ -57,11 +57,6 @@ const DUMMY_HITSTUN_FRICTION := 500.0
 const HP_BAR_SIZE := Vector2(64, 8)
 const HP_BAR_GAP := 10.0
 
-# --- 物理层（1 起算的层号）---
-const LAYER_WORLD := 1
-const LAYER_PLAYER := 2
-const LAYER_DUMMY := 3
-
 # --- 颜色（替换颜色不影响玩法）---
 const BACKDROP_COLOR := Color(0.12, 0.13, 0.18)
 const GROUND_COLOR := Color(0.24, 0.28, 0.34)
@@ -80,11 +75,6 @@ const HINT_COLOR := Color(0.85, 0.87, 0.92)
 # --- 辅助 ---
 const HINT_OFFSET := Vector2(8, 6)
 const STATUS_OFFSET := Vector2(560, 6)
-
-
-## 物理层号（1 起算）转 collision_layer/mask 用的位掩码。
-static func layer_bit(layer_number: int) -> int:
-	return 1 << (layer_number - 1)
 
 
 ## 角色站上地面时身体中心的 y 坐标。

@@ -10,23 +10,23 @@ enum HitResult {
 
 @export var move_name := "5A"
 ## 前摇帧数：出招到判定出现之前。
-@export var startup_frames := 5
+@export var startup_frames := GameParams.ATTACK_STARTUP_FRAMES
 ## 判定帧数：命中框生效、允许命中的窗口。
-@export var active_frames := 7
+@export var active_frames := GameParams.ATTACK_ACTIVE_FRAMES
 ## 后摇帧数：判定结束后回到中立之前。
-@export var recovery_frames := 13
+@export var recovery_frames := GameParams.ATTACK_RECOVERY_FRAMES
 ## 基础伤害（连段递减在会话结算中另行计算，首版未启用）。
-@export var base_damage := 10
+@export var base_damage := GameParams.ATTACK_DAMAGE
 ## 命中框尺寸（以角色中心为原点）。
-@export var hitbox_size := Vector2(64, 60)
+@export var hitbox_size := GameParams.ATTACK_HITBOX_SIZE
 ## 命中框与身体前缘的间隙。
-@export var hitbox_gap := 4.0
+@export var hitbox_gap := GameParams.ATTACK_HITBOX_GAP
 ## 命中后的水平击退速度（px/s，沿攻击方向）。
-@export var knockback := 320.0
+@export var knockback := GameParams.ATTACK_KNOCKBACK
 ## 命中木桩在地面时附加的向上击飞速度（px/s）。
-@export var knockback_up := 110.0
+@export var knockback_up := GameParams.ATTACK_KNOCKBACK_UP
 ## 命中给予的受击硬直帧数。
-@export var hitstun_frames := 12
+@export var hitstun_frames := GameParams.HITSTUN_FRAMES
 ## 命中结果类型。
 @export var hit_result: HitResult = HitResult.GROUND_HITSTUN
 

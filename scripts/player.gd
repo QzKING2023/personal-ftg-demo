@@ -2,7 +2,7 @@ class_name Player
 extends CharacterBody2D
 ## 玩家角色的呈现层：位置、朝向与命中框显示全部来自战斗会话，每帧由训练场写入。
 ## 移动/跳跃/出招的结算在 CombatSession 中完成，本脚本不自行驱动状态；
-## 物理层不再参与结算，碰撞体仅保留结构。
+## 碰撞（地面/墙体/身体）由会话按几何结算，节点碰撞体仅保留场景结构。
 
 var _visuals: Node2D
 var _attack_visual: Polygon2D

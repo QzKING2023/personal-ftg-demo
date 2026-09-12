@@ -17,7 +17,15 @@
 
 - 新增确定性战斗会话 seam：`scripts/combat/combat_session.gd`（`step(FrameInput)` 按固定管线结算并返回 `CombatEvent`），配套 `frame_input.gd`、`move_data.gd`（可配置 startup/active/recovery/伤害/命中框/击退/硬直）、`combat_event.gd`。取消判定与消费缓存两个阶段为管线占位，留给 issue 02。
 - 训练场改为呈现层：`main.gd` 每物理帧做输入适配并驱动会话，`player.gd`/`dummy.gd` 只同步位置/朝向/命中框/血条/闪白；右上角新增木桩生命值与受击状态显示。地面/墙体/身体碰撞改由会话按几何结算，不再依赖物理服务器。
-- 招式窗口从秒改为物理帧（默认 startup 5 / active 7 / recovery 13 / 硬直 12，60fps），数值仍集中在 `GameParams`。
-- 测试：`tests/test_combat_session.gd`（66 项，逐帧输入驱动会话 seam：一次命中、命中帧边界、可配置窗口与伤害、受击恢复、命中先于运动的同帧顺序、移动/跳跃/墙体/身体阻挡/重复攻击/血量下限）+ `tests/test_smoke.gd`（28 项，注入输入 + 真实物理帧：移动/跳跃/边界/命中反馈/状态显示/重置）。全部通过。
+- 招式窗口从秒改为物理帧（默认 startup 5 / active 7 / recovery 13 / 硬直 12，60fps），数值仍集中在 `GameParams`；引擎物理帧率在 project.godot 固定为 60。
+- 木桩地面受击硬直遵守"落地保留剩余受击硬直"：击飞滞空期间硬直帧暂停消耗，落地帧继续；自然受身（硬直归零）只会在地面发生。
+- 测试：`tests/test_combat_session.gd`（68 项，逐帧输入驱动会话 seam：一次命中、命中帧边界、可配置窗口与伤害、滞空暂停与落地恢复、命中先于运动的同帧顺序、移动/跳跃/墙体/身体阻挡/重复攻击/血量下限）+ `tests/test_smoke.gd`（28 项，注入输入 + 真实物理帧：移动/跳跃/边界/命中反馈/状态显示/重置）。全部通过。
 - 已知边界：脚本注入的 `Input.action_press` 比 `is_action_just_pressed` 晚一帧被消费（仅影响测试节奏，真实按键无此问题，集成测试用轮询规避）；玩家不能再站上木桩头顶（会话只做水平推挤，行为与原物理落地略有差异）。
 - 待人工试玩确认参数手感（5/7/13 帧窗口、12 帧硬直、击退距离），试玩后可直接改 `MoveData`/`GameParams`。
+
+**2026-09-12 评审修正（agent）：**
+
+- 受击硬直改为"滞空暂停、落地继续消耗"，修复短硬直配置下木桩会在空中自然受身的问题（违反"落地保留剩余受击硬直"）。
+- `MoveData.hit_result` 真正接入结算（此前为死配置）；`MoveData` 的导出默认值直接引用 `GameParams` 常量，避免双份维护。
+- project.godot 固定 `physics_ticks_per_second=60`，与会话 `PHYSICS_TICK` 一致；移除已无引用的物理层常量 `LAYER_*`/`layer_bit()`。
+- `CONTEXT.md` 补充 战斗会话 / 战斗事件 / 招式数据 三个术语。

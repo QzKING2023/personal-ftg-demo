@@ -113,8 +113,12 @@ func _phase_apply_hits(events: Array[CombatEvent]) -> void:
 	if _pending_hit == null:
 		return
 	dummy_hp = maxf(dummy_hp - _pending_hit.base_damage, 0.0)
-	dummy_state = DummyState.GROUND_HITSTUN
-	dummy_hitstun_left = _pending_hit.hitstun_frames
+	match _pending_hit.hit_result:
+		MoveData.HitResult.GROUND_HITSTUN:
+			dummy_state = DummyState.GROUND_HITSTUN
+			dummy_hitstun_left = _pending_hit.hitstun_frames
+		_:
+			push_error("未支持的命中结果类型: %d" % _pending_hit.hit_result)
 	dummy_velocity.x = player_facing * _pending_hit.knockback
 	if dummy_on_ground:
 		dummy_velocity.y = -_pending_hit.knockback_up
@@ -188,8 +192,9 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 		dummy_on_ground = true
 	else:
 		dummy_on_ground = false
-	if dummy_state == DummyState.GROUND_HITSTUN:
+	if dummy_state == DummyState.GROUND_HITSTUN and dummy_on_ground:
 		# 自然受身：地面硬直归零即回到中立并结束受击。
+		# 落地保留剩余受击硬直——滞空期间硬直帧数暂停消耗。
 		dummy_hitstun_left = maxi(dummy_hitstun_left - 1, 0)
 		if dummy_hitstun_left == 0:
 			dummy_state = DummyState.NEUTRAL

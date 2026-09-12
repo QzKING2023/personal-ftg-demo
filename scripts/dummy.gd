@@ -2,7 +2,7 @@ class_name Dummy
 extends CharacterBody2D
 ## 木桩的呈现层：位置与血条来自战斗会话，受击闪白由训练场按命中事件触发。
 ## 掉血、硬直与击退的结算全部在 CombatSession 中完成；
-## 物理层不再参与结算，碰撞体仅保留结构。
+## 碰撞（地面/墙体/身体）由会话按几何结算，节点碰撞体仅保留场景结构。
 
 var hp: float = GameParams.DUMMY_MAX_HP
 
