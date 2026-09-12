@@ -1,0 +1,26 @@
+# Godot 4+ 专用忽略
+.godot/
+/android/
+
+# 导出产物与凭据（export_presets.cfg 本身应纳入版本控制）
+/build/
+/exports/
+export_credentials.cfg
+
+# 从 CSV 自动生成的已导入翻译
+*.translation
+
+# Mono/C# 构建产物
+.mono/
+data_*/
+mono_crash.*.json
+
+# 本地代理工具链（技能副本与状态缓存，不属于游戏工程）
+.agents/
+.claude/
+.zcode/
+skills-lock.json
+
+# 系统文件
+.DS_Store
+Thumbs.db
