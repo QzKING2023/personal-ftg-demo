@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FTG Demo · 连段规则实验台 · PROTOTYPE</title>
+<style>
+:root{color-scheme:light;--bg:#f3f5f4;--paper:#fff;--ink:#172b32;--muted:#607078;--line:#dce4e3;--accent:#087c7b;--soft:#e8f5f1;--bad:#9b4534;--warn:#82632a}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}button,input,select,textarea{font:inherit}button,select,input[type=number]{border:1px solid var(--line);border-radius:8px;background:white;color:var(--ink);padding:8px 12px}button{cursor:pointer}button:hover:not(:disabled){border-color:var(--accent);background:var(--soft)}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #52b9ac;outline-offset:2px}button:disabled{cursor:default;opacity:.45}.primary{background:var(--accent);color:white;border-color:var(--accent)}button.primary:hover:not(:disabled){background:#075e5d;color:white}.quiet{color:var(--muted)}.small{font-size:12px}.mono{font-family:ui-monospace,Consolas,monospace}header,main,footer{max-width:1400px;margin:auto;padding:0 32px}header{padding-top:30px;padding-bottom:22px}.eyebrow{display:flex;gap:12px;align-items:center;color:var(--accent);font-size:11px;font-weight:750;letter-spacing:1.5px}.pill{display:inline-block;padding:2px 8px;border:1px solid var(--line);border-radius:5px;letter-spacing:.4px;font-size:11px}.eyebrow .pill{border-color:#8bbdb3}h1{font-size:29px;letter-spacing:-.8px;margin:8px 0}h2{font-size:16px;margin:0}h3{font-size:14px;margin:0 0 10px}p{margin:8px 0}.intro{max-width:960px;color:var(--muted);margin-bottom:0}.section-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px}.section-label{font-size:11px;color:var(--accent);letter-spacing:1.5px;margin-right:9px}.panel{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:16px}.state-top{display:flex;align-items:center;gap:16px}.frame{font-size:14px;color:var(--accent)}.state-grid{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px}.card{border:1px solid var(--line);border-radius:9px;padding:14px;min-width:0}.card.wide{grid-column:span 2}.card .label{font-size:12px;color:var(--muted);margin-bottom:5px}.value{font-size:20px;font-weight:650;line-height:1.4}.sub{font-size:12px;color:var(--muted);margin-top:6px;overflow-wrap:anywhere}.tokens{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;min-height:28px}.token{border:1px solid var(--line);padding:3px 7px;border-radius:5px;font-size:12px}.token b{color:var(--accent)}.meter{height:5px;border-radius:3px;background:#edf1f0;margin-top:10px;overflow:hidden}.meter span{display:block;height:100%;background:var(--accent)}.metric-row{display:flex;gap:22px;align-items:baseline}.metric-row strong{font-size:27px}.metric-row span{font-size:12px;color:var(--muted)}.trace{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}.trace span{padding:4px 8px;background:var(--bg);border-radius:5px;font-size:11px}.trace .event{background:var(--soft);color:var(--accent)}.live-note{border-left:3px solid var(--accent);background:var(--soft);padding:8px 12px;margin-top:14px;min-height:40px;font-size:13px}.control-grid{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:20px}.button-row{display:flex;gap:7px;flex-wrap:wrap}.action-btn{min-width:68px;flex:1;padding:9px 8px}.action-btn b{display:block;font-size:20px;color:var(--accent)}.action-btn span{display:block;font-size:11px;color:var(--muted)}.direction-layout{display:flex;gap:15px;align-items:center}.dpad{display:grid;grid-template-columns:repeat(3,38px);gap:4px}.dpad button{padding:5px 0;line-height:1.3}.dpad small{font-size:9px;display:block;color:var(--muted)}.playback{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap}.key{background:var(--bg);border:1px solid var(--line);padding:0 4px;border-radius:3px}.toggle{display:flex;align-items:center;gap:7px;margin-top:10px}.tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:17px}.tab{padding:6px 9px;font-size:12px}.tab[aria-selected=true]{background:var(--soft);border-color:var(--accent);color:var(--accent)}.tab .mark{margin-left:4px}.pass{color:var(--accent)}.fail{color:var(--bad)}.pending{color:var(--muted)}.scenario-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:24px}.scenario-desc{font-size:13px;color:var(--muted)}.steps{display:flex;flex-direction:column;gap:8px}.step{display:grid;grid-template-columns:29px 1fr;gap:9px;align-items:start}.step-num{border:1px solid var(--line);border-radius:50%;width:26px;height:26px;text-align:center;font-size:12px;line-height:24px;margin-top:6px}.step button{width:100%;text-align:left;padding:8px 10px}.step.done .step-num{background:var(--soft);color:var(--accent);border-color:var(--accent)}.expected{font-size:11px;color:var(--muted);margin:3px 0 0}.verdict{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:14px;background:var(--bg);font-size:13px}.foot-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:16px}.log{max-height:225px;overflow:auto;margin:0;padding:0;list-style:none}.log li{display:grid;grid-template-columns:55px 1fr;gap:9px;border-bottom:1px solid #eef1f0;padding:5px 0;font-size:12px}.log time{color:var(--muted);font-family:ui-monospace,Consolas,monospace}.log .hit{color:var(--accent)}details>summary{cursor:pointer;font-size:13px;font-weight:650}.table-wrap{overflow:auto;margin-top:12px}table{border-collapse:collapse;width:100%;font-size:12px;text-align:left}th,td{border-bottom:1px solid var(--line);padding:8px 9px;vertical-align:top}th{color:var(--muted);font-weight:600;white-space:nowrap}.settings{display:flex;gap:15px;flex-wrap:wrap;margin:13px 0}.settings label{font-size:12px}.settings input{width:80px;margin-left:5px;padding:5px 7px}textarea{width:100%;min-height:90px;resize:vertical;border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:9px;background:white;color:var(--ink)}.solver-box{border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:12px}.solver-box p{font-size:12px}.solver-box strong{font-size:14px}.solver-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}footer{padding-top:8px;padding-bottom:28px;color:var(--muted);font-size:12px}.hidden{display:none}.legend{font-size:12px;color:var(--muted);margin-top:12px}.route{font-size:12px;color:var(--accent);overflow-wrap:anywhere;margin-top:8px}.proof-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}.proof-grid div{padding:6px 8px;background:var(--bg);border-radius:5px;font-size:11px}.mode-caption{font-size:11px;color:var(--muted)}
+@media(max-width:1000px){header,main,footer{padding-left:18px;padding-right:18px}.state-grid{grid-template-columns:1fr 1fr}.card.wide{grid-column:span 1}.control-grid{grid-template-columns:1fr 1fr}.control-grid>div:last-child{grid-column:span 2}.scenario-grid,.foot-grid{grid-template-columns:1fr}.value{font-size:18px}}@media(max-width:580px){header{padding-top:18px}h1{font-size:24px}.panel{padding:14px}.state-grid,.control-grid{grid-template-columns:1fr}.control-grid>div:last-child{grid-column:span 1}.section-head{align-items:flex-start;flex-wrap:wrap}.state-top{flex-wrap:wrap}.proof-grid{grid-template-columns:1fr}.metric-row{gap:16px}.direction-layout{justify-content:space-between}.tabs{max-height:170px;overflow:auto}}
+</style>
+</head>
+<body>
+<header>
+ <div class="eyebrow"><span>FTG DEMO / RULE LAB</span><span class="pill">PROTOTYPE · 可丢弃原型</span></div>
+ <h1>连段规则实验台</h1>
+ <p class="intro">要验证的问题：独立的方向历史、6 帧动作缓存和命中确认取消，能否稳定连接地面与空中路线，并在正确的帧序下自然结束？用按钮推进状态，也可以切到 60 帧实时练习。</p>
+ <p class="small quiet">招式分工与具体帧数是本次实验假设；不代表已确认的正式设计。单文件、离线可用，所有状态仅保留在当前页面。</p>
+</header>
+<main>
+ <section class="panel" aria-label="完整战斗状态">
+  <div class="section-head"><div class="state-top"><h2><span class="section-label">01</span>当前状态</h2><span class="frame mono" id="frame">F 0000</span><span class="pill" id="mode-label">逐帧 / 暂停</span></div><button id="reset">重置训练场</button></div>
+  <div class="state-grid">
+   <div class="card"><div class="label">当前招式 / 阶段</div><div class="value" id="move-name">中立</div><div class="sub" id="move-phase"></div><div class="meter"><span id="move-meter"></span></div></div>
+   <div class="card"><div class="label">玩家状态</div><div class="value" id="player-state"></div><div class="sub" id="player-detail"></div></div>
+   <div class="card"><div class="label">木桩状态</div><div class="value" id="dummy-state"></div><div class="sub" id="dummy-detail"></div></div>
+   <div class="card"><div class="label">动作键缓存 · 独立 6 个物理帧</div><div class="value" id="buffer-key"></div><div class="sub" id="buffer-detail"></div><div class="meter"><span id="buffer-meter"></span></div></div>
+   <div class="card"><div class="label" id="direction-label">方向输入历史 · 24 帧</div><div class="tokens" id="directions"></div><div class="sub">小键盘记法，面向右。236 + C 浮空；214 + D 地面收尾。</div></div>
+   <div class="card"><div class="label">取消资格</div><div class="value" id="cancel-status"></div><div class="sub" id="cancel-detail"></div></div>
+   <div class="card wide"><div class="label">本段 / 最近一段</div><div class="metric-row"><div><strong id="hits">0</strong><span> HIT</span></div><div><strong id="scale">—</strong><span> 最近倍率</span></div><div><strong id="damage">0</strong><span> 累计伤害</span></div></div><div class="sub" id="damage-detail"></div><div class="route" id="combo-route"></div></div>
+   <div class="card"><div class="label">连段是否继续</div><div class="value" id="combo-status"></div><div class="sub" id="combo-detail"></div></div>
+  </div>
+  <div class="trace" id="trace" aria-label="当前物理帧的结算顺序"></div>
+  <div class="live-note" id="last-action" role="status" aria-live="polite">已准备好。点击动作键，或从下方引导场景开始。</div>
+ </section>
+ <section class="panel" aria-label="自由操作">
+  <div class="section-head"><h2><span class="section-label">02</span>自由操作</h2><span class="mode-caption">暂停时每次输入推进 1 帧；实时模式在下一帧处理输入。</span></div>
+  <div class="control-grid">
+   <div><h3>动作键</h3><div class="button-row" id="actions"><button class="action-btn" data-key="A"><b>A</b><span>起手 / 追击</span></button><button class="action-btn" data-key="B"><b>B</b><span>地面 / 空中连接</span></button><button class="action-btn" data-key="C"><b>C</b><span>浮空</span></button><button class="action-btn" data-key="D"><b>D</b><span>收尾</span></button></div><div class="playback"><button data-key="Space">Space · 跳跃 / jump cancel</button></div><p class="small quiet">键盘 A / B / C / D、方向键、空格可直接操作。按住动作键不会重复出招。方向键与动作键分离。</p></div>
+   <div><h3>方向输入</h3><div class="direction-layout"><div class="dpad" id="dpad"><button data-dir="7">↖<small>7</small></button><button data-dir="8">↑<small>8</small></button><button data-dir="9">↗<small>9</small></button><button data-dir="4">←<small>4</small></button><button data-dir="5">·<small>5</small></button><button data-dir="6">→<small>6</small></button><button data-dir="1">↙<small>1</small></button><button data-dir="2">↓<small>2</small></button><button data-dir="3">↘<small>3</small></button></div><div class="small quiet">逐个点击<br>↓ → ↘ → →<br>再按 C：236C<br><br>↑ 只记方向<br>Space 独立跳跃</div></div></div>
+   <div><h3>时间与命中条件</h3><div class="button-row"><button data-frames="1">+1 帧</button><button data-frames="6">+6 帧</button><button data-frames="12">+12 帧</button><button data-frames="30">+30 帧</button></div><div class="playback"><button class="primary" id="play">▶ 实时练习</button><select id="speed" aria-label="练习速度"><option value="0.25">¼ 速 · 15 帧/秒</option><option value="0.5">½ 速 · 30 帧/秒</option><option value="1" selected>原速 · 60 帧/秒</option></select></div><label class="toggle"><input type="checkbox" id="range" checked>木桩在攻击范围内</label><p class="small quiet">关闭范围可验证挥空；空间关系用可控命中条件代替。此处的“手感”指输入时机与接续宽容度。</p></div>
+  </div>
+ </section>
+ <section class="panel" aria-label="引导场景">
+  <div class="section-head"><h2><span class="section-label">03</span>引导场景</h2><div class="button-row"><span id="coverage" class="small quiet"></span><button id="run-all">运行全部引导</button></div></div>
+  <div class="tabs" id="scenario-tabs" role="tablist" aria-label="选择验证场景"></div>
+  <div id="scenario-panel" role="tabpanel" class="scenario-grid"><div><h3 id="scenario-title"></h3><p id="scenario-desc" class="scenario-desc"></p><p id="scenario-watch" class="small"></p><div class="button-row"><button id="start-scenario" class="primary">从头开始</button><button id="run-scenario">连续执行本场景</button></div><div id="scenario-verdict" class="verdict"></div></div><div class="steps" id="scenario-steps"></div></div>
+  <p class="legend">场景从明确的初始状态运行，按钮执行真实的同一套状态逻辑。✓ / ✕ 表示观测是否符合本场景预期；操作手感仍需你亲自确认。自由操作会退出当前引导进度，但保留已完成的记录。</p>
+ </section>
+ <div class="foot-grid">
+  <section class="panel"><div class="section-head"><h2><span class="section-label">04</span>逐帧事件记录</h2><button id="export">导出实验记录</button></div><ol class="log" id="log" aria-label="最近战斗事件"></ol><details style="margin-top:14px"><summary>记录我的手感与调整意见</summary><textarea id="notes" placeholder="例如：地面 A → B 太紧；希望取消窗口多 2 帧。空中受身后的中立恢复时机符合预期……"></textarea><p class="small quiet">意见随导出保存；刷新页面会清空。导出记录包含当前参数、全部场景结果和当前状态。</p></details></section>
+  <section class="panel"><h2><span class="section-label">05</span>Combo Solver</h2><p class="small quiet">开发期检查工具。检查已配置取消路线的时间与状态条件；演示注入只用于检查，不会修改自由操作的招式表。</p><div class="solver-controls"><select id="solver-mode" aria-label="循环验证配置"><option value="normal">当前招式表</option><option value="effective_loop">注入：有效地面循环</option><option value="late_loop">注入：时间不足的假循环</option><option value="stance_loop">注入：状态不符的假循环</option></select><button id="solve">检查路线</button></div><div class="solver-box" id="solver-result"></div><details><summary>查看接续边与排除原因</summary><div class="table-wrap" id="solver-edges"></div></details></section>
+ </div>
+ <section class="panel"><details><summary>招式表、原型假设与可调整参数</summary><div class="settings"><label>方向历史窗口<input id="direction-window" type="number" min="6" max="90" value="24"> 帧</label><label>每击倍率递减<input id="scale-step" type="number" min="0" max="0.5" step="0.05" value="0.1"></label><button id="apply-settings">应用并重置训练场</button></div><p class="small quiet">引导场景固定使用默认参数，便于复现；自由操作使用上方参数。首击 100%，其后按命中数线性递减，最低 10%。动作缓存严格固定 6 帧：输入帧年龄为 0，年龄 0–5 有效，年龄 6 先过期。最新动作覆盖旧动作；Space 不进入动作缓存。</p><p class="small quiet">按动作键时识别并锁定招式；成功识别的方向序列会消费。方向历史按帧过期，默认年龄 0–23 有效，年龄 24 过期。方向历史独立于动作缓存。命中确认取消窗口为命中后第 0–8 帧（含两端）。jB 在落地当帧可把缓存的 D 接为 5D；这是明确配置的姿态转换。每招对木桩最多命中一次。空中已受身期间不可追击，落地后恢复中立。收尾结束接续资格，保留木桩倒地处理。本次假设：空中 C 未配置招式；jump cancel 后先用 jA 追击；未通过合法取消的独立招式不能追击仍在受击中的木桩，以避免绕过主路线。玩家一次跳跃 40 帧，浮空给予木桩 48 帧滞空，后续追击不刷新滞空时间。画面不模拟距离、碰撞盒、重力曲线、hitstop 或正式 Godot 反馈。</p><div class="table-wrap" id="move-table"></div></details></section>
+</main>
+<footer>PROTOTYPE · 依据 CONTEXT.md、MVP「下一步原型目标」及 ADR 0001 / 0002。仅验证规则与状态；没有持久化、联网、正式实现或运行时 Combo Solver。</footer>
+<script>
+/* PROTOTYPE: pure frame model. No DOM, storage or Godot.
+ * Start age 0: startup 8 pressed F1 hits F9. Buffer ages 0..5; direction ages <24.
+ * Input -> hit -> apply -> motion/recovery -> cancel -> consume.
+ */
+const Combat = (() => {
+ const moves = {
+  '5A':{name:'地面起手',key:'A',stance:'ground',startup:8,active:2,recovery:12,stun:30,damage:100,cancels:['5B','236C']},
+  '5B':{name:'地面连接',key:'B',stance:'ground',startup:5,active:2,recovery:14,stun:26,damage:120,cancels:['5D','214D']},
+  '5C':{name:'普通浮空',key:'C',stance:'ground',startup:7,active:2,recovery:16,stun:36,damage:140,cancels:[],launch:true,jumpCancel:true},
+  '236C':{name:'方向浮空',key:'C',stance:'ground',startup:6,active:2,recovery:18,stun:36,damage:180,cancels:[],launch:true,jumpCancel:true},
+  '5D':{name:'地面收尾',key:'D',stance:'ground',startup:6,active:2,recovery:18,stun:24,damage:180,cancels:[],finisher:true},
+  '214D':{name:'方向收尾',key:'D',stance:'ground',startup:7,active:2,recovery:20,stun:24,damage:220,cancels:[],finisher:true},
+  'jA':{name:'浮空追击',key:'A',stance:'air',startup:4,active:2,recovery:8,stun:30,damage:110,cancels:['jB']},
+  'jB':{name:'空中连接',key:'B',stance:'air',startup:4,active:2,recovery:10,stun:26,damage:130,cancels:['jD','5D'],landingCancels:['5D']},
+  'jD':{name:'空中收尾',key:'D',stance:'air',startup:6,active:2,recovery:12,stun:28,damage:190,cancels:[],finisher:true}
+ };
+ for(const [id,m] of Object.entries(moves)){m.id=id;m.cancelWindow={open:0,close:8};m.landingCancels=m.landingCancels||[];}
+ const clone=s=>JSON.parse(JSON.stringify(s));
+ const emptyCombo=()=>({active:false,hits:0,totalDamage:0,lastScale:1,lastDamage:0,endReason:'',route:[]});
+ function create(overrides={}){return {frame:0,player:{stance:'ground',airFrames:0,move:null,jumpFollowup:null},dummy:{status:'neutral',stun:0,airFrames:0},buffer:null,directions:[],combo:emptyCombo(),settings:{directionWindow:24,scaleStep:.1,inRange:true,...(overrides.settings||overrides)},events:[],trace:[],landedThisFrame:false,fixture:null};}
+ function log(s,text,kind='info'){s.events.push({frame:s.frame,text,kind});if(s.events.length>160)s.events.shift();}
+ function endCombo(s,reason){if(!s.combo.active)return;s.combo.active=false;s.combo.endReason=reason;s.player.jumpFollowup=null;log(s,reason,'end');}
+ function scale(hitIndex,step=.1){return Math.max(.1,Math.round((1-(Math.max(1,hitIndex)-1)*step)*1000000)/1000000);}
+ function phase(s){const p=s.player.move;if(!p)return s.player.stance==='air'?'air-neutral':'neutral';const m=moves[p.id];return p.age<m.startup?'startup':p.age<m.startup+m.active?'active':'recovery';}
+ function resolveInput(s,key){
+  if(key==='Space')return null;
+  if(s.player.stance==='air')return moves['j'+key]?'j'+key:null;
+  const recent=s.directions.filter(d=>s.frame-d.frame<s.settings.directionWindow&&d.dir!=='5').map(d=>d.dir);
+  const sequence=recent.filter((d,i)=>i===0||d!==recent[i-1]).join('');
+  if(key==='C'&&sequence.endsWith('236'))return '236C';
+  if(key==='D'&&sequence.endsWith('214'))return '214D';
+  return moves['5'+key]?'5'+key:null;
+ }
+ function eligibility(s){
+  const p=s.player.move;
+  if(!p)return {allowed:[],jump:false,reason:s.player.jumpFollowup?(s.fixture==='damage_floor'?'诊断初态允许接续 5A，仅用于伤害边界':'跳跃后可用 '+s.player.jumpFollowup+' 追击'):'自由行动；无命中确认取消'};
+  const m=moves[p.id];
+  if(!p.hit)return {allowed:[],jump:false,reason:'尚未命中确认；挥空不能取消'};
+  if(!s.combo.active||!['ground_stun','air_stun'].includes(s.dummy.status))return {allowed:[],jump:false,reason:'连段已结束或木桩不再可追击'};
+  const age=s.frame-p.hitFrame,w=m.cancelWindow;
+  if(age<w.open||age>w.close)return {allowed:[],jump:false,reason:'已离开命中确认取消窗口'};
+  return {allowed:m.cancels.filter(id=>moves[id].stance===s.player.stance&&(m.stance===moves[id].stance||(s.landedThisFrame&&m.landingCancels.includes(id)))),jump:!!m.jumpCancel&&s.player.stance==='ground',reason:`命中后第 ${age} 帧；取消窗口 ${w.open}–${w.close} 帧（含两端）`};
+ }
+ function startMove(s,id,followup){s.player.move={id,age:0,hit:false,hitFrame:null,followup};log(s,`${followup?'合法接续':'开始招式'}：${id} ${moves[id].name}`,'input');}
+ function canHit(s,p){if(!s.settings.inRange||p.hit)return false;if(s.dummy.status==='neutral')return true;return ['ground_stun','air_stun'].includes(s.dummy.status)&&s.combo.active&&p.followup;}
+ function frame(s,input=null){
+  s.frame++;s.landedThisFrame=false;s.trace=['输入','命中','受击应用','运动 / 落地 / 自然受身','取消','消费缓存'];
+  s.directions=s.directions.filter(d=>s.frame-d.frame<s.settings.directionWindow);
+  if(s.buffer&&s.frame-s.buffer.frame>=6){log(s,`${s.buffer.key} 缓存年龄 6，先过期`,'buffer');s.buffer=null;}
+  let jumpPressed=false;
+  if(input?.type==='direction'){const d=String(input.dir);s.directions.push({dir:d,frame:s.frame});log(s,'方向输入 '+d,'input');}
+  if(input?.type==='key'){
+   if(input.key==='Space'){jumpPressed=true;log(s,'独立 Space 输入（不占动作缓存）','input');}
+   else{const id=resolveInput(s,input.key);s.buffer={key:input.key,frame:s.frame,moveId:id};log(s,`动作缓存：${input.key} → ${id||'当前姿态未配置此键'}`,'buffer');if(id==='236C'||id==='214D'){s.directions=[];log(s,'识别并消费方向序列；招式已锁定','input');}}
+  }
+  const p=s.player.move,m=p?moves[p.id]:null,oldStun=s.dummy.stun;let hit=false;
+  if(p){p.age++;if(phase(s)==='active'&&!p.hit){
+   if(canHit(s,p)){
+    hit=true;p.hit=true;p.hitFrame=s.frame;
+    if(!s.combo.active||s.dummy.status==='neutral')s.combo=emptyCombo();
+    s.combo.active=true;s.combo.hits++;s.combo.lastScale=scale(s.combo.hits,s.settings.scaleStep);s.combo.lastDamage=Math.round(m.damage*s.combo.lastScale*10)/10;
+    s.combo.totalDamage=Math.round((s.combo.totalDamage+s.combo.lastDamage)*10)/10;s.combo.route.push(p.id);s.dummy.stun=m.stun;
+    if(m.launch)s.dummy.airFrames=48;else if(m.stance==='air'&&s.dummy.status==='neutral')s.dummy.airFrames=24;
+    s.dummy.status=m.finisher?'knockdown':s.dummy.airFrames>0?'air_stun':'ground_stun';s.trace[1]=`命中：${p.id} 确认`;s.trace[2]=`受击应用：硬直刷新为 ${m.stun}`;
+    log(s,`${p.id} 命中 · 第 ${s.combo.hits} 击 · ${Math.round(s.combo.lastScale*100)}% · ${s.combo.lastDamage} 伤害`,'hit');
+    if(m.finisher)endCombo(s,'收尾无后续追击条件；保留木桩倒地处理');
+   }else log(s,!s.settings.inRange?'挥空：木桩在范围外':s.dummy.status==='air_recovered'?'未命中：木桩空中已受身':s.dummy.status==='knockdown'?'未命中：木桩倒地处理不可追击':'未命中：本次动作没有合法接续资格','whiff');
+  }}
+  // A hit refreshes stun BEFORE landing and natural recovery. Do not decrement fresh stun.
+  if(s.player.airFrames>0&&--s.player.airFrames===0){s.player.stance='ground';s.landedThisFrame=true;s.player.jumpFollowup=null;log(s,'玩家落地（在命中结算之后）','motion');}
+  if(s.dummy.airFrames>0&&--s.dummy.airFrames===0){log(s,'木桩落地（保留本帧受击结果）','motion');if(s.dummy.status==='air_stun')s.dummy.status='ground_stun';else if(s.dummy.status==='air_recovered')s.dummy.status='neutral';}
+  if(!hit&&oldStun>0)s.dummy.stun=oldStun-1;
+  if(s.dummy.stun===0&&['ground_stun','air_stun','knockdown'].includes(s.dummy.status)){
+   s.dummy.status=s.dummy.airFrames>0?'air_recovered':'neutral';endCombo(s,s.dummy.status==='air_recovered'?'木桩自然空中受身，当前连段结束':'木桩自然恢复，当前连段结束');
+   log(s,s.dummy.status==='air_recovered'?'木桩空中已受身；等待落地恢复中立':'木桩自然恢复中立','recover');
+  }
+  if(s.landedThisFrame)s.trace[3]='运动 / 落地：玩家已着地，受击结果保留';
+  if(s.player.move&&s.player.move.age>=moves[s.player.move.id].startup+moves[s.player.move.id].active+moves[s.player.move.id].recovery){endCombo(s,'招式已收招，没有通过命中确认取消接续');s.player.move=null;}
+  const eligible=eligibility(s);
+  if(jumpPressed){
+   if(eligible.jump){s.player.move=null;s.player.stance='air';s.player.airFrames=40;s.player.jumpFollowup='jA';log(s,'Space 跳跃取消成功；可用 jA 浮空追击','cancel');}
+   else if(!s.player.move&&s.player.stance==='ground'){s.player.stance='air';s.player.airFrames=40;log(s,'普通跳跃；未获得连段追击资格','motion');}
+   else log(s,'Space 无效：当前招式未允许 jump cancel，或已在空中','illegal');
+  }
+  if(s.buffer){
+   let id=s.buffer.moveId;
+   // Explicit landing seam: D entered in air becomes 5D only on jB's hit+landing frame.
+   if(s.landedThisFrame&&s.buffer.key==='D'&&eligible.allowed.includes('5D'))id='5D';
+   const configured=id&&moves[id]&&moves[id].stance===s.player.stance;
+   if(s.player.move&&configured&&eligible.allowed.includes(id)){s.buffer=null;startMove(s,id,true);s.trace[5]='消费缓存：命中确认后转入 '+id;}
+   else if(!s.player.move&&configured){const followup=s.combo.active&&s.player.jumpFollowup===id;s.player.jumpFollowup=null;s.buffer=null;startMove(s,id,followup);}
+  }
+  // Retain the air attack through cancel evaluation; only then apply landing cleanup.
+  if(s.player.move&&moves[s.player.move.id].stance==='air'&&s.player.stance==='ground'){endCombo(s,'空中招式落地，未发生配置的落地取消');s.player.move=null;}
+  const current=s.player.move;if(current?.hit&&s.frame-current.hitFrame>moves[current.id].cancelWindow.close)endCombo(s,'命中确认取消窗口关闭，没有后续接续');
+  return s;
+ }
+ function fixture(name){
+  const s=create();s.fixture=name;
+  if(name==='same_frame'){
+   s.frame=20;s.player={stance:'air',airFrames:1,move:{id:'jB',age:3,hit:false,hitFrame:null,followup:true},jumpFollowup:null};s.dummy={status:'air_stun',stun:1,airFrames:1};
+   s.combo={...emptyCombo(),active:true,hits:2,totalDamage:262,lastScale:.9,lastDamage:162,route:['5A','236C']};s.buffer={key:'D',frame:20,moveId:'jD'};
+  }else if(name==='damage_floor'){
+   s.frame=100;s.dummy={status:'ground_stun',stun:80,airFrames:0};s.player.jumpFollowup='5A';s.combo={...emptyCombo(),active:true,hits:14,totalDamage:1000,lastScale:.1,lastDamage:10,route:['诊断预置 14 hit']};
+  }else if(name==='air_recovery'||name==='ground_recovery'){
+   s.frame=40;s.dummy={status:name==='air_recovery'?'air_stun':'ground_stun',stun:2,airFrames:name==='air_recovery'?12:0};s.combo={...emptyCombo(),active:true,hits:2,totalDamage:208,lastScale:.9,lastDamage:108,route:['诊断预置 2 hit']};
+  }
+  log(s,'诊断初态：'+({same_frame:'同帧命中与落地',damage_floor:'14 hit 伤害下限',air_recovery:'空中自然受身',ground_recovery:'地面自然恢复'}[name]||name)+'（预置边界状态，并非手动完成的路线）','fixture');return s;
+ }
+ function act(state,action){
+  if(action.type==='fixture')return fixture(action.name);const s=clone(state);
+  if(action.type==='range'){s.settings.inRange=!!action.inRange;log(s,s.settings.inRange?'木桩移入攻击范围':'木桩移出攻击范围');return s;}
+  if(action.type==='settings'){Object.assign(s.settings,action.values||{});return s;}
+  if(action.type==='step'){for(let i=0;i<(action.frames??1);i++)frame(s);return s;}
+  if(action.type==='key'||action.type==='direction')return frame(s,action);return s;
+ }
+ return {create,act,moves,phase,scale,eligibility,resolveInput,fixture,view:s=>({phase:phase(s),eligibility:eligibility(s),buffer:s.buffer?{...s.buffer,age:s.frame-s.buffer.frame}:null})};
+})();
+
+</script>
+<script>
+/* PROTOTYPE: deterministic cancel graph checker for the FTG Demo.
+ * This file is deliberately standalone and has no DOM/Godot dependencies.
+ * It proves only listed, deterministic hit-confirm transitions; it does not
+ * solve arbitrary spatial, neutral, or player-timing links.
+ */
+const ComboSolver = (() => {
+  const AIR = new Set(['air', 'airborne', 'float', 'jump']);
+  const GROUND = new Set(['ground', 'grounded', 'landed', 'neutral']);
+
+  const asArray = value => {
+    if (Array.isArray(value)) return value;
+    if (value == null) return [];
+    if (typeof value === 'object') {
+      return Object.keys(value).map(key => {
+        const item = value[key];
+        return typeof item === 'object' && item !== null ? { ...item, to: item.to || key } : { to: key, value: item };
+      });
+    }
+    return [value];
+  };
+
+  const number = (value, fallback = 0) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  };
+
+  const stanceKind = stance => {
+    const value = String(stance || '').toLowerCase();
+    if (AIR.has(value) || value.includes('air')) return 'air';
+    if (GROUND.has(value) || value.includes('ground')) return 'ground';
+    return value || 'ground';
+  };
+
+  const moveId = move => String(move.id ?? move.name ?? move.key ?? '');
+
+  const moveStartup = move => number(move.startup ?? move.startupFrames, 0);
+
+  const moveDuration = move => number(
+    move.duration ?? move.totalFrames ?? move.frames ??
+    (number(move.startup) + number(move.active) + number(move.recovery)),
+    0,
+  );
+
+  const moveStun = move => number(
+    move.hitstun ?? move.hitStun ?? move.hitstunFrames ?? move.stun ?? move.stunFrames,
+    0,
+  );
+
+  const moveStance = move => stanceKind(move.stance ?? move.startStance ?? move.requiredStance ?? 'ground');
+  const exitStance = move => stanceKind(move.endStance ?? move.exitStance ?? move.stanceAfter ?? move.stance ?? 'ground');
+
+  const transitionList = move => {
+    const landingIds = asArray(move.landingCancels);
+    const regular = asArray(move.cancels).map(item => typeof item === 'string' ? {to:item} : {...item});
+    for (const item of regular) if (landingIds.includes(item.to)) item.landingSeam = true;
+    for (const id of landingIds) if (!regular.some(item => item.to === id)) regular.push({to:id,landingSeam:true});
+    // Earliest Space is the hit frame; jA starts one frame later, then its startup runs.
+    const jump = move.jumpCancel ? [{to:'jA',jumpCancel:true,input:'Space → A',delay:1,cancelDelay:0}] : [];
+    return [...regular, ...jump];
+  };
+
+  const normalise = moves => {
+    const list = Array.isArray(moves)
+      ? moves
+      : (moves && typeof moves === 'object' ? Object.keys(moves).map(key => {
+          const item = moves[key];
+          return item && typeof item === 'object' ? { ...item, id: item.id || key } : { id: key };
+        }) : []);
+    return list.map((raw, index) => {
+      const move = typeof raw === 'string' ? { id: raw } : { ...(raw || {}) };
+      const id = moveId(move) || `move-${index + 1}`;
+      return {
+        ...move,
+        id,
+        stance: moveStance(move),
+        endStance: exitStance(move),
+        duration: moveDuration(move),
+        hitstun: moveStun(move),
+      };
+    });
+  };
+
+  const addDemo = (moves, mode) => {
+    const byId = new Map(moves.map(m => [m.id, m]));
+    const ensure = (id, patch) => {
+      if (!byId.has(id)) byId.set(id, { id, duration: 8, startup: 8, active: 2, recovery: 3, hitstun: 26, stance: 'ground', endStance: 'ground', ...patch });
+    };
+    if (mode === 'effective_loop' || mode === 'late_loop' || mode === 'stance_loop') {
+      ensure('5A', { stance: 'ground', endStance: 'ground' });
+      ensure('5B', {});
+      const sourceId = mode === 'stance_loop' && byId.has('jB') ? 'jB' : '5B';
+      if (!byId.has(sourceId)) ensure(sourceId, mode === 'stance_loop' ? { stance: 'air', endStance: 'air' } : {});
+      const source = byId.get(sourceId);
+      const existing = transitionList(source);
+      const back = { to: '5A', input: 'A', on: 'hit', delay: mode === 'late_loop' ? 24 : 4, startup: mode === 'late_loop' ? 8 : undefined, cancelWindow: mode === 'late_loop' ? { open: 0, close: 8 } : undefined, demo: `演示 ${mode}：${sourceId} -> 5A` };
+      if (mode === 'stance_loop') back.requiredStance = 'ground';
+      if (!existing.some(t => targetOf(typeof t === 'string' ? { to: t } : t) === '5A')) source.cancels = [...existing, back];
+    }
+    return [...byId.values()];
+  };
+
+  const targetOf = transition => String(transition.to ?? transition.id ?? transition.move ?? transition.target ?? '');
+  const transitionDelay = transition => number(
+    transition.delay ?? transition.wait ?? transition.frames ?? transition.frame ?? transition.cancelAt ?? 0,
+    0,
+  );
+
+  const explicitLanding = transition => Boolean(
+    transition.landingSeam || transition.allowLanding || transition.viaLanding ||
+    transition.requiresLanding || transition.via === 'landing' || transition.stanceChange === 'landing',
+  );
+
+  const hitConfirm = transition => {
+    if (transition.requiresHit === true || transition.requiresHitConfirm === true) return true;
+    const trigger = transition.on ?? transition.trigger;
+    return trigger == null || ['hit', 'hitconfirm', 'hit-confirm', 'confirm'].includes(String(trigger).toLowerCase());
+  };
+
+  const buildEdges = (moves, mode) => {
+    const byId = new Map(moves.map(m => [m.id, m]));
+    const edges = [];
+    moves.forEach(fromMove => {
+      transitionList(fromMove).forEach(raw => {
+        const transition = typeof raw === 'string' ? { to: raw } : { ...(raw || {}) };
+        const to = targetOf(transition);
+        const target = byId.get(to);
+        const frames = transitionDelay(transition);
+        const stun = fromMove.hitstun;
+        const startup = number(transition.startup ?? (target && target.startup) ?? 0, 0);
+        const impact = frames + startup;
+        const window = transition.cancelWindow ?? transition.window ?? fromMove.cancelWindow ?? { open: 0, close: 8 };
+        let valid = true;
+        let reason = `接续等待 ${frames} + 目标前摇 ${startup} = ${impact} 帧；硬直 ${stun} 帧`;
+        if (!to || !target) {
+          valid = false;
+          reason = '目标招式不存在';
+        } else if (!hitConfirm(transition)) {
+          valid = false;
+          reason = '不是命中确认取消，超出求解范围';
+        } else if (transition.whiffOnly || transition.on === 'whiff' || transition.trigger === 'neutral') {
+          valid = false;
+          reason = '中立或挥空接续，超出求解证明范围';
+        } else if (impact > stun && window && (frames < number(window.open ?? window.start, 0) || frames > number(window.close ?? window.end, Number.POSITIVE_INFINITY))) {
+          valid = false;
+          reason = `取消帧 ${frames} 不在窗口内；命中帧 ${impact} 晚于受击硬直 ${stun}`;
+        } else if (impact > stun) {
+          valid = false;
+          reason = `命中帧 ${impact} 晚于受击硬直 ${stun}`;
+        } else if (window && (frames < number(window.open ?? window.start, 0) || frames > number(window.close ?? window.end, Number.POSITIVE_INFINITY))) {
+          valid = false;
+          reason = `取消帧 ${frames} 不在配置窗口内`;
+        } else {
+          const sourceStance = fromMove.endStance;
+          const targetStance = stanceKind(transition.requiredStance ?? target.stance);
+          if (sourceStance === 'air' && targetStance === 'ground' && !explicitLanding(transition)) {
+            valid = false;
+            reason = '空中接地必须经过明确的落地衔接点';
+          } else if (targetStance === 'air' && sourceStance !== 'air' && !(transition.jumpCancel || transition.input === 'Space' || transition.via === 'jump' || transition.stanceChange === 'air')) {
+            valid = false;
+            reason = '地面到空中必须配置跳跃取消';
+          }
+        }
+        edges.push({
+          from: fromMove.id,
+          to,
+          valid,
+          reason,
+          frames,
+          stun,
+          startup,
+          impact,
+          airResourceFinite: Boolean(fromMove.endStance === 'air' && target && target.stance === 'air' && !transition.renewsAirtime && !fromMove.renewsAirtime),
+          input: transition.input ?? transition.button ?? null,
+          kind: transition.jumpCancel ? 'jumpCancel' : (transition.landingSeam || transition.via === 'landing' ? 'landingCancel' : 'cancel'),
+          demo: transition.demo ?? null,
+          stance: `${fromMove.endStance}->${target ? target.stance : '?'}`,
+        });
+      });
+    });
+    return edges;
+  };
+
+  const findCycles = edges => {
+    const adjacency = new Map();
+    edges.filter(edge => edge.valid).forEach(edge => {
+      if (!adjacency.has(edge.from)) adjacency.set(edge.from, []);
+      adjacency.get(edge.from).push(edge);
+    });
+    const found = [];
+    const seen = new Set();
+    const visit = (start, node, path, edgePath) => {
+      (adjacency.get(node) || []).forEach(edge => {
+        if (edge.to === start) {
+          const closedEdges = [...edgePath, edge];
+          if (closedEdges.length && closedEdges.every(item => item.airResourceFinite)) return;
+          const route = [...path, start];
+          const key = [...path].sort().join('|');
+          if (!seen.has(key)) {
+            seen.add(key);
+            found.push({ route, edges: closedEdges, reason: '有效命中确认取消循环；没有自然受身断点' });
+          }
+          return;
+        }
+        if (path.includes(edge.to) || path.length > edges.length + 1) return;
+        visit(start, edge.to, [...path, edge.to], [...edgePath, edge]);
+      });
+    };
+    adjacency.forEach((_, node) => visit(node, node, [node], []));
+    return found;
+  };
+
+  const analyze = (inputMoves, options = {}) => {
+    const mode = options.mode || 'normal';
+    const moves = addDemo(normalise(inputMoves), mode);
+    const edges = buildEdges(moves, mode);
+    const cycles = findCycles(edges);
+    const safe = cycles.length === 0;
+    let summary;
+    if (safe) {
+      summary = mode === 'normal'
+        ? '配置的确定性招式图中没有发现有效取消循环。'
+        : `演示模式 ${mode} 的循环被时序、架势或有限空中资源约束拒绝。`;
+    } else {
+      summary = `发现 ${cycles.length} 个有效取消循环；路线可在自然受身前重复。`;
+    }
+    return {
+      safe,
+      cycles: cycles.map(cycle => ({ route: cycle.route, reason: cycle.reason, edges: cycle.edges })),
+      edges,
+      summary,
+      scope: '证明仅覆盖招式表中列出的确定性命中确认取消，不处理任意空间或中立接续；空中循环还必须明确续接空中资源。',
+      mode,
+      moves: moves.map(move => ({ id: move.id, stance: move.stance, endStance: move.endStance, hitstun: move.hitstun, duration: move.duration })),
+    };
+  };
+
+  return { analyze };
+})();
+
+if (typeof globalThis !== 'undefined') globalThis.ComboSolver = ComboSolver;
+
+</script>
+<script>
+/* PROTOTYPE — disposable interaction shell. No persistence or external dependencies. */
+const $ = id => document.getElementById(id);
+const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const pct = n => `${Math.round((n ?? 1) * 100)}%`;
+const moveName = id => id ? `${id} · ${Combat.moves[id]?.name || id}` : '中立';
+const key = k => ({type:'key',key:k});
+const dir = d => ({type:'direction',dir:String(d)});
+const wait = n => ({type:'step',frames:n});
+const fixture = name => ({type:'fixture',name});
+const isMove = (s,id) => s.player.move?.id === id;
+const hasEvent = (s,text) => s.events.some(e => e.text.includes(text));
+const result = (ok,detail) => ({ok:!!ok,detail});
+const step = (label,actions,expected,check) => ({label,actions:Array.isArray(actions)?actions:[actions],expected,check});
+const scenarios = [
+ {id:'ground',short:'地面路线',title:'01 · 稳定地面路线：A → B → D',description:'从地面起手，经地面连接到地面收尾。每次后续动作都在命中确认后输入。收尾结束路线，但木桩仍需完成倒地处理。',watch:'3 次命中，倍率 100% → 90% → 80%；收尾不会立即恢复木桩。',steps:[
+  step('A · 地面起手',[key('A'),wait(8)],'5A 命中一次，开放 B / 236C 取消',s=>result(s.combo.hits===1&&isMove(s,'5A')&&Combat.eligibility(s).allowed.includes('5B'),snapshot(s))),
+  step('B · 命中确认后地面连接',[key('B'),wait(5)],'累计 2 hit，最近倍率 90%',s=>result(s.combo.hits===2&&isMove(s,'5B')&&Math.abs(s.combo.lastScale-.9)<1e-8,snapshot(s))),
+  step('D · 地面收尾',[key('D'),wait(6)],'3 hit，累计 352 伤害；连段结束，木桩仍倒地',s=>result(s.combo.hits===3&&s.combo.totalDamage===352&&!s.combo.active&&s.dummy.status==='knockdown',snapshot(s))),
+  step('再按 B · 尝试取消收尾',key('B'),'没有取消资格，仍在 5D，倒地硬直不被清零',s=>result(isMove(s,'5D')&&!Combat.eligibility(s).allowed.length&&s.dummy.stun>0,snapshot(s))),
+  step('等待倒地处理结束',wait(30),'木桩自然恢复中立，最近连段仍保留 3 hit',s=>result(s.dummy.status==='neutral'&&!s.combo.active&&s.combo.hits===3,snapshot(s)))
+ ]},
+ {id:'air',short:'浮空 / 空中路线',title:'02 · 浮空路线：A → 236C → Space → jA → jB → jD',description:'在 A 前摇中输入短方向序列和 C，命中时消费动作缓存，再用独立 Space 跳跃取消，完成追击和空中收尾。',watch:'方向序列不占动作缓存；浮空后玩家先留在地面，按 Space 才跳跃。',steps:[
+  step('A · 地面起手',key('A'),'5A 前摇，尚未命中',s=>result(isMove(s,'5A')&&!s.player.move.hit,snapshot(s))),
+  step('输入 ↓ ↘ →，再按 C',[dir(2),dir(3),dir(6),key('C')],'C 锁定为 236C，等待 5A 命中',s=>result(s.buffer?.moveId==='236C'&&s.combo.hits===0,snapshot(s))),
+  step('推进 4 帧 · 消费浮空缓存',wait(4),'5A 命中后进入 236C，累计 1 hit',s=>result(s.combo.hits===1&&isMove(s,'236C')&&!s.buffer,snapshot(s))),
+  step('推进 6 帧 · 浮空命中',wait(6),'木桩浮空受击；玩家仍在地面，可 jump cancel',s=>result(s.combo.hits===2&&s.dummy.status==='air_stun'&&s.player.stance==='ground'&&Combat.eligibility(s).jump,snapshot(s))),
+  step('Space · 跳跃取消',key('Space'),'玩家进入空中；Space 不占动作缓存',s=>result(s.player.stance==='air'&&!s.buffer&&!s.player.move&&s.combo.active,snapshot(s))),
+  step('A · 浮空追击',[key('A'),wait(4)],'jA 命中，累计 3 hit',s=>result(isMove(s,'jA')&&s.combo.hits===3,snapshot(s))),
+  step('B · 空中连接',[key('B'),wait(4)],'jB 命中，累计 4 hit',s=>result(isMove(s,'jB')&&s.combo.hits===4,snapshot(s))),
+  step('D · 空中收尾',[key('D'),wait(6)],'jD 命中，5 hit 后结束路线；木桩保持倒地处理',s=>result(isMove(s,'jD')&&s.combo.hits===5&&!s.combo.active&&s.dummy.status==='knockdown',snapshot(s)))
+ ]},
+ {id:'buffer_valid',short:'缓存第 6 帧',title:'03 · 六帧缓存的最后一个有效帧',description:'A 在 F1 开始，F9 命中。B 在 F4 输入，因此到命中帧年龄恰好为 5，是六个有效物理帧中的最后一帧。',watch:'命中确认前不能消费；F9 命中后才切换到 B。',steps:[
+  step('A，推进 2 帧',[key('A'),wait(2)],'F3，5A 前摇，尚未命中',s=>result(s.frame===3&&s.combo.hits===0,snapshot(s))),
+  step('B · 提前输入',key('B'),'F4，B 缓存年龄 0',s=>result(s.buffer?.key==='B'&&s.frame-s.buffer.frame===0,snapshot(s))),
+  step('推进 4 帧',wait(4),'F8，缓存年龄 4；仍是 5A',s=>result(s.buffer?.key==='B'&&s.frame-s.buffer.frame===4&&isMove(s,'5A'),snapshot(s))),
+  step('再推进 1 帧',wait(1),'F9，年龄 5 的 B 在命中后被消费',s=>result(s.frame===9&&!s.buffer&&isMove(s,'5B')&&s.combo.hits===1,snapshot(s)))
+ ]},
+ {id:'buffer_expired',short:'缓存超时',title:'04 · 缓存年龄 6：先过期，不能取消',description:'仅把 B 比上一个场景提前一帧。动作键按得更早，不应获得更长的接续窗口。',watch:'F9 同时发生缓存过期和 A 命中；B 必须不再可用。',steps:[
+  step('A，推进 1 帧，再按 B',[key('A'),wait(1),key('B')],'F3，B 进入缓存',s=>result(s.frame===3&&s.buffer?.key==='B',snapshot(s))),
+  step('推进 5 帧',wait(5),'F8，B 缓存年龄 5，尚未过期',s=>result(s.buffer?.key==='B'&&s.frame-s.buffer.frame===5&&s.combo.hits===0,snapshot(s))),
+  step('再推进 1 帧',wait(1),'F9，B 过期；A 命中，但不切换招式',s=>result(s.frame===9&&!s.buffer&&isMove(s,'5A')&&s.combo.hits===1,snapshot(s)))
+ ]},
+ {id:'direction',short:'独立方向历史',title:'05 · 方向序列可以慢于 6 帧动作缓存',description:'把 236 分散在 19 帧里输入，再按 C。完整方向序列仍在默认的 24 帧历史窗口中。',watch:'方向历史与动作缓存寿命独立；识别的招式在动作输入时锁定。',steps:[
+  step('↓，等待 8 帧',[dir(2),wait(8)],'最早方向年龄 8；动作缓存为空',s=>result(s.directions.some(d=>d.dir==='2'&&s.frame-d.frame===8)&&!s.buffer,snapshot(s))),
+  step('↘，等待 8 帧，再输入 →',[dir(3),wait(8),dir(6)],'F19，仍保留 2、3、6 三个方向',s=>result(s.frame===19&&['2','3','6'].every(d=>s.directions.some(v=>v.dir===d)),snapshot(s))),
+  step('C · 识别短方向序列',key('C'),'进入 236C，消费已识别的方向历史',s=>result(isMove(s,'236C')&&s.directions.length===0,snapshot(s)))
+ ]},
+ {id:'direction_expired',short:'方向过期 / 214D',title:'06 · 方向会独立过期；第二组序列有独立语义',description:'过期的 236 不应在很久以后把普通 C 解释为特殊招式。再从新初态输入 214D，验证另一条短方向序列。',watch:'普通 C 与 236C 不同；214D 是地面特殊收尾。',steps:[
+  step('输入 236，等待 24 帧',[dir(2),dir(3),dir(6),wait(24)],'全部方向历史自然过期',s=>result(s.directions.length===0,snapshot(s))),
+  step('C · 普通浮空',key('C'),'进入 5C，不是 236C',s=>result(isMove(s,'5C'),snapshot(s))),
+  step('重置，输入 ↓ ↙ ← + D',[{type:'reset'},dir(2),dir(1),dir(4),key('D')],'进入 214D，成功识别后方向历史为空',s=>result(isMove(s,'214D')&&s.directions.length===0,snapshot(s)))
+ ]},
+ {id:'whiff',short:'挥空禁止取消',title:'07 · 缓存不能绕过命中确认',description:'保持与有效缓存场景相同的输入时机，只把木桩移出攻击范围。缓存虽在有效期内，挥空仍不允许主路线取消。',watch:'不能切换 B；按 Space 也不能制造 jump cancel。',steps:[
+  step('范围外：A，提前缓存 B',[{type:'range',inRange:false},key('A'),wait(2),key('B'),wait(5)],'F9，5A 挥空；0 hit，B 仍未消费',s=>result(s.combo.hits===0&&isMove(s,'5A')&&s.buffer?.key==='B'&&!Combat.eligibility(s).allowed.length,snapshot(s))),
+  step('Space · 尝试跳跃取消',key('Space'),'仍在地面执行 5A；缓存自然过期',s=>result(s.player.stance==='ground'&&isMove(s,'5A')&&!s.buffer,snapshot(s)))
+ ]},
+ {id:'same_frame',short:'同帧命中 / 落地',title:'08 · 同一物理帧：命中优先于落地',description:'诊断初态：jB 距命中 1 帧，玩家距落地 1 帧，木桩硬直只剩 1 帧，已缓存落地接续 5D。它是可控边界初态，不是手动打出的完整路线。',watch:'先命中续上硬直，再处理落地，最后用本帧确认与地面状态消费 5D。',setup:fixture('same_frame'),steps:[
+  step('推进 1 帧 · 结算所有同帧事件',wait(1),'jB 命中，玩家落地，成功进入 5D；连段未被旧硬直归零打断',s=>result(s.player.stance==='ground'&&isMove(s,'5D')&&s.combo.hits===3&&s.combo.active&&!s.buffer,snapshot(s))),
+  step('推进 6 帧 · 地面收尾',wait(6),'5D 命中成为第 4 hit，结束路线，倒地处理仍保留',s=>result(s.combo.hits===4&&!s.combo.active&&s.dummy.status==='knockdown',snapshot(s)))
+ ]},
+ {id:'jump',short:'Jump cancel 配置',title:'09 · Space 独立，并非所有命中都能跳跃取消',description:'先对不支持 jump cancel 的 A 使用 Space，再对支持它的普通 C 使用 Space。C 浮空木桩本身不会自动让玩家跳跃。',watch:'命中确认是必要条件；招式还必须配置允许 jump cancel。',steps:[
+  step('A 命中后按 Space',[key('A'),wait(8),key('Space')],'5A 不能跳跃取消，玩家仍在地面',s=>result(isMove(s,'5A')&&s.player.stance==='ground'&&!Combat.eligibility(s).jump,snapshot(s))),
+  step('重置，C 命中',[{type:'reset'},key('C'),wait(7)],'5C 浮空木桩，玩家地面，具有 jump cancel 资格',s=>result(isMove(s,'5C')&&s.dummy.status==='air_stun'&&s.player.stance==='ground'&&Combat.eligibility(s).jump,snapshot(s))),
+  step('Space · 允许跳跃取消',key('Space'),'玩家空中自由行动；Space 不占动作缓存',s=>result(s.player.stance==='air'&&!s.player.move&&!s.buffer&&s.combo.active,snapshot(s))),
+  step('再次 Space · 不允许二段跳',key('Space'),'仍在同一次跳跃中，剩余空中时间只减少 1 帧',s=>result(s.player.stance==='air'&&!s.buffer&&!Combat.eligibility(s).jump,snapshot(s)))
+ ]},
+ {id:'ground_recovery',short:'地面自然恢复',title:'10 · 地面硬直归零：结束当前连段',description:'诊断初态：木桩地面硬直剩 2 帧，正在进行的连段为 2 hit。等待自然恢复，再开始新一段，倍率应该从首击重新计算。',watch:'自然恢复结束当前连段；新一段不继承旧命中数或倍率。',setup:fixture('ground_recovery'),steps:[
+  step('等待 1 帧',wait(1),'硬直剩 1 帧，连段仍继续',s=>result(s.dummy.stun===1&&s.combo.active,snapshot(s))),
+  step('再等 1 帧',wait(1),'硬直归零，木桩中立，连段结束',s=>result(s.dummy.status==='neutral'&&s.dummy.stun===0&&!s.combo.active,snapshot(s))),
+  step('A · 新一段首击',[key('A'),wait(8)],'重新记作 1 hit、100% 倍率、100 伤害',s=>result(s.combo.hits===1&&s.combo.lastScale===1&&s.combo.totalDamage===100,snapshot(s)))
+ ]},
+ {id:'air_recovery',short:'空中受身 → 落地',title:'11 · 浮空自然受身先断连，落地后再中立',description:'诊断初态：木桩浮空硬直剩 2 帧，距落地还有 12 帧。受身后留在空中已受身状态，此时不再是有效追击目标。',watch:'连段结束和恢复地面中立是两个不同的时刻。',setup:fixture('air_recovery'),steps:[
+  step('推进 2 帧 · 自然受身',wait(2),'木桩空中已受身，连段结束，尚未中立',s=>result(s.dummy.status==='air_recovered'&&!s.combo.active&&s.dummy.airFrames>0,snapshot(s))),
+  step('A · 尝试打已受身木桩',[key('A'),wait(8)],'A 不命中，旧连段仍为 2 hit',s=>result(s.dummy.status==='air_recovered'&&!s.player.move.hit&&s.combo.hits===2,snapshot(s))),
+  step('再推进 1 帧 · 木桩落地',wait(1),'木桩落地才恢复中立；落地不自动恢复连段',s=>result(s.dummy.status==='neutral'&&!s.combo.active,snapshot(s)))
+ ]},
+ {id:'floor',short:'伤害 10% 下限',title:'12 · 高命中数仍保留 10% 伤害',description:'诊断初态明确预置 14 hit，仅验证伤害计算下限，不声称正常路线能够打到 14 hit。然后通过真实招式命中继续计算第 15、16 击。',watch:'没有全局最大命中数；降低伤害不会降至 0，也不会单独强制断连。',setup:fixture('damage_floor'),steps:[
+  step('A · 第 15 次命中',[key('A'),wait(8)],'15 hit；100 基础伤害 × 10% = 10',s=>result(s.combo.hits===15&&s.combo.lastScale===.1&&s.combo.lastDamage===10&&s.combo.active,snapshot(s))),
+  step('B · 第 16 次命中',[key('B'),wait(5)],'16 hit；120 基础伤害 × 10% = 12',s=>result(s.combo.hits===16&&s.combo.lastScale===.1&&s.combo.lastDamage===12&&s.combo.active,snapshot(s)))
+ ]},
+ {id:'single_hit',short:'单次命中 / 覆盖缓存',title:'13 · 一次按键一次命中；缓存采用最新动作',description:'A 前摇中先按 D，再按 B。原型使用单槽缓存：最新动作覆盖旧动作。随后等待 B 的整个活跃期，验证同一招式不会逐帧重复命中。',watch:'缓存只保留 B；活跃期多个物理帧不会重复累计命中。',steps:[
+  step('A 前摇中按 D，再按 B',[key('A'),wait(2),key('D'),key('B')],'F5，缓存为 B；D 已被覆盖',s=>result(s.buffer?.key==='B'&&s.frame===5,snapshot(s))),
+  step('推进 4 帧',wait(4),'A 命中并消费 B；累计 1 hit',s=>result(isMove(s,'5B')&&s.combo.hits===1&&!s.buffer,snapshot(s))),
+  step('推进 7 帧 · 跨过 B 活跃期',wait(7),'累计仍为 2 hit，B 已命中一次',s=>result(isMove(s,'5B')&&s.player.move.hit&&s.combo.hits===2,snapshot(s)))
+ ]},
+ {id:'no_neutral_link',short:'禁止绕过取消',title:'14 · 不取消，等待收招后再按 A',description:'A 命中后不进行取消，等待玩家收招，但木桩仍有硬直。此时重新按 A 不能绕过主路线的命中确认取消规则，反复刷新硬直。',watch:'玩家恢复自由行动不等于获得接续资格；不能形成未配置的 A → A 循环。',steps:[
+  step('A 命中，然后等待收招',[key('A'),wait(22)],'玩家已收招，木桩仍在地面受击硬直',s=>result(!s.player.move&&s.dummy.status==='ground_stun'&&s.combo.hits===1,snapshot(s))),
+  step('再按 A，等待前摇',[key('A'),wait(8)],'不构成第二次连段命中，命中数仍为 1',s=>result(s.combo.hits===1,snapshot(s))),
+  step('等待恢复，再开始新一段',[wait(30),key('A'),wait(8)],'木桩自然恢复后，可以重新开始 1 hit / 100% 的新连段',s=>result(s.combo.hits===1&&s.combo.lastScale===1&&s.combo.active,snapshot(s)))
+ ]},
+ {id:'solver',short:'Solver 循环检测',title:'15 · Combo Solver：有效循环与无效回边',description:'先检查当前招式表，再注入三种开发期示例。有效地面循环应报告风险；时间不足、状态不符的结构循环必须被排除。',watch:'检查目标招式前摇、取消窗口、受击剩余时间和姿态；不依靠命中数上限阻止循环。',steps:[
+  step('检查当前招式表',{type:'solver',mode:'normal'},'当前路线无有效循环；存在可行的地面与空中接续',(_,r)=>result(r.safe&&r.edges.some(e=>e.from==='5A'&&e.to==='5B'&&e.valid)&&r.edges.some(e=>e.from==='jA'&&e.to==='jB'&&e.valid),r.summary)),
+  step('注入有效地面回边',{type:'solver',mode:'effective_loop'},'检测 5A → 5B → 5A 循环',(_,r)=>result(!r.safe&&r.cycles.some(c=>c.route.includes('5A')&&c.route.includes('5B')),r.summary)),
+  step('注入时间不足的回边',{type:'solver',mode:'late_loop'},'结构上有回边，但自然受身或取消窗口阻止其接续',(_,r)=>result(r.safe&&r.edges.some(e=>!e.valid&&/帧|硬直|窗口|时间/.test(e.reason)),r.summary)),
+  step('注入状态不符的回边',{type:'solver',mode:'stance_loop'},'缺少落地条件的空中 → 地面接续不可行',(_,r)=>result(r.safe&&r.edges.some(e=>!e.valid&&/空中|落地|地面|状态/.test(e.reason)),r.summary))
+ ]}
+];
+
+let state = Combat.create();
+let selected = 0, progress = -1, guideActive = false;
+let outcomes = {}, stepRecords = [], statusNote = '已准备好。点击动作键，或从下方引导场景开始。';
+let playing = false, queue = [], previousTime = 0, accumulated = 0;
+let solverMode = 'normal', solverResult = ComboSolver.analyze(Combat.moves,{mode:solverMode});
+const heldDirections = new Set();
+const statusNames = {neutral:'中立',ground_stun:'地面受击硬直',air_stun:'浮空受击',air_recovered:'空中已受身',knockdown:'倒地处理'};
+
+function snapshot(s) {
+ return `F${s.frame}｜${moveName(s.player.move?.id)}｜玩家${s.player.stance==='air'?'空中':'地面'}｜木桩${statusNames[s.dummy.status]}（硬直 ${s.dummy.stun}）｜${s.combo.hits} hit｜${s.combo.active?'连段继续':'连段结束 / 尚未开始'}｜缓存 ${s.buffer ? s.buffer.key+' / 年龄 '+(s.frame-s.buffer.frame):'空'}`;
+}
+function renderState() {
+ const s=state,m=s.player.move,def=m?Combat.moves[m.id]:null,e=Combat.eligibility(s);
+ $('frame').textContent=`F ${String(s.frame).padStart(4,'0')}`;
+ $('mode-label').textContent=playing?'实时练习':'逐帧 / 暂停';
+ $('move-name').textContent=moveName(m?.id);
+ const phaseLabels={startup:'前摇',active:'活跃',recovery:'后摇',neutral:'中立','air-neutral':'空中自由行动'};
+ $('move-phase').textContent=m?`${phaseLabels[Combat.phase(s)]||Combat.phase(s)} · 招式年龄 ${m.age} 帧 · ${m.hit?'已命中确认':'尚未命中确认'}`:'可输入动作键开始招式';
+ $('move-meter').style.width=m?`${Math.min(100,100*m.age/((def.startup||1)+(def.active||1)+(def.recovery||1)))}%`:'0%';
+ $('player-state').textContent=s.player.stance==='air'?'空中':'地面';
+ $('player-detail').textContent=`${m?(m.followup?'执行合法接续':'执行独立招式'):'自由行动'} · ${s.player.stance==='air'?'距落地 '+s.player.airFrames+' 帧':'已着地'}${s.fixture?' · 诊断预置状态':''}`;
+ $('dummy-state').textContent=statusNames[s.dummy.status]||s.dummy.status;
+ $('dummy-detail').textContent=`剩余硬直 ${s.dummy.stun} 帧 · ${s.dummy.airFrames>0?'距落地 '+s.dummy.airFrames+' 帧':'已着地'} · ${s.settings.inRange?'范围内':'范围外'}`;
+ $('buffer-key').textContent=s.buffer?`${s.buffer.key} → ${s.buffer.moveId || s.buffer.key}`:'空';
+ const age=s.buffer?s.frame-s.buffer.frame:0;
+ $('buffer-detail').textContent=s.buffer?`输入于 F${s.buffer.frame} · 年龄 ${age} · 还可用 ${Math.max(0,6-age)} 帧（含当前帧）`:'输入帧年龄 0；年龄 6 先过期。最新动作覆盖旧动作。';
+ $('buffer-meter').style.width=s.buffer?`${Math.max(0,(6-age)/6)*100}%`:'0%';
+ $('direction-label').textContent=`方向输入历史 · 独立 ${s.settings.directionWindow} 帧窗口`;
+ $('directions').innerHTML=s.directions.length?s.directions.map(d=>`<span class="token"><b>${esc(d.dir)}</b> <span class="mono">F${d.frame}</span> · ${s.frame-d.frame}帧前</span>`).join(''):'<span class="small quiet">空 · 点击方向按钮开始记录</span>';
+ $('cancel-status').textContent=e.allowed.length||e.jump?'可取消':'不可取消';
+ $('cancel-status').className='value '+(e.allowed.length||e.jump?'pass':'');
+ $('cancel-detail').textContent=[e.allowed.length?'可接 '+e.allowed.map(id=>moveName(id)).join(' / '):'',e.jump?'Space：允许 jump cancel':'Space：无 jump cancel 资格',e.reason].filter(Boolean).join('；');
+ $('hits').textContent=s.combo.hits;
+ $('scale').textContent=s.combo.hits?pct(s.combo.lastScale):'—';
+ $('damage').textContent=Number(s.combo.totalDamage||0).toFixed(1).replace(/\.0$/,'');
+ $('damage-detail').textContent=`最近一击 ${Number(s.combo.lastDamage||0).toFixed(1)} 伤害 · ${s.combo.active?'下一击倍率 '+pct(Combat.scale(s.combo.hits+1,s.settings.scaleStep)):'下一段首击倍率 100%'} · 最低保留 10%`;
+ $('combo-route').textContent=(s.combo.route||[]).join(' → ')||'命中后记录招式路线';
+ $('combo-status').textContent=s.combo.active?'继续':s.combo.hits?'已结束':'尚未开始';
+ $('combo-status').className='value '+(s.combo.active?'pass':'');
+ $('combo-detail').textContent=s.combo.active?'木桩尚未受身；当前路线仍有接续机会。':s.combo.endReason||'首次有效命中时开始计算。';
+ const stages=s.trace?.length?s.trace:['输入','命中','受击应用','运动 / 落地','取消','消费缓存'];
+ $('trace').innerHTML=stages.map((v,i)=>`<span${/命中|落地/.test(v)?' class="event"':''}>${i+1}. ${esc(v)}</span>`).join('');
+ $('last-action').textContent=statusNote;
+ $('range').checked=s.settings.inRange;
+ $('log').innerHTML=s.events.length?[...s.events].reverse().map(ev=>`<li class="${ev.kind==='hit'?'hit':''}"><time>F${ev.frame}</time><span>${esc(ev.text)}</span></li>`).join(''):'<li><time>F0</time><span>训练场已重置，等待输入。</span></li>';
+}
+function renderGuides() {
+ $('coverage').textContent=`${Object.values(outcomes).filter(r=>r.ok).length} / ${scenarios.length} 场景符合预期`;
+ $('scenario-tabs').innerHTML=scenarios.map((sc,i)=>`<button class="tab" role="tab" id="tab-${sc.id}" aria-selected="${i===selected}" aria-controls="scenario-panel" data-scenario="${i}">${esc(sc.short)}<span class="mark ${outcomes[sc.id]?(outcomes[sc.id].ok?'pass':'fail'):'pending'}">${outcomes[sc.id]?(outcomes[sc.id].ok?'✓':'✕'):'·'}</span></button>`).join('');
+ const sc=scenarios[selected];
+ $('scenario-panel').setAttribute('aria-labelledby',`tab-${sc.id}`);
+ $('scenario-title').textContent=sc.title;
+ $('scenario-desc').textContent=sc.description;
+ $('scenario-watch').textContent='观察重点：'+sc.watch;
+ $('scenario-steps').innerHTML=sc.steps.map((st,i)=>{
+  const record=guideActive?stepRecords[i]:null;
+  return `<div class="step ${record?'done':''}"><span class="step-num">${record?(record.ok?'✓':'✕'):i+1}</span><div><button data-guide-step="${i}" ${!guideActive||i!==progress?'disabled':''}>${esc(st.label)}</button><p class="expected">预期：${esc(st.expected)}${record?`<br><span class="${record.ok?'pass':'fail'}">观测：${esc(record.detail)}</span>`:''}</p></div></div>`;
+ }).join('');
+ const saved=outcomes[sc.id];
+ $('scenario-verdict').textContent=guideActive?(progress===sc.steps.length?`${saved?.ok?'✓ 符合预期':'✕ 不符合预期'} · ${saved?.detail||''}`:`已完成 ${progress} / ${sc.steps.length} 步；点击右侧下一步。`):saved?`上次结果：${saved.ok?'✓ 符合预期':'✕ 不符合预期'} · ${saved.detail}`:'尚未运行。点击「从头开始」载入已知初态。';
+}
+function renderSolver() {
+ const r=solverResult;
+ $('solver-mode').value=solverMode;
+ $('solver-result').innerHTML=`<strong class="${r.safe?'pass':'fail'}">${r.safe?'✓ 未发现可无限重复的有效循环':'✕ 检测到有效循环'}</strong><p>${esc(r.summary)}</p>${r.cycles.map(c=>`<p class="mono">${esc(c.route.join(' → '))}</p>`).join('')}<p class="quiet">范围：${esc(r.scope)}</p>`;
+ $('solver-edges').innerHTML=`<table><thead><tr><th>接续</th><th>可行性</th><th>依据</th></tr></thead><tbody>${r.edges.map(ed=>`<tr><td>${esc(ed.from)} → ${esc(ed.to)}</td><td class="${ed.valid?'pass':'quiet'}">${ed.valid?'有效':'排除'}</td><td>${esc(ed.reason)}</td></tr>`).join('')}</tbody></table>`;
+}
+function renderMoves() {
+ $('move-table').innerHTML='<table><thead><tr><th>招式 / 输入</th><th>前摇 / 活跃 / 后摇</th><th>基础伤害 / 硬直</th><th>命中后的接续</th><th>jump cancel</th></tr></thead><tbody>'+Object.entries(Combat.moves).map(([id,m])=>`<tr><td>${esc(moveName(id))}</td><td>${m.startup} / ${m.active} / ${m.recovery} 帧</td><td>${m.damage} / ${m.stun ?? m.hitstun} 帧</td><td>${esc((m.cancels || []).map(x=>typeof x==='string'?x:x.to).join(' / ')||'路线终点')}${m.landingCancels?.length?'；同帧落地可接 '+esc(m.landingCancels.join(' / ')):''}</td><td>${m.jumpCancel?'允许':'不允许'}</td></tr>`).join('')+'</tbody></table>';
+}
+function pause() {
+ playing=false;queue=[];heldDirections.clear();previousTime=0;accumulated=0;
+ $('play').textContent='▶ 实时练习';
+}
+function leaveGuide() { guideActive=false; progress=-1; stepRecords=[]; }
+function dispatch(action) {
+ leaveGuide();
+ if(playing&&(action.type==='key'||action.type==='direction')) { queue.push(action); statusNote='输入已排入下一物理帧。'; }
+ else { state=Combat.act(state,action); statusNote=snapshot(state); }
+ renderState();renderGuides();
+}
+function startScenario(index=selected) {
+ pause();selected=index;state=Combat.create();progress=0;guideActive=true;stepRecords=[];
+ solverMode='normal';solverResult=ComboSolver.analyze(Combat.moves,{mode:solverMode});
+ const sc=scenarios[selected];
+ if(sc.setup) state=Combat.act(state,sc.setup);
+ statusNote=`引导「${sc.short}」已开始。${sc.setup?'已加载明确标注的诊断初态。':'训练场已重置为默认参数。'}`;
+ renderState();renderGuides();renderSolver();
+}
+function runStep() {
+ const sc=scenarios[selected];if(!guideActive||progress>=sc.steps.length)return;
+ const st=sc.steps[progress];
+ for(const a of st.actions) {
+  if(a.type==='solver') {solverMode=a.mode;solverResult=ComboSolver.analyze(Combat.moves,{mode:solverMode});}
+  else if(a.type==='reset') state=Combat.create();
+  else state=Combat.act(state,a);
+ }
+ const observed=st.check?st.check(state,solverResult):result(true,snapshot(state));
+ stepRecords.push({...observed,frame:state.frame,label:st.label});progress++;
+ statusNote=`${observed.ok?'✓':'✕'} ${st.label}：${observed.detail}`;
+ if(progress===sc.steps.length) outcomes[sc.id]={ok:stepRecords.every(r=>r.ok),detail:stepRecords.filter(r=>!r.ok).map(r=>r.detail).join('；')||`${progress} 步观测符合预期`,records:stepRecords.map(r=>({...r}))};
+ renderState();renderGuides();renderSolver();
+}
+function runScenario(index=selected) { startScenario(index);while(progress<scenarios[index].steps.length)runStep(); }
+function loop(now) {
+ if(playing) {
+  if(previousTime)accumulated+=Math.min(now-previousTime,100)*Number($('speed').value);
+  previousTime=now;let changed=false;
+  while(accumulated>=1000/60) {state=Combat.act(state,queue.shift()||wait(1));accumulated-=1000/60;changed=true;}
+  if(changed){statusNote=snapshot(state);renderState();}
+ }
+ requestAnimationFrame(loop);
+}
+function exportRecord() {
+ const rows=scenarios.map(sc=>`| ${sc.title} | ${outcomes[sc.id]?(outcomes[sc.id].ok?'符合预期':'不符合预期'):'尚未运行'} | ${outcomes[sc.id]?.detail||'—'} |`).join('\n');
+ const text=`# FTG Demo 连段逻辑原型记录 — PROTOTYPE\n\n导出时间：${new Date().toLocaleString()}\n\n这是原型观测，不是正式设计验收。手感需要人工确认。\n\n## 场景结果（默认参数）\n\n| 场景 | 结果 | 说明 |\n| --- | --- | --- |\n${rows}\n\n## 逐步观测\n\n${scenarios.filter(sc=>outcomes[sc.id]).map(sc=>'### '+sc.title+'\n\n'+outcomes[sc.id].records.map(r=>`- F${r.frame} ${r.ok?'✓':'✕'} ${r.label}：${r.detail}`).join('\n')).join('\n\n')}\n\n## 当前自由操作参数与状态\n\n方向窗口：${state.settings.directionWindow} 帧；伤害每击递减：${state.settings.scaleStep}；动作缓存：6 帧，年龄 0–5 有效。\n\n${snapshot(state)}\n\n\`\`\`json\n${JSON.stringify(state,null,2)}\n\`\`\`\n\n## 我的手感与拟调整项\n\n${$('notes').value||'尚未填写；具体帧数尚未由人工确认。'}\n\n## 当前 Solver 观测\n\n模式：${solverMode}\n\n${solverResult.summary}\n\n范围：${solverResult.scope}\n`;
+ const url=URL.createObjectURL(new Blob([text],{type:'text/markdown;charset=utf-8'}));
+ const a=document.createElement('a');a.href=url;a.download='ftg-combo-prototype-record.md';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ statusNote='实验记录已生成下载，包含场景结果、当前状态和你的调整意见。';renderState();
+}
+document.addEventListener('click',event=>{
+ const button=event.target.closest('button');if(!button)return;
+ if(button.dataset.key)dispatch(key(button.dataset.key));
+ if(button.dataset.dir)dispatch(dir(button.dataset.dir));
+ if(button.dataset.frames){pause();dispatch(wait(Number(button.dataset.frames)));}
+ if(button.dataset.scenario!==undefined)startScenario(Number(button.dataset.scenario));
+ if(button.dataset.guideStep!==undefined)runStep();
+});
+$('reset').onclick=()=>{pause();leaveGuide();state=Combat.create(state.settings);statusNote='训练场已重置；已完成的引导记录保留。';renderState();renderGuides();};
+$('range').onchange=()=>dispatch({type:'range',inRange:$('range').checked});
+$('play').onclick=()=>{if(playing)pause();else{leaveGuide();playing=true;previousTime=0;accumulated=0;$('play').textContent='Ⅱ 暂停';}renderState();renderGuides();};
+$('speed').onchange=()=>{accumulated=0;previousTime=0;};
+$('start-scenario').onclick=()=>startScenario();
+$('run-scenario').onclick=()=>runScenario();
+$('run-all').onclick=()=>{for(let i=0;i<scenarios.length;i++)runScenario(i);statusNote=`全部引导已运行：${Object.values(outcomes).filter(r=>r.ok).length}/${scenarios.length} 场景符合预期。点击各标签可重新逐步观察。`;renderState();};
+$('solve').onclick=()=>{solverMode=$('solver-mode').value;solverResult=ComboSolver.analyze(Combat.moves,{mode:solverMode});renderSolver();};
+$('apply-settings').onclick=()=>{pause();leaveGuide();const directionWindow=Math.max(6,Math.min(90,Math.round(Number($('direction-window').value)||24))),scaleStep=Math.max(0,Math.min(.5,Number($('scale-step').value)||0));state=Combat.create({directionWindow,scaleStep});$('direction-window').value=directionWindow;$('scale-step').value=scaleStep;statusNote=`训练场已重置：方向历史 ${directionWindow} 帧，每击递减 ${pct(scaleStep)}；引导场景仍使用默认参数。`;renderState();renderGuides();};
+$('export').onclick=exportRecord;
+function directionFromHeld() {const x=Number(heldDirections.has('ArrowRight'))-Number(heldDirections.has('ArrowLeft')),y=Number(heldDirections.has('ArrowUp'))-Number(heldDirections.has('ArrowDown'));return String(5+x+y*3);}
+document.addEventListener('keydown',event=>{
+ if(event.target.closest('input,textarea,select,[contenteditable=true]'))return;
+ if(event.repeat){if(event.code==='Space'||event.code.startsWith('Arrow'))event.preventDefault();return;}
+ if(event.code.startsWith('Arrow')){event.preventDefault();heldDirections.add(event.code);dispatch(dir(directionFromHeld()));return;}
+ const k=event.code==='Space'?'Space':({KeyA:'A',KeyB:'B',KeyC:'C',KeyD:'D'}[event.code]);
+ if(k){event.preventDefault();dispatch(key(k));}
+});
+document.addEventListener('keyup',event=>{if(event.code.startsWith('Arrow')&&heldDirections.has(event.code)){event.preventDefault();heldDirections.delete(event.code);dispatch(dir(directionFromHeld()));}});
+window.addEventListener('blur',()=>{pause();renderState();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){pause();renderState();}});
+renderState();renderGuides();renderSolver();renderMoves();requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>
