@@ -30,18 +30,22 @@ const HEAD_GAP := 2.0
 const VISOR_SIZE := Vector2(10, 6)
 const VISOR_OFFSET_X := 10.0
 
-# --- 招式（startup / active / recovery 固定窗口）---
+# --- 战斗会话（固定 60 物理帧/秒，全部数值以帧为单位）---
+const PHYSICS_FPS := 60.0
+const PHYSICS_TICK := 1.0 / PHYSICS_FPS
+
+# --- 招式（startup / active / recovery 固定窗口，单位：物理帧）---
 const ATTACK_DAMAGE := 10
-const ATTACK_STARTUP_TIME := 0.08
-const ATTACK_ACTIVE_TIME := 0.12
-const ATTACK_RECOVERY_TIME := 0.22
+const ATTACK_STARTUP_FRAMES := 5
+const ATTACK_ACTIVE_FRAMES := 7
+const ATTACK_RECOVERY_FRAMES := 13
 const ATTACK_HITBOX_SIZE := Vector2(64, 60)
 const ATTACK_HITBOX_GAP := 4.0
 
 # --- 受击反馈 ---
 const ATTACK_KNOCKBACK := 320.0
 const ATTACK_KNOCKBACK_UP := 110.0
-const HITSTUN_TIME := 0.20
+const HITSTUN_FRAMES := 12
 const HIT_FLASH_TIME := 0.10
 
 # --- 木桩 ---
@@ -75,6 +79,7 @@ const HINT_COLOR := Color(0.85, 0.87, 0.92)
 
 # --- 辅助 ---
 const HINT_OFFSET := Vector2(8, 6)
+const STATUS_OFFSET := Vector2(560, 6)
 
 
 ## 物理层号（1 起算）转 collision_layer/mask 用的位掩码。
@@ -85,3 +90,13 @@ static func layer_bit(layer_number: int) -> int:
 ## 角色站上地面时身体中心的 y 坐标。
 static func ground_stand_y() -> float:
 	return GROUND_Y - BODY_SIZE.y * 0.5
+
+
+## 角色身体中心允许的最小 x（贴左墙）。
+static func stage_left_limit() -> float:
+	return WALL_THICKNESS + BODY_SIZE.x * 0.5
+
+
+## 角色身体中心允许的最大 x（贴右墙）。
+static func stage_right_limit() -> float:
+	return STAGE_WIDTH - WALL_THICKNESS - BODY_SIZE.x * 0.5
