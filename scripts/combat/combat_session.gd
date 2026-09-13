@@ -25,6 +25,8 @@ var player_velocity: Vector2
 var player_facing := 1
 var player_phase: PlayerPhase = PlayerPhase.NEUTRAL
 var player_on_ground := true
+## 当前执行的招式 id（空闲时为空串）。
+var player_move_id := ""
 
 # --- 可观察的木桩状态 ---
 var dummy_position: Vector2
@@ -35,12 +37,39 @@ var dummy_on_ground := true
 ## 剩余地面受击硬直帧数（含当前帧；归零即自然受身）。
 var dummy_hitstun_left := 0
 
+# --- 可观察的连段状态 ---
+## 当前/最近一段连段的命中数；连段结束后保留，直到下一段首击重新计数。
+var combo_hits := 0
+## 连段是否仍在继续（收尾、取消窗口关闭、招式收招未接续或木桩自然受身时结束）。
+var combo_active := false
+## 当前/最近一段连段的累计伤害。
+var combo_total_damage := 0.0
+## 最近一次命中的伤害倍率与实际伤害。
+var combo_last_scale := 1.0
+var combo_last_damage := 0.0
+
 var _moves: Dictionary = {}
 var _current_move: MoveData = null
 var _move_frame := 0
 var _hit_once_this_move := false
+## 本招是否已命中确认（命中确认取消的必要条件；挥空永远为 false）。
+var _move_hit_confirmed := false
+var _hit_confirm_frame := 0
+## 本招是否为连段内的合法接续（决定能否命中仍在受击中的木桩）。
+var _move_is_followup := false
 var _frame_input := FrameInput.new()
 var _pending_hit: MoveData = null
+
+## 会话帧计数（从 1 开始）：同时为动作缓存与取消窗口计龄。
+var _frame_index := 0
+
+# --- 动作键单槽缓存（年龄 0–5 有效，年龄 6 先过期，最新输入覆盖旧输入）---
+var _buffered_key := ""
+var _buffered_move_id := ""
+var _buffered_at := 0
+
+## 本帧开放的命中确认取消目标（招式 id）。
+var _cancel_targets: Array[String] = []
 
 
 func _init(move_table: Dictionary = {}) -> void:
@@ -55,28 +84,42 @@ func reset_to_initial_state() -> void:
 	player_facing = 1
 	player_phase = PlayerPhase.NEUTRAL
 	player_on_ground = true
+	player_move_id = ""
 	dummy_position = Vector2(GameParams.DUMMY_SPAWN_X, GameParams.ground_stand_y())
 	dummy_velocity = Vector2.ZERO
 	dummy_hp = GameParams.DUMMY_MAX_HP
 	dummy_state = DummyState.NEUTRAL
 	dummy_on_ground = true
 	dummy_hitstun_left = 0
+	combo_hits = 0
+	combo_active = false
+	combo_total_damage = 0.0
+	combo_last_scale = 1.0
+	combo_last_damage = 0.0
 	_current_move = null
 	_move_frame = 0
 	_hit_once_this_move = false
+	_move_hit_confirmed = false
+	_hit_confirm_frame = 0
+	_move_is_followup = false
 	_pending_hit = null
+	_frame_input = FrameInput.new()
+	_frame_index = 0
+	_clear_buffer()
+	_cancel_targets.clear()
 
 
 ## 结算一个物理帧，返回该帧产生的战斗事件（按结算发生顺序排列）。
 func step(input: FrameInput) -> Array[CombatEvent]:
 	var events: Array[CombatEvent] = []
+	_frame_index += 1
 	_frame_input = input
 	_phase_input()
 	_phase_hit_detection()
 	_phase_apply_hits(events)
 	_phase_motion(events)
 	_phase_cancel()
-	_phase_consume_buffer()
+	_phase_consume_buffer(events)
 	return events
 
 
@@ -92,37 +135,63 @@ func player_attack_rect() -> Rect2:
 # --- 结算管线（顺序不可调换）---
 
 func _phase_input() -> void:
-	## 1. 记录输入：缓存本帧输入并按输入起手招式；跳跃与移动在运动阶段生效。
-	if _frame_input.attack_pressed and player_phase == PlayerPhase.NEUTRAL:
-		_start_move(_moves["A"])
+	## 1. 记录输入：到期的缓存先过期，再记录本帧动作键（最新输入覆盖旧输入）。
+	##    动作键在输入帧锁定为具体招式；跳跃与移动在运动阶段生效，Space 不占缓存。
+	if _buffered_key != "" and _frame_index - _buffered_at >= GameParams.ACTION_BUFFER_FRAMES:
+		_clear_buffer()
+	if _frame_input.action_key != "":
+		_buffered_key = _frame_input.action_key
+		_buffered_at = _frame_index
+		_buffered_move_id = _resolve_action(_frame_input.action_key)
 
 
 func _phase_hit_detection() -> void:
 	## 2. 命中判定：判定帧内检查命中框与木桩身体的几何重叠。
-	## 同一次出招对同一木桩最多命中一次；命中的应用推迟到下一阶段。
+	##    木桩中立时可被任何招式命中；受击中只有连段内的合法接续招式可以继续命中，
+	##    没有取消资格的独立招式不能绕过取消条件追击。同一次出招最多命中一次。
 	_pending_hit = null
 	if player_phase != PlayerPhase.ACTIVE or _hit_once_this_move:
 		return
-	if player_attack_rect().intersects(_dummy_body_rect()):
-		_hit_once_this_move = true
-		_pending_hit = _current_move
+	if not player_attack_rect().intersects(_dummy_body_rect()):
+		return
+	if not _can_hit_dummy():
+		return
+	_hit_once_this_move = true
+	_pending_hit = _current_move
 
 
 func _phase_apply_hits(events: Array[CombatEvent]) -> void:
-	## 3. 受击应用：结算伤害、受击状态、硬直与击退。
+	## 3. 受击应用：结算连段伤害递减、受击状态、硬直与击退。
 	if _pending_hit == null:
 		return
-	dummy_hp = maxf(dummy_hp - _pending_hit.base_damage, 0.0)
-	match _pending_hit.hit_result:
+	var move := _pending_hit
+	if not combo_active or dummy_state == DummyState.NEUTRAL:
+		combo_hits = 0
+		combo_total_damage = 0.0
+	combo_active = true
+	combo_hits += 1
+	combo_last_scale = snappedf(
+		maxf(GameParams.COMBO_DAMAGE_FLOOR, 1.0 - (combo_hits - 1) * GameParams.COMBO_DAMAGE_DECAY),
+		0.000001
+	)
+	combo_last_damage = snappedf(move.base_damage * combo_last_scale, 0.1)
+	combo_total_damage = snappedf(combo_total_damage + combo_last_damage, 0.1)
+	dummy_hp = maxf(dummy_hp - combo_last_damage, 0.0)
+	match move.hit_result:
 		MoveData.HitResult.GROUND_HITSTUN:
 			dummy_state = DummyState.GROUND_HITSTUN
-			dummy_hitstun_left = _pending_hit.hitstun_frames
+			dummy_hitstun_left = move.hitstun_frames
 		_:
-			push_error("未支持的命中结果类型: %d" % _pending_hit.hit_result)
-	dummy_velocity.x = player_facing * _pending_hit.knockback
+			push_error("未支持的命中结果类型: %d" % move.hit_result)
+	dummy_velocity.x = player_facing * move.knockback
 	if dummy_on_ground:
-		dummy_velocity.y = -_pending_hit.knockback_up
-	events.append(CombatEvent.hit(_pending_hit.base_damage, player_facing))
+		dummy_velocity.y = -move.knockback_up
+	_move_hit_confirmed = true
+	_hit_confirm_frame = _frame_index
+	events.append(CombatEvent.hit(combo_last_damage, player_facing, combo_hits))
+	if move.is_finisher:
+		## 收尾结束连段路线，但不主动清除木桩的受击/倒地处理。
+		_end_combo(CombatEvent.ComboEndReason.FINISHER, events)
 	_pending_hit = null
 
 
@@ -132,17 +201,42 @@ func _phase_motion(events: Array[CombatEvent]) -> void:
 	_motion_player()
 	_motion_dummy(events)
 	_resolve_body_overlap()
-	_advance_move()
+	_advance_move(events)
 
 
 func _phase_cancel() -> void:
-	## 5. 取消判定：命中确认取消的资格与窗口检查属于后续 issue，当前无操作。
-	pass
+	## 5. 取消判定：只有已命中确认、仍在取消窗口内且木桩仍处于可追击的受击状态时，
+	##    才开放本招配置的取消目标；挥空不产生任何取消资格。
+	_cancel_targets.clear()
+	if _current_move == null or not _move_hit_confirmed or not combo_active:
+		return
+	if dummy_state != DummyState.GROUND_HITSTUN:
+		return
+	var age := _frame_index - _hit_confirm_frame
+	if age < 0 or age > _current_move.cancel_window_frames:
+		return
+	for move_id in _current_move.cancel_targets:
+		var target := _moves.get(move_id) as MoveData
+		if target != null and _stance_matches(target):
+			_cancel_targets.append(move_id)
 
 
-func _phase_consume_buffer() -> void:
-	## 6. 消费缓存：动作键缓存的消费属于后续 issue，当前无操作。
-	pass
+func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
+	## 6. 消费缓存：空闲时按缓存起手独立招式；命中确认取消窗口内按取消资格
+	##    转入下一招。取消资格不足或缓存已过期时输入作废。
+	if _buffered_move_id != "":
+		var buffered := _moves.get(_buffered_move_id) as MoveData
+		if buffered != null and _stance_matches(buffered):
+			if _current_move != null and _cancel_targets.has(_buffered_move_id):
+				_start_move(_buffered_move_id, buffered, true)
+				_clear_buffer()
+			elif _current_move == null:
+				_start_move(_buffered_move_id, buffered, false)
+				_clear_buffer()
+	## 命中确认取消窗口关闭且没有接续时连段结束；木桩受击处理不受影响。
+	if _current_move != null and _move_hit_confirmed and combo_active \
+			and _frame_index - _hit_confirm_frame > _current_move.cancel_window_frames:
+		_end_combo(CombatEvent.ComboEndReason.CANCEL_WINDOW_CLOSED, events)
 
 
 # --- 运动细节 ---
@@ -199,6 +293,7 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 		if dummy_hitstun_left == 0:
 			dummy_state = DummyState.NEUTRAL
 			events.append(CombatEvent.dummy_recovered())
+			_end_combo(CombatEvent.ComboEndReason.DUMMY_RECOVERED, events)
 
 
 ## 玩家与木桩身体不互相穿透：垂直重叠时把玩家沿水平方向推出木桩（木桩不动）。
@@ -215,8 +310,8 @@ func _resolve_body_overlap() -> void:
 		player_velocity.x = 0.0
 
 
-func _advance_move() -> void:
-	## 招式帧计数在运动阶段末尾推进：按下攻击的当帧为第 0 帧。
+func _advance_move(events: Array[CombatEvent]) -> void:
+	## 招式帧计数在运动阶段末尾推进。招式在消费阶段起手，起手帧即第 1 帧。
 	if _current_move == null:
 		return
 	_move_frame += 1
@@ -227,17 +322,61 @@ func _advance_move() -> void:
 	elif _move_frame < _current_move.total_frames():
 		player_phase = PlayerPhase.RECOVERY
 	else:
+		## 招式收招：没有通过命中确认取消接续时连段结束。
 		player_phase = PlayerPhase.NEUTRAL
-		_current_move = null
-		_move_frame = 0
-		_hit_once_this_move = false
+		_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
+		_clear_current_move()
 
 
-func _start_move(move: MoveData) -> void:
+func _start_move(move_id: String, move: MoveData, is_followup: bool) -> void:
 	_current_move = move
+	player_move_id = move_id
+	_move_frame = 1
+	_hit_once_this_move = false
+	_move_hit_confirmed = false
+	_hit_confirm_frame = 0
+	_move_is_followup = is_followup
+	player_phase = PlayerPhase.STARTUP
+
+
+func _clear_current_move() -> void:
+	_current_move = null
 	_move_frame = 0
 	_hit_once_this_move = false
-	player_phase = PlayerPhase.STARTUP
+	_move_hit_confirmed = false
+	_hit_confirm_frame = 0
+	_move_is_followup = false
+	player_move_id = ""
+
+
+func _clear_buffer() -> void:
+	_buffered_key = ""
+	_buffered_move_id = ""
+
+
+func _resolve_action(action_key: String) -> String:
+	## 动作键在输入帧锁定为具体招式 id：地面查 "5"+键、空中查 "j"+键；未配置返回空串。
+	var move_id := ("j" if not player_on_ground else "5") + action_key
+	return move_id if _moves.has(move_id) else ""
+
+
+func _can_hit_dummy() -> bool:
+	## 木桩中立时可被任何招式命中；受击中只有连段内的合法接续招式可以继续命中。
+	if dummy_state == DummyState.NEUTRAL:
+		return true
+	return dummy_state == DummyState.GROUND_HITSTUN and combo_active and _move_is_followup
+
+
+func _stance_matches(move: MoveData) -> bool:
+	## 招式姿态要求与玩家当前姿态一致（地面招式须在地面，空中招式须在空中）。
+	return (move.stance == MoveData.Stance.AIR) == (not player_on_ground)
+
+
+func _end_combo(reason: CombatEvent.ComboEndReason, events: Array[CombatEvent]) -> void:
+	if not combo_active:
+		return
+	combo_active = false
+	events.append(CombatEvent.combo_ended(reason))
 
 
 func _dummy_body_rect() -> Rect2:

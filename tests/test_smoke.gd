@@ -22,6 +22,7 @@ func _run_tests() -> void:
 	await _test_jump(player)
 	await _test_attack_hit_and_feedback(main, player, dummy, session)
 	await _test_attack_range(session)
+	await _test_ground_combo_display(main, session)
 	await _test_reset(main)
 	print("")
 	if _failures == 0:
@@ -93,9 +94,9 @@ func _test_attack_hit_and_feedback(main: Node2D, player: Player, dummy: Dummy, s
 	_check(absf(dummy.position.x - session.dummy_position.x) < 0.01, "dummy view follows the session position")
 	# 注意：脚本注入的 action_press 要到下一个物理帧才会被 just_pressed 消费，
 	# 因此这里轮询等待命中帧，精确帧序由 tests/test_combat_session.gd 验证。
-	Input.action_press("attack")
+	Input.action_press("attack_a")
 	await physics_frame
-	Input.action_release("attack")
+	Input.action_release("attack_a")
 	var hit := false
 	for i in 15:
 		await physics_frame
@@ -103,9 +104,9 @@ func _test_attack_hit_and_feedback(main: Node2D, player: Player, dummy: Dummy, s
 			hit = true
 			break
 	_check(hit, "attack hits once when the dummy is close")
-	_check(session.dummy_hp == GameParams.DUMMY_MAX_HP - GameParams.ATTACK_DAMAGE, "damage applied exactly once per swing")
+	_check(session.dummy_hp == GameParams.DUMMY_MAX_HP - GameParams.MOVE_5A_DAMAGE, "damage applied exactly once per swing")
 	_check(session.dummy_state == CombatSession.DummyState.GROUND_HITSTUN, "dummy enters hitstun on hit")
-	_check(dummy.position.x > dummy_x_before + 5.0, "dummy view shows the knockback displacement")
+	_check(dummy.position.x > dummy_x_before + 2.0, "dummy view shows the knockback displacement")
 	_check(dummy.modulate == GameParams.HIT_FLASH_COLOR, "dummy flashes on the hit event")
 	var status: Label = main.get_node("DummyStatus")
 	_check(status.text.contains("地面受击"), "status display shows the hitstun state")
@@ -119,12 +120,46 @@ func _test_attack_hit_and_feedback(main: Node2D, player: Player, dummy: Dummy, s
 func _test_attack_range(session: CombatSession) -> void:
 	session.dummy_position = Vector2(850.0, GameParams.ground_stand_y())
 	await physics_frame
-	Input.action_press("attack")
+	Input.action_press("attack_a")
 	await physics_frame
-	Input.action_release("attack")
+	Input.action_release("attack_a")
 	for i in 40:
 		await physics_frame
-	_check(session.dummy_hp == GameParams.DUMMY_MAX_HP - GameParams.ATTACK_DAMAGE, "attack misses when the dummy is far away")
+	_check(session.dummy_hp == GameParams.DUMMY_MAX_HP - GameParams.MOVE_5A_DAMAGE, "attack misses when the dummy is far away")
+
+
+func _test_ground_combo_display(main: Node2D, session: CombatSession) -> void:
+	# 5A 命中确认后立刻输入 5B：经输入缓存取消接上第二击，训练场显示连段命中数。
+	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
+	session.player_velocity = Vector2.ZERO
+	session.player_facing = 1
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	await physics_frame
+	var hp_before := session.dummy_hp
+	var hp_after_first := 0.0
+	Input.action_press("attack_a")
+	await physics_frame
+	Input.action_release("attack_a")
+	for i in 15:
+		await physics_frame
+		if session.dummy_hp < hp_before:
+			hp_after_first = session.dummy_hp
+			break
+	_check(hp_after_first > 0.0, "first attack lands via injected input")
+	Input.action_press("attack_b")
+	await physics_frame
+	Input.action_release("attack_b")
+	var second_hit := false
+	for i in 20:
+		await physics_frame
+		if session.dummy_hp < hp_after_first:
+			second_hit = true
+			break
+	_check(second_hit, "input right after the hit cancels 5A into 5B via the buffer")
+	_check(session.combo_hits == 2, "session tracks two combo hits")
+	_check(absf(hp_after_first - session.dummy_hp - 10.8) < 0.05, "second hit applies decayed damage")
+	var status: Label = main.get_node("DummyStatus")
+	_check(status.text.contains("连段 2"), "status display shows the combo hit count")
 
 
 func _test_reset(main: Node2D) -> void:
@@ -135,9 +170,13 @@ func _test_reset(main: Node2D) -> void:
 	event.action = "reset"
 	event.pressed = true
 	Input.parse_input_event(event)
-	for i in 3:
+	# reset 在输入刷新（process 帧）时触发，可能晚于若干物理帧；轮询等待重载完成。
+	var fresh_main: Node = null
+	for i in 30:
 		await physics_frame
-	var fresh_main: Node = root.get_node_or_null("Main")
+		fresh_main = root.get_node_or_null("Main")
+		if fresh_main != null and fresh_main != old_main:
+			break
 	_check(fresh_main != null and fresh_main != old_main, "scene reloaded on reset")
 	if fresh_main != null:
 		var fresh_session: CombatSession = fresh_main.session

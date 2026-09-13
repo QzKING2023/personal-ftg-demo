@@ -6,7 +6,10 @@ extends Node2D
 const PlayerScene: PackedScene = preload("res://scenes/player.tscn")
 const DummyScene: PackedScene = preload("res://scenes/dummy.tscn")
 
-const HINT_TEXT := "A/D or Arrows: Move    Space: Jump    J: Attack    R: Reset"
+const HINT_TEXT := "A/D or Arrows: Move    Space: Jump    J/K/U: 5A/5B/5D    R: Reset"
+
+## 动作键 A/B/C/D 对应的输入动作名（C 的招式在后续 issue 配置，先接入输入适配）。
+const ACTION_KEYS: Array[String] = ["A", "B", "C", "D"]
 
 ## 本局战斗会话（战斗状态的唯一来源）。
 var session: CombatSession
@@ -44,7 +47,9 @@ func _read_frame_input() -> FrameInput:
 	var input := FrameInput.new()
 	input.move_axis = roundi(Input.get_axis("move_left", "move_right"))
 	input.jump_pressed = Input.is_action_just_pressed("jump")
-	input.attack_pressed = Input.is_action_just_pressed("attack")
+	for key in ACTION_KEYS:
+		if Input.is_action_just_pressed("attack_" + key.to_lower()):
+			input.action_key = key
 	return input
 
 
@@ -116,4 +121,10 @@ func _update_dummy_status() -> void:
 	var state_text := "中立"
 	if session.dummy_state == CombatSession.DummyState.GROUND_HITSTUN:
 		state_text = "地面受击（%d）" % session.dummy_hitstun_left
-	_dummy_status.text = "木桩 HP %d/%d  状态 %s" % [roundi(session.dummy_hp), GameParams.DUMMY_MAX_HP, state_text]
+	_dummy_status.text = "木桩 HP %d/%d  状态 %s  连段 %d hit · %.1f" % [
+		roundi(session.dummy_hp),
+		GameParams.DUMMY_MAX_HP,
+		state_text,
+		session.combo_hits,
+		session.combo_total_damage,
+	]

@@ -35,18 +35,44 @@ const PHYSICS_FPS := 60.0
 const PHYSICS_TICK := 1.0 / PHYSICS_FPS
 
 # --- 招式（startup / active / recovery 固定窗口，单位：物理帧）---
-const ATTACK_DAMAGE := 10
-const ATTACK_STARTUP_FRAMES := 5
-const ATTACK_ACTIVE_FRAMES := 7
-const ATTACK_RECOVERY_FRAMES := 13
+# 共享命中框与硬直；各招式窗口/伤害/击退独立成块，便于单独调整手感。
 const ATTACK_HITBOX_SIZE := Vector2(64, 60)
 const ATTACK_HITBOX_GAP := 4.0
 
+# 5A 地面起手（issue 01 的基础招式；连段内击退调低以保证 5B 能追上）。
+const MOVE_5A_DAMAGE := 10
+const MOVE_5A_STARTUP_FRAMES := 5
+const MOVE_5A_ACTIVE_FRAMES := 7
+const MOVE_5A_RECOVERY_FRAMES := 13
+const MOVE_5A_KNOCKBACK := 160.0
+
+# 5B 地面连接。
+const MOVE_5B_DAMAGE := 12
+const MOVE_5B_STARTUP_FRAMES := 4
+const MOVE_5B_ACTIVE_FRAMES := 6
+const MOVE_5B_RECOVERY_FRAMES := 13
+const MOVE_5B_KNOCKBACK := 160.0
+
+# 5D 地面收尾（收尾不主动清除木桩受击处理，击退放大作为路线终点的视觉反馈）。
+const MOVE_5D_DAMAGE := 18
+const MOVE_5D_STARTUP_FRAMES := 5
+const MOVE_5D_ACTIVE_FRAMES := 7
+const MOVE_5D_RECOVERY_FRAMES := 15
+const MOVE_5D_KNOCKBACK := 320.0
+
 # --- 受击反馈 ---
-const ATTACK_KNOCKBACK := 320.0
 const ATTACK_KNOCKBACK_UP := 110.0
 const HITSTUN_FRAMES := 12
 const HIT_FLASH_TIME := 0.10
+
+# --- 连段输入与取消 ---
+# 动作键单槽缓存：输入帧年龄 0–5 有效，年龄 6 先过期；最新输入覆盖旧输入。
+const ACTION_BUFFER_FRAMES := 6
+# 命中确认取消窗口：命中后第 0–N 帧（含两端）内允许取消。
+const CANCEL_WINDOW_FRAMES := 8
+# 连段伤害递减：第 n 击倍率 = max(下限, 1 - (n-1) × 递减步长)。
+const COMBO_DAMAGE_DECAY := 0.1
+const COMBO_DAMAGE_FLOOR := 0.1
 
 # --- 木桩 ---
 const DUMMY_MAX_HP := 100
@@ -74,7 +100,7 @@ const HINT_COLOR := Color(0.85, 0.87, 0.92)
 
 # --- 辅助 ---
 const HINT_OFFSET := Vector2(8, 6)
-const STATUS_OFFSET := Vector2(560, 6)
+const STATUS_OFFSET := Vector2(500, 6)
 
 
 ## 角色站上地面时身体中心的 y 坐标。

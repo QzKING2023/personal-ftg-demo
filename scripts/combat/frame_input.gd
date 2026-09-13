@@ -7,13 +7,14 @@ extends RefCounted
 var move_axis := 0
 ## 本帧是否刚按下跳跃（Space 独立输入，不进入动作键缓存）。
 var jump_pressed := false
-## 本帧是否刚按下攻击（首版只有一个基础招式键）。
-var attack_pressed := false
+## 本帧刚按下的动作键："A"/"B"/"C"/"D" 之一，空串表示无。
+## 动作键进入单槽缓存，由会话在消费阶段统一处理。
+var action_key := ""
 
 
-static func make(move_axis: int = 0, jump_pressed: bool = false, attack_pressed: bool = false) -> FrameInput:
+static func make(move_axis: int = 0, jump_pressed: bool = false, action_key: String = "") -> FrameInput:
 	var input := FrameInput.new()
 	input.move_axis = move_axis
 	input.jump_pressed = jump_pressed
-	input.attack_pressed = attack_pressed
+	input.action_key = action_key
 	return input
