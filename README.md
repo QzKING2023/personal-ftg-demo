@@ -23,7 +23,7 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/te
 # 训练场集成测试（63 项：注入输入 + 真实物理帧）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_smoke.gd
 
-# Combo Solver 测试（52 项：开头会打印默认招式表的可读验证报告）
+# Combo Solver 测试（112 项：开头会打印默认招式表的可读验证报告）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_combo_solver.gd
 ```
 
@@ -55,10 +55,11 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/te
   两个纯呈现层；命中事件驱动木桩闪白，右上角显示木桩生命值与受击状态。
 - 碰撞（地面、墙体、身体不互相穿透）由会话按几何结算，不再依赖物理服务器。
 - `combo_solver.gd`：开发期 Combo Solver——只读招式数据，用一次性 CombatSession
-  探针验证地面命中确认接续（前摇、等待、取消窗口、木桩硬直、姿态），枚举可读
-  路线，并以逐圈模拟加木桩时序状态重现证明有效循环（ADR-0002）。它不修改运行
-  时战斗状态，不设命中数/时长上限，也不证明空间/中立/碰撞连接；方向派生与空中
-  接续由后续 issue 覆盖。设计者直接跑 Solver 测试即可看到默认表的可读报告。
+  探针验证命中确认接续（前摇、等待、取消窗口、木桩硬直、地面/空中姿态、方向派生、
+  jump cancel 与落地接缝），枚举可读路线，并以逐圈模拟加木桩时序状态重现证明有效
+  循环（ADR-0002）。它不修改运行时战斗状态，不设命中数/时长上限，也不证明空间/
+  中立/碰撞连接；空中段只能经配置的 jump cancel 进入，玩家滞空与木桩浮空作为
+  有限资源不会被当作可自动续期。设计者直接跑 Solver 测试即可看到默认表的可读报告。
 
 ## 手感参数
 
