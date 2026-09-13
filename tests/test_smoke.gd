@@ -24,6 +24,7 @@ func _run_tests() -> void:
 	await _test_attack_range(session)
 	await _test_ground_combo_display(main, session)
 	await _test_direction_derivative_and_float(main, session)
+	await _test_jump_cancel_air_pursuit(main, session)
 	await _test_reset(main)
 	print("")
 	if _failures == 0:
@@ -219,6 +220,78 @@ func _test_direction_derivative_and_float(main: Node2D, session: CombatSession) 
 	_check(saw_air_recovered_status, "status display shows the air-recovered state")
 	_check(back_to_neutral and status.text.contains("中立"), "dummy returns to neutral after landing")
 	_check(_approx_hp(session.dummy_hp, hp_before - GameParams.MOVE_236C_DAMAGE), "236C applies its own base damage")
+
+
+func _test_jump_cancel_air_pursuit(main: Node2D, session: CombatSession) -> void:
+	# 键盘完整走通 jump cancel 前半段：236C 命中 → Space 取消起跳（连段保留、
+	# 姿态转空中）→ A 起手 jA 空中追击命中；追击不刷新滞空，木桩照常落地。
+	for i in 60:
+		await physics_frame
+		if session.player_phase == CombatSession.PlayerPhase.NEUTRAL and session.dummy_state == CombatSession.DummyState.NEUTRAL:
+			break
+	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
+	session.player_velocity = Vector2.ZERO
+	session.player_facing = 1
+	session.dummy_position = session.player_position + Vector2(72, 0)
+	session.dummy_velocity = Vector2.ZERO
+	var hp_before := session.dummy_hp
+	await physics_frame
+	Input.action_press("move_down")
+	await physics_frame
+	Input.action_press("move_right")
+	await physics_frame
+	Input.action_release("move_down")
+	await physics_frame
+	Input.action_press("attack_c")
+	await physics_frame
+	Input.action_release("attack_c")
+	Input.action_release("move_right")
+	# action_press 要到下一个物理帧才会被 just_pressed 消费：轮询等待派生锁定与命中。
+	var locked := false
+	for i in 6:
+		await physics_frame
+		if session.player_move_id == "236C":
+			locked = true
+			break
+	_check(locked, "keyboard 236 then C locks the derivative for the jump cancel route")
+	var jumped := false
+	for i in 10:
+		await physics_frame
+		if session.dummy_hp < hp_before:
+			Input.action_press("jump")
+			await physics_frame
+			Input.action_release("jump")
+			# 注入的按键在下一个物理帧才被消费：多等一帧再观察 jump cancel 结果。
+			await physics_frame
+			jumped = true
+			break
+	_check(jumped, "236C lands to open the jump cancel window")
+	_check(not session.player_on_ground, "jump cancel lifts the player into the air")
+	_check(session.player_move_id == "" and session.combo_active, "jump cancel clears the move but keeps the combo alive")
+	var status: Label = main.get_node("DummyStatus")
+	var saw_air_posture := false
+	Input.action_press("attack_a")
+	await physics_frame
+	Input.action_release("attack_a")
+	var pursuit_hit := false
+	for i in 20:
+		await physics_frame
+		saw_air_posture = saw_air_posture or status.text.contains("玩家 空中")
+		if session.combo_hits == 2:
+			pursuit_hit = true
+			break
+	_check(session.player_move_id == "jA" or pursuit_hit, "air action after jump cancel starts the jA pursuit move")
+	_check(saw_air_posture, "status display shows the airborne player posture")
+	_check(pursuit_hit, "jA pursuit lands as the second combo hit via keyboard input")
+	var landed := false
+	for i in 60:
+		await physics_frame
+		if session.player_on_ground and session.dummy_on_ground:
+			landed = true
+			break
+	_check(landed, "player and dummy both land after the pursuit")
+	_check(session.combo_hits == 2, "no extra hits: the pursuit does not refresh the float for another launch")
+	_check(session.dummy_hp == hp_before - GameParams.MOVE_236C_DAMAGE - GameParams.MOVE_JA_DAMAGE * 0.9, "route damage is 236C full plus decayed jA")
 
 
 func _approx_hp(value: float, expected: float) -> bool:

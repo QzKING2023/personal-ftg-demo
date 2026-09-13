@@ -126,7 +126,9 @@ func _update_dummy_status() -> void:
 		state_text = "浮空受击（%d）" % session.dummy_hitstun_left
 	elif session.dummy_state == CombatSession.DummyState.AIR_RECOVERED:
 		state_text = "空中已受身"
-	_dummy_status.text = "木桩 HP %d/%d  状态 %s  连段 %d hit · %.1f" % [
+	var posture := "空中" if not session.player_on_ground else "地面"
+	_dummy_status.text = "玩家 %s  木桩 HP %d/%d  状态 %s  连段 %d hit · %.1f" % [
+		posture,
 		roundi(session.dummy_hp),
 		GameParams.DUMMY_MAX_HP,
 		state_text,

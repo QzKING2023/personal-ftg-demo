@@ -80,6 +80,9 @@ var _last_direction_digit := 5
 
 ## 本帧开放的命中确认取消目标（招式 id）。
 var _cancel_targets: Array[String] = []
+## jump cancel 开放的空中追击起手招式（Space 取消命中确认招式后保留连段；
+## 落地仍未接续时资格作废并结束连段）。
+var _jump_cancel_followups: Array[String] = []
 
 
 func _init(move_table: Dictionary = {}) -> void:
@@ -120,6 +123,7 @@ func reset_to_initial_state() -> void:
 	_direction_history.clear()
 	_last_direction_digit = 5
 	_cancel_targets.clear()
+	_jump_cancel_followups.clear()
 
 
 ## 结算一个物理帧，返回该帧产生的战斗事件（按结算发生顺序排列）。
@@ -247,7 +251,7 @@ func _phase_apply_hits(events: Array[CombatEvent]) -> void:
 func _phase_motion(events: Array[CombatEvent]) -> void:
 	## 4. 运动/落地/自然受身：先按已应用的速度积分位置，再处理落地、
 	## 身体重叠与木桩自然受身；招式帧计数也在本阶段末尾推进。
-	_motion_player()
+	_motion_player(events)
 	_motion_dummy(events)
 	_resolve_body_overlap()
 	_advance_move(events)
@@ -257,12 +261,7 @@ func _phase_cancel() -> void:
 	## 5. 取消判定：只有已命中确认、仍在取消窗口内且木桩仍处于可追击的受击状态时，
 	##    才开放本招配置的取消目标；挥空不产生任何取消资格。
 	_cancel_targets.clear()
-	if _current_move == null or not _move_hit_confirmed or not combo_active:
-		return
-	if not _dummy_pursuable():
-		return
-	var age := _frame_index - _hit_confirm_frame
-	if age < 0 or age > _current_move.cancel_window_frames:
+	if not _cancel_window_open():
 		return
 	for move_id in _current_move.cancel_targets:
 		var target := _moves.get(move_id) as MoveData
@@ -272,7 +271,9 @@ func _phase_cancel() -> void:
 
 func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 	## 6. 消费缓存：空闲时按缓存起手独立招式；命中确认取消窗口内按取消资格
-	##    转入下一招。取消资格不足或缓存已过期时输入作废。
+	##    转入下一招。jump cancel 后的空中追击起手按合法接续起手（只有配置的
+	##    起手招式获得资格，普通跳跃后的空中招式仍是独立招式）。
+	##    取消资格不足或缓存已过期时输入作废。
 	if _buffered_move_id != "":
 		var buffered := _moves.get(_buffered_move_id) as MoveData
 		if buffered != null and _stance_matches(buffered):
@@ -280,8 +281,11 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 				_start_move(_buffered_move_id, buffered, true)
 				_clear_buffer()
 			elif _current_move == null:
-				_start_move(_buffered_move_id, buffered, false)
+				var is_followup := combo_active and _jump_cancel_followups.has(_buffered_move_id)
+				_start_move(_buffered_move_id, buffered, is_followup)
 				_clear_buffer()
+				if is_followup:
+					_jump_cancel_followups.clear()
 	## 命中确认取消窗口关闭且没有接续时连段结束；木桩受击处理不受影响。
 	if _current_move != null and _move_hit_confirmed and combo_active \
 			and _frame_index - _hit_confirm_frame > _current_move.cancel_window_frames:
@@ -290,10 +294,25 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 
 # --- 运动细节 ---
 
-func _motion_player() -> void:
-	if player_on_ground and player_phase == PlayerPhase.NEUTRAL and _frame_input.jump_pressed:
-		player_velocity.y = GameParams.JUMP_VELOCITY
-		player_on_ground = false
+func _motion_player(events: Array[CombatEvent]) -> void:
+	## 跳跃与 jump cancel 都在运动阶段起跳：起跳帧当帧不加重力（与木桩浮空同一积分
+	## 方式，滞空恰为 PLAYER_JUMP_AIRTIME_FRAMES 帧）。jump cancel 需要招式配置、
+	## 命中确认、取消窗口与可追击木桩同时成立；起跳取消当前招式、保留连段并开放
+	## 配置的空中追击起手；普通跳跃只有地面中立姿态可用（空中 Space 一律无效）。
+	var jumped_this_frame := false
+	if _frame_input.jump_pressed and player_on_ground:
+		if player_phase == PlayerPhase.NEUTRAL:
+			player_velocity.y = -GameParams.jump_velocity()
+			player_on_ground = false
+			jumped_this_frame = true
+		elif _can_jump_cancel():
+			player_velocity.y = -GameParams.jump_velocity()
+			player_on_ground = false
+			jumped_this_frame = true
+			_jump_cancel_followups.clear()
+			_jump_cancel_followups.append_array(_current_move.jump_cancel_targets)
+			_clear_current_move()
+			player_phase = PlayerPhase.NEUTRAL
 	if player_phase == PlayerPhase.NEUTRAL:
 		var accel := GameParams.PLAYER_ACCELERATION
 		if not player_on_ground:
@@ -306,7 +325,7 @@ func _motion_player() -> void:
 	else:
 		# 出招期间水平输入失效，只保留摩擦减速。
 		player_velocity.x = move_toward(player_velocity.x, 0.0, GameParams.PLAYER_FRICTION * GameParams.PHYSICS_TICK)
-	if not player_on_ground:
+	if not player_on_ground and not jumped_this_frame:
 		player_velocity.y = minf(player_velocity.y + GameParams.GRAVITY * GameParams.PHYSICS_TICK, GameParams.MAX_FALL_SPEED)
 	player_position += player_velocity * GameParams.PHYSICS_TICK
 	player_position.x = clampf(player_position.x, GameParams.stage_left_limit(), GameParams.stage_right_limit())
@@ -314,9 +333,33 @@ func _motion_player() -> void:
 		player_position.y = GameParams.ground_stand_y()
 		if player_velocity.y > 0.0:
 			player_velocity.y = 0.0
+		var just_landed := not player_on_ground
 		player_on_ground = true
+		if just_landed and not _jump_cancel_followups.is_empty():
+			# jump cancel 后落地仍未接续空中追击：追击资格作废，连段以收招未接续结束。
+			_jump_cancel_followups.clear()
+			if combo_active and _current_move == null:
+				_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
 	else:
 		player_on_ground = false
+
+
+func _can_jump_cancel() -> bool:
+	## jump cancel 资格：与动作键取消共用同一命中确认取消窗口，外加本招配置了
+	## 空中追击起手。（判定发生在运动阶段——起跳当帧就要积分位置；与第 5 阶段的
+	## 取消判定在受身边界帧可能相差一帧，但连段与追击资格的最终语义一致。）
+	return _cancel_window_open() and not _current_move.jump_cancel_targets.is_empty()
+
+
+func _cancel_window_open() -> bool:
+	## 命中确认取消窗口：已命中确认、连段仍活跃、木桩仍可追击，且命中后年龄
+	## 仍在窗口内（0–N 帧含两端）。动作键取消与 jump cancel 共用本判定。
+	if _current_move == null or not _move_hit_confirmed or not combo_active:
+		return false
+	if not _dummy_pursuable():
+		return false
+	var age := _frame_index - _hit_confirm_frame
+	return age >= 0 and age <= _current_move.cancel_window_frames
 
 
 func _tick_ground_hitstun(events: Array[CombatEvent]) -> void:

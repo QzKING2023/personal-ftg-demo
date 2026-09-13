@@ -44,6 +44,10 @@ enum Stance {
 @export var cancel_window_frames := GameParams.CANCEL_WINDOW_FRAMES
 ## 收尾招式：命中后结束当前连段路线；不主动清除木桩的受击/倒地处理。
 @export var is_finisher := false
+## jump cancel 配置：命中确认后的取消窗口内允许 Space 取消起跳转入空中追击的
+## 空中起手招式 id 列表（如 ["jA"]）；空列表表示本招不支持 jump cancel。
+## 起跳不结束连段；落地仍未接续空中起手时追击资格作废。
+@export var jump_cancel_targets: Array[String] = []
 ## 方向派生记法："236C" 表示方向序列 236 + 动作键 C；空串为无方向要求的普通招式。
 ## 按下动作键时用方向历史尾部匹配；识别成功即消费方向序列并把缓存锁定为本招。
 @export var direction_derivation := ""
@@ -68,8 +72,9 @@ func hitbox_offset() -> float:
 
 
 ## 默认招式表：招式 id → 招式。
-## 地面稳定路线 5A → 5B → 5D；A/B/C/D 语义独立表达——A 起手（可取消进 5B/236C）、
-## B 连接（可取消进 5D/214D）、C 地面浮空（LAUNCH）、D 收尾；236C/214D 为方向派生。
+## 地面稳定路线 5A → 5B → 5D；A/B/C/D 语义独立表达——A 地面起手兼空中追击（jA）、
+## B 连接（可取消进 5D/214D）、C 地面浮空（LAUNCH，可 jump cancel 进 jA）、D 收尾；
+## 236C/214D 为方向派生；jA 为 jump cancel 后的空中追击起手（jB/jD 随空中路线配置）。
 static func default_table() -> Dictionary:
 	var starter := MoveData.new()
 	starter.move_name = "5A"
@@ -97,6 +102,7 @@ static func default_table() -> Dictionary:
 	launcher.base_damage = GameParams.MOVE_5C_DAMAGE
 	launcher.knockback = GameParams.MOVE_5C_KNOCKBACK
 	launcher.hit_result = HitResult.LAUNCH
+	launcher.jump_cancel_targets = ["jA"]
 
 	var derivative_launcher := MoveData.new()
 	derivative_launcher.move_name = "236C"
@@ -107,6 +113,16 @@ static func default_table() -> Dictionary:
 	derivative_launcher.knockback = GameParams.MOVE_236C_KNOCKBACK
 	derivative_launcher.hit_result = HitResult.LAUNCH
 	derivative_launcher.direction_derivation = "236C"
+	derivative_launcher.jump_cancel_targets = ["jA"]
+
+	var air_starter := MoveData.new()
+	air_starter.move_name = "jA"
+	air_starter.stance = Stance.AIR
+	air_starter.startup_frames = GameParams.MOVE_JA_STARTUP_FRAMES
+	air_starter.active_frames = GameParams.MOVE_JA_ACTIVE_FRAMES
+	air_starter.recovery_frames = GameParams.MOVE_JA_RECOVERY_FRAMES
+	air_starter.base_damage = GameParams.MOVE_JA_DAMAGE
+	air_starter.knockback = GameParams.MOVE_JA_KNOCKBACK
 
 	var finisher := MoveData.new()
 	finisher.move_name = "5D"
@@ -127,7 +143,7 @@ static func default_table() -> Dictionary:
 	derivative_finisher.is_finisher = true
 	derivative_finisher.direction_derivation = "214D"
 
-	for move: MoveData in [starter, linker, launcher, derivative_launcher, finisher, derivative_finisher]:
+	for move: MoveData in [starter, linker, launcher, derivative_launcher, air_starter, finisher, derivative_finisher]:
 		move.hitbox_size = GameParams.ATTACK_HITBOX_SIZE
 		move.hitbox_gap = GameParams.ATTACK_HITBOX_GAP
 		move.knockback_up = GameParams.float_launch_speed() if move.hit_result == HitResult.LAUNCH else GameParams.ATTACK_KNOCKBACK_UP
@@ -137,6 +153,7 @@ static func default_table() -> Dictionary:
 		"5B": linker,
 		"5C": launcher,
 		"236C": derivative_launcher,
+		"jA": air_starter,
 		"5D": finisher,
 		"214D": derivative_finisher,
 	}

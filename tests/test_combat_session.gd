@@ -43,6 +43,14 @@ func _initialize() -> void:
 	_test_independent_move_cannot_hit_floating_dummy()
 	_test_5A_cancels_into_236C_relaunch()
 	_test_5B_cancels_into_214D_finisher()
+	_test_jump_cancel_requires_hit_config_and_window()
+	_test_jump_cancel_236C_into_jA_pursuit()
+	_test_jump_cancel_5C_into_jA_pursuit()
+	_test_space_does_not_touch_action_buffer()
+	_test_no_double_jump_after_jump_cancel()
+	_test_jump_airtime_matches_param()
+	_test_jump_cancel_landing_without_pursuit_ends_combo()
+	_test_neutral_jump_jA_cannot_pursue()
 	print("")
 	if _failures == 0:
 		print("ALL SESSION TESTS PASSED")
@@ -258,7 +266,8 @@ func _test_jump_ignored_during_attack() -> void:
 
 func _test_air_action_without_air_move_ignored() -> void:
 	# 招式表只配置地面招式：空中按下动作键不会起手，缓存也不会被消费。
-	var session := CombatSession.new()
+	# （默认表已配置 jA，空中 A 的起手行为由 jump cancel 测试覆盖。）
+	var session := CombatSession.new(_fast_single_move_table())
 	session.step(FrameInput.make(0, true))
 	session.step(FrameInput.new())
 	for i in range(12):
@@ -703,6 +712,205 @@ func _test_5B_cancels_into_214D_finisher() -> void:
 	_check(finisher_state == CombatSession.DummyState.GROUND_HITSTUN and finisher_hitstun == GameParams.HITSTUN_FRAMES, "direction finisher keeps the dummy's knockdown hitstun handling")
 	_check(recovered_events == 1, "dummy recovers naturally after the direction finisher")
 	_check(session.dummy_state == CombatSession.DummyState.NEUTRAL, "dummy is neutral again after recovery")
+
+
+func _test_jump_cancel_requires_hit_config_and_window() -> void:
+	# jump cancel 门槛：招式配置（5C/236C）、命中确认（挥空不算）与取消窗口缺一不可；
+	# 不满足时 Space 不改变玩家与连段状态，收招后 Space 恢复为普通跳跃。
+	var whiff := CombatSession.new()
+	whiff.dummy_position = Vector2(900.0, GameParams.ground_stand_y())
+	var grounded_on_space := false
+	for frame in range(1, 28):
+		whiff.step(FrameInput.make(0, frame == 8, "C" if frame == 1 else ""))
+		if frame == 8:
+			grounded_on_space = whiff.player_on_ground
+	_check(grounded_on_space and whiff.combo_hits == 0 and not whiff.combo_active, "whiffed launcher ignores space during the move")
+	whiff.step(FrameInput.make(0, true))
+	_check(not whiff.player_on_ground, "space works again as a normal jump after the whiffed move recovers")
+
+	var plain := CombatSession.new()
+	plain.dummy_position = plain.player_position + Vector2(70, 0)
+	var unconfigured_state_ok := false
+	for frame in range(1, 10):
+		plain.step(FrameInput.make(0, frame == 7 or frame == 8, "A" if frame == 1 else ""))
+		if frame == 9:
+			unconfigured_state_ok = plain.player_on_ground and plain.player_move_id == "5A"
+	_check(unconfigured_state_ok, "hit move without jump cancel config ignores space")
+	_check(plain.combo_hits == 1 and plain.combo_active, "space on an unconfigured move leaves the combo state untouched")
+
+	var late := CombatSession.new()
+	late.dummy_position = late.player_position + Vector2(72, 0)
+	var end_frames: Array[int] = []
+	for frame in range(1, 21):
+		var input := _qcf_input(frame, 4, "C") if frame <= 4 else FrameInput.make(0, frame == 19)
+		var events := late.step(input)
+		if _combo_end_events(events, CombatEvent.ComboEndReason.CANCEL_WINDOW_CLOSED) > 0:
+			end_frames.append(frame)
+	_check(late.player_on_ground and not late.combo_active, "space after the cancel window cannot jump cancel")
+	_check(end_frames == [19], "combo ends from the closed cancel window, not from the space press")
+
+
+func _test_jump_cancel_236C_into_jA_pursuit() -> void:
+	# 高级路线前半段：236C 命中确认 → Space jump cancel 转入空中并保留连段 →
+	# A 起手 jA 空中追击。追击是普通命中：不刷新木桩滞空，木桩仍在原始浮空抛物线上落地。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(72, 0)
+	var hit_frames: Array[int] = []
+	var land_frame := -1
+	var airborne_seen := false
+	var vy_before_pursuit := 0.0
+	var combo_end_frames: Array[int] = []
+	for frame in range(1, 80):
+		var input := _qcf_input(frame, 4, "C") if frame <= 4 else FrameInput.make(0, frame == 11, "A" if frame == 13 else "")
+		var events := session.step(input)
+		if _count_events(events, CombatEvent.Type.HIT) > 0:
+			hit_frames.append(frame)
+		if frame == 11:
+			_check(not session.player_on_ground, "space on the confirmed 236C lifts the player on the same frame")
+			_check(session.player_move_id == "" and session.player_phase == CombatSession.PlayerPhase.NEUTRAL, "jump cancel clears the launcher into neutral air")
+			_check(session.combo_active and session.combo_hits == 1, "jump cancel keeps the combo alive for air pursuit")
+		if frame == 14:
+			_check(session.player_move_id == "jA", "air action after jump cancel starts the jA pursuit move")
+			_check(not session.player_on_ground, "jA starts while airborne")
+		if frame == 16:
+			vy_before_pursuit = session.dummy_velocity.y
+		if frame == 17:
+			_check(session.dummy_state == CombatSession.DummyState.GROUND_HITSTUN and not session.dummy_on_ground, "jA pursuit keeps the dummy airborne in normal hitstun")
+			_check(is_equal_approx(session.dummy_velocity.y, vy_before_pursuit + GameParams.GRAVITY * GameParams.PHYSICS_TICK), "pursuit hit does not refresh the float arc")
+		if frame > 10:
+			if session.dummy_on_ground:
+				if airborne_seen and land_frame == -1:
+					land_frame = frame
+			else:
+				airborne_seen = true
+		if _combo_end_events(events, CombatEvent.ComboEndReason.CANCEL_WINDOW_CLOSED) > 0:
+			combo_end_frames.append(frame)
+	_check(hit_frames == [10, 17], "236C hits on frame 10 and the pursued jA connects on frame 17")
+	_check(session.combo_hits == 2 and not session.combo_active, "route counts two hits and ends when jA's cancel window closes")
+	_check(combo_end_frames == [26], "combo ends nine frames after the jA hit")
+	_check(land_frame == 10 + GameParams.DUMMY_FLOAT_AIRTIME_FRAMES, "dummy lands exactly one float airtime after the launcher, unrefreshed by the pursuit")
+	_check(_approx(session.dummy_hp, GameParams.DUMMY_MAX_HP - GameParams.MOVE_236C_DAMAGE - GameParams.MOVE_JA_DAMAGE * 0.9), "route damage is 236C full plus decayed jA")
+
+
+func _test_jump_cancel_5C_into_jA_pursuit() -> void:
+	# 5C 与 236C 同样配置 jump cancel：C 语义命中 → Space → jA 空中追击计数第二击。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	var hit_frames: Array[int] = []
+	for frame in range(1, 30):
+		var key := ""
+		if frame == 1:
+			key = "C"
+		elif frame == 10:
+			key = "A"
+		var events := session.step(FrameInput.make(0, frame == 8, key))
+		if _count_events(events, CombatEvent.Type.HIT) > 0:
+			hit_frames.append(frame)
+	_check(hit_frames == [7, 14], "5C hits on frame 7 and the jump-canceled jA connects on frame 14")
+	_check(session.combo_hits == 2, "jA pursuit after 5C counts as the second combo hit")
+
+
+func _test_space_does_not_touch_action_buffer() -> void:
+	# Space 与动作键缓存完全独立：5A 命中后按 Space（5A 未配置 jump cancel）不缓存、
+	# 不消费也不覆盖动作键，随后输入的 B 仍按缓存取消进 5B。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	for frame in range(1, 17):
+		var key := ""
+		if frame == 1:
+			key = "A"
+		elif frame == 9:
+			key = "B"
+		session.step(FrameInput.make(0, frame == 7, key))
+		if frame == 8:
+			_check(session.player_on_ground and session.player_move_id == "5A", "space neither jumps nor disturbs the ongoing move")
+		if frame == 10:
+			_check(session.player_move_id == "5B", "action buffer survives the space press and still cancels 5A into 5B")
+	_check(session.combo_hits == 2, "the buffered cancel still extends the combo")
+
+
+func _test_no_double_jump_after_jump_cancel() -> void:
+	# jump cancel 转入空中后 Space 不再起跳：无二段跳、无第二次向上速度，
+	# 落地帧仍恰为起跳帧 + PLAYER_JUMP_AIRTIME_FRAMES。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(72, 0)
+	var jump_cancel_frame := -1
+	var land_frame := -1
+	var second_impulse_seen := false
+	for frame in range(1, 60):
+		var input := _qcf_input(frame, 4, "C") if frame <= 4 else FrameInput.make(0, frame == 11 or frame == 16 or frame == 21 or frame == 26)
+		session.step(input)
+		if frame == 11:
+			jump_cancel_frame = frame
+		if jump_cancel_frame != -1 and land_frame == -1:
+			if session.player_on_ground:
+				land_frame = frame
+			elif frame > jump_cancel_frame + 2 and session.player_velocity.y < -GameParams.jump_velocity() * 0.9:
+				second_impulse_seen = true
+	_check(jump_cancel_frame == 11 and not second_impulse_seen, "air space presses never grant a second upward impulse")
+	_check(land_frame == jump_cancel_frame + GameParams.PLAYER_JUMP_AIRTIME_FRAMES, "airtime after jump cancel stays exactly the configured frames with no double jump")
+
+
+func _test_jump_airtime_matches_param() -> void:
+	# 默认参数：玩家跳跃持续 40 个物理帧、木桩浮空滞空 48 个物理帧（滞空由参数换算）。
+	var session := CombatSession.new()
+	session.dummy_position = Vector2(100.0, GameParams.ground_stand_y())
+	var jump_frame := 5
+	var land_frame := -1
+	for frame in range(1, 60):
+		session.step(FrameInput.make(0, frame == jump_frame))
+		if land_frame == -1 and frame > jump_frame and session.player_on_ground:
+			land_frame = frame
+	_check(land_frame == jump_frame + GameParams.PLAYER_JUMP_AIRTIME_FRAMES, "neutral jump lasts exactly the configured airtime frames")
+	_check(GameParams.PLAYER_JUMP_AIRTIME_FRAMES == 40 and GameParams.DUMMY_FLOAT_AIRTIME_FRAMES == 48, "default airtime params are 40-frame jump and 48-frame float")
+
+
+func _test_jump_cancel_landing_without_pursuit_ends_combo() -> void:
+	# jump cancel 后始终不接空中起手：玩家落地当帧追击资格作废，连段以收招未接续结束；
+	# 木桩浮空处理不受影响（长浮空硬直下木桩仍在浮空受击中）。
+	var table := MoveData.default_table()
+	(table["5C"] as MoveData).hitstun_frames = 60
+	var session := CombatSession.new(table)
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	var end_frames: Array[int] = []
+	var end_reasons: Array[int] = []
+	var dummy_state_at_end := CombatSession.DummyState.NEUTRAL
+	for frame in range(1, 50):
+		var events := session.step(FrameInput.make(0, frame == 8, "C" if frame == 1 else ""))
+		for event in events:
+			if event.type == CombatEvent.Type.COMBO_ENDED:
+				end_frames.append(frame)
+				end_reasons.append(event.combo_end_reason)
+				dummy_state_at_end = session.dummy_state
+	_check(end_frames == [48], "combo ends exactly when the player lands without air pursuit")
+	_check(end_reasons == [CombatEvent.ComboEndReason.MOVE_RECOVERED], "landing without pursuit ends the combo as an unrecovered cancel")
+	_check(session.combo_hits == 1, "combo stops counting at the launcher hit")
+	_check(dummy_state_at_end == CombatSession.DummyState.AIR_HITSTUN, "landing without pursuit leaves the dummy's float handling untouched")
+
+
+func _test_neutral_jump_jA_cannot_pursue() -> void:
+	# 收招断连后的普通跳跃不产生追击资格：空中 jA 即使把浮空木桩摆进命中框也打不中。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	var hit_frames: Array[int] = []
+	for frame in range(1, 50):
+		var key := ""
+		if frame == 1:
+			key = "C"
+		elif frame == 32:
+			key = "A"
+		if frame == 31:
+			# 木桩仍在浮空受击中：摆进 jA 命中框并停住，验证资格而非几何挡住追击。
+			session.dummy_position = session.player_position + Vector2(70, -15)
+			session.dummy_velocity = Vector2.ZERO
+		var events := session.step(FrameInput.make(0, frame == 30, key))
+		if _count_events(events, CombatEvent.Type.HIT) > 0:
+			hit_frames.append(frame)
+		if frame == 34:
+			_check(session.player_move_id == "jA", "air action during a plain jump still starts jA")
+			_check(session.dummy_state == CombatSession.DummyState.AIR_HITSTUN, "dummy is still in float hitstun inside the attack rect")
+	_check(hit_frames == [7], "neutral-jump jA cannot pursue the floating dummy")
+	_check(session.combo_hits == 1, "combo count stays at the launcher hit")
 
 
 # --- 辅助 ---

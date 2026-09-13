@@ -19,7 +19,8 @@ const PLAYER_MOVE_SPEED := 340.0
 const PLAYER_ACCELERATION := 2600.0
 const PLAYER_FRICTION := 3000.0
 const PLAYER_AIR_CONTROL := 0.75
-const JUMP_VELOCITY := -540.0
+# 玩家跳跃默认滞空帧数；起跳速度由滞空帧数换算（与木桩浮空同一积分方式）。
+const PLAYER_JUMP_AIRTIME_FRAMES := 40
 const GRAVITY := 1400.0
 const MAX_FALL_SPEED := 1000.0
 
@@ -81,6 +82,13 @@ const MOVE_214D_ACTIVE_FRAMES := 5
 const MOVE_214D_RECOVERY_FRAMES := 20
 const MOVE_214D_KNOCKBACK := 400.0
 
+# jA 空中追击起手（jump cancel 后的空中起手；普通命中不刷新木桩浮空滞空）。
+const MOVE_JA_DAMAGE := 8
+const MOVE_JA_STARTUP_FRAMES := 4
+const MOVE_JA_ACTIVE_FRAMES := 6
+const MOVE_JA_RECOVERY_FRAMES := 10
+const MOVE_JA_KNOCKBACK := 120.0
+
 # --- 受击反馈 ---
 const ATTACK_KNOCKBACK_UP := 110.0
 const HITSTUN_FRAMES := 12
@@ -138,6 +146,11 @@ static func ground_stand_y() -> float:
 ## 起跳帧当帧不加重力（落地判定前的 on_ground 守卫），抛物线恰好往返对称。
 static func float_launch_speed() -> float:
 	return GRAVITY * PHYSICS_TICK * DUMMY_FLOAT_AIRTIME_FRAMES * 0.5
+
+
+## 给予 PLAYER_JUMP_AIRTIME_FRAMES 帧滞空所需的起跳速度（px/s），积分方式与浮空一致。
+static func jump_velocity() -> float:
+	return GRAVITY * PHYSICS_TICK * PLAYER_JUMP_AIRTIME_FRAMES * 0.5
 
 
 ## 角色身体中心允许的最小 x（贴左墙）。
