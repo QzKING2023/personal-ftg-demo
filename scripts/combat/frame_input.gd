@@ -5,6 +5,8 @@ extends RefCounted
 
 ## 水平方向：-1 左 / 1 右 / 0 无。键盘语义，取整数。
 var move_axis := 0
+## 本帧是否按住下方方向（S/↓）。方向输入只进方向历史，不进入动作键缓存。
+var down_held := false
 ## 本帧是否刚按下跳跃（Space 独立输入，不进入动作键缓存）。
 var jump_pressed := false
 ## 本帧刚按下的动作键："A"/"B"/"C"/"D" 之一，空串表示无。
@@ -12,9 +14,10 @@ var jump_pressed := false
 var action_key := ""
 
 
-static func make(move_axis: int = 0, jump_pressed: bool = false, action_key: String = "") -> FrameInput:
+static func make(move_axis: int = 0, jump_pressed: bool = false, action_key: String = "", down_held: bool = false) -> FrameInput:
 	var input := FrameInput.new()
 	input.move_axis = move_axis
 	input.jump_pressed = jump_pressed
 	input.action_key = action_key
+	input.down_held = down_held
 	return input

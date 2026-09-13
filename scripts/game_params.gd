@@ -60,6 +60,27 @@ const MOVE_5D_ACTIVE_FRAMES := 7
 const MOVE_5D_RECOVERY_FRAMES := 15
 const MOVE_5D_KNOCKBACK := 320.0
 
+# 5C 地面浮空（C 语义：命中将木桩打入浮空受击）。
+const MOVE_5C_DAMAGE := 14
+const MOVE_5C_STARTUP_FRAMES := 6
+const MOVE_5C_ACTIVE_FRAMES := 5
+const MOVE_5C_RECOVERY_FRAMES := 16
+const MOVE_5C_KNOCKBACK := 140.0
+
+# 236C 方向浮空派生（236 + C；伤害更重的浮空，滞空与普通浮空一致）。
+const MOVE_236C_DAMAGE := 18
+const MOVE_236C_STARTUP_FRAMES := 6
+const MOVE_236C_ACTIVE_FRAMES := 5
+const MOVE_236C_RECOVERY_FRAMES := 18
+const MOVE_236C_KNOCKBACK := 200.0
+
+# 214D 方向收尾派生（214 + D；比 5D 更重的收尾）。
+const MOVE_214D_DAMAGE := 22
+const MOVE_214D_STARTUP_FRAMES := 7
+const MOVE_214D_ACTIVE_FRAMES := 5
+const MOVE_214D_RECOVERY_FRAMES := 20
+const MOVE_214D_KNOCKBACK := 400.0
+
 # --- 受击反馈 ---
 const ATTACK_KNOCKBACK_UP := 110.0
 const HITSTUN_FRAMES := 12
@@ -68,6 +89,8 @@ const HIT_FLASH_TIME := 0.10
 # --- 连段输入与取消 ---
 # 动作键单槽缓存：输入帧年龄 0–5 有效，年龄 6 先过期；最新输入覆盖旧输入。
 const ACTION_BUFFER_FRAMES := 6
+# 方向历史独立于动作键缓存：输入帧年龄 0–23 有效，年龄 24 先过期。
+const DIRECTION_BUFFER_FRAMES := 24
 # 命中确认取消窗口：命中后第 0–N 帧（含两端）内允许取消。
 const CANCEL_WINDOW_FRAMES := 8
 # 连段伤害递减：第 n 击倍率 = max(下限, 1 - (n-1) × 递减步长)。
@@ -78,6 +101,9 @@ const COMBO_DAMAGE_FLOOR := 0.1
 const DUMMY_MAX_HP := 100
 const DUMMY_FRICTION := 2000.0
 const DUMMY_HITSTUN_FRICTION := 500.0
+# 浮空：默认滞空帧数与浮空受击硬直；浮空招式按滞空帧数换算起跳速度。
+const DUMMY_FLOAT_AIRTIME_FRAMES := 48
+const FLOAT_HITSTUN_FRAMES := 36
 
 # --- 生命条 ---
 const HP_BAR_SIZE := Vector2(64, 8)
@@ -106,6 +132,12 @@ const STATUS_OFFSET := Vector2(500, 6)
 ## 角色站上地面时身体中心的 y 坐标。
 static func ground_stand_y() -> float:
 	return GROUND_Y - BODY_SIZE.y * 0.5
+
+
+## 给予 DUMMY_FLOAT_AIRTIME_FRAMES 帧滞空所需的起跳速度（px/s）。
+## 起跳帧当帧不加重力（落地判定前的 on_ground 守卫），抛物线恰好往返对称。
+static func float_launch_speed() -> float:
+	return GRAVITY * PHYSICS_TICK * DUMMY_FLOAT_AIRTIME_FRAMES * 0.5
 
 
 ## 角色身体中心允许的最小 x（贴左墙）。

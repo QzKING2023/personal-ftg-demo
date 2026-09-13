@@ -23,6 +23,7 @@ func _run_tests() -> void:
 	await _test_attack_hit_and_feedback(main, player, dummy, session)
 	await _test_attack_range(session)
 	await _test_ground_combo_display(main, session)
+	await _test_direction_derivative_and_float(main, session)
 	await _test_reset(main)
 	print("")
 	if _failures == 0:
@@ -160,6 +161,68 @@ func _test_ground_combo_display(main: Node2D, session: CombatSession) -> void:
 	_check(absf(hp_after_first - session.dummy_hp - 10.8) < 0.05, "second hit applies decayed damage")
 	var status: Label = main.get_node("DummyStatus")
 	_check(status.text.contains("连段 2"), "status display shows the combo hit count")
+
+
+func _test_direction_derivative_and_float(main: Node2D, session: CombatSession) -> void:
+	# 键盘方向输入经训练场适配进入方向历史：↓ → ↓+→ → → 再按 C 触发 236C 浮空派生，
+	# 状态栏依次显示浮空受击、空中已受身，落地后回到中立。
+	# 先等上一段测试的招式与木桩硬直全部结束，方向序列才不会被缓存冲突吃掉。
+	for i in 60:
+		await physics_frame
+		if session.player_phase == CombatSession.PlayerPhase.NEUTRAL and session.dummy_state == CombatSession.DummyState.NEUTRAL:
+			break
+	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
+	session.player_velocity = Vector2.ZERO
+	session.player_facing = 1
+	session.dummy_position = session.player_position + Vector2(85, 0)
+	session.dummy_velocity = Vector2.ZERO
+	var hp_before := session.dummy_hp
+	await physics_frame
+	Input.action_press("move_down")
+	await physics_frame
+	Input.action_press("move_right")
+	await physics_frame
+	Input.action_release("move_down")
+	await physics_frame
+	Input.action_press("attack_c")
+	await physics_frame
+	Input.action_release("attack_c")
+	Input.action_release("move_right")
+	# action_press 要到下一个物理帧才会被 just_pressed 消费：轮询等待招式锁定。
+	var locked := false
+	for i in 5:
+		await physics_frame
+		if session.player_move_id == "236C":
+			locked = true
+			break
+	_check(locked, "keyboard 236 then C locks the derivative move")
+	var saw_float := false
+	var saw_float_status := false
+	var saw_air_recovered := false
+	var saw_air_recovered_status := false
+	var back_to_neutral := false
+	var status: Label = main.get_node("DummyStatus")
+	for i in 100:
+		await physics_frame
+		if session.dummy_state == CombatSession.DummyState.AIR_HITSTUN:
+			saw_float = true
+			saw_float_status = saw_float_status or status.text.contains("浮空受击")
+		elif session.dummy_state == CombatSession.DummyState.AIR_RECOVERED:
+			saw_air_recovered = true
+			saw_air_recovered_status = saw_air_recovered_status or status.text.contains("空中已受身")
+		elif session.dummy_state == CombatSession.DummyState.NEUTRAL and saw_float:
+			back_to_neutral = true
+			break
+	_check(saw_float, "236C hit launches the dummy into float hitstun via keyboard input")
+	_check(saw_float_status, "status display shows the float hitstun state")
+	_check(saw_air_recovered, "dummy techs in the air after the float hitstun")
+	_check(saw_air_recovered_status, "status display shows the air-recovered state")
+	_check(back_to_neutral and status.text.contains("中立"), "dummy returns to neutral after landing")
+	_check(_approx_hp(session.dummy_hp, hp_before - GameParams.MOVE_236C_DAMAGE), "236C applies its own base damage")
+
+
+func _approx_hp(value: float, expected: float) -> bool:
+	return absf(value - expected) < 0.05
 
 
 func _test_reset(main: Node2D) -> void:

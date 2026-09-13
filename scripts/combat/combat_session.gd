@@ -17,6 +17,8 @@ enum PlayerPhase {
 enum DummyState {
 	NEUTRAL,          ## 中立
 	GROUND_HITSTUN,   ## 地面受击硬直
+	AIR_HITSTUN,      ## 浮空受击硬直（滞空期间逐帧消耗，归零即浮空受身）
+	AIR_RECOVERED,    ## 空中已受身（连段已结束，落地后才恢复中立）
 }
 
 # --- 可观察的玩家状态 ---
@@ -59,6 +61,8 @@ var _hit_confirm_frame := 0
 var _move_is_followup := false
 var _frame_input := FrameInput.new()
 var _pending_hit: MoveData = null
+## 本帧刚应用过受击硬直：命中的当帧不消耗新硬直（先刷新、后落地/自然受身）。
+var _dummy_fresh_hitstun := false
 
 ## 会话帧计数（从 1 开始）：同时为动作缓存与取消窗口计龄。
 var _frame_index := 0
@@ -67,6 +71,12 @@ var _frame_index := 0
 var _buffered_key := ""
 var _buffered_move_id := ""
 var _buffered_at := 0
+
+# --- 方向输入历史（独立于动作键缓存：年龄 0–23 有效，年龄 24 先过期）---
+## Vector2i(小键盘方向, 输入帧)：方向按面向折算（前 6 / 后 4 / 下 2 / 斜 1、3 / 中立 5），
+## 只在发生变化时入历史；识别方向派生后整段消费。
+var _direction_history: Array[Vector2i] = []
+var _last_direction_digit := 5
 
 ## 本帧开放的命中确认取消目标（招式 id）。
 var _cancel_targets: Array[String] = []
@@ -103,9 +113,12 @@ func reset_to_initial_state() -> void:
 	_hit_confirm_frame = 0
 	_move_is_followup = false
 	_pending_hit = null
+	_dummy_fresh_hitstun = false
 	_frame_input = FrameInput.new()
 	_frame_index = 0
 	_clear_buffer()
+	_direction_history.clear()
+	_last_direction_digit = 5
 	_cancel_targets.clear()
 
 
@@ -135,14 +148,42 @@ func player_attack_rect() -> Rect2:
 # --- 结算管线（顺序不可调换）---
 
 func _phase_input() -> void:
-	## 1. 记录输入：到期的缓存先过期，再记录本帧动作键（最新输入覆盖旧输入）。
-	##    动作键在输入帧锁定为具体招式；跳跃与移动在运动阶段生效，Space 不占缓存。
+	## 1. 记录输入：到期的缓存先过期，再记录本帧方向与动作键（最新输入覆盖旧输入）。
+	##    动作键在输入帧按姿态与方向历史锁定为具体招式；跳跃与移动在运动阶段生效，
+	##    Space 与方向输入不占动作键缓存。
 	if _buffered_key != "" and _frame_index - _buffered_at >= GameParams.ACTION_BUFFER_FRAMES:
 		_clear_buffer()
+	_record_direction()
 	if _frame_input.action_key != "":
 		_buffered_key = _frame_input.action_key
 		_buffered_at = _frame_index
 		_buffered_move_id = _resolve_action(_frame_input.action_key)
+		if _buffered_move_id != "" and (_moves[_buffered_move_id] as MoveData).direction_derivation != "":
+			## 识别方向派生：消费整段方向历史，招式已在输入帧锁定。
+			_direction_history.clear()
+
+
+func _record_direction() -> void:
+	## 方向历史只记录变化：先把（水平轴、下方向、面向）折算成小键盘数字，
+	## 与上一帧不同才入历史；过期条目（年龄 ≥ 方向窗口）先清理。
+	_direction_history = _direction_history.filter(
+		func(entry: Vector2i) -> bool: return _frame_index - entry.y < GameParams.DIRECTION_BUFFER_FRAMES
+	)
+	var digit := _direction_digit()
+	if digit != _last_direction_digit:
+		_direction_history.append(Vector2i(digit, _frame_index))
+		_last_direction_digit = digit
+
+
+func _direction_digit() -> int:
+	## 面向相对的小键盘方向（输入阶段先于运动，用翻转前的面向折算）：
+	## 前 6 / 后 4 / 下 2 / 斜 1、3；无输入为 5。
+	var horizontal := 0
+	if _frame_input.move_axis == player_facing:
+		horizontal = 1
+	elif _frame_input.move_axis == -player_facing:
+		horizontal = -1
+	return 5 + horizontal - (3 if _frame_input.down_held else 0)
 
 
 func _phase_hit_detection() -> void:
@@ -181,10 +222,18 @@ func _phase_apply_hits(events: Array[CombatEvent]) -> void:
 		MoveData.HitResult.GROUND_HITSTUN:
 			dummy_state = DummyState.GROUND_HITSTUN
 			dummy_hitstun_left = move.hitstun_frames
+		MoveData.HitResult.LAUNCH:
+			dummy_state = DummyState.AIR_HITSTUN
+			dummy_hitstun_left = move.hitstun_frames
 		_:
 			push_error("未支持的命中结果类型: %d" % move.hit_result)
+	_dummy_fresh_hitstun = true
 	dummy_velocity.x = player_facing * move.knockback
-	if dummy_on_ground:
+	if move.hit_result == MoveData.HitResult.LAUNCH:
+		## 浮空命中必定重起跳：即使木桩仍在上一击的微浮中也给予完整滞空；
+		## 普通命中只在地面附带击飞，追击不会刷新滞空。
+		dummy_velocity.y = -move.knockback_up
+	elif dummy_on_ground:
 		dummy_velocity.y = -move.knockback_up
 	_move_hit_confirmed = true
 	_hit_confirm_frame = _frame_index
@@ -210,7 +259,7 @@ func _phase_cancel() -> void:
 	_cancel_targets.clear()
 	if _current_move == null or not _move_hit_confirmed or not combo_active:
 		return
-	if dummy_state != DummyState.GROUND_HITSTUN:
+	if not _dummy_pursuable():
 		return
 	var age := _frame_index - _hit_confirm_frame
 	if age < 0 or age > _current_move.cancel_window_frames:
@@ -270,9 +319,18 @@ func _motion_player() -> void:
 		player_on_ground = false
 
 
+func _tick_ground_hitstun(events: Array[CombatEvent]) -> void:
+	## 地面硬直逐帧消耗：归零即自然受身，回到中立并结束连段。
+	dummy_hitstun_left = maxi(dummy_hitstun_left - 1, 0)
+	if dummy_hitstun_left == 0:
+		dummy_state = DummyState.NEUTRAL
+		events.append(CombatEvent.dummy_recovered())
+		_end_combo(CombatEvent.ComboEndReason.DUMMY_RECOVERED, events)
+
+
 func _motion_dummy(events: Array[CombatEvent]) -> void:
 	var friction := GameParams.DUMMY_FRICTION
-	if dummy_state == DummyState.GROUND_HITSTUN:
+	if dummy_state == DummyState.GROUND_HITSTUN or dummy_state == DummyState.AIR_HITSTUN:
 		friction = GameParams.DUMMY_HITSTUN_FRICTION
 	dummy_velocity.x = move_toward(dummy_velocity.x, 0.0, friction * GameParams.PHYSICS_TICK)
 	if not dummy_on_ground:
@@ -286,14 +344,32 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 		dummy_on_ground = true
 	else:
 		dummy_on_ground = false
-	if dummy_state == DummyState.GROUND_HITSTUN and dummy_on_ground:
-		# 自然受身：地面硬直归零即回到中立并结束受击。
-		# 落地保留剩余受击硬直——滞空期间硬直帧数暂停消耗。
-		dummy_hitstun_left = maxi(dummy_hitstun_left - 1, 0)
-		if dummy_hitstun_left == 0:
-			dummy_state = DummyState.NEUTRAL
-			events.append(CombatEvent.dummy_recovered())
-			_end_combo(CombatEvent.ComboEndReason.DUMMY_RECOVERED, events)
+	match dummy_state:
+		DummyState.GROUND_HITSTUN:
+			if dummy_on_ground and not _dummy_fresh_hitstun:
+				# 自然受身：地面硬直归零即回到中立并结束受击。
+				# 落地保留剩余受击硬直——滞空期间硬直帧数暂停消耗。
+				_tick_ground_hitstun(events)
+		DummyState.AIR_HITSTUN:
+			if dummy_on_ground:
+				# 落地保留剩余浮空硬直：未耗尽就落地时转为地面硬直，
+				# 落地当帧起按地面规则继续消耗（与地面受击的落地帧一致）。
+				dummy_state = DummyState.GROUND_HITSTUN
+				if not _dummy_fresh_hitstun:
+					_tick_ground_hitstun(events)
+			elif not _dummy_fresh_hitstun:
+				# 浮空受身：浮空硬直归零当帧立即结束连段；落地后才恢复中立。
+				dummy_hitstun_left = maxi(dummy_hitstun_left - 1, 0)
+				if dummy_hitstun_left == 0:
+					dummy_state = DummyState.AIR_RECOVERED
+					_end_combo(CombatEvent.ComboEndReason.DUMMY_RECOVERED, events)
+		DummyState.AIR_RECOVERED:
+			if dummy_on_ground:
+				dummy_state = DummyState.NEUTRAL
+				events.append(CombatEvent.dummy_recovered())
+		_:
+			pass
+	_dummy_fresh_hitstun = false
 
 
 ## 玩家与木桩身体不互相穿透：垂直重叠时把玩家沿水平方向推出木桩（木桩不动）。
@@ -355,16 +431,58 @@ func _clear_buffer() -> void:
 
 
 func _resolve_action(action_key: String) -> String:
-	## 动作键在输入帧锁定为具体招式 id：地面查 "5"+键、空中查 "j"+键；未配置返回空串。
-	var move_id := ("j" if not player_on_ground else "5") + action_key
+	## 动作键在输入帧锁定为具体招式 id：空中查 "j"+键；地面先用方向历史尾部
+	## 匹配招式数据里的方向派生（如 236C/214D），无派生再查 "5"+键；未配置返回空串。
+	if not player_on_ground:
+		var air_id := "j" + action_key
+		return air_id if _moves.has(air_id) else ""
+	var move_id := _match_direction_derivation(action_key)
+	if move_id == "":
+		move_id = "5" + action_key
 	return move_id if _moves.has(move_id) else ""
 
 
+func _match_direction_derivation(action_key: String) -> String:
+	## 方向派生匹配（只在地面）：方向历史滤除过期与中立条目并折叠相邻重复后，
+	## 用序列尾部匹配招式数据的 direction_derivation（"方向序列+动作键"）。
+	## 多个派生同时命中时取方向序列最长者；无匹配返回空串。
+	var sequence := ""
+	var last_digit := 0
+	for entry in _direction_history:
+		if entry.x == 5 or entry.x == last_digit:
+			continue
+		last_digit = entry.x
+		sequence += str(entry.x)
+	if sequence == "":
+		return ""
+	var best_id := ""
+	var best_length := 0
+	for move_id in _moves:
+		var move := _moves[move_id] as MoveData
+		if move == null or move.direction_derivation.length() <= best_length:
+			continue
+		if not move.direction_derivation.ends_with(action_key):
+			continue
+		if not sequence.ends_with(move.direction_derivation.left(move.direction_derivation.length() - 1)):
+			continue
+		best_id = move_id
+		best_length = move.direction_derivation.length()
+	return best_id
+
+
 func _can_hit_dummy() -> bool:
-	## 木桩中立时可被任何招式命中；受击中只有连段内的合法接续招式可以继续命中。
+	## 木桩中立时可被任何招式命中；受击中只有连段内的合法接续招式可以继续命中；
+	## 空中已受身不可追击，落地恢复中立后才能开启新一段连段。
 	if dummy_state == DummyState.NEUTRAL:
 		return true
-	return dummy_state == DummyState.GROUND_HITSTUN and combo_active and _move_is_followup
+	if not _dummy_pursuable():
+		return false
+	return combo_active and _move_is_followup
+
+
+func _dummy_pursuable() -> bool:
+	## 可追击的受击状态：地面硬直或浮空硬直（连段仍活跃时合法接续可继续命中）。
+	return dummy_state == DummyState.GROUND_HITSTUN or dummy_state == DummyState.AIR_HITSTUN
 
 
 func _stance_matches(move: MoveData) -> bool:
