@@ -17,11 +17,14 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . --editor --quit
 # 主场景无头运行若干帧（冒烟）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . --quit-after 300
 
-# 战斗会话 seam 测试（68 项：逐帧输入 → 可观察状态与事件）
+# 战斗会话 seam 测试（277 项：逐帧输入 → 可观察状态与事件）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_combat_session.gd
 
-# 训练场集成测试（28 项：注入输入 + 真实物理帧）
+# 训练场集成测试（63 项：注入输入 + 真实物理帧）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_smoke.gd
+
+# Combo Solver 测试（52 项：开头会打印默认招式表的可读验证报告）
+Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_combo_solver.gd
 ```
 
 ## 操作
@@ -51,6 +54,11 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/te
 - `main.gd` 每个物理帧读取输入喂给会话，再把会话状态写入 `player.gd`/`dummy.gd`
   两个纯呈现层；命中事件驱动木桩闪白，右上角显示木桩生命值与受击状态。
 - 碰撞（地面、墙体、身体不互相穿透）由会话按几何结算，不再依赖物理服务器。
+- `combo_solver.gd`：开发期 Combo Solver——只读招式数据，用一次性 CombatSession
+  探针验证地面命中确认接续（前摇、等待、取消窗口、木桩硬直、姿态），枚举可读
+  路线，并以逐圈模拟加木桩时序状态重现证明有效循环（ADR-0002）。它不修改运行
+  时战斗状态，不设命中数/时长上限，也不证明空间/中立/碰撞连接；方向派生与空中
+  接续由后续 issue 覆盖。设计者直接跑 Solver 测试即可看到默认表的可读报告。
 
 ## 手感参数
 
@@ -91,10 +99,12 @@ scripts/combat/frame_input.gd     单物理帧输入快照
 scripts/combat/move_data.gd       招式数据（窗口/伤害/命中框/击退/硬直）
 scripts/combat/combat_event.gd    单帧战斗事件（命中/自然受身）
 scripts/combat/combat_session.gd  确定性战斗会话（逐帧结算 seam）
+scripts/combat/combo_solver.gd    开发期 Combo Solver（接续验证与循环报告）
 scripts/player.gd             玩家呈现层（会话状态 → 节点显示）
 scripts/dummy.gd              木桩呈现层（血条/闪白/位置）
 scripts/main.gd               训练场：输入适配、会话驱动、反馈与重置
 scenes/*.tscn                 main / player / dummy 三个场景
 tests/test_combat_session.gd  战斗会话 seam 测试（逐帧输入驱动）
 tests/test_smoke.gd           训练场集成测试（SceneTree 脚本）
+tests/test_combo_solver.gd    Combo Solver 测试（含可读报告打印）
 ```
