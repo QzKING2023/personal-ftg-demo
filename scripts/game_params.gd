@@ -89,6 +89,21 @@ const MOVE_JA_ACTIVE_FRAMES := 6
 const MOVE_JA_RECOVERY_FRAMES := 10
 const MOVE_JA_KNOCKBACK := 120.0
 
+# jB 空中连接（jA 之后衔接空中路线；击退刻意调低保证 jD 追得上，
+# 并配置落地接续把缓存的 D 接为 5D——见 MoveData.landing_cancel_targets）。
+const MOVE_JB_DAMAGE := 12
+const MOVE_JB_STARTUP_FRAMES := 4
+const MOVE_JB_ACTIVE_FRAMES := 6
+const MOVE_JB_RECOVERY_FRAMES := 12
+const MOVE_JB_KNOCKBACK := 80.0
+
+# jD 空中收尾（空中路线终点；命中结束连段但保留木桩倒地处理）。
+const MOVE_JD_DAMAGE := 20
+const MOVE_JD_STARTUP_FRAMES := 4
+const MOVE_JD_ACTIVE_FRAMES := 7
+const MOVE_JD_RECOVERY_FRAMES := 14
+const MOVE_JD_KNOCKBACK := 320.0
+
 # --- 受击反馈 ---
 const ATTACK_KNOCKBACK_UP := 110.0
 const HITSTUN_FRAMES := 12

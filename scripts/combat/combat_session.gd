@@ -83,6 +83,8 @@ var _cancel_targets: Array[String] = []
 ## jump cancel 开放的空中追击起手招式（Space 取消命中确认招式后保留连段；
 ## 落地仍未接续时资格作废并结束连段）。
 var _jump_cancel_followups: Array[String] = []
+## 本帧玩家刚从空中落地（运动阶段置位；取消与消费阶段据此开放落地接续）。
+var _player_just_landed := false
 
 
 func _init(move_table: Dictionary = {}) -> void:
@@ -119,6 +121,7 @@ func reset_to_initial_state() -> void:
 	_dummy_fresh_hitstun = false
 	_frame_input = FrameInput.new()
 	_frame_index = 0
+	_player_just_landed = false
 	_clear_buffer()
 	_direction_history.clear()
 	_last_direction_digit = 5
@@ -131,6 +134,7 @@ func step(input: FrameInput) -> Array[CombatEvent]:
 	var events: Array[CombatEvent] = []
 	_frame_index += 1
 	_frame_input = input
+	_player_just_landed = false
 	_phase_input()
 	_phase_hit_detection()
 	_phase_apply_hits(events)
@@ -260,12 +264,24 @@ func _phase_motion(events: Array[CombatEvent]) -> void:
 func _phase_cancel() -> void:
 	## 5. 取消判定：只有已命中确认、仍在取消窗口内且木桩仍处于可追击的受击状态时，
 	##    才开放本招配置的取消目标；挥空不产生任何取消资格。
+	##    普通取消要求目标与当前招式同姿态（空中招式不会因落地姿态翻转而获得
+	##    地面取消目标）；空中招式在本帧刚落地时，额外开放显式配置的落地接续
+	##    目标——落地接续是空中 → 地面的唯一合法接缝。
 	_cancel_targets.clear()
 	if not _cancel_window_open():
 		return
-	for move_id in _current_move.cancel_targets:
+	_append_stance_matching_targets(_current_move.cancel_targets, _current_move.stance)
+	if _player_just_landed and _current_move.stance == MoveData.Stance.AIR:
+		_append_stance_matching_targets(_current_move.landing_cancel_targets, MoveData.Stance.GROUND)
+
+
+func _append_stance_matching_targets(move_ids: Array[String], stance: MoveData.Stance) -> void:
+	## 把姿态一致的接续目标并入取消目标（重复条目只保留一个）。
+	for move_id in move_ids:
+		if _cancel_targets.has(move_id):
+			continue
 		var target := _moves.get(move_id) as MoveData
-		if target != null and _stance_matches(target):
+		if target != null and target.stance == stance and _stance_matches(target):
 			_cancel_targets.append(move_id)
 
 
@@ -273,23 +289,40 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 	## 6. 消费缓存：空闲时按缓存起手独立招式；命中确认取消窗口内按取消资格
 	##    转入下一招。jump cancel 后的空中追击起手按合法接续起手（只有配置的
 	##    起手招式获得资格，普通跳跃后的空中招式仍是独立招式）。
-	##    取消资格不足或缓存已过期时输入作废。
+	##    落地接续只在本帧刚落地、且当前空中招式显式配置了落地接续目标时，
+	##    把缓存的动作键按地面姿态重解析后消费（如 jB 的 D → 5D）；
+	##    落地本身不授予任何普通取消资格。取消资格不足或缓存已过期时输入作废。
 	if _buffered_move_id != "":
-		var buffered := _moves.get(_buffered_move_id) as MoveData
-		if buffered != null and _stance_matches(buffered):
-			if _current_move != null and _cancel_targets.has(_buffered_move_id):
-				_start_move(_buffered_move_id, buffered, true)
-				_clear_buffer()
-			elif _current_move == null:
+		var consumed := false
+		if _player_just_landed:
+			consumed = _try_start_cancel(_resolve_action(_buffered_key))
+		if not consumed and not _try_start_cancel(_buffered_move_id):
+			var buffered := _moves.get(_buffered_move_id) as MoveData
+			if buffered != null and _stance_matches(buffered) and _current_move == null:
 				var is_followup := combo_active and _jump_cancel_followups.has(_buffered_move_id)
 				_start_move(_buffered_move_id, buffered, is_followup)
 				_clear_buffer()
 				if is_followup:
 					_jump_cancel_followups.clear()
+	## 空中招式落地：本帧没有配置的落地接续发生时，滞留地面姿态的空中招式作废
+	## （空中路线不因落地延续），连段以收招未接续结束。
+	if _current_move != null and _current_move.stance == MoveData.Stance.AIR and player_on_ground:
+		_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
+		_clear_current_move()
 	## 命中确认取消窗口关闭且没有接续时连段结束；木桩受击处理不受影响。
 	if _current_move != null and _move_hit_confirmed and combo_active \
 			and _frame_index - _hit_confirm_frame > _current_move.cancel_window_frames:
 		_end_combo(CombatEvent.ComboEndReason.CANCEL_WINDOW_CLOSED, events)
+
+
+func _try_start_cancel(move_id: String) -> bool:
+	## 命中确认取消：目标在开放名单内且姿态一致时按合法接续起手并消费缓存。
+	var move := _moves.get(move_id) as MoveData
+	if move == null or not _stance_matches(move) or _current_move == null or not _cancel_targets.has(move_id):
+		return false
+	_start_move(move_id, move, true)
+	_clear_buffer()
+	return true
 
 
 # --- 运动细节 ---
@@ -312,7 +345,6 @@ func _motion_player(events: Array[CombatEvent]) -> void:
 			_jump_cancel_followups.clear()
 			_jump_cancel_followups.append_array(_current_move.jump_cancel_targets)
 			_clear_current_move()
-			player_phase = PlayerPhase.NEUTRAL
 	if player_phase == PlayerPhase.NEUTRAL:
 		var accel := GameParams.PLAYER_ACCELERATION
 		if not player_on_ground:
@@ -335,6 +367,7 @@ func _motion_player(events: Array[CombatEvent]) -> void:
 			player_velocity.y = 0.0
 		var just_landed := not player_on_ground
 		player_on_ground = true
+		_player_just_landed = just_landed
 		if just_landed and not _jump_cancel_followups.is_empty():
 			# jump cancel 后落地仍未接续空中追击：追击资格作废，连段以收招未接续结束。
 			_jump_cancel_followups.clear()
@@ -442,7 +475,6 @@ func _advance_move(events: Array[CombatEvent]) -> void:
 		player_phase = PlayerPhase.RECOVERY
 	else:
 		## 招式收招：没有通过命中确认取消接续时连段结束。
-		player_phase = PlayerPhase.NEUTRAL
 		_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
 		_clear_current_move()
 
@@ -466,6 +498,7 @@ func _clear_current_move() -> void:
 	_hit_confirm_frame = 0
 	_move_is_followup = false
 	player_move_id = ""
+	player_phase = PlayerPhase.NEUTRAL
 
 
 func _clear_buffer() -> void:

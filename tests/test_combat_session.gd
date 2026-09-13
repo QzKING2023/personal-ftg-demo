@@ -51,6 +51,11 @@ func _initialize() -> void:
 	_test_jump_airtime_matches_param()
 	_test_jump_cancel_landing_without_pursuit_ends_combo()
 	_test_neutral_jump_jA_cannot_pursue()
+	_test_full_air_route_5A_236C_jA_jB_jD()
+	_test_same_frame_hit_landing_and_landing_followup()
+	_test_landing_seam_only_opens_on_the_landing_frame()
+	_test_landing_does_not_grant_normal_cancels()
+	_test_air_tech_breaks_combo_before_late_pursuit()
 	print("")
 	if _failures == 0:
 		print("ALL SESSION TESTS PASSED")
@@ -911,6 +916,267 @@ func _test_neutral_jump_jA_cannot_pursue() -> void:
 			_check(session.dummy_state == CombatSession.DummyState.AIR_HITSTUN, "dummy is still in float hitstun inside the attack rect")
 	_check(hit_frames == [7], "neutral-jump jA cannot pursue the floating dummy")
 	_check(session.combo_hits == 1, "combo count stays at the launcher hit")
+
+
+func _test_full_air_route_5A_236C_jA_jB_jD() -> void:
+	# 完整空中路线：5A → 236C（命中确认取消）→ Space jump cancel →
+	# jA → jB → jD 空中收尾。五次命中依次计入连段并按 100%~60% 递减；
+	# 空中收尾结束连段但保留木桩倒地处理，木桩照常落地并自然受身。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(64, 0)
+	var hit_frames: Array[int] = []
+	var move_ids: Array[String] = []
+	var end_frames: Array[int] = []
+	var end_reasons: Array[int] = []
+	var recovered_frames: Array[int] = []
+	var hit_while_grounded := false
+	var saw_airborne_ground_hitstun := false
+	for frame in range(1, 80):
+		var down := frame == 1 or frame == 2
+		var axis := 1 if frame == 2 or frame == 3 else 0
+		var key := ""
+		if frame == 4:
+			key = "A"
+		elif frame == 6:
+			key = "C"
+		elif frame == 17:
+			key = "A"
+		elif frame == 19:
+			key = "B"
+		elif frame == 23:
+			key = "D"
+		var events := session.step(FrameInput.make(axis, frame == 16, key, down))
+		move_ids.append(session.player_move_id)
+		if _count_events(events, CombatEvent.Type.HIT) > 0:
+			hit_frames.append(frame)
+			# 空中路线段（jump cancel 之后）的命中必须滞空完成。
+			hit_while_grounded = hit_while_grounded or (frame >= 17 and session.player_on_ground)
+		for event in events:
+			if event.type == CombatEvent.Type.COMBO_ENDED:
+				end_frames.append(frame)
+				end_reasons.append(event.combo_end_reason)
+			elif event.type == CombatEvent.Type.DUMMY_RECOVERED:
+				recovered_frames.append(frame)
+		if frame == 22:
+			saw_airborne_ground_hitstun = session.dummy_state == CombatSession.DummyState.GROUND_HITSTUN \
+				and not session.dummy_on_ground and session.dummy_hitstun_left == GameParams.HITSTUN_FRAMES
+	_check(hit_frames == [9, 15, 21, 25, 29], "air route lands 5A/236C on 9/15, then jA/jB/jD on 21/25/29")
+	_check(move_ids[8] == "236C" and move_ids[16] == "jA" and move_ids[20] == "jB" and move_ids[24] == "jD", "route chains 236C -> jA -> jB -> jD via hit-confirm cancels")
+	_check(not hit_while_grounded, "every air-route hit lands while the player is airborne")
+	_check(not session.combo_active and session.combo_hits == 5, "air finisher ends the route at five hits")
+	_check(end_frames == [29] and end_reasons == [CombatEvent.ComboEndReason.FINISHER], "jD hit is the only combo end, as the air finisher")
+	_check(_approx(session.combo_last_scale, 0.6), "fifth hit lands at 60 percent scale")
+	_check(_approx(session.combo_total_damage, 53.0), "route damage decays to a 53.0 total")
+	_check(_approx(session.dummy_hp, GameParams.DUMMY_MAX_HP - 53.0), "dummy hp reflects the full air route")
+	_check(saw_airborne_ground_hitstun, "air pursuit keeps the dummy airborne in normal hitstun until it lands")
+	_check(recovered_frames == [73], "dummy completes its knockdown handling with one natural recovery after the finisher")
+	_check(session.dummy_state == CombatSession.DummyState.NEUTRAL and session.combo_hits == 5, "combo count stops growing after the route ends")
+
+
+func _test_same_frame_hit_landing_and_landing_followup() -> void:
+	# 临界落地帧：jB 命中、玩家落地与缓存消费发生在同一物理帧。结算顺序固定为
+	# 命中刷新木桩硬直 → 落地 → 取消判定 → 消费缓存：木桩受击硬直只剩 1 帧时，
+	# 命中先刷新为 12（落地当帧不消耗新硬直）；jB 配置的落地接续把缓存的 D
+	# 按地面姿态重解析为 5D，并作为合法接续在落地当帧起手。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(64, 0)
+	var hit_frames: Array[int] = []
+	var move_ids: Array[String] = []
+	var end_frames: Array[int] = []
+	var end_reasons: Array[int] = []
+	var recovered_frames: Array[int] = []
+	var critical_events: Array[CombatEvent] = []
+	var critical_state_ok := false
+	var jB_in_progress_at_pin := false
+	for frame in range(1, 80):
+		if frame == 56:
+			# 临界初态：jB 已出招未命中、玩家距落地 1 帧、木桩硬直只剩 1 帧、
+			# D 已按空中姿态缓存为 jD。路线前段全部由真实输入打出。
+			jB_in_progress_at_pin = session.player_move_id == "jB" and not session.player_on_ground
+			session.dummy_position = Vector2(session.player_position.x + 60.0, GameParams.ground_stand_y())
+			session.dummy_velocity = Vector2.ZERO
+			session.dummy_state = CombatSession.DummyState.GROUND_HITSTUN
+			session.dummy_hitstun_left = 1
+			session.dummy_on_ground = true
+		var down := frame == 1 or frame == 2
+		var axis := 1 if frame == 2 or frame == 3 else 0
+		var key := ""
+		if frame == 4:
+			key = "A"
+		elif frame == 6:
+			key = "C"
+		elif frame == 44:
+			key = "A"
+		elif frame == 52:
+			key = "B"
+		elif frame == 54:
+			key = "D"
+		var events := session.step(FrameInput.make(axis, frame == 16, key, down))
+		move_ids.append(session.player_move_id)
+		if _count_events(events, CombatEvent.Type.HIT) > 0:
+			hit_frames.append(frame)
+		for event in events:
+			if event.type == CombatEvent.Type.COMBO_ENDED:
+				end_frames.append(frame)
+				end_reasons.append(event.combo_end_reason)
+			elif event.type == CombatEvent.Type.DUMMY_RECOVERED:
+				recovered_frames.append(frame)
+		if frame == 56:
+			critical_events = events
+			critical_state_ok = session.player_move_id == "5D" and session.player_on_ground \
+				and session.combo_hits == 4 and session.combo_active \
+				and session.dummy_state == CombatSession.DummyState.GROUND_HITSTUN \
+				and session.dummy_hitstun_left == GameParams.HITSTUN_FRAMES
+	_check(jB_in_progress_at_pin, "route reaches the critical frame with jB airborne and one frame from landing")
+	_check(hit_frames == [9, 15, 48, 56, 61], "jB hits exactly on the landing frame, then the landing followup 5D connects")
+	_check(critical_events.size() == 1 and critical_events[0].type == CombatEvent.Type.HIT, "the critical frame emits only the hit event: hit refreshed hitstun before landing ticked it")
+	_check(critical_state_ok, "same-frame order is hit refresh -> landing -> cancel -> consume: buffered D starts 5D as a legal followup")
+	_check(not "jD" in move_ids, "the buffered D is never consumed as the air finisher on the landing frame")
+	_check(end_frames == [61] and end_reasons == [CombatEvent.ComboEndReason.FINISHER], "landing followup 5D ends the route as the ground finisher")
+	_check(_approx(session.combo_total_damage, 51.8), "route damage totals 51.8 through the landing followup")
+	_check(recovered_frames == [77] and session.dummy_state == CombatSession.DummyState.NEUTRAL, "dummy completes its knockdown handling after the finisher")
+	_check(session.combo_hits == 5, "combo counts all five hits and stops there")
+
+
+func _test_landing_seam_only_opens_on_the_landing_frame() -> void:
+	# 落地接续只在落地当帧开放：jB 命中与落地同帧但没有缓存 D，落地后下一帧
+	# 才按 D——落地帧已过，接缝关闭，jB 作废断连；地面解析出的 5D 只按独立
+	# 招式起手，打不中仍在受击中的木桩，连段命中数不再增长。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(64, 0)
+	var hit_frames: Array[int] = []
+	var move_ids: Array[String] = []
+	var end_frames: Array[int] = []
+	var end_reasons: Array[int] = []
+	var recovered_frames: Array[int] = []
+	var independent_5D_started := false
+	for frame in range(1, 90):
+		if frame == 56:
+			session.dummy_position = Vector2(session.player_position.x + 60.0, GameParams.ground_stand_y())
+			session.dummy_velocity = Vector2.ZERO
+			session.dummy_state = CombatSession.DummyState.GROUND_HITSTUN
+			session.dummy_hitstun_left = 1
+			session.dummy_on_ground = true
+		var down := frame == 1 or frame == 2
+		var axis := 1 if frame == 2 or frame == 3 else 0
+		var key := ""
+		if frame == 4:
+			key = "A"
+		elif frame == 6:
+			key = "C"
+		elif frame == 44:
+			key = "A"
+		elif frame == 52:
+			key = "B"
+		elif frame == 57:
+			key = "D"
+		var events := session.step(FrameInput.make(axis, frame == 16, key, down))
+		move_ids.append(session.player_move_id)
+		if _count_events(events, CombatEvent.Type.HIT) > 0:
+			hit_frames.append(frame)
+		for event in events:
+			if event.type == CombatEvent.Type.COMBO_ENDED:
+				end_frames.append(frame)
+				end_reasons.append(event.combo_end_reason)
+			elif event.type == CombatEvent.Type.DUMMY_RECOVERED:
+				recovered_frames.append(frame)
+		if frame == 57:
+			independent_5D_started = session.player_move_id == "5D" and not session.combo_active
+	_check(hit_frames == [9, 15, 48, 56], "jB lands on the landing frame but no fifth hit ever connects")
+	_check(independent_5D_started, "D pressed after the landing frame starts 5D as an independent move")
+	_check(end_frames == [56] and end_reasons == [CombatEvent.ComboEndReason.MOVE_RECOVERED], "the landed jB is invalidated on its landing frame and ends the combo there")
+	_check(session.combo_hits == 4 and _approx(session.combo_total_damage, 41.0), "the independent 5D cannot extend the combo against the stunned dummy")
+	_check(recovered_frames == [77] and session.dummy_state == CombatSession.DummyState.NEUTRAL, "dummy finishes its own knockdown handling after the whiffed probe")
+
+
+func _test_landing_does_not_grant_normal_cancels() -> void:
+	# 落地不自动授予取消资格：jA 未配置落地接续，落地帧缓存的 D 不会接出 5D；
+	# 滞留地面姿态的空中招式作废，连段以收招未接续结束，木桩受击处理独立继续。
+	# 木桩浮空硬直在 jA 命中前只剩 1 帧：命中先刷新为 12，自然受身没有先发生。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(64, 0)
+	var hit_frames: Array[int] = []
+	var move_ids: Array[String] = []
+	var end_frames: Array[int] = []
+	var end_reasons: Array[int] = []
+	var recovered_frames: Array[int] = []
+	var hitstun_at_jA_hit := -1
+	var player_neutral_after_landing := false
+	for frame in range(1, 80):
+		var key := ""
+		if frame == 1:
+			key = "C"
+		elif frame == 39:
+			key = "A"
+		elif frame == 45:
+			key = "D"
+		var events := session.step(FrameInput.make(0, frame == 8, key))
+		move_ids.append(session.player_move_id)
+		if _count_events(events, CombatEvent.Type.HIT) > 0:
+			hit_frames.append(frame)
+			if frame == 43:
+				hitstun_at_jA_hit = session.dummy_hitstun_left
+		for event in events:
+			if event.type == CombatEvent.Type.COMBO_ENDED:
+				end_frames.append(frame)
+				end_reasons.append(event.combo_end_reason)
+			elif event.type == CombatEvent.Type.DUMMY_RECOVERED:
+				recovered_frames.append(frame)
+		if frame == 49:
+			player_neutral_after_landing = session.player_move_id == "" \
+				and session.player_phase == CombatSession.PlayerPhase.NEUTRAL and session.player_on_ground
+	_check(hit_frames == [7, 43], "5C launches and the late jA pursuit connects at the hitstun boundary")
+	_check(hitstun_at_jA_hit == GameParams.HITSTUN_FRAMES, "jA hit refreshes the one-frame-left hitstun before natural recovery takes it")
+	_check(end_frames == [48] and end_reasons == [CombatEvent.ComboEndReason.MOVE_RECOVERED], "combo ends on the landing frame as an unrecovered air move")
+	_check(player_neutral_after_landing, "the landed air move is cleared and the player is neutral again")
+	_check(not "5D" in move_ids and not "jD" in move_ids, "buffered D is never consumed: landing grants no cancel to an unconfigured move")
+	_check(session.combo_hits == 2 and not session.combo_active, "combo stops at two hits")
+	_check(recovered_frames == [66] and session.dummy_state == CombatSession.DummyState.NEUTRAL, "dummy finishes its own knockdown handling regardless of the combo end")
+
+
+func _test_air_tech_breaks_combo_before_late_pursuit() -> void:
+	# 追击迟到：木桩浮空硬直耗尽先自然受身，连段立即结束；迟到的 jA 即使把
+	# 木桩含在命中框内也不能命中，连段命中数停在受身前不再增长；
+	# 落地作废的空中招式不会触发第二次连段结束。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(64, 0)
+	var hit_frames: Array[int] = []
+	var end_frames: Array[int] = []
+	var end_reasons: Array[int] = []
+	var recovered_frames: Array[int] = []
+	var pursuit_overlaps_recovered_dummy := false
+	var player_neutral_after_landing := false
+	for frame in range(1, 80):
+		var down := frame == 1 or frame == 2
+		var axis := 1 if frame == 2 or frame == 3 else 0
+		var key := ""
+		if frame == 4:
+			key = "A"
+		elif frame == 6:
+			key = "C"
+		elif frame == 49:
+			key = "A"
+		var events := session.step(FrameInput.make(axis, frame == 16, key, down))
+		if _count_events(events, CombatEvent.Type.HIT) > 0:
+			hit_frames.append(frame)
+		for event in events:
+			if event.type == CombatEvent.Type.COMBO_ENDED:
+				end_frames.append(frame)
+				end_reasons.append(event.combo_end_reason)
+			elif event.type == CombatEvent.Type.DUMMY_RECOVERED:
+				recovered_frames.append(frame)
+		if frame == 53:
+			pursuit_overlaps_recovered_dummy = session.dummy_state == CombatSession.DummyState.AIR_RECOVERED \
+				and session.player_move_id == "jA" \
+				and session.player_attack_rect().intersects(Rect2(session.dummy_position - GameParams.BODY_SIZE * 0.5, GameParams.BODY_SIZE))
+		if frame == 57:
+			player_neutral_after_landing = session.player_move_id == "" and session.player_on_ground
+	_check(hit_frames == [9, 15], "only the launcher route lands before the air tech")
+	_check(end_frames == [51] and end_reasons == [CombatEvent.ComboEndReason.DUMMY_RECOVERED], "air tech ends the combo exactly when float hitstun runs out, with no second end at landing")
+	_check(pursuit_overlaps_recovered_dummy, "late jA overlaps the air-recovered dummy inside its attack rect but cannot hit it")
+	_check(player_neutral_after_landing, "the landed pursuit move is cleared on landing")
+	_check(session.combo_hits == 2 and not session.combo_active, "combo count freezes at the tech")
+	_check(recovered_frames == [62] and session.dummy_state == CombatSession.DummyState.NEUTRAL, "air-recovered dummy lands back to neutral with a single recovery event")
 
 
 # --- 辅助 ---

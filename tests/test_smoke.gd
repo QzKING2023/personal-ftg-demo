@@ -25,6 +25,7 @@ func _run_tests() -> void:
 	await _test_ground_combo_display(main, session)
 	await _test_direction_derivative_and_float(main, session)
 	await _test_jump_cancel_air_pursuit(main, session)
+	await _test_full_air_route_keyboard(main, session)
 	await _test_reset(main)
 	print("")
 	if _failures == 0:
@@ -292,6 +293,88 @@ func _test_jump_cancel_air_pursuit(main: Node2D, session: CombatSession) -> void
 	_check(landed, "player and dummy both land after the pursuit")
 	_check(session.combo_hits == 2, "no extra hits: the pursuit does not refresh the float for another launch")
 	_check(session.dummy_hp == hp_before - GameParams.MOVE_236C_DAMAGE - GameParams.MOVE_JA_DAMAGE * 0.9, "route damage is 236C full plus decayed jA")
+
+
+func _test_full_air_route_keyboard(main: Node2D, session: CombatSession) -> void:
+	# 键盘完整走通进阶路线 5A → 236C → Space → jA → jB → jD：五击全部命中，
+	# 空中收尾结束连段；状态栏显示空中姿态与连段计数，木桩照常落地并自然受身。
+	for i in 60:
+		await physics_frame
+		if session.player_phase == CombatSession.PlayerPhase.NEUTRAL and session.dummy_state == CombatSession.DummyState.NEUTRAL:
+			break
+	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
+	session.player_velocity = Vector2.ZERO
+	session.player_facing = 1
+	session.dummy_position = session.player_position + Vector2(52, 0)
+	session.dummy_velocity = Vector2.ZERO
+	# 前面各测试已累积扣血：重置木桩血量，避免本路线中途触底钳制 0 血。
+	session.dummy_hp = GameParams.DUMMY_MAX_HP
+	var status: Label = main.get_node("DummyStatus")
+	await physics_frame
+	# 5A 地面起手。
+	Input.action_press("attack_a")
+	await physics_frame
+	Input.action_release("attack_a")
+	var got_hit := false
+	for i in 15:
+		await physics_frame
+		if session.combo_hits == 1:
+			got_hit = true
+			break
+	_check(got_hit, "5A opens the air route as the first hit via keyboard")
+	# 5A 取消窗内输入 236 再按 C，命中确认后取消进浮空。
+	Input.action_press("move_down")
+	await physics_frame
+	Input.action_press("move_right")
+	await physics_frame
+	Input.action_release("move_down")
+	await physics_frame
+	Input.action_press("attack_c")
+	await physics_frame
+	Input.action_release("attack_c")
+	Input.action_release("move_right")
+	got_hit = false
+	for i in 15:
+		await physics_frame
+		if session.combo_hits == 2:
+			got_hit = true
+			break
+	_check(got_hit and session.player_move_id == "236C", "buffered 236C cancels 5A into the launcher")
+	_check(session.dummy_state == CombatSession.DummyState.AIR_HITSTUN, "launcher puts the dummy into float hitstun")
+	# Space jump cancel 转入空中，连段保留。
+	Input.action_press("jump")
+	await physics_frame
+	Input.action_release("jump")
+	await physics_frame
+	_check(not session.player_on_ground and session.combo_active, "space jump-cancels the confirmed launcher into the air")
+	# jA → jB → jD 空中路线；状态栏显示空中姿态与逐击累计的连段计数。
+	var saw_air_posture := false
+	var route_hits := 0
+	for key in ["a", "b", "d"]:
+		Input.action_press("attack_" + key)
+		await physics_frame
+		Input.action_release("attack_" + key)
+		got_hit = false
+		for i in 15:
+			await physics_frame
+			saw_air_posture = saw_air_posture or status.text.contains("玩家 空中")
+			if session.combo_hits == 2 + route_hits + 1:
+				got_hit = true
+				break
+		route_hits += 1
+		_check(got_hit, "air route key %s lands as combo hit %d" % [key.to_upper(), 2 + route_hits])
+	_check(route_hits == 3 and session.combo_hits == 5 and not session.combo_active, "jD finishes the air route at five hits and ends the combo")
+	_check(saw_air_posture, "status display shows the airborne posture during the route")
+	_check(status.text.contains("连段 5"), "status display shows the five-hit combo")
+	_check(_approx_hp(session.dummy_hp, GameParams.DUMMY_MAX_HP - 53.0), "route damage totals 53.0 through the decay")
+	var settled := false
+	for i in 90:
+		await physics_frame
+		if session.player_on_ground and session.dummy_state == CombatSession.DummyState.NEUTRAL:
+			settled = true
+			break
+	_check(settled, "player lands and the dummy recovers naturally after the air finisher")
+	_check(session.combo_hits == 5, "no extra hits land after the route")
 
 
 func _approx_hp(value: float, expected: float) -> bool:
