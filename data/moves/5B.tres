@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="MoveData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/move_data.gd" id="1_f8ftx"]
+
+[resource]
+script = ExtResource("1_f8ftx")
+move_id = "5B"
+move_kind = 1
+stance = 1
+action_key = "B"
+startup_frames = 4
+active_frames = 6
+recovery_frames = 13
+base_damage = 12
+attack_attribute = 1
+air_attack = false
+hitbox_size = Vector2(64, 60)
+hitbox_gap = 4.0
+knockback = 160.0
+knockback_up = 110.0
+hitstun_frames = 12
+hit_result = 1
+throw_range = -1.0
+extra_landing_recovery_frames = 0
+cancel_targets = Array[String](["5D", "214D"])
+cancel_window_frames = 8
+is_finisher = false
+jump_cancel_targets = Array[String]([])
+landing_cancel_targets = Array[String]([])
+direction_derivation = ""
+input_alternatives = Array[String]([])
+priority = 1

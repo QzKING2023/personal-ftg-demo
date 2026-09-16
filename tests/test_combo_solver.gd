@@ -111,8 +111,7 @@ func _test_injected_slow_back_edge_not_misreported() -> void:
 	# 结构上存在 5A → 5B → 5E → 5A 回路，但 5B → 5E 的目标前摇 25 帧
 	# 晚于木桩恢复（第 21 帧）——等待超时的回边不得被误报为循环。
 	var table := MoveData.default_table()
-	var slow := MoveData.new()
-	slow.move_name = "5E"
+	var slow := _injected_move("5E", "E")
 	slow.startup_frames = 25
 	slow.active_frames = 2
 	slow.recovery_frames = 8
@@ -163,8 +162,7 @@ func _test_wait_window_clamped_by_window_and_hitstun() -> void:
 	# 边界有效但只有 w=0 可用；5F → 5A（前摇 5）：命中晚于恢复——等待超时排除。
 	# 5G（硬直 12、无击飞、窗口 2）→ 5B：硬直允许到 w=8，窗口 2 是收窄方。
 	var table := MoveData.default_table()
-	var quick := MoveData.new()
-	quick.move_name = "5F"
+	var quick := _injected_move("5F", "F")
 	quick.startup_frames = 2
 	quick.active_frames = 2
 	quick.recovery_frames = 3
@@ -174,8 +172,7 @@ func _test_wait_window_clamped_by_window_and_hitstun() -> void:
 	quick.knockback_up = 0.0
 	quick.cancel_targets = ["5A", "5B"]
 	table["5F"] = quick
-	var wide := MoveData.new()
-	wide.move_name = "5G"
+	var wide := _injected_move("5G", "G")
 	wide.startup_frames = 2
 	wide.active_frames = 2
 	wide.recovery_frames = 3
@@ -313,8 +310,7 @@ func _test_landing_seam_requires_alignment() -> void:
 	# 验收 1/3：落地接缝不只是配置——空中命中必须能落在落地帧前的取消窗口内。
 	# jE（前摇 36）经 jB 取消后最早命中已晚于落地帧：空中招式落地即作废，接缝不可用。
 	var table := MoveData.default_table()
-	var late := MoveData.new()
-	late.move_name = "jE"
+	var late := _injected_move("jE", "E")
 	late.stance = MoveData.Stance.AIR
 	late.startup_frames = 36
 	late.active_frames = 2
@@ -521,6 +517,31 @@ func _snapshot_session(session: CombatSession) -> Array:
 
 func _approx(value: float, expected: float, tolerance := 0.05) -> bool:
 	return absf(value - expected) < tolerance
+
+
+## 测试注入招式：字段齐全的合法打击招式（值取旧 GameParams 运行时默认，
+## issue 01 起核心字段缺省是“未声明”哨兵值，程序内构造必须显式补齐；
+## 注入表只喂给 Solver 探针，不经过 MoveTable 校验，键名可超出 A–D）。
+func _injected_move(id: String, key: String) -> MoveData:
+	var move := MoveData.new()
+	move.move_id = id
+	move.move_kind = MoveData.MoveKind.STRIKE
+	move.stance = MoveData.Stance.GROUND
+	move.action_key = key
+	move.startup_frames = 5
+	move.active_frames = 7
+	move.recovery_frames = 13
+	move.cancel_window_frames = GameParams.CANCEL_WINDOW_FRAMES
+	move.priority = 1
+	move.base_damage = 10
+	move.attack_attribute = MoveData.AttackAttribute.HIGH
+	move.hitbox_size = GameParams.ATTACK_HITBOX_SIZE
+	move.hitbox_gap = GameParams.ATTACK_HITBOX_GAP
+	move.hit_result = MoveData.HitResult.GROUND_HITSTUN
+	move.hitstun_frames = GameParams.HITSTUN_FRAMES
+	move.knockback = GameParams.MOVE_5A_KNOCKBACK
+	move.knockback_up = GameParams.ATTACK_KNOCKBACK_UP
+	return move
 
 
 func _check(condition: bool, label: String) -> void:

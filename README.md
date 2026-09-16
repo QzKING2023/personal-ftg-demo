@@ -25,6 +25,14 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/te
 
 # Combo Solver 测试（112 项：开头会打印默认招式表的可读验证报告）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_combo_solver.gd
+
+# 共享招式表测试（issue 01：manifest 加载、整表校验、双端共享与拒绝）
+Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_move_table.gd
+
+# 搓招与空中运动诊断回路（逐帧打印物理键/相对方向/面向/识别招式/缓存/取消/命中；
+# 退出码非 0 = 仍有未修复症状，当前红色项全部为待定的地面面向规则，见
+# .scratch/ftg-combat-foundation/diagnosis.md）
+Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/diagnose_inputs.gd
 ```
 
 ## 操作
@@ -32,8 +40,10 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/te
 | 行为 | 键位 |
 | --- | --- |
 | 左右移动 | A / D 或 ← / → |
+| 下方向（搓招用） | S / ↓ |
 | 跳跃 | Space |
-| 攻击 | J |
+| 动作 A / B / C / D | U / I / K / J |
+| 方向派生 236+C / 214+D | 依次输入方向序列（数字按面向折算）后按动作键 C（K）/ D（J） |
 | 重置场景 | R |
 
 ## 架构：战斗会话
@@ -47,10 +57,15 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/te
 
 - `combat_session.gd`：`CombatSession.step(FrameInput)` 返回本帧战斗事件，
   并维护可观察的玩家状态（位置/朝向/招式阶段/是否落地）与木桩状态
-  （位置/生命值/受击状态/剩余硬直帧）。取消与输入缓存阶段是后续连段
-  issue 的管线占位，当前无操作。
-- `move_data.gd`：招式数据（startup/active/recovery 帧数、伤害、命中框、
-  击退与硬直），可配置、可替换；`FrameInput`/`CombatEvent` 为单帧输入与事件。
+  （位置/生命值/受击状态/剩余硬直帧）。
+- 招式数据是共享的本地类型化资源（issue 01）：`data/moves/*.tres` 每招一份
+  `MoveData`，由 `data/move_manifest.tres` 统一引用；`move_table.gd` 的
+  `MoveTable` 负责加载与整表校验——缺核心字段、类型错误、负帧数、未知枚举、
+  非法方向谓词、矛盾字段组合或跨招式非法引用都会整表拒绝，错误按
+  「资源来源｜招式 id｜字段｜原因」定位。训练场与 Combo Solver 只读同一份
+  已校验 manifest；非法表使两处保持拒绝并显示同一原因，不跳过招式、不静默
+  修正、也不回退旧 GameParams 数值。设计者编辑 `.tres` 后两处行为同步变化；
+  资源缓存按路径驻留，改完文件需重新运行项目。
 - `main.gd` 每个物理帧读取输入喂给会话，再把会话状态写入 `player.gd`/`dummy.gd`
   两个纯呈现层；命中事件驱动木桩闪白，右上角显示木桩生命值与受击状态。
 - 碰撞（地面、墙体、身体不互相穿透）由会话按几何结算，不再依赖物理服务器。
@@ -63,12 +78,12 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/te
 
 ## 手感参数
 
-全部集中在 `scripts/game_params.gd`：移动速度/加速度/摩擦、跳跃初速度、重力、
-攻击三段窗口（startup 5 帧 / active 7 帧 / recovery 13 帧，60 物理帧/秒，引擎
-物理帧率已在 project.godot 固定为 60）、伤害、击退、硬直（12 帧，滞空暂停、
-落地继续消耗）、闪白时长、木桩血量与摩擦、舞台尺寸，以及所有颜色。
-招式窗口与伤害在 `MoveData` 中按招式配置，默认值取自 GameParams；改帧数/伤害
-不需要动结算逻辑。角色共用同一套形状结构（`native_shapes.gd`），只换颜色。
+非招式参数（舞台、移动、跳跃、重力、木桩、HUD 与全部颜色）集中在
+`scripts/game_params.gd`。招式窗口/伤害/属性/绑定/优先级等自 issue 01 起是
+共享资源数据：`data/moves/*.tres`（冻结首版数值见规格）+ `data/move_manifest.tres`；
+`GameParams` 中的 `MOVE_*` 常量仅作测试断言基线，运行时不读取。改招式帧数/伤害
+直接编辑对应 `.tres`，训练场与 Solver 同步生效；改完需重新运行项目（资源缓存
+按路径驻留）。角色共用同一套形状结构（`native_shapes.gd`），只换颜色。
 
 攻击期间（地面）水平输入失效、不能跳跃、不能取消；active 阶段会在身前显示
 半透明命中框，方便核对攻击范围。同一次出招对同一目标最多命中一次。
@@ -88,16 +103,21 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/te
 - 只有一种招式，无输入缓存、取消、连招、防御、闪避、AI、回合与计时
   （输入缓存与命中确认取消见后续 issue）。
 - 空中可以出招（保留空中动量），无空中跳跃次数限制外的额外规则。
-- 无音效、无屏幕震动（HUD 有木桩头顶血条、左上角按键提示与右上角状态显示）。
+- 无音效、无屏幕震动（HUD 有木桩头顶血条、左上角按键提示、右上角状态显示与
+  左下角诊断行——面向/方向序列/识别招式/缓存剩余/取消资格）。
 
 ## 目录结构
 
 ```
 project.godot                 输入映射、窗口 960x540、主场景
-scripts/game_params.gd        全部可调参数（含颜色）
+data/moves/*.tres             共享招式资源（每招一份 MoveData，冻结首版数值）
+data/move_manifest.tres       招式表清单（统一引用，训练场与 Solver 共用）
+scripts/game_params.gd        非招式可调参数（含颜色）；MOVE_* 仅测试基线
 scripts/native_shapes.gd      原生形状绘制：矩形与共用角色结构
 scripts/combat/frame_input.gd     单物理帧输入快照
-scripts/combat/move_data.gd       招式数据（窗口/伤害/命中框/击退/硬直）
+scripts/combat/move_data.gd       招式数据 schema（类型化 Resource）
+scripts/combat/move_manifest.gd   招式清单资源（引用每招一份 .tres）
+scripts/combat/move_table.gd      共享表加载与整表校验（非法表整表拒绝）
 scripts/combat/combat_event.gd    单帧战斗事件（命中/自然受身）
 scripts/combat/combat_session.gd  确定性战斗会话（逐帧结算 seam）
 scripts/combat/combo_solver.gd    开发期 Combo Solver（接续验证与循环报告）
@@ -105,7 +125,9 @@ scripts/player.gd             玩家呈现层（会话状态 → 节点显示）
 scripts/dummy.gd              木桩呈现层（血条/闪白/位置）
 scripts/main.gd               训练场：输入适配、会话驱动、反馈与重置
 scenes/*.tscn                 main / player / dummy 三个场景
+tests/test_move_table.gd      共享招式表 seam 测试（加载/校验/双端拒绝）
 tests/test_combat_session.gd  战斗会话 seam 测试（逐帧输入驱动）
 tests/test_smoke.gd           训练场集成测试（SceneTree 脚本）
 tests/test_combo_solver.gd    Combo Solver 测试（含可读报告打印）
+tests/diagnose_inputs.gd      搓招与空中运动诊断回路（逐帧诊断记录与症状判定）
 ```

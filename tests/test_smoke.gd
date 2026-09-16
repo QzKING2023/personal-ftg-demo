@@ -20,12 +20,15 @@ func _run_tests() -> void:
 	var dummy: Dummy = main.get_node("Dummy")
 	await _test_movement_and_bounds(player, session)
 	await _test_jump(player)
+	await _test_hud_layout_no_overlap(main)
 	await _test_attack_hit_and_feedback(main, player, dummy, session)
 	await _test_attack_range(session)
 	await _test_ground_combo_display(main, session)
 	await _test_direction_derivative_and_float(main, session)
 	await _test_jump_cancel_air_pursuit(main, session)
 	await _test_full_air_route_keyboard(main, session)
+	await _test_session_runs_shared_manifest(main)
+	await _test_main_refuses_invalid_manifest()
 	await _test_reset(main)
 	print("")
 	if _failures == 0:
@@ -84,6 +87,23 @@ func _test_jump(player: Player) -> void:
 		peak = minf(peak, player.position.y)
 	_check(peak <= floor_y - 60.0, "player rises well above the ground on jump")
 	_check(absf(player.position.y - floor_y) < 2.0, "player lands back on the ground")
+
+
+func _test_hud_layout_no_overlap(main: Node2D) -> void:
+	# 键位提示（左上）与木桩状态（右上）按实测文本宽度验证互不重叠：
+	# 提示最宽行不超过状态栏左缘；状态栏按最宽战斗文案（浮空受击+两位数连段）
+	# 也不得超出 960 设计视口。窗口缩放由 canvas_items 拉伸统一处理。
+	var hint: Label = main.get_node("Hint")
+	var status: Label = main.get_node("DummyStatus")
+	await physics_frame
+	var hint_width := hint.get_combined_minimum_size().x
+	status.text = "玩家 地面  木桩 HP 100/100\n状态 浮空受击（36）  连段 21 hit · 103.6"
+	await physics_frame
+	var status_width := status.get_combined_minimum_size().x
+	_check(hint.position.x + hint_width <= GameParams.STATUS_OFFSET.x + 0.5,
+		"hint block stays clear of the status column")
+	_check(GameParams.STATUS_OFFSET.x + status_width <= GameParams.STAGE_WIDTH,
+		"status text fits inside the design viewport width")
 
 
 func _test_attack_hit_and_feedback(main: Node2D, player: Player, dummy: Dummy, session: CombatSession) -> void:
@@ -379,6 +399,64 @@ func _test_full_air_route_keyboard(main: Node2D, session: CombatSession) -> void
 
 func _approx_hp(value: float, expected: float) -> bool:
 	return absf(value - expected) < 0.05
+
+
+func _test_session_runs_shared_manifest(main: Node2D) -> void:
+	# 训练场会话运行的是共享 manifest 的同一份数据（issue 01）：招式集合与代表字段
+	# 都来自 data/move_manifest.tres，冻结首版数值与 GameParams 基线一致。
+	var shared := MoveTable.load_default()
+	_check(shared.ok, "shared manifest loads and validates for the training ground")
+	if not shared.ok:
+		return
+	var session: CombatSession = main.session
+	var table := session.move_table()
+	_check(table.keys() == shared.moves.keys(), "training ground session runs the shared manifest move set")
+	var session_5a := table["5A"] as MoveData
+	var shared_5a := shared.moves["5A"] as MoveData
+	_check(session_5a.startup_frames == shared_5a.startup_frames
+		and session_5a.startup_frames == GameParams.MOVE_5A_STARTUP_FRAMES,
+		"session 5A startup comes from the shared resource (frozen baseline 5)")
+	_check(session_5a.base_damage == shared_5a.base_damage
+		and session_5a.base_damage == GameParams.MOVE_5A_DAMAGE,
+		"session 5A damage comes from the shared resource (frozen baseline 10)")
+	var launcher := table["236C"] as MoveData
+	_check(launcher.direction_derivation == "236C" and launcher.action_key == "C",
+		"derivative moves carry explicit input bindings from the shared resource")
+
+
+func _test_main_refuses_invalid_manifest() -> void:
+	# 手改资源造成非法表：训练场保持拒绝状态（session 为 null）、显示与
+	# MoveTable/Solver 完全相同的可定位原因，不回退旧 GameParams 继续运行。
+	var broken := (MoveData.default_table()["5A"] as MoveData)
+	broken.base_damage = -1
+	ResourceSaver.save(broken, "user://smoke_bad_move.tres")
+	var manifest := MoveManifest.new()
+	manifest.move_paths = ["user://smoke_bad_move.tres"]
+	ResourceSaver.save(manifest, "user://smoke_bad_manifest.tres")
+
+	var refused: Node2D = load("res://scenes/main.tscn").instantiate()
+	refused.set("manifest_path", "user://smoke_bad_manifest.tres")
+	root.add_child(refused)
+	await process_frame
+	_check(refused.get("session") == null, "training ground refuses to run on an invalid move table")
+	var table_error: String = refused.get("table_error")
+	_check(table_error != "", "refusal reason is observable on the training ground")
+	var load_result := MoveTable.load_manifest("user://smoke_bad_manifest.tres")
+	_check(table_error == load_result.first_error(),
+		"training ground shows the same rejection reason as the shared loader")
+	if not load_result.ok:
+		_check(load_result.errors[0].contains("smoke_bad_move.tres") and load_result.errors[0].contains("5A") \
+			and load_result.errors[0].contains("base_damage"),
+			"rejection reports resource source, move id and field")
+	var hint: Label = refused.get_node_or_null("Hint")
+	_check(hint != null and hint.text.contains("base_damage") and hint.text.contains("拒绝"),
+		"hint label shows the refusal and the offending field")
+	var report := ComboSolver.analyze_manifest("user://smoke_bad_manifest.tres")
+	_check(report.refused and report.refusal_reason == table_error,
+		"solver refuses the same table for the same observable reason")
+	# 拒绝状态不产生会话事件：场景仍可安全迭代（重置流程不受影响）。
+	refused.queue_free()
+	await process_frame
 
 
 func _test_reset(main: Node2D) -> void:

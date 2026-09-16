@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="MoveData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/move_data.gd" id="1_p64xk"]
+
+[resource]
+script = ExtResource("1_p64xk")
+move_id = "214D"
+move_kind = 1
+stance = 1
+action_key = "D"
+startup_frames = 7
+active_frames = 5
+recovery_frames = 20
+base_damage = 22
+attack_attribute = 1
+air_attack = false
+hitbox_size = Vector2(64, 60)
+hitbox_gap = 4.0
+knockback = 400.0
+knockback_up = 110.0
+hitstun_frames = 12
+hit_result = 1
+throw_range = -1.0
+extra_landing_recovery_frames = 0
+cancel_targets = Array[String]([])
+cancel_window_frames = 8
+is_finisher = true
+jump_cancel_targets = Array[String]([])
+landing_cancel_targets = Array[String]([])
+direction_derivation = "214D"
+input_alternatives = Array[String]([])
+priority = 1

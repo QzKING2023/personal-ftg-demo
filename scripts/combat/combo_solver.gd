@@ -126,7 +126,8 @@ class SolverCycle extends RefCounted:
 		return " → ".join(route) + " → 回到 " + route[0]
 
 
-## 分析报告：接续边、可读路线、循环与可读文本。
+## 分析报告：接续边、可读路线、循环与可读文本。refused = 招式表未通过校验，
+## Solver 拒绝分析且不产出任何结论（与训练场观察同一拒绝原因，issue 01）。
 class SolverReport extends RefCounted:
 	var safe := true
 	var summary := ""
@@ -135,12 +136,25 @@ class SolverReport extends RefCounted:
 	var routes: Array[SolverRoute] = []
 	var cycles: Array[SolverCycle] = []
 	var notes: Array[String] = []
+	var refused := false
+	var refusal_reason := ""
+	## 共享招式表摘要行（设计者核对资源编辑是否进入报告，issue 01）。
+	var table_lines: Array[String] = []
 
 	func to_lines() -> Array[String]:
 		var lines: Array[String] = []
 		lines.append("=== Combo Solver：地面与空中接续验证 ===")
+		if refused:
+			lines.append("拒绝分析：招式表未通过校验——" + refusal_reason)
+			lines.append("修改招式资源后重新分析；Solver 与训练场使用同一份 manifest，两处会同步拒绝。")
+			return lines
 		lines.append(summary)
 		lines.append(scope)
+		lines.append("--- 共享招式表 ---")
+		if table_lines.is_empty():
+			lines.append("（招式表为程序注入，无共享资源摘要）")
+		for line in table_lines:
+			lines.append(line)
 		lines.append("--- 接续边 ---")
 		if edges.is_empty():
 			lines.append("（招式表中没有可分析的接续边）")
@@ -171,10 +185,33 @@ func _init(move_table: Dictionary) -> void:
 	_table = move_table
 
 
+## 分析共享 manifest 指向的招式表；表未通过校验时拒绝分析并报告同一原因。
+static func analyze_manifest(manifest_path: String) -> SolverReport:
+	var result := MoveTable.load_manifest(manifest_path)
+	if not result.ok:
+		return _refused_report(result)
+	return ComboSolver.new(result.moves)._analyze()
+
+
 ## 分析招式表：生成确定性接续边、可读路线与循环报告。不修改任何运行时战斗状态。
+## 默认分析共享 manifest（与训练场同一份已校验数据）；显式传入字典用于注入实验表。
 static func analyze(move_table: Dictionary = {}) -> SolverReport:
-	var table := move_table if not move_table.is_empty() else MoveData.default_table()
+	var table := move_table
+	if table.is_empty():
+		var result := MoveTable.load_default()
+		if not result.ok:
+			return _refused_report(result)
+		table = result.moves
 	return ComboSolver.new(table)._analyze()
+
+
+static func _refused_report(result) -> SolverReport:
+	var report := SolverReport.new()
+	report.refused = true
+	report.refusal_reason = result.first_error()
+	report.summary = "招式表未通过校验，拒绝分析：%s" % report.refusal_reason
+	report.scope = SCOPE_TEXT
+	return report
 
 
 # --- 分析主体 ---
@@ -182,13 +219,15 @@ static func analyze(move_table: Dictionary = {}) -> SolverReport:
 func _analyze() -> SolverReport:
 	var report := SolverReport.new()
 	report.scope = SCOPE_TEXT
+	report.table_lines = _table_summary_lines()
 	var contexts := _build_contexts()
 	var timing_cache := {}
 	var valid_adj := {}
 	var edge_kinds := {}
 	for from_id in _table:
 		var from_move := _table[from_id] as MoveData
-		if from_move == null:
+		## 投技不走单键/取消链起手（投技行为在后续 issue 实装），不进入接续图。
+		if from_move == null or from_move.is_throw():
 			continue
 		var kinds_and_targets := [
 			[EdgeKind.CANCEL, from_move.cancel_targets],
@@ -229,6 +268,26 @@ func _analyze() -> SolverReport:
 	report.safe = report.cycles.is_empty()
 	report.summary = _build_summary(report)
 	return report
+
+
+## 共享招式表摘要行：设计者编辑资源（帧数/伤害/属性/优先级）后可直接在报告中核对。
+func _table_summary_lines() -> Array[String]:
+	var lines: Array[String] = []
+	for move_id in _table:
+		var move := _table[move_id] as MoveData
+		if move == null:
+			continue
+		var stance_text := "地面" if move.stance == MoveData.Stance.GROUND else "空中"
+		var kind_text := "投技" if move.is_throw() else "打击"
+		var binding := "组合 B+C" if move.is_throw() else "%s键" % move.action_key
+		if move.direction_derivation != "":
+			binding += " 派生 %s" % move.direction_derivation
+		lines.append("%s｜%s%s %s｜%d/%d/%d 帧｜伤害 %d｜属性 %s｜优先级 %d" % [
+			move_id, stance_text, kind_text, binding,
+			move.startup_frames, move.active_frames, move.recovery_frames,
+			move.base_damage, move.attribute_label(), move.priority,
+		])
+	return lines
 
 
 func _build_summary(report: SolverReport) -> String:
@@ -1019,27 +1078,22 @@ func _dummy_pursuable(session: CombatSession) -> bool:
 
 
 func _is_plain_ground_id(move_id: String) -> bool:
+	## 路线起点：地面、无方向派生、可由动作键起手的打击招式（按表内顺序，确定性枚举）。
 	var move := _table.get(move_id) as MoveData
 	if move == null or move.stance != MoveData.Stance.GROUND or move.direction_derivation != "":
 		return false
-	return move_id.length() == 2 and move_id.begins_with("5")
+	return move.is_strike() and move.action_key != ""
 
 
-## 招式的起手动作键：地面普通招式 "5"+键；地面方向派生取派生记法末位键；
-## 空中招式 "j"+键（空中解析只查 jX，方向派生在空中不生效）。
+## 招式的起手动作键：取招式数据声明的输入绑定（issue 01 起绑定是数据字段）；
+## 空中招式只在无方向派生时可由单键起手（方向派生在空中不生效）；投技不可单键起手。
 func _start_key_for(move_id: String) -> String:
 	var move := _table.get(move_id) as MoveData
-	if move == null:
+	if move == null or move.is_throw():
 		return ""
-	if move.stance == MoveData.Stance.AIR:
-		if move_id.length() == 2 and move_id.begins_with("j"):
-			return move_id[1]
+	if move.stance == MoveData.Stance.AIR and move.direction_derivation != "":
 		return ""
-	if move.direction_derivation != "":
-		return move.direction_derivation.right(1)
-	if move_id.length() == 2 and move_id.begins_with("5"):
-		return move_id[1]
-	return ""
+	return move.action_key
 
 
 ## 起手前需要喂入的方向序列（方向派生记法去掉末位动作键）。

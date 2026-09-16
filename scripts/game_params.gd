@@ -18,8 +18,8 @@ const DUMMY_SPAWN_X := 620.0
 const PLAYER_MOVE_SPEED := 340.0
 const PLAYER_ACCELERATION := 2600.0
 const PLAYER_FRICTION := 3000.0
-const PLAYER_AIR_CONTROL := 0.75
 # 玩家跳跃默认滞空帧数；起跳速度由滞空帧数换算（与木桩浮空同一积分方式）。
+# 普通空中运动保留起跳横向速度：方向输入不改变空中横向速度或面向（无空中操控参数）。
 const PLAYER_JUMP_AIRTIME_FRAMES := 40
 const GRAVITY := 1400.0
 const MAX_FALL_SPEED := 1000.0
@@ -148,8 +148,17 @@ const HP_BAR_LOW_COLOR := Color(0.90, 0.25, 0.20)
 const HINT_COLOR := Color(0.85, 0.87, 0.92)
 
 # --- 辅助 ---
+# 键位提示固定在左上角，木桩状态固定在右上角（x=620 起），两者与最宽文本
+# 都限制在 960 宽设计分辨率内；窗口缩放由 canvas_items 拉伸统一处理。
 const HINT_OFFSET := Vector2(8, 6)
-const STATUS_OFFSET := Vector2(500, 6)
+const STATUS_OFFSET := Vector2(620, 6)
+# HUD 文本统一字号与描边，保证小窗口下仍然可读。
+const HUD_FONT_SIZE := 16
+const HUD_SMALL_FONT_SIZE := 14
+const HUD_OUTLINE_SIZE := 4
+const HINT_OUTLINE_COLOR := Color(0.05, 0.06, 0.10)
+# 诊断行固定在左下角（地板条带内），不与顶部提示/状态栏重叠。
+const DEBUG_OFFSET := Vector2(8, 506)
 
 
 ## 角色站上地面时身体中心的 y 坐标。

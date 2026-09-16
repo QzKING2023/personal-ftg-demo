@@ -6,29 +6,45 @@ extends Node2D
 const PlayerScene: PackedScene = preload("res://scenes/player.tscn")
 const DummyScene: PackedScene = preload("res://scenes/dummy.tscn")
 
-const HINT_TEXT := "A/D or Arrows: Move    S or Down: Direction    Space: Jump    J/K/L/U: 5A/5B/5C/5D    236+C / 214+D: Derivatives    R: Reset"
+const HINT_TEXT := "移动 A/D 或 ←/→    下 S/↓    跳跃 Space    重置 R\n动作 U/I/K/J = A/B/C/D    派生 236+C / 214+D（方向按面向折算）"
 
-## 动作键 A/B/C/D 对应的输入动作名（J/K/L/U）；C/D 配合方向序列触发派生。
+## 动作键 A/B/C/D 对应的输入动作名（物理键 U/I/K/J）；C/D 配合方向序列触发派生。
 const ACTION_KEYS: Array[String] = ["A", "B", "C", "D"]
 
-## 本局战斗会话（战斗状态的唯一来源）。
+## 动作键 → 物理键（诊断行展示用，与 project.godot 输入映射保持一致）。
+const ACTION_PHYSICAL_KEYS := {"A": "U", "B": "I", "C": "K", "D": "J"}
+
+## 本局战斗会话（战斗状态的唯一来源）；招式表校验失败时为 null，训练场拒绝运行。
 var session: CombatSession
+## 共享招式表 manifest 路径（训练场与 Combo Solver 读同一份已校验数据，issue 01）。
+var manifest_path := MoveTable.DEFAULT_MANIFEST_PATH
+## 非空 = 招式表被拒绝的原因（与 Solver 观察到的同一拒绝原因）。
+var table_error := ""
 
 var _player: Player
 var _dummy: Dummy
 var _dummy_status: Label
+var _debug_line: Label
 
 
 func _ready() -> void:
-	session = CombatSession.new()
+	var table := MoveTable.load_manifest(manifest_path)
+	if table.ok:
+		session = CombatSession.new(table.moves)
+	else:
+		session = null
+		table_error = table.first_error()
 	_build_arena()
 	_spawn_fighters()
 	_add_hint_label()
 	_add_dummy_status()
+	_add_debug_line()
 	_sync_views()
 
 
 func _physics_process(_delta: float) -> void:
+	if session == null:
+		return
 	var events: Array[CombatEvent] = session.step(_read_frame_input())
 	_player.apply_session(session)
 	_dummy.apply_session(session)
@@ -36,6 +52,7 @@ func _physics_process(_delta: float) -> void:
 		if event.type == CombatEvent.Type.HIT:
 			_dummy.flash()
 	_update_dummy_status()
+	_update_debug_line()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -96,6 +113,8 @@ func _spawn_fighters() -> void:
 
 
 func _sync_views() -> void:
+	if session == null:
+		return
 	_player.apply_session(session)
 	_dummy.apply_session(session)
 	_update_dummy_status()
@@ -103,9 +122,17 @@ func _sync_views() -> void:
 
 func _add_hint_label() -> void:
 	var label := Label.new()
-	label.text = HINT_TEXT
+	if table_error != "":
+		# 招式表被整表拒绝：训练场保持拒绝状态并显示可定位原因，不回退旧参数。
+		# 资源缓存按路径驻留：修复文件后需重新运行项目才会重新加载（R 只重载场景）。
+		label.text = "招式表校验失败，训练场拒绝运行\n%s\n修复资源后重新运行项目验证" % table_error
+	else:
+		label.text = HINT_TEXT
 	label.position = GameParams.HINT_OFFSET
+	label.add_theme_font_size_override("font_size", GameParams.HUD_FONT_SIZE)
 	label.add_theme_color_override("font_color", GameParams.HINT_COLOR)
+	label.add_theme_color_override("font_outline_color", GameParams.HINT_OUTLINE_COLOR)
+	label.add_theme_constant_override("outline_size", GameParams.HUD_OUTLINE_SIZE)
 	label.name = "Hint"
 	add_child(label)
 
@@ -113,9 +140,53 @@ func _add_hint_label() -> void:
 func _add_dummy_status() -> void:
 	_dummy_status = Label.new()
 	_dummy_status.position = GameParams.STATUS_OFFSET
+	_dummy_status.add_theme_font_size_override("font_size", GameParams.HUD_FONT_SIZE)
 	_dummy_status.add_theme_color_override("font_color", GameParams.HINT_COLOR)
+	_dummy_status.add_theme_color_override("font_outline_color", GameParams.HINT_OUTLINE_COLOR)
+	_dummy_status.add_theme_constant_override("outline_size", GameParams.HUD_OUTLINE_SIZE)
 	_dummy_status.name = "DummyStatus"
 	add_child(_dummy_status)
+
+
+func _add_debug_line() -> void:
+	# 诊断行（执行路径阶段 1 的输入记录要求）：面向、姿态、当前招式、
+	# 缓存剩余、方向序列与取消资格——供实机搓招问题的人工复现核对。
+	_debug_line = Label.new()
+	_debug_line.position = GameParams.DEBUG_OFFSET
+	_debug_line.add_theme_font_size_override("font_size", GameParams.HUD_SMALL_FONT_SIZE)
+	_debug_line.add_theme_color_override("font_color", GameParams.HINT_COLOR)
+	_debug_line.add_theme_color_override("font_outline_color", GameParams.HINT_OUTLINE_COLOR)
+	_debug_line.add_theme_constant_override("outline_size", GameParams.HUD_OUTLINE_SIZE)
+	_debug_line.name = "DebugLine"
+	add_child(_debug_line)
+
+
+func _update_debug_line() -> void:
+	var snap := session.debug_snapshot()
+	var facing_text := "→" if int(snap["facing"]) == 1 else "←"
+	var posture := "空中" if not bool(snap["on_ground"]) else "地面"
+	var move_text := String(snap["move_id"])
+	if move_text == "":
+		move_text = "—"
+	var buffer_text := "—"
+	if int(snap["buffer_age"]) >= 0:
+		var physical := String(ACTION_PHYSICAL_KEYS.get(String(snap["buffered_key"]), "?"))
+		buffer_text = "%s[%s] 余%d帧" % [
+			String(snap["buffered_move_id"]), physical,
+			maxi(GameParams.ACTION_BUFFER_FRAMES - int(snap["buffer_age"]), 0),
+		]
+	var sequence := String(snap["direction_sequence"])
+	if sequence == "":
+		sequence = "—"
+	var cancels := "/".join(PackedStringArray(snap["cancel_targets"]))
+	if cancels == "":
+		cancels = "—"
+	var attribute := String(snap["move_attribute"])
+	if attribute != "":
+		attribute = " 属性" + attribute
+	_debug_line.text = "诊断 帧%d 面向%s %s 招式%s%s 缓存%s 方向%s 取消%s" % [
+		int(snap["frame"]), facing_text, posture, move_text, attribute, buffer_text, sequence, cancels,
+	]
 
 
 func _update_dummy_status() -> void:
@@ -127,7 +198,8 @@ func _update_dummy_status() -> void:
 	elif session.dummy_state == CombatSession.DummyState.AIR_RECOVERED:
 		state_text = "空中已受身"
 	var posture := "空中" if not session.player_on_ground else "地面"
-	_dummy_status.text = "玩家 %s  木桩 HP %d/%d  状态 %s  连段 %d hit · %.1f" % [
+	# 两行布局：第一行姿态与血量，第二行受击状态与连段；避免与左侧键位提示重叠。
+	_dummy_status.text = "玩家 %s  木桩 HP %d/%d\n状态 %s  连段 %d hit · %.1f" % [
 		posture,
 		roundi(session.dummy_hp),
 		GameParams.DUMMY_MAX_HP,

@@ -1,47 +1,81 @@
 class_name MoveData
 extends Resource
-## 招式数据：描述一招的全部可配置结算参数。
-## 运行时战斗逻辑只读这份配置；调整帧数/伤害不需要改 CombatSession。
+## 招式数据：描述一招的全部可配置结算参数（类型化本地资源，issue 01 起由
+## data/moves/*.tres 承载、data/move_manifest.tres 统一引用）。
+## 运行时战斗逻辑与 Combo Solver 只读这份配置；调整帧数/伤害不需要改 CombatSession。
+## 核心字段缺省值一律是“未声明”哨兵（0/-1/UNSET）：MoveTable 校验时缺字段即拒绝，
+## 不静默修正，也不回退旧 GameParams 数值。
+
+## 招式类别：打击招式与普通投。投技行为在后续 issue 实装，表结构先行。
+enum MoveKind {
+	UNSET = 0,   ## 未声明（非法）
+	STRIKE = 1,  ## 打击招式：必须声明伤害/属性/命中框/命中结果/受击硬直/击退
+	THROW = 2,   ## 普通投：必须声明投距；startup 固定 5f 领域规则，不由资源覆盖
+}
+
+## 姿态要求：动作键解析与取消资格都按姿态匹配。
+enum Stance {
+	UNSET = 0,   ## 未声明（非法）
+	GROUND = 1,  ## 地面招式
+	AIR = 2,     ## 空中招式
+}
 
 ## 命中结果类型：决定木桩被命中后进入哪种受击状态。
 enum HitResult {
-	GROUND_HITSTUN,   ## 地面受击硬直
-	LAUNCH,           ## 浮空受击：木桩被打入浮空硬直，滞空期间硬直逐帧消耗
+	UNSET = 0,          ## 未声明（打击招式非法）
+	GROUND_HITSTUN = 1, ## 地面受击硬直
+	LAUNCH = 2,         ## 浮空受击：木桩被打入浮空硬直，滞空期间硬直逐帧消耗
 }
 
-## 姿态要求：动作键解析与取消资格都按姿态匹配（空中招式在后续 issue 配置）。
-enum Stance {
-	GROUND,   ## 地面招式
-	AIR,      ## 空中招式
+## 攻击属性（防御姿态判定用；air 是与之正交的独立标记，见 air_attack）。
+enum AttackAttribute {
+	UNSET = 0,    ## 未声明（打击招式非法）
+	HIGH = 1,     ## 高位（站立可防）
+	MID = 2,      ## 中段
+	LOW = 3,      ## 下段（蹲防）
+	OVERHEAD = 4, ## 蹲防不可、站防可
 }
 
-@export var move_name := "5A"
+## 稳定 id：资源身份，不由文件名推断；manifest 与运行时/Solver 都以它引用招式。
+@export var move_id := ""
+## 招式类别（打击/普通投）。
+@export var move_kind: MoveKind = MoveKind.UNSET
 ## 姿态要求。
-@export var stance: Stance = Stance.GROUND
+@export var stance: Stance = Stance.UNSET
+## 输入绑定：动作键 A/B/C/D。普通投是 B+C 组合输入，不声明单键绑定（后续 issue 实装）。
+@export var action_key := ""
 ## 前摇帧数：出招到判定出现之前。
-@export var startup_frames := GameParams.MOVE_5A_STARTUP_FRAMES
+@export var startup_frames := -1
 ## 判定帧数：命中框生效、允许命中的窗口。
-@export var active_frames := GameParams.MOVE_5A_ACTIVE_FRAMES
+@export var active_frames := -1
 ## 后摇帧数：判定结束后回到中立之前。
-@export var recovery_frames := GameParams.MOVE_5A_RECOVERY_FRAMES
+@export var recovery_frames := -1
 ## 基础伤害（实际伤害按连段命中数递减，在会话结算中计算）。
-@export var base_damage := GameParams.MOVE_5A_DAMAGE
+@export var base_damage := -1
+## 攻击属性（high/mid/low/overhead）。
+@export var attack_attribute: AttackAttribute = AttackAttribute.UNSET
+## 正交 air 类别：标记空中攻击/攻击判定。地面招式能命中空中目标不因此获得 air。
+@export var air_attack := false
 ## 命中框尺寸（以角色中心为原点）。
-@export var hitbox_size := GameParams.ATTACK_HITBOX_SIZE
+@export var hitbox_size := Vector2.ZERO
 ## 命中框与身体前缘的间隙。
-@export var hitbox_gap := GameParams.ATTACK_HITBOX_GAP
+@export var hitbox_gap := -1.0
 ## 命中后的水平击退速度（px/s，沿攻击方向）。
-@export var knockback := GameParams.MOVE_5A_KNOCKBACK
+@export var knockback := -1.0
 ## 命中木桩在地面时附加的向上击飞速度（px/s）。
-@export var knockback_up := GameParams.ATTACK_KNOCKBACK_UP
+@export var knockback_up := -1.0
 ## 命中给予的受击硬直帧数。
-@export var hitstun_frames := GameParams.HITSTUN_FRAMES
+@export var hitstun_frames := -1
 ## 命中结果类型。
-@export var hit_result: HitResult = HitResult.GROUND_HITSTUN
+@export var hit_result: HitResult = HitResult.UNSET
+## 投距：投技必填（普通投的领域数据，投技行为在后续 issue 实装）。
+@export var throw_range := -1.0
+## 空中招式显式额外落地恢复帧数（落地恢复基础规则在跳跃 issue 实装；默认 0）。
+@export var extra_landing_recovery_frames := 0
 ## 命中确认取消：本招命中确认后允许取消进入的招式 id 列表。
 @export var cancel_targets: Array[String] = []
 ## 命中确认取消窗口：命中后第 0–N 帧（含两端）内允许取消。
-@export var cancel_window_frames := GameParams.CANCEL_WINDOW_FRAMES
+@export var cancel_window_frames := -1
 ## 收尾招式：命中后结束当前连段路线；不主动清除木桩的受击/倒地处理。
 @export var is_finisher := false
 ## jump cancel 配置：命中确认后的取消窗口内允许 Space 取消起跳转入空中追击的
@@ -55,10 +89,25 @@ enum Stance {
 ## 方向派生记法："236C" 表示方向序列 236 + 动作键 C；空串为无方向要求的普通招式。
 ## 按下动作键时用方向历史尾部匹配；识别成功即消费方向序列并把缓存锁定为本招。
 @export var direction_derivation := ""
+## 显式输入替代串（如超必杀的 "23626D"）：只按声明生效，不由普通指令自动推导。
+@export var input_alternatives: Array[String] = []
+## 同层并列时的选择顺序：数值大者优先；同绑定同优先级的并列属于非法数据。
+@export var priority := -1
 
 
 func total_frames() -> int:
 	return startup_frames + active_frames + recovery_frames
+
+
+## 是否打击招式（校验与单键/取消链解析都以此排除投技——投技是 B+C 组合输入，
+## 组合解析在后续 issue 实装）。
+func is_strike() -> bool:
+	return move_kind == MoveKind.STRIKE
+
+
+## 是否投技。
+func is_throw() -> bool:
+	return move_kind == MoveKind.THROW
 
 
 func active_from() -> int:
@@ -75,116 +124,30 @@ func hitbox_offset() -> float:
 	return GameParams.BODY_SIZE.x * 0.5 + hitbox_gap + hitbox_size.x * 0.5
 
 
-## 默认招式表：招式 id → 招式。
-## 地面稳定路线 5A → 5B → 5D；进阶空中路线 236C → jump cancel → jA → jB → jD。
-## A/B/C/D 语义独立表达——A 地面起手兼空中追击（jA）、B 地面/空中连接
-## （5B 可取消进 5D/214D，jB 衔接 jD 并支持落地接续 5D）、C 地面浮空
-## （LAUNCH，可 jump cancel 进 jA）、D 地面/空中收尾（5D/214D/jD）；
-## 236C/214D 为方向派生；jA 为 jump cancel 后的空中追击起手。
+## 诊断用属性标签：high/mid/low/overhead，正交 air 以 "+air" 叠加；未声明为 "—"。
+func attribute_label() -> String:
+	if move_kind == MoveKind.THROW:
+		return "投"
+	var label := "—"
+	match attack_attribute:
+		AttackAttribute.HIGH:
+			label = "high"
+		AttackAttribute.MID:
+			label = "mid"
+		AttackAttribute.LOW:
+			label = "low"
+		AttackAttribute.OVERHEAD:
+			label = "overhead"
+	if air_attack:
+		label += "+air"
+	return label
+
+
+## 兼容入口：默认招式表 = 共享 manifest 加载的已校验数据（不再是代码内建的
+## GameParams 表）。每次调用返回独立副本，调用方可安全修改用于注入实验。
 static func default_table() -> Dictionary:
-	var starter := MoveData.new()
-	starter.move_name = "5A"
-	starter.startup_frames = GameParams.MOVE_5A_STARTUP_FRAMES
-	starter.active_frames = GameParams.MOVE_5A_ACTIVE_FRAMES
-	starter.recovery_frames = GameParams.MOVE_5A_RECOVERY_FRAMES
-	starter.base_damage = GameParams.MOVE_5A_DAMAGE
-	starter.knockback = GameParams.MOVE_5A_KNOCKBACK
-	starter.cancel_targets = ["5B", "236C"]
-
-	var linker := MoveData.new()
-	linker.move_name = "5B"
-	linker.startup_frames = GameParams.MOVE_5B_STARTUP_FRAMES
-	linker.active_frames = GameParams.MOVE_5B_ACTIVE_FRAMES
-	linker.recovery_frames = GameParams.MOVE_5B_RECOVERY_FRAMES
-	linker.base_damage = GameParams.MOVE_5B_DAMAGE
-	linker.knockback = GameParams.MOVE_5B_KNOCKBACK
-	linker.cancel_targets = ["5D", "214D"]
-
-	var launcher := MoveData.new()
-	launcher.move_name = "5C"
-	launcher.startup_frames = GameParams.MOVE_5C_STARTUP_FRAMES
-	launcher.active_frames = GameParams.MOVE_5C_ACTIVE_FRAMES
-	launcher.recovery_frames = GameParams.MOVE_5C_RECOVERY_FRAMES
-	launcher.base_damage = GameParams.MOVE_5C_DAMAGE
-	launcher.knockback = GameParams.MOVE_5C_KNOCKBACK
-	launcher.hit_result = HitResult.LAUNCH
-	launcher.jump_cancel_targets = ["jA"]
-
-	var derivative_launcher := MoveData.new()
-	derivative_launcher.move_name = "236C"
-	derivative_launcher.startup_frames = GameParams.MOVE_236C_STARTUP_FRAMES
-	derivative_launcher.active_frames = GameParams.MOVE_236C_ACTIVE_FRAMES
-	derivative_launcher.recovery_frames = GameParams.MOVE_236C_RECOVERY_FRAMES
-	derivative_launcher.base_damage = GameParams.MOVE_236C_DAMAGE
-	derivative_launcher.knockback = GameParams.MOVE_236C_KNOCKBACK
-	derivative_launcher.hit_result = HitResult.LAUNCH
-	derivative_launcher.direction_derivation = "236C"
-	derivative_launcher.jump_cancel_targets = ["jA"]
-
-	var air_starter := MoveData.new()
-	air_starter.move_name = "jA"
-	air_starter.stance = Stance.AIR
-	air_starter.startup_frames = GameParams.MOVE_JA_STARTUP_FRAMES
-	air_starter.active_frames = GameParams.MOVE_JA_ACTIVE_FRAMES
-	air_starter.recovery_frames = GameParams.MOVE_JA_RECOVERY_FRAMES
-	air_starter.base_damage = GameParams.MOVE_JA_DAMAGE
-	air_starter.knockback = GameParams.MOVE_JA_KNOCKBACK
-	air_starter.cancel_targets = ["jB"]
-
-	var air_linker := MoveData.new()
-	air_linker.move_name = "jB"
-	air_linker.stance = Stance.AIR
-	air_linker.startup_frames = GameParams.MOVE_JB_STARTUP_FRAMES
-	air_linker.active_frames = GameParams.MOVE_JB_ACTIVE_FRAMES
-	air_linker.recovery_frames = GameParams.MOVE_JB_RECOVERY_FRAMES
-	air_linker.base_damage = GameParams.MOVE_JB_DAMAGE
-	air_linker.knockback = GameParams.MOVE_JB_KNOCKBACK
-	air_linker.cancel_targets = ["jD"]
-	## 落地接续：jB 命中确认后，取消窗口内的落地帧把缓存的 D 接为 5D。
-	air_linker.landing_cancel_targets = ["5D"]
-
-	var air_finisher := MoveData.new()
-	air_finisher.move_name = "jD"
-	air_finisher.stance = Stance.AIR
-	air_finisher.startup_frames = GameParams.MOVE_JD_STARTUP_FRAMES
-	air_finisher.active_frames = GameParams.MOVE_JD_ACTIVE_FRAMES
-	air_finisher.recovery_frames = GameParams.MOVE_JD_RECOVERY_FRAMES
-	air_finisher.base_damage = GameParams.MOVE_JD_DAMAGE
-	air_finisher.knockback = GameParams.MOVE_JD_KNOCKBACK
-	air_finisher.is_finisher = true
-
-	var finisher := MoveData.new()
-	finisher.move_name = "5D"
-	finisher.startup_frames = GameParams.MOVE_5D_STARTUP_FRAMES
-	finisher.active_frames = GameParams.MOVE_5D_ACTIVE_FRAMES
-	finisher.recovery_frames = GameParams.MOVE_5D_RECOVERY_FRAMES
-	finisher.base_damage = GameParams.MOVE_5D_DAMAGE
-	finisher.knockback = GameParams.MOVE_5D_KNOCKBACK
-	finisher.is_finisher = true
-
-	var derivative_finisher := MoveData.new()
-	derivative_finisher.move_name = "214D"
-	derivative_finisher.startup_frames = GameParams.MOVE_214D_STARTUP_FRAMES
-	derivative_finisher.active_frames = GameParams.MOVE_214D_ACTIVE_FRAMES
-	derivative_finisher.recovery_frames = GameParams.MOVE_214D_RECOVERY_FRAMES
-	derivative_finisher.base_damage = GameParams.MOVE_214D_DAMAGE
-	derivative_finisher.knockback = GameParams.MOVE_214D_KNOCKBACK
-	derivative_finisher.is_finisher = true
-	derivative_finisher.direction_derivation = "214D"
-
-	for move: MoveData in [starter, linker, launcher, derivative_launcher, air_starter, air_linker, air_finisher, finisher, derivative_finisher]:
-		move.hitbox_size = GameParams.ATTACK_HITBOX_SIZE
-		move.hitbox_gap = GameParams.ATTACK_HITBOX_GAP
-		move.knockback_up = GameParams.float_launch_speed() if move.hit_result == HitResult.LAUNCH else GameParams.ATTACK_KNOCKBACK_UP
-		move.hitstun_frames = GameParams.FLOAT_HITSTUN_FRAMES if move.hit_result == HitResult.LAUNCH else GameParams.HITSTUN_FRAMES
-	return {
-		"5A": starter,
-		"5B": linker,
-		"5C": launcher,
-		"236C": derivative_launcher,
-		"jA": air_starter,
-		"jB": air_linker,
-		"jD": air_finisher,
-		"5D": finisher,
-		"214D": derivative_finisher,
-	}
+	var result := MoveTable.load_default()
+	if not result.ok:
+		push_error("共享招式表校验失败：" + result.first_error())
+		return {}
+	return result.moves

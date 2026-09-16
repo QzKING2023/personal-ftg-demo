@@ -88,8 +88,16 @@ var _player_just_landed := false
 
 
 func _init(move_table: Dictionary = {}) -> void:
+	## 空表默认加载共享 manifest（训练场与 Solver 同一份已校验数据）；
+	## 不回退代码内建的 GameParams 招式表——共享资源是唯一数据源（issue 01）。
 	_moves = move_table if not move_table.is_empty() else MoveData.default_table()
 	reset_to_initial_state()
+
+
+## 会话运行的共享招式表（稳定 id → MoveData；只读快照口径，修改应通过编辑
+## 共享资源并重新加载，不要在运行中改写会话表）。
+func move_table() -> Dictionary:
+	return _moves
 
 
 ## 恢复到初始状态。训练场通过重载场景重建会话；测试也可直接调用。
@@ -151,6 +159,28 @@ func player_attack_rect() -> Rect2:
 		return Rect2()
 	var center := player_position + Vector2(player_facing * _current_move.hitbox_offset(), 0.0)
 	return Rect2(center - _current_move.hitbox_size * 0.5, _current_move.hitbox_size)
+
+
+## 开发期诊断只读快照：面向、相对方向序列、识别招式、缓存剩余、取消资格与
+## 姿态/速度等复现记录口径（执行路径阶段 1 的输入记录要求）。只读，不参与结算。
+func debug_snapshot() -> Dictionary:
+	var buffer_age := -1
+	if _buffered_key != "":
+		buffer_age = _frame_index - _buffered_at
+	return {
+		"frame": _frame_index,
+		"facing": player_facing,
+		"on_ground": player_on_ground,
+		"phase": player_phase,
+		"move_id": player_move_id,
+		"move_attribute": _current_move.attribute_label() if _current_move != null else "",
+		"buffered_key": _buffered_key,
+		"buffered_move_id": _buffered_move_id,
+		"buffer_age": buffer_age,
+		"direction_sequence": _collapsed_direction_sequence(),
+		"cancel_targets": _cancel_targets.duplicate(),
+		"velocity": player_velocity,
+	}
 
 
 # --- 结算管线（顺序不可调换）---
@@ -346,16 +376,16 @@ func _motion_player(events: Array[CombatEvent]) -> void:
 			_jump_cancel_followups.append_array(_current_move.jump_cancel_targets)
 			_clear_current_move()
 	if player_phase == PlayerPhase.NEUTRAL:
-		var accel := GameParams.PLAYER_ACCELERATION
-		if not player_on_ground:
-			accel *= GameParams.PLAYER_AIR_CONTROL
-		if _frame_input.move_axis != 0:
-			player_facing = 1 if _frame_input.move_axis > 0 else -1
-			player_velocity.x = move_toward(player_velocity.x, _frame_input.move_axis * GameParams.PLAYER_MOVE_SPEED, accel * GameParams.PHYSICS_TICK)
-		else:
-			player_velocity.x = move_toward(player_velocity.x, 0.0, GameParams.PLAYER_FRICTION * GameParams.PHYSICS_TICK)
+		if player_on_ground:
+			if _frame_input.move_axis != 0:
+				player_facing = 1 if _frame_input.move_axis > 0 else -1
+				player_velocity.x = move_toward(player_velocity.x, _frame_input.move_axis * GameParams.PLAYER_MOVE_SPEED, GameParams.PLAYER_ACCELERATION * GameParams.PHYSICS_TICK)
+			else:
+				player_velocity.x = move_toward(player_velocity.x, 0.0, GameParams.PLAYER_FRICTION * GameParams.PHYSICS_TICK)
+		# 普通空中运动保留起跳横向速度：方向输入不加速、不减速、也不翻转面向
+		# （已明确规则，见执行路径；招式配置的运动效果按招式规则另行处理）。
 	else:
-		# 出招期间水平输入失效，只保留摩擦减速。
+		# 出招期间水平输入失效，只保留摩擦减速（地面/空中一致）。
 		player_velocity.x = move_toward(player_velocity.x, 0.0, GameParams.PLAYER_FRICTION * GameParams.PHYSICS_TICK)
 	if not player_on_ground and not jumped_this_frame:
 		player_velocity.y = minf(player_velocity.y + GameParams.GRAVITY * GameParams.PHYSICS_TICK, GameParams.MAX_FALL_SPEED)
@@ -507,21 +537,78 @@ func _clear_buffer() -> void:
 
 
 func _resolve_action(action_key: String) -> String:
-	## 动作键在输入帧锁定为具体招式 id：空中查 "j"+键；地面先用方向历史尾部
-	## 匹配招式数据里的方向派生（如 236C/214D），无派生再查 "5"+键；未配置返回空串。
+	## 动作键在输入帧锁定为具体招式 id：按招式数据声明的输入绑定解析（issue 01 起
+	## 绑定是数据字段，不再按 id 命名约定推断）。地面先匹配方向派生（最长派生优先），
+	## 无派生再取同键无派生招式；空中只匹配无方向派生的空中招式。同绑定并列时取
+	## 优先级最高者（校验保证合法表无并列；投技不走单键解析）。
+	if action_key == "":
+		return ""
 	if not player_on_ground:
-		var air_id := "j" + action_key
-		return air_id if _moves.has(air_id) else ""
-	var move_id := _match_direction_derivation(action_key)
-	if move_id == "":
-		move_id = "5" + action_key
-	return move_id if _moves.has(move_id) else ""
+		return _best_by_priority(_binding_candidates(action_key, MoveData.Stance.AIR, true))
+	var derivative_id := _match_direction_derivation(action_key)
+	if derivative_id != "":
+		return derivative_id
+	return _best_by_priority(_binding_candidates(action_key, MoveData.Stance.GROUND, true))
+
+
+## 声明了指定姿态、绑定该动作键且（plain 时）无方向派生的打击招式 id 列表。
+func _binding_candidates(action_key: String, stance: MoveData.Stance, plain_only: bool) -> Array[String]:
+	var ids: Array[String] = []
+	for move_id in _moves:
+		var move := _moves[move_id] as MoveData
+		if move == null or move.stance != stance or not move.is_strike():
+			continue
+		if move.action_key != action_key:
+			continue
+		if plain_only and move.direction_derivation != "":
+			continue
+		ids.append(move_id)
+	return ids
+
+
+## 同绑定并列时按声明优先级选招（大者优先）。仍并列取表序首个只是未校验注入表
+## 的兜底——共享 manifest 已把同绑定同优先级并列拒绝为非法数据，不按表序猜测。
+func _best_by_priority(move_ids: Array[String]) -> String:
+	var best_id := ""
+	var best_priority := -999999
+	for move_id in move_ids:
+		var priority := (_moves[move_id] as MoveData).priority
+		if priority > best_priority:
+			best_id = move_id
+			best_priority = priority
+	return best_id
 
 
 func _match_direction_derivation(action_key: String) -> String:
 	## 方向派生匹配（只在地面）：方向历史滤除过期与中立条目并折叠相邻重复后，
-	## 用序列尾部匹配招式数据的 direction_derivation（"方向序列+动作键"）。
-	## 多个派生同时命中时取方向序列最长者；无匹配返回空串。
+	## 用序列尾部匹配招式数据声明的 direction_derivation（"方向序列+动作键"）。
+	## 多个派生同时命中时取方向序列最长者；同长并列按优先级。
+	var sequence := _collapsed_direction_sequence()
+	if sequence == "":
+		return ""
+	var best_id := ""
+	var best_length := 0
+	var best_priority := -999999
+	for move_id in _moves:
+		var move := _moves[move_id] as MoveData
+		if move == null or move.stance != MoveData.Stance.GROUND or not move.is_strike():
+			continue
+		if move.direction_derivation.length() < 2 or move.direction_derivation.length() < best_length:
+			continue
+		if not move.direction_derivation.ends_with(action_key):
+			continue
+		if not sequence.ends_with(move.direction_derivation.left(move.direction_derivation.length() - 1)):
+			continue
+		if move.direction_derivation.length() > best_length or (move.direction_derivation.length() == best_length and move.priority > best_priority):
+			best_id = move_id
+			best_length = move.direction_derivation.length()
+			best_priority = move.priority
+	return best_id
+
+
+## 方向历史的可读折叠：滤除中立与相邻重复条目后的相对方向序列（如 "236"/"214"）。
+## 匹配与诊断共用同一折叠口径。
+func _collapsed_direction_sequence() -> String:
 	var sequence := ""
 	var last_digit := 0
 	for entry in _direction_history:
@@ -529,21 +616,7 @@ func _match_direction_derivation(action_key: String) -> String:
 			continue
 		last_digit = entry.x
 		sequence += str(entry.x)
-	if sequence == "":
-		return ""
-	var best_id := ""
-	var best_length := 0
-	for move_id in _moves:
-		var move := _moves[move_id] as MoveData
-		if move == null or move.direction_derivation.length() <= best_length:
-			continue
-		if not move.direction_derivation.ends_with(action_key):
-			continue
-		if not sequence.ends_with(move.direction_derivation.left(move.direction_derivation.length() - 1)):
-			continue
-		best_id = move_id
-		best_length = move.direction_derivation.length()
-	return best_id
+	return sequence
 
 
 func _can_hit_dummy() -> bool:

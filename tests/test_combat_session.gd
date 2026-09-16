@@ -20,6 +20,7 @@ func _initialize() -> void:
 	_test_body_overlap_blocks_player()
 	_test_jump_arc()
 	_test_jump_ignored_during_attack()
+	_test_air_input_keeps_takeoff_velocity_and_facing()
 	_test_air_action_without_air_move_ignored()
 	_test_repeat_attack_after_recovery()
 	_test_hp_clamps_at_zero()
@@ -136,8 +137,7 @@ func _test_miss_when_out_of_range() -> void:
 
 
 func _test_configurable_move_data() -> void:
-	var move := MoveData.new()
-	move.move_name = "test"
+	var move := _probe_move("test", "A")
 	move.startup_frames = 2
 	move.active_frames = 3
 	move.recovery_frames = 4
@@ -267,6 +267,39 @@ func _test_jump_ignored_during_attack() -> void:
 	for i in range(10):
 		session.step(FrameInput.make(0, true))
 	_check(session.player_on_ground, "jump input during the whole move is ignored")
+
+
+func _test_air_input_keeps_takeoff_velocity_and_facing() -> void:
+	# 已明确规则（执行路径）：普通空中运动保留起跳横向速度，玩家方向输入
+	# 不能主动改变空中横向速度或面向。前跳后按住反方向 / 松开水平键都不得
+	# 改变速度向量或面向，直到落地。
+	var session := CombatSession.new()
+	session.dummy_position = Vector2(100.0, GameParams.ground_stand_y())
+	for i in range(20):
+		session.step(FrameInput.make(1))
+	session.step(FrameInput.make(1, true))
+	var takeoff_vx := session.player_velocity.x
+	_check(takeoff_vx > 300.0, "forward jump takes off at walking speed")
+	for i in range(38):
+		session.step(FrameInput.make(-1))
+	_check(not session.player_on_ground, "player is still airborne while holding reverse")
+	_check(is_equal_approx(session.player_velocity.x, takeoff_vx), "holding reverse in the air keeps the takeoff horizontal velocity")
+	_check(session.player_facing == 1, "holding reverse in the air never flips the facing")
+	for i in range(10):
+		session.step(FrameInput.make(-1))
+	_check(session.player_on_ground, "player still lands normally after holding reverse mid-air")
+
+	var release := CombatSession.new()
+	release.dummy_position = Vector2(100.0, GameParams.ground_stand_y())
+	for i in range(20):
+		release.step(FrameInput.make(1))
+	release.step(FrameInput.make(1, true))
+	var release_takeoff := release.player_velocity.x
+	for i in range(38):
+		release.step(FrameInput.new())
+	_check(not release.player_on_ground, "player is still airborne after releasing horizontal input")
+	_check(is_equal_approx(release.player_velocity.x, release_takeoff), "releasing horizontal input mid-air keeps the takeoff velocity (no air friction decay)")
+	_check(release.player_facing == 1, "facing stays unchanged after releasing mid-air")
 
 
 func _test_air_action_without_air_move_ignored() -> void:
@@ -1209,11 +1242,34 @@ func _qcf_input(frame: int, key_frame: int, key: String) -> FrameInput:
 	return FrameInput.make(axis, false, key if frame == key_frame else "", down)
 
 
+## 测试用探针招式：字段齐全的合法打击招式（值取旧 GameParams 运行时默认，
+## issue 01 起核心字段缺省是“未声明”哨兵值，程序内构造必须显式补齐）。
+func _probe_move(id: String, key: String) -> MoveData:
+	var move := MoveData.new()
+	move.move_id = id
+	move.move_kind = MoveData.MoveKind.STRIKE
+	move.stance = MoveData.Stance.GROUND
+	move.action_key = key
+	move.startup_frames = 5
+	move.active_frames = 7
+	move.recovery_frames = 13
+	move.cancel_window_frames = GameParams.CANCEL_WINDOW_FRAMES
+	move.priority = 1
+	move.base_damage = 10
+	move.attack_attribute = MoveData.AttackAttribute.HIGH
+	move.hitbox_size = GameParams.ATTACK_HITBOX_SIZE
+	move.hitbox_gap = GameParams.ATTACK_HITBOX_GAP
+	move.hit_result = MoveData.HitResult.GROUND_HITSTUN
+	move.hitstun_frames = GameParams.HITSTUN_FRAMES
+	move.knockback = GameParams.MOVE_5A_KNOCKBACK
+	move.knockback_up = GameParams.ATTACK_KNOCKBACK_UP
+	return move
+
+
 ## 浮空受身探针表：5C 硬直 12、取消窗 60、收招总长 15 帧——
 ## 招式收招与受身同帧（运动阶段先于收招结算），保证连段存活到受身帧。
 func _float_probe_table() -> Dictionary:
-	var launcher := MoveData.new()
-	launcher.move_name = "5C"
+	var launcher := _probe_move("5C", "C")
 	launcher.startup_frames = 2
 	launcher.active_frames = 2
 	launcher.recovery_frames = 11
@@ -1223,8 +1279,7 @@ func _float_probe_table() -> Dictionary:
 	launcher.knockback = 0.0
 	launcher.knockback_up = GameParams.float_launch_speed()
 	launcher.cancel_window_frames = 60
-	var probe := MoveData.new()
-	probe.move_name = "5A"
+	var probe := _probe_move("5A", "A")
 	probe.startup_frames = 2
 	probe.active_frames = 2
 	probe.recovery_frames = 8
@@ -1244,8 +1299,7 @@ func _long_float_table(float_hitstun: int) -> Dictionary:
 
 ## 慢速地面表：5A 前摇 8 帧（F1 出招、F9 命中），用于缓存年龄边界。
 func _slow_ground_table() -> Dictionary:
-	var starter := MoveData.new()
-	starter.move_name = "5A"
+	var starter := _probe_move("5A", "A")
 	starter.startup_frames = 8
 	starter.active_frames = 2
 	starter.recovery_frames = 12
@@ -1254,8 +1308,7 @@ func _slow_ground_table() -> Dictionary:
 	starter.knockback = 0.0
 	starter.knockback_up = 0.0
 	starter.cancel_targets = ["5B"]
-	var linker := MoveData.new()
-	linker.move_name = "5B"
+	var linker := _probe_move("5B", "B")
 	linker.startup_frames = 4
 	linker.active_frames = 2
 	linker.recovery_frames = 10
@@ -1268,8 +1321,7 @@ func _slow_ground_table() -> Dictionary:
 
 ## 快速单招表：短窗口长硬直，用于独立招式绕过取消的验证。
 func _fast_single_move_table() -> Dictionary:
-	var move := MoveData.new()
-	move.move_name = "5A"
+	var move := _probe_move("5A", "A")
 	move.startup_frames = 2
 	move.active_frames = 2
 	move.recovery_frames = 3
@@ -1282,8 +1334,7 @@ func _fast_single_move_table() -> Dictionary:
 
 ## 互相取消的双招表：5A ↔ 5B，用于伤害递减下限与无命中数上限。
 func _loop_table() -> Dictionary:
-	var move_a := MoveData.new()
-	move_a.move_name = "5A"
+	var move_a := _probe_move("5A", "A")
 	move_a.startup_frames = 2
 	move_a.active_frames = 2
 	move_a.recovery_frames = 8
@@ -1292,8 +1343,7 @@ func _loop_table() -> Dictionary:
 	move_a.knockback = 0.0
 	move_a.knockback_up = 0.0
 	move_a.cancel_targets = ["5B"]
-	var move_b := MoveData.new()
-	move_b.move_name = "5B"
+	var move_b := _probe_move("5B", "B")
 	move_b.startup_frames = 2
 	move_b.active_frames = 2
 	move_b.recovery_frames = 8

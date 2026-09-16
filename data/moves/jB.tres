@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="MoveData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/move_data.gd" id="1_g2m10"]
+
+[resource]
+script = ExtResource("1_g2m10")
+move_id = "jB"
+move_kind = 1
+stance = 2
+action_key = "B"
+startup_frames = 4
+active_frames = 6
+recovery_frames = 12
+base_damage = 12
+attack_attribute = 1
+air_attack = true
+hitbox_size = Vector2(64, 60)
+hitbox_gap = 4.0
+knockback = 80.0
+knockback_up = 110.0
+hitstun_frames = 12
+hit_result = 1
+throw_range = -1.0
+extra_landing_recovery_frames = 0
+cancel_targets = Array[String](["jD"])
+cancel_window_frames = 8
+is_finisher = false
+jump_cancel_targets = Array[String]([])
+landing_cancel_targets = Array[String](["5D"])
+direction_derivation = ""
+input_alternatives = Array[String]([])
+priority = 1

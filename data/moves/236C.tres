@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="MoveData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/move_data.gd" id="1_rlmmw"]
+
+[resource]
+script = ExtResource("1_rlmmw")
+move_id = "236C"
+move_kind = 1
+stance = 1
+action_key = "C"
+startup_frames = 6
+active_frames = 5
+recovery_frames = 18
+base_damage = 18
+attack_attribute = 1
+air_attack = false
+hitbox_size = Vector2(64, 60)
+hitbox_gap = 4.0
+knockback = 200.0
+knockback_up = 560.0
+hitstun_frames = 36
+hit_result = 2
+throw_range = -1.0
+extra_landing_recovery_frames = 0
+cancel_targets = Array[String]([])
+cancel_window_frames = 8
+is_finisher = false
+jump_cancel_targets = Array[String](["jA"])
+landing_cancel_targets = Array[String]([])
+direction_derivation = "236C"
+input_alternatives = Array[String]([])
+priority = 1
