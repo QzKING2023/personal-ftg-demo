@@ -23,7 +23,7 @@ const RECOVER_HORIZON := 240
 ## 空中段首按延迟（相对起跳后第 1 帧）的扫描上限；超过玩家滞空的延迟必然失效。
 const MAX_AIR_DELAY := GameParams.PLAYER_JUMP_AIRTIME_FRAMES
 
-const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性命中确认接续——前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生、jump cancel 与落地接缝都在真实 CombatSession 结算中检验；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（普通命中不刷新木桩滞空、空中无二段跳），不会被当作可自动续期；循环判定不设全局命中数或总时长上限，以逐圈模拟加木桩时序状态重现证明。"
+const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性命中确认接续——前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生、jump cancel 与落地接缝都在真实 CombatSession 结算中检验；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（普通命中不刷新木桩滞空、空中无二段跳），不会被当作可自动续期；循环判定不设全局命中数或总时长上限，以逐圈模拟加木桩时序状态重现证明。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。"
 
 ## 接续边类型：普通命中确认取消 / jump cancel / 显式落地接续。
 enum EdgeKind {
@@ -627,6 +627,7 @@ func _clone_link_with_wait(link: ChainLink, wait: int) -> ChainLink:
 
 
 ## 单招探针：起手命中帧与木桩恢复年龄（可追击的最后一帧相对命中的年龄），按上下文进入。
+## 年龄按正常战斗帧计：命中后的 Hitstop 冻结帧以空输入步过、不占正常帧号。
 func _source_timing(move_id: String, context: Array[ChainLink], cache: Dictionary) -> Dictionary:
 	if cache.has(move_id):
 		return cache[move_id]
@@ -640,6 +641,10 @@ func _source_timing(move_id: String, context: Array[ChainLink], cache: Dictionar
 			var frame: int = run["last_frame"]
 			var recover_age := -1
 			while frame < RECOVER_HORIZON:
+				if session.hitstop_active():
+					session.step(FrameInput.new())
+					_pin_dummy(session)
+					continue
 				frame += 1
 				session.step(FrameInput.new())
 				_pin_dummy(session)
@@ -755,6 +760,9 @@ func _feed_down(digit: int) -> bool:
 ## 在真实 CombatSession 中逐帧执行输入表：每次命中须落在预期帧且连段计数递增；
 ## 连段提前结束、预期帧落空或预期之外的命中都断链。snapshot_every > 0 时在每
 ## 第 N 次命中（循环起点）快照木桩时序状态，快照完全重现即证明循环可无限重复。
+## 时间轴口径（issue 14 起）：输入表与预期命中帧都按正常战斗帧编排——命中后的
+## 8 帧 Hitstop 由会话冻结，探针以空输入跳过、不占用正常帧号；因此取消等待、
+## 命中年龄与回放帧全部与规格的正常帧语义一致。观测上限按物理帧计（含冻结帧）。
 func _run_schedule(compiled: Dictionary, opts: Dictionary) -> Dictionary:
 	if compiled.is_empty():
 		return _empty_run("输入表冲突：同一物理帧需要两个互斥输入")
@@ -775,10 +783,22 @@ func _run_schedule(compiled: Dictionary, opts: Dictionary) -> Dictionary:
 	var proven_period := -1
 	var laps_observed := 0
 	var frame := 0
+	var physics := 0
 	var last_frame := hit_frames[total - 1] if total > 0 else 0
 	while frame < last_frame:
+		if session.hitstop_active():
+			## 命中停顿：以空输入步过冻结帧，不推进正常帧号、不喂入计划输入。
+			physics += 1
+			if max_frames > 0 and physics > max_frames:
+				break_reason = "观测帧数达到上限（%d 帧）" % max_frames
+				break_kind = "horizon"
+				break
+			session.step(FrameInput.new())
+			_pin_dummy(session)
+			continue
 		frame += 1
-		if max_frames > 0 and frame > max_frames:
+		physics += 1
+		if max_frames > 0 and physics > max_frames:
 			break_reason = "观测帧数达到上限（%d 帧）" % max_frames
 			break_kind = "horizon"
 			break
@@ -1060,7 +1080,8 @@ func _pin_dummy(session: CombatSession) -> void:
 	session.dummy_position.x = session.player_position.x + session.player_facing * PIN_DX
 
 
-## 木桩时序状态：决定后续命中/恢复演化的全部可观察量（横向被钉住，不参与比较）。
+## 木桩时序状态：决定后续命中/恢复演化的全部可观察量（横向被钉住，不参与比较；
+## 含会话级 Hitstop 冻结标记——快照点恒为命中当帧，但冻结状态影响未来时间轴）。
 func _dummy_timing_state(session: CombatSession) -> Array:
 	return [
 		session.dummy_state,
@@ -1068,6 +1089,7 @@ func _dummy_timing_state(session: CombatSession) -> Array:
 		session.dummy_velocity.y,
 		session.dummy_position.y,
 		session.dummy_on_ground,
+		session.hitstop_active(),
 	]
 
 

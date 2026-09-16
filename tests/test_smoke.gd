@@ -281,6 +281,7 @@ func _test_jump_cancel_air_pursuit(main: Node2D, session: CombatSession) -> void
 	for i in 10:
 		await physics_frame
 		if session.dummy_hp < hp_before:
+			await _wait_hitstop_over(session)
 			Input.action_press("jump")
 			await physics_frame
 			Input.action_release("jump")
@@ -288,7 +289,7 @@ func _test_jump_cancel_air_pursuit(main: Node2D, session: CombatSession) -> void
 			await physics_frame
 			jumped = true
 			break
-	_check(jumped, "236C lands to open the jump cancel window")
+	_check(jumped, "236C lands to open the jump cancel window after the freeze")
 	_check(not session.player_on_ground, "jump cancel lifts the player into the air")
 	_check(session.player_move_id == "" and session.combo_active, "jump cancel clears the move but keeps the combo alive")
 	var status: Label = main.get_node("DummyStatus")
@@ -363,7 +364,9 @@ func _test_full_air_route_keyboard(main: Node2D, session: CombatSession) -> void
 			break
 	_check(got_hit and session.player_move_id == "236C", "buffered 236C cancels 5A into the launcher")
 	_check(session.dummy_state == CombatSession.DummyState.AIR_HITSTUN, "launcher puts the dummy into float hitstun")
-	# Space jump cancel 转入空中，连段保留。
+	# Space jump cancel 转入空中，连段保留。命中后的 8 帧停顿内 Space 无独立缓存
+	# （跳跃 issue 实装），等恢复首个正常帧再按——取消窗口按正常帧计龄仍开放。
+	await _wait_hitstop_over(session)
 	Input.action_press("jump")
 	await physics_frame
 	Input.action_release("jump")
@@ -401,6 +404,15 @@ func _test_full_air_route_keyboard(main: Node2D, session: CombatSession) -> void
 
 func _approx_hp(value: float, expected: float) -> bool:
 	return absf(value - expected) < 0.05
+
+
+## 等待会话退出 Hitstop 冻结（含命中当帧后的整个停顿窗）：停顿内 jump 按下尚无
+## 独立缓存（跳跃 issue 实装），恢复首个正常帧才是 Space 取消的最早可用帧。
+func _wait_hitstop_over(session: CombatSession) -> void:
+	for i in GameParams.HITSTOP_FRAMES + 4:
+		await physics_frame
+		if int(session.debug_snapshot()["hitstop_left"]) == 0:
+			break
 
 
 func _test_backward_qcb_keyboard(main: Node2D, session: CombatSession) -> void:

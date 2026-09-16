@@ -71,6 +71,8 @@ func _test_default_table_reports_ground_route() -> void:
 
 func _test_numbers_match_runtime_session() -> void:
 	# 与真实 CombatSession 对拍：同一站位下 5A 的命中帧与木桩恢复帧必须一致。
+	# 运行时按物理帧计数（命中后 8 帧 Hitstop 顺延恢复帧）；Solver 的年龄按
+	# 正常战斗帧计——两者相差恰为一次命中的停顿帧数。
 	var session := CombatSession.new()
 	session.dummy_position = session.player_position + Vector2(ComboSolver.PIN_DX, 0)
 	var hit_frame := -1
@@ -84,8 +86,8 @@ func _test_numbers_match_runtime_session() -> void:
 				recover_frame = frame
 	var report := ComboSolver.analyze()
 	var ab := _find_edge(report, "5A", "5B")
-	_check(hit_frame == 6 and recover_frame == 27, "runtime 5A hits on frame 6 and naturally recovers on frame 27")
-	_check(ab != null and ab.valid and ab.recover_age == recover_frame - hit_frame, "solver recover age matches the runtime session (21)")
+	_check(hit_frame == 6 and recover_frame == 6 + 10 + GameParams.HITSTOP_FRAMES + GameParams.HITSTUN_FRAMES - 1, "runtime 5A hits on frame 6 and naturally recovers after the freeze-extended knockdown")
+	_check(ab != null and ab.valid and ab.recover_age == recover_frame - hit_frame - GameParams.HITSTOP_FRAMES, "solver recover age (21 normal frames) matches the runtime session minus the frozen frames")
 	var route := _find_route(report, ["5A", "5B", "5D"])
 	_check(route != null and route.hit_frames == [6, 10, 15], "solver route hit frames match the runtime ground-route test")
 
@@ -249,8 +251,9 @@ func _test_landing_route_and_critical_frame() -> void:
 		_check(route.combo_hits == 5 and _approx(route.total_damage, 51.8), "landing route totals 51.8, matching the runtime same-frame landing test")
 		var route_replay := _replay_inputs(route.inputs, route.hit_frames[route.hit_frames.size() - 1])
 		_check(route_replay.hit_frames == route.hit_frames and route_replay.combo_hits == 5, "the landing route's own schedule replays identically on a fresh session")
-	# 临界帧回放：落地接续边的最晚对齐档——jB 命中恰在落地帧当帧，同帧只产生命中事件，
-	# 落地随后开放接续，缓存的 D 在当帧消费为 5D（与运行时临界测试同序）。
+	# 临界帧回放：落地接续边的最晚对齐档——jB 命中恰在落地帧当帧，同帧产生命中
+	# 与停顿开始两个事件，落地随后开放接续，缓存的 D 在当帧消费为 5D（与运行时
+	# 临界测试同序）。输入表按正常战斗帧编排，回放跳过冻结帧。
 	var edge := _find_edge(report, "jB", "5D", ComboSolver.EdgeKind.LANDING_CANCEL)
 	_check(edge != null and edge.valid and not edge.align_inputs.is_empty(), "landing edge carries the latest-alignment schedule for replay")
 	if edge == null or edge.align_inputs.is_empty():
@@ -267,24 +270,29 @@ func _test_landing_route_and_critical_frame() -> void:
 	var landing_frame := -1
 	var hit_frames: Array[int] = []
 	var critical_state_ok := false
-	for frame in range(1, last + 1):
+	var frame := 0
+	while frame < last:
+		frame += 1
 		var input := FrameInput.new()
 		if by_frame.has(frame):
 			input = by_frame[frame].to_frame_input()
 		var was_airborne := not session.player_on_ground
-		var events := session.step(input)
+		var events := _step_logical(session, input)
 		session.dummy_position.x = session.player_position.x + session.player_facing * ComboSolver.PIN_DX
 		var hit_now := false
+		var stop_started := false
 		for event in events:
 			if event.type == CombatEvent.Type.HIT:
 				hit_now = true
+			elif event.type == CombatEvent.Type.HITSTOP_STARTED:
+				stop_started = true
 		if hit_now:
 			hit_frames.append(frame)
 		if was_airborne and session.player_on_ground:
 			landing_frame = frame
-			critical_state_ok = hit_now and events.size() == 1 and session.player_move_id == "5D"
+			critical_state_ok = hit_now and stop_started and events.size() == 2 and session.player_move_id == "5D"
 	_check(landing_frame > 0 and hit_frames.has(landing_frame), "the latest alignment lands the jB hit exactly on the landing frame")
-	_check(critical_state_ok, "critical frame order holds: the only event is the hit; landing then lets the buffered D start 5D on that same frame")
+	_check(critical_state_ok, "critical frame order holds: hit then hitstop-start are the only events; landing then lets the buffered D start 5D on that same frame")
 	_check(hit_frames.size() == 4, "critical replay verifies the four hits 5C -> jA -> jB -> 5D")
 
 
@@ -464,6 +472,7 @@ func _find_route(report: ComboSolver.SolverReport, move_ids: Array[String]) -> C
 
 ## 把 Solver 发现的输入表回放到全新 CombatSession（木桩按同一几何假设钉在玩家面前）。
 ## until 指定观测截止帧（默认最后一个输入帧；命中可能晚于最后一次按键，需显式给到最后一击）。
+## 输入表按正常战斗帧编排：会话进入 Hitstop 冻结时以空输入步过、不消耗计划帧号（issue 14）。
 func _replay_inputs(inputs: Array, until := 0) -> Dictionary:
 	var by_frame := {}
 	var last := 0
@@ -476,13 +485,15 @@ func _replay_inputs(inputs: Array, until := 0) -> Dictionary:
 	var end_reasons: Array[int] = []
 	var air_hits_all_airborne := true
 	var jump_seen := false
-	for frame in range(1, last + 1):
+	var frame := 0
+	while frame < last:
+		frame += 1
 		var input := FrameInput.new()
 		if by_frame.has(frame):
 			input = by_frame[frame].to_frame_input()
 		if input.jump_pressed:
 			jump_seen = true
-		var events := session.step(input)
+		var events := _step_logical(session, input)
 		session.dummy_position.x = session.player_position.x + session.player_facing * ComboSolver.PIN_DX
 		var hit_now := false
 		for event in events:
@@ -502,6 +513,15 @@ func _replay_inputs(inputs: Array, until := 0) -> Dictionary:
 		"air_hits_all_airborne": air_hits_all_airborne,
 		"session": session,
 	}
+
+
+## 按正常战斗帧推进回放一步：会话处于 Hitstop 冻结时先以空输入步过全部冻结帧
+## （木桩按探针几何钉回玩家面前），再在恢复后的正常帧喂入计划输入。
+func _step_logical(session: CombatSession, input: FrameInput) -> Array[CombatEvent]:
+	while session.hitstop_active():
+		session.step(FrameInput.new())
+		session.dummy_position.x = session.player_position.x + session.player_facing * ComboSolver.PIN_DX
+	return session.step(input)
 
 
 func _snapshot_session(session: CombatSession) -> Array:

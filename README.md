@@ -17,10 +17,10 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . --editor --quit
 # 主场景无头运行若干帧（冒烟）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . --quit-after 300
 
-# 战斗会话 seam 测试（366 项：逐帧输入 → 可观察状态与事件）
+# 战斗会话 seam 测试（401 项：逐帧输入 → 可观察状态与事件）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_combat_session.gd
 
-# 训练场集成测试（63 项：注入输入 + 真实物理帧）
+# 训练场集成测试（85 项：注入输入 + 真实物理帧）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_smoke.gd
 
 # Combo Solver 测试（112 项：开头会打印默认招式表的可读验证报告）
@@ -55,6 +55,14 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/di
 输入 → 命中判定 → 受击应用 → 运动/落地/自然受身 → 取消判定 → 消费缓存
 ```
 
+命中帧完整结算后进入 8 帧 Hitstop（issue 14）：冻结帧内双方动作、位置、速度、
+受击/落地/受身计时暂停，物理帧号照常递增；输入仍采样记录（动作键缓存、方向
+历史照常写入，最新覆盖旧输入），但不启动、取消或消费动作。缓存、方向窗口与
+取消窗口的年龄只按正常战斗帧增加——停顿中按下的输入从恢复首个正常帧起算
+年龄 0，恢复首帧才消费；命中确认取消窗口为正常帧年龄 0–8（含两端），挥空
+永不获得资格。`CombatEvent` 以 `HITSTOP_STARTED/HITSTOP_ENDED` 标出停顿边界，
+诊断快照暴露停顿剩余、缓存年龄、取消龄/资格与实际消费结果。
+
 - `combat_session.gd`：`CombatSession.step(FrameInput)` 返回本帧战斗事件，
   并维护可观察的玩家状态（位置/朝向/招式阶段/是否落地）与木桩状态
   （位置/生命值/受击状态/剩余硬直帧）。
@@ -72,9 +80,11 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/di
 - `combo_solver.gd`：开发期 Combo Solver——只读招式数据，用一次性 CombatSession
   探针验证命中确认接续（前摇、等待、取消窗口、木桩硬直、地面/空中姿态、方向派生、
   jump cancel 与落地接缝），枚举可读路线，并以逐圈模拟加木桩时序状态重现证明有效
-  循环（ADR-0002）。它不修改运行时战斗状态，不设命中数/时长上限，也不证明空间/
-  中立/碰撞连接；空中段只能经配置的 jump cancel 进入，玩家滞空与木桩浮空作为
-  有限资源不会被当作可自动续期。设计者直接跑 Solver 测试即可看到默认表的可读报告。
+  循环（ADR-0002）。报告帧号与年龄按正常战斗帧计：Hitstop 冻结物理帧不消耗窗口，
+  回放输入表时以空输入跳过冻结帧。它不修改运行时战斗状态，不设命中数/时长上限，
+  也不证明空间/中立/碰撞连接；空中段只能经配置的 jump cancel 进入，玩家滞空与
+  木桩浮空作为有限资源不会被当作可自动续期。设计者直接跑 Solver 测试即可看到
+  默认表的可读报告。
 
 ## 手感参数
 
@@ -100,11 +110,12 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/di
 ## 已知限制（按规划暂不决策）
 
 - 木桩血量归零后不会消失或重生，仍可继续受击（训练桩行为）。
-- 只有一种招式，无输入缓存、取消、连招、防御、闪避、AI、回合与计时
-  （输入缓存与命中确认取消见后续 issue）。
+- 停顿内的 jump 按下尚无独立缓存槽（Space 在 Hitstop 内无效，恢复后取消窗口
+  仍按正常帧开放——跳跃输入槽与 pre-jump 见后续 issue）；防御、投技、冲刺、
+  蹲防、AI、回合与计时均未实现。
 - 空中可以出招（保留空中动量），无空中跳跃次数限制外的额外规则。
 - 无音效、无屏幕震动（HUD 有木桩头顶血条、左上角按键提示、右上角状态显示与
-  左下角诊断行——面向/方向序列/识别招式/缓存剩余/取消资格）。
+  左下角诊断行——面向/方向序列/识别招式/缓存剩余/停顿剩余/取消龄与资格）。
 
 ## 目录结构
 

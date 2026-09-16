@@ -64,13 +64,28 @@ var _pending_hit: MoveData = null
 ## 本帧刚应用过受击硬直：命中的当帧不消耗新硬直（先刷新、后落地/自然受身）。
 var _dummy_fresh_hitstun := false
 
-## 会话帧计数（从 1 开始）：同时为动作缓存与取消窗口计龄。
+## 会话帧计数（从 1 开始）：物理帧号，Hitstop 中也递增（事件与诊断的时间轴）。
 var _frame_index := 0
+
+## 正常战斗帧时钟（从 1 开始，冻结帧不递增）：动作缓存、方向窗口与取消窗口
+## 的年龄一律按本时钟计——Hitstop 不消耗这些窗口（issue 14）。
+var _normal_frame_index := 0
+
+# --- Hitstop（issue 14）---
+## 剩余冻结物理帧数：命中帧完整结算后置为 HITSTOP_FRAMES，此后每物理帧递减；
+## 大于 0 的帧只采样记录输入（物理键、方向历史与动作键事件），不推进任何结算。
+var _hitstop_left := 0
+## 下一帧是冻结结束后的首个正常帧：先输出 HITSTOP_ENDED 边界事件再正常结算。
+var _hitstop_resume_pending := false
 
 # --- 动作键单槽缓存（年龄 0–5 有效，年龄 6 先过期，最新输入覆盖旧输入）---
 var _buffered_key := ""
 var _buffered_move_id := ""
 var _buffered_at := 0
+
+# --- 缓存消费结果（诊断口径：最近一次真正从缓存起手的招式与物理帧）---
+var _buffer_consumed_move_id := ""
+var _buffer_consumed_frame := 0
 
 # --- 方向输入历史（独立于动作键缓存；窗口按各指令 variant 步数 × 每方向步长计）---
 ## Vector2i(小键盘方向, 输入帧)：方向按面向折算（前 6 / 后 4 / 下 2 / 斜 1、3 / 中立 5），
@@ -132,6 +147,11 @@ func reset_to_initial_state() -> void:
 	_dummy_fresh_hitstun = false
 	_frame_input = FrameInput.new()
 	_frame_index = 0
+	_normal_frame_index = 0
+	_buffer_consumed_move_id = ""
+	_buffer_consumed_frame = 0
+	_hitstop_left = 0
+	_hitstop_resume_pending = false
 	_player_just_landed = false
 	_clear_buffer()
 	_direction_history.clear()
@@ -145,6 +165,18 @@ func step(input: FrameInput) -> Array[CombatEvent]:
 	var events: Array[CombatEvent] = []
 	_frame_index += 1
 	_frame_input = input
+	if _hitstop_left > 0:
+		## 冻结帧：只采样记录输入，不推进动作、位置、速度、受击、落地与受身计时。
+		_phase_input()
+		_hitstop_left -= 1
+		if _hitstop_left == 0:
+			_hitstop_resume_pending = true
+		return events
+	if _hitstop_resume_pending:
+		## 恢复首个正常帧：输出停顿结束边界后照常结算（缓存消费在本帧发生）。
+		_hitstop_resume_pending = false
+		events.append(CombatEvent.hitstop_ended())
+	_normal_frame_index += 1
 	_player_just_landed = false
 	_phase_input()
 	_phase_hit_detection()
@@ -153,6 +185,12 @@ func step(input: FrameInput) -> Array[CombatEvent]:
 	_phase_cancel()
 	_phase_consume_buffer(events)
 	return events
+
+
+## 当前是否处于 Hitstop 冻结帧（本帧 step 只采样记录输入、不推进结算）。
+## Solver 探针用它跳过冻结帧、按正常战斗帧推进自己的时间轴。
+func hitstop_active() -> bool:
+	return _hitstop_left > 0
 
 
 ## 当前招式的命中框（世界坐标）；没有进行中的招式时返回空矩形。
@@ -169,7 +207,11 @@ func player_attack_rect() -> Rect2:
 func debug_snapshot() -> Dictionary:
 	var buffer_age := -1
 	if _buffered_key != "":
-		buffer_age = _frame_index - _buffered_at
+		## 停顿中记录的输入尚未经历任何正常帧：原始年龄为负，按 0 显示。
+		buffer_age = maxi(0, _normal_frame_index - _buffered_at)
+	var cancel_age := -1
+	if _current_move != null and _move_hit_confirmed:
+		cancel_age = _normal_frame_index - _hit_confirm_frame
 	return {
 		"frame": _frame_index,
 		"facing": player_facing,
@@ -177,12 +219,17 @@ func debug_snapshot() -> Dictionary:
 		"phase": player_phase,
 		"move_id": player_move_id,
 		"move_attribute": _current_move.attribute_label() if _current_move != null else "",
+		"hitstop_left": _hitstop_left,
 		"buffered_key": _buffered_key,
 		"buffered_move_id": _buffered_move_id,
 		"buffer_age": buffer_age,
+		"buffer_consumed_move_id": _buffer_consumed_move_id,
+		"buffer_consumed_frame": _buffer_consumed_frame,
 		"direction_sequence": _collapsed_direction_sequence(),
 		"direction_locks": _direction_lock_entries(),
 		"cancel_targets": _cancel_targets.duplicate(),
+		"cancel_age": cancel_age,
+		"cancel_open": _cancel_window_open(),
 		"velocity": player_velocity,
 	}
 
@@ -194,28 +241,40 @@ func _phase_input() -> void:
 	##    动作键在输入帧（匹配锚点）按姿态与方向历史锁定为具体招式；跳跃与移动在
 	##    运动阶段生效，Space 与方向输入不占动作键缓存。指令识别成功时消费所选
 	##    终点及之前的全部方向历史，终点后的历史保留。
-	if _buffered_key != "" and _frame_index - _buffered_at >= GameParams.ACTION_BUFFER_FRAMES:
+	##    冻结帧也走本函数：正常帧时钟暂停使到期检查成为空操作，方向与动作键
+	##    照常采样记录（最新覆盖旧输入），只是不起动、不取消、不消费。
+	##    停顿中记录的输入按恢复首个正常帧起算年龄（恢复帧年龄 0，与跳跃槽同一口径）。
+	var input_stamp := _input_stamp()
+	if _buffered_key != "" and _normal_frame_index - _buffered_at >= GameParams.ACTION_BUFFER_FRAMES:
 		_clear_buffer()
 	_record_direction()
 	if _frame_input.action_key != "":
 		_buffered_key = _frame_input.action_key
-		_buffered_at = _frame_index
-		var selected := _select_move_for_key(_frame_input.action_key, _current_stance(), _frame_index)
+		_buffered_at = input_stamp
+		var selected := _select_move_for_key(_frame_input.action_key, _current_stance(), input_stamp)
 		_buffered_move_id = selected["move_id"]
 		if _buffered_move_id != "" and int(selected["endpoint"]) >= 0:
 			_consume_direction_history_through(int(selected["endpoint"]))
+
+
+## 输入记录时间戳（正常帧时钟口径）：正常帧记当前时钟；冻结帧记恢复首个正常帧
+## 的时钟值——停顿中按下的输入在恢复帧年龄为 0，之后才按正常帧递增。
+func _input_stamp() -> int:
+	return _normal_frame_index + (1 if _hitstop_left > 0 else 0)
 
 
 func _record_direction() -> void:
 	## 方向历史只记录变化：先把（水平轴、下方向、面向）折算成小键盘数字，
 	## 与上一帧不同才入历史；先清理超过表内最长指令窗口的过期条目（各指令自己的
 	## 窗口在识别时按实际 variant 步数检查，这里只保证可能仍被需要的段不被丢弃）。
+	## 条目时间戳与过滤都用正常帧时钟：Hitstop 不消耗方向窗口；停顿中记录的
+	## 段同样按恢复首个正常帧起算年龄。
 	_direction_history = _direction_history.filter(
-		func(entry: Vector2i) -> bool: return _frame_index - entry.y < _direction_retention
+		func(entry: Vector2i) -> bool: return _normal_frame_index - entry.y < _direction_retention
 	)
 	var digit := _direction_digit()
 	if digit != _last_direction_digit:
-		_direction_history.append(Vector2i(digit, _frame_index))
+		_direction_history.append(Vector2i(digit, _input_stamp()))
 		_last_direction_digit = digit
 
 
@@ -280,8 +339,12 @@ func _phase_apply_hits(events: Array[CombatEvent]) -> void:
 	elif dummy_on_ground:
 		dummy_velocity.y = -move.knockback_up
 	_move_hit_confirmed = true
-	_hit_confirm_frame = _frame_index
+	_hit_confirm_frame = _normal_frame_index
 	events.append(CombatEvent.hit(combo_last_damage, player_facing, combo_hits))
+	## 命中帧完成命中与受击应用后开始 Hitstop：冻结后续 8 个物理帧（双方动作、
+	## 位置、速度、受击、落地与受身计时暂停；物理帧号照常递增，输入仍被采样记录）。
+	_hitstop_left = GameParams.HITSTOP_FRAMES
+	events.append(CombatEvent.hitstop_started())
 	if move.is_finisher:
 		## 收尾结束连段路线，但不主动清除木桩的受击/倒地处理。
 		_end_combo(CombatEvent.ComboEndReason.FINISHER, events)
@@ -343,6 +406,7 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 			if buffered != null and _stance_matches(buffered) and _current_move == null:
 				var is_followup := combo_active and _jump_cancel_followups.has(_buffered_move_id)
 				_start_move(_buffered_move_id, buffered, is_followup)
+				_note_buffer_consumed(_buffered_move_id)
 				_clear_buffer()
 				if is_followup:
 					_jump_cancel_followups.clear()
@@ -352,8 +416,9 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 		_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
 		_clear_current_move()
 	## 命中确认取消窗口关闭且没有接续时连段结束；木桩受击处理不受影响。
+	## 窗口年龄按正常战斗帧计：Hitstop 之后关闭帧相应后移。
 	if _current_move != null and _move_hit_confirmed and combo_active \
-			and _frame_index - _hit_confirm_frame > _current_move.cancel_window_frames:
+			and _normal_frame_index - _hit_confirm_frame > _current_move.cancel_window_frames:
 		_end_combo(CombatEvent.ComboEndReason.CANCEL_WINDOW_CLOSED, events)
 
 
@@ -363,8 +428,15 @@ func _try_start_cancel(move_id: String) -> bool:
 	if move == null or not _stance_matches(move) or _current_move == null or not _cancel_targets.has(move_id):
 		return false
 	_start_move(move_id, move, true)
+	_note_buffer_consumed(move_id)
 	_clear_buffer()
 	return true
+
+
+## 诊断记录：缓存被真正消费（起手）的结果与所在物理帧（issue 14 可观察性口径）。
+func _note_buffer_consumed(move_id: String) -> void:
+	_buffer_consumed_move_id = move_id
+	_buffer_consumed_frame = _frame_index
 
 
 # --- 运动细节 ---
@@ -427,12 +499,13 @@ func _can_jump_cancel() -> bool:
 
 func _cancel_window_open() -> bool:
 	## 命中确认取消窗口：已命中确认、连段仍活跃、木桩仍可追击，且命中后年龄
-	## 仍在窗口内（0–N 帧含两端）。动作键取消与 jump cancel 共用本判定。
+	## 仍在窗口内（0–N 正常战斗帧含两端；Hitstop 帧不计龄）。动作键取消与
+	## jump cancel 共用本判定。
 	if _current_move == null or not _move_hit_confirmed or not combo_active:
 		return false
 	if not _dummy_pursuable():
 		return false
-	var age := _frame_index - _hit_confirm_frame
+	var age := _normal_frame_index - _hit_confirm_frame
 	return age >= 0 and age <= _current_move.cancel_window_frames
 
 
@@ -711,13 +784,13 @@ func _max_direction_window(moves: Dictionary) -> int:
 ## 诊断只读快照：当前姿态下各方向指令招式已锁定、且仍在自身窗口内的候选
 ## （宽松首个终点锁定的可观察口径）。不参与结算。
 func _direction_lock_entries() -> Array[Dictionary]:
-	var segments := _direction_segments(_frame_index)
+	var segments := _direction_segments(_input_stamp())
 	var locks: Array[Dictionary] = []
 	for move_id in _moves:
 		var move := _moves[move_id] as MoveData
 		if move == null or move.stance != _current_stance() or not move.is_strike() or not _has_direction_notation(move):
 			continue
-		var candidate := _best_valid_candidate(move, _frame_index, segments)
+		var candidate := _best_valid_candidate(move, _normal_frame_index, segments)
 		if candidate.is_empty():
 			continue
 		locks.append({"move_id": move_id, "start": candidate["start"], "endpoint": candidate["endpoint"]})

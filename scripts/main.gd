@@ -165,6 +165,8 @@ func _update_debug_line() -> void:
 	var snap := session.debug_snapshot()
 	var facing_text := "→" if int(snap["facing"]) == 1 else "←"
 	var posture := "空中" if not bool(snap["on_ground"]) else "地面"
+	if int(snap["hitstop_left"]) > 0:
+		posture = "停顿" + posture + str(int(snap["hitstop_left"]))
 	var move_text := String(snap["move_id"])
 	if move_text == "":
 		move_text = "—"
@@ -181,6 +183,9 @@ func _update_debug_line() -> void:
 	var cancels := "/".join(PackedStringArray(snap["cancel_targets"]))
 	if cancels == "":
 		cancels = "—"
+	if bool(snap["cancel_open"]):
+		# 取消资格开放时同时显示正常帧年龄（停顿帧不计龄，issue 14）。
+		cancels += " 龄%d" % int(snap["cancel_age"])
 	var attribute := String(snap["move_attribute"])
 	if attribute != "":
 		attribute = " 属性" + attribute
