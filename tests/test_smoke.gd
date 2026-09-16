@@ -290,7 +290,14 @@ func _test_jump_cancel_air_pursuit(main: Node2D, session: CombatSession) -> void
 			jumped = true
 			break
 	_check(jumped, "236C lands to open the jump cancel window after the freeze")
-	_check(not session.player_on_ground, "jump cancel lifts the player into the air")
+	# Space 请求先进入 4f 起跳准备（issue 15）：轮询等待离地再观察姿态与空中输入。
+	var airborne := false
+	for i in 10:
+		await physics_frame
+		if not session.player_on_ground:
+			airborne = true
+			break
+	_check(airborne, "jump cancel request leaves the ground after the four pre-jump frames")
 	_check(session.player_move_id == "" and session.combo_active, "jump cancel clears the move but keeps the combo alive")
 	var status: Label = main.get_node("DummyStatus")
 	var saw_air_posture := false
@@ -364,14 +371,19 @@ func _test_full_air_route_keyboard(main: Node2D, session: CombatSession) -> void
 			break
 	_check(got_hit and session.player_move_id == "236C", "buffered 236C cancels 5A into the launcher")
 	_check(session.dummy_state == CombatSession.DummyState.AIR_HITSTUN, "launcher puts the dummy into float hitstun")
-	# Space jump cancel 转入空中，连段保留。命中后的 8 帧停顿内 Space 无独立缓存
-	# （跳跃 issue 实装），等恢复首个正常帧再按——取消窗口按正常帧计龄仍开放。
+	# Space jump cancel 转入空中，连段保留。停顿内 Space 写入独立跳跃槽、恢复
+	# 首个正常帧消费（issue 15）；这里等停顿结束后按下，再轮询等待 4f 准备过去。
 	await _wait_hitstop_over(session)
 	Input.action_press("jump")
 	await physics_frame
 	Input.action_release("jump")
-	await physics_frame
-	_check(not session.player_on_ground and session.combo_active, "space jump-cancels the confirmed launcher into the air")
+	var airborne := false
+	for i in 10:
+		await physics_frame
+		if not session.player_on_ground:
+			airborne = true
+			break
+	_check(airborne and session.combo_active, "space jump-cancels the confirmed launcher into the air after pre-jump")
 	# jA → jB → jD 空中路线；状态栏显示空中姿态与逐击累计的连段计数。
 	var saw_air_posture := false
 	var route_hits := 0
@@ -406,8 +418,8 @@ func _approx_hp(value: float, expected: float) -> bool:
 	return absf(value - expected) < 0.05
 
 
-## 等待会话退出 Hitstop 冻结（含命中当帧后的整个停顿窗）：停顿内 jump 按下尚无
-## 独立缓存（跳跃 issue 实装），恢复首个正常帧才是 Space 取消的最早可用帧。
+## 等待会话退出 Hitstop 冻结（含命中当帧后的整个停顿窗）：停顿内 Space 写入
+## 独立跳跃槽（issue 15），恢复首个正常帧才可能消费；这里等停顿结束后再按。
 func _wait_hitstop_over(session: CombatSession) -> void:
 	for i in GameParams.HITSTOP_FRAMES + 4:
 		await physics_frame
@@ -485,14 +497,19 @@ func _test_air_derivation_keyboard() -> void:
 	session.dummy_position = Vector2(900.0, GameParams.ground_stand_y())
 	await physics_frame
 	var hp_before := session.dummy_hp
-	# 前跳（面向 +1，木桩在远处）。
+	# 前跳（面向 +1，木桩在远处）：Space 请求先经 4f 起跳准备，轮询等待离地。
 	Input.action_press("jump")
 	Input.action_press("move_right")
 	await physics_frame
 	Input.action_release("jump")
 	Input.action_release("move_right")
-	await physics_frame
-	_check(not session.player_on_ground, "forward jump lifts the player before the air input")
+	var airborne := false
+	for i in 10:
+		await physics_frame
+		if not session.player_on_ground:
+			airborne = true
+			break
+	_check(airborne, "forward jump lifts the player before the air input")
 	# 空中 S → S+A → A → J：按锁定面向折算为 2→1→4 + D。
 	Input.action_press("move_down")
 	await physics_frame

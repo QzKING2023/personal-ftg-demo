@@ -18,9 +18,15 @@ const DUMMY_SPAWN_X := 620.0
 const PLAYER_MOVE_SPEED := 340.0
 const PLAYER_ACCELERATION := 2600.0
 const PLAYER_FRICTION := 3000.0
-# 玩家跳跃默认滞空帧数；起跳速度由滞空帧数换算（与木桩浮空同一积分方式）。
-# 普通空中运动保留起跳横向速度：方向输入不改变空中横向速度或面向（无空中操控参数）。
-const PLAYER_JUMP_AIRTIME_FRAMES := 40
+# 玩家跳跃分期（issue 15）：请求接受帧为起跳准备第 1 帧（4f 全部地面姿态），
+# 下一个正常帧离地进入空中阶段；空中阶段保留起跳横向速度——方向输入不改变
+# 空中横向速度或面向（无空中操控参数）。落地帧起进入基础落地恢复。
+const PLAYER_PREJUMP_FRAMES := 4
+const PLAYER_JUMP_AIRTIME_FRAMES := 38
+const PLAYER_LANDING_RECOVERY_BASE_FRAMES := 3
+# 空中攻击着地惩罚：本次跳跃启动过空中招式 startup 时，落地恢复默认额外 +1f
+# （每跳一次）；招式资源可用 extra_landing_recovery_frames 显式叠加更多。
+const PLAYER_AIR_ATTACK_LANDING_PENALTY_FRAMES := 1
 const GRAVITY := 1400.0
 const MAX_FALL_SPEED := 1000.0
 

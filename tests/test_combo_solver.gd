@@ -209,9 +209,9 @@ func _test_default_table_air_edges() -> void:
 	var jump_5c := _find_edge(report, "5C", "jA", ComboSolver.EdgeKind.JUMP_CANCEL)
 	_check(jump_5c != null and jump_5c.valid, "5C -> jA is a valid jump-cancel edge")
 	if jump_5c != null:
-		_check(jump_5c.valid and jump_5c.hit_age == 5, "jump-canceled jA hits 5 frames after 5C's confirm (Space on the hit frame, press at +1, startup 4)")
+		_check(jump_5c.valid and jump_5c.hit_age == 5 + GameParams.PLAYER_PREJUMP_FRAMES, "jump-canceled jA hits 9 frames after 5C's confirm (Space on the hit frame, prep 4, press at takeoff+1, startup 4)")
 	var jump_236c := _find_edge(report, "236C", "jA", ComboSolver.EdgeKind.JUMP_CANCEL)
-	_check(jump_236c != null and jump_236c.valid and jump_236c.hit_age == 5, "236C -> jA is a valid jump-cancel edge from the derivative launcher")
+	_check(jump_236c != null and jump_236c.valid and jump_236c.hit_age == 5 + GameParams.PLAYER_PREJUMP_FRAMES, "236C -> jA is a valid jump-cancel edge from the derivative launcher")
 	var air_cancel := _find_edge(report, "jA", "jB", ComboSolver.EdgeKind.CANCEL)
 	_check(air_cancel != null and air_cancel.valid, "jA -> jB is a valid air cancel")
 	if air_cancel != null:
@@ -221,7 +221,7 @@ func _test_default_table_air_edges() -> void:
 	var landing := _find_edge(report, "jB", "5D", ComboSolver.EdgeKind.LANDING_CANCEL)
 	_check(landing != null and landing.valid, "jB -> 5D is a valid explicit landing continuation")
 	if landing != null:
-		_check(landing.valid and landing.align_from == 0 and landing.align_to == GameParams.CANCEL_WINDOW_FRAMES, "landing seam accepts the jB hit from exactly on the landing frame (critical-frame rule) up to 8 frames before it")
+		_check(landing.valid and landing.align_from == 0 and landing.align_to == 0, "landing seam accepts the jB hit exactly on the landing frame (critical-frame rule); earlier leads are unreachable because the followup key must be pressed before jB's confirm (a press inside jB's open window consumes as the configured jD air cancel) and buffer ages cap at 5")
 
 
 func _test_full_air_route_matches_runtime() -> void:
@@ -232,7 +232,7 @@ func _test_full_air_route_matches_runtime() -> void:
 	_check(route != null, "the full air route 5A -> 236C -> Space -> jA -> jB -> jD is reported")
 	if route == null:
 		return
-	_check(route.hit_frames == [6, 12, 17, 21, 25], "air route hits on frames 6/12/17/21/25 (w=0 cancels, earliest air press)")
+	_check(route.hit_frames == [6, 12, 21, 25, 29], "air route hits on frames 6/12/21/25/29 (w=0 cancels, earliest air press after pre-jump)")
 	_check(route.combo_hits == 5 and _approx(route.total_damage, 53.0), "air route counts 5 hits for 53.0 total, matching the runtime air-route test")
 	var replay := _replay_inputs(route.inputs, route.hit_frames[route.hit_frames.size() - 1])
 	_check(replay.hit_frames == route.hit_frames, "replaying the solver schedule on a fresh CombatSession reproduces every hit frame")
@@ -247,7 +247,7 @@ func _test_landing_route_and_critical_frame() -> void:
 	var route := _find_route(report, ["5A", "236C", "jA", "jB", "5D"])
 	_check(route != null, "the landing-continuation route 5A -> 236C -> jA -> jB -> 5D is reported")
 	if route != null:
-		_check(route.hit_frames == [6, 12, 40, 44, 57], "landing route aligns the air segment so jB hits 8 frames before the landing frame (window boundary)")
+		_check(route.hit_frames == [6, 12, 42, 54, 59], "landing route delays the air cancel so jB hits exactly on the landing frame (critical alignment)")
 		_check(route.combo_hits == 5 and _approx(route.total_damage, 51.8), "landing route totals 51.8, matching the runtime same-frame landing test")
 		var route_replay := _replay_inputs(route.inputs, route.hit_frames[route.hit_frames.size() - 1])
 		_check(route_replay.hit_frames == route.hit_frames and route_replay.combo_hits == 5, "the landing route's own schedule replays identically on a fresh session")
@@ -265,8 +265,9 @@ func _test_landing_route_and_critical_frame() -> void:
 	var last := 0
 	for spec in edge.align_inputs:
 		last = maxi(last, spec.frame)
-	# 最后一次按键在落地帧；5D 命中在其前摇之后，观测到该帧。
-	last += GameParams.MOVE_5D_STARTUP_FRAMES
+	# 最后一次按键在落地前一帧（issue 15 首帧锁定），5D 于落地帧起手、命中在
+	# 前摇之后——观测窗覆盖到该帧。
+	last += 1 + GameParams.MOVE_5D_STARTUP_FRAMES
 	var landing_frame := -1
 	var hit_frames: Array[int] = []
 	var critical_state_ok := false
@@ -370,7 +371,7 @@ func _test_injected_landing_back_edge_reports_cycle() -> void:
 		var cycle := report.cycles[0]
 		_check(cycle.route == ["236C", "jA", "jB", "5A"], "cycle route is 236C -> jA -> jB -> 5A -> back to 236C (canonical rotation)")
 		_check(cycle.sustained and cycle.proven, "the cycle is proven by dummy-state recurrence across laps")
-		_check(cycle.period_frames == 51, "cycle period is 51 frames per lap")
+		_check(cycle.period_frames == 53, "cycle period is 53 frames per lap (jump cancel now spends 4 pre-jump normal frames)")
 		_check(cycle.laps_observed == 2, "recurrence is observed at the start of lap 2: the 236C relaunch normalizes the dummy state at the cycle-start hit every lap")
 	var finite := _find_route(report, ["5A", "236C", "jA", "jB", "jD"])
 	_check(finite != null and finite.combo_hits == 5, "the finite jD-finisher air route is still reported as a plain route, distinct from the cycle")
@@ -484,15 +485,15 @@ func _replay_inputs(inputs: Array, until := 0) -> Dictionary:
 	var hit_frames: Array[int] = []
 	var end_reasons: Array[int] = []
 	var air_hits_all_airborne := true
-	var jump_seen := false
+	var air_started := false
 	var frame := 0
 	while frame < last:
 		frame += 1
 		var input := FrameInput.new()
 		if by_frame.has(frame):
 			input = by_frame[frame].to_frame_input()
-		if input.jump_pressed:
-			jump_seen = true
+		if not session.player_on_ground:
+			air_started = true
 		var events := _step_logical(session, input)
 		session.dummy_position.x = session.player_position.x + session.player_facing * ComboSolver.PIN_DX
 		var hit_now := false
@@ -503,7 +504,7 @@ func _replay_inputs(inputs: Array, until := 0) -> Dictionary:
 				end_reasons.append(event.combo_end_reason)
 		if hit_now:
 			hit_frames.append(frame)
-			if jump_seen and session.player_on_ground:
+			if air_started and session.player_on_ground:
 				air_hits_all_airborne = false
 	return {
 		"hit_frames": hit_frames,

@@ -165,6 +165,10 @@ func _update_debug_line() -> void:
 	var snap := session.debug_snapshot()
 	var facing_text := "→" if int(snap["facing"]) == 1 else "←"
 	var posture := "空中" if not bool(snap["on_ground"]) else "地面"
+	if int(snap["prejump_left"]) > 0:
+		posture = "准备" + str(int(snap["prejump_left"]))
+	elif int(snap["landing_recovery_left"]) > 0:
+		posture = "落地" + str(int(snap["landing_recovery_left"]))
 	if int(snap["hitstop_left"]) > 0:
 		posture = "停顿" + posture + str(int(snap["hitstop_left"]))
 	var move_text := String(snap["move_id"])
@@ -177,6 +181,16 @@ func _update_debug_line() -> void:
 			String(snap["buffered_move_id"]), physical,
 			maxi(GameParams.ACTION_BUFFER_FRAMES - int(snap["buffer_age"]), 0),
 		]
+	# 跳跃输入槽独立于动作键缓存（issue 15）：显示冻结的世界跳向与正常帧年龄。
+	var jump_text := "—"
+	if int(snap["jump_slot_age"]) >= 0:
+		var dir_text := "8"
+		match int(snap["jump_slot_direction"]):
+			-1:
+				dir_text = "←"
+			1:
+				dir_text = "→"
+		jump_text = "%s龄%d" % [dir_text, int(snap["jump_slot_age"])]
 	var sequence := String(snap["direction_sequence"])
 	if sequence == "":
 		sequence = "—"
@@ -189,8 +203,8 @@ func _update_debug_line() -> void:
 	var attribute := String(snap["move_attribute"])
 	if attribute != "":
 		attribute = " 属性" + attribute
-	_debug_line.text = "诊断 帧%d 面向%s %s 招式%s%s 缓存%s 方向%s 取消%s" % [
-		int(snap["frame"]), facing_text, posture, move_text, attribute, buffer_text, sequence, cancels,
+	_debug_line.text = "诊断 帧%d 面向%s %s 招式%s%s 缓存%s 跳槽%s 方向%s 取消%s" % [
+		int(snap["frame"]), facing_text, posture, move_text, attribute, buffer_text, jump_text, sequence, cancels,
 	]
 
 

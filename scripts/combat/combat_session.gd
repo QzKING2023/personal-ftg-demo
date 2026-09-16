@@ -82,6 +82,30 @@ var _hitstop_resume_pending := false
 var _buffered_key := ""
 var _buffered_move_id := ""
 var _buffered_at := 0
+## 动作键按下的物理帧号：jump 与动作缓存同帧竞争时比较原始请求物理帧。
+var _buffered_physics := 0
+
+# --- 跳跃输入槽（独立于动作键缓存；issue 15）---
+## Space 按下的单槽记录：保留按下帧的世界水平跳向，最新按下覆盖旧请求，
+## 按住不重复；年龄只按正常战斗帧计（停顿中暂停，恢复首个正常帧为年龄 0），
+## 年龄 6 在消费前过期。消费前松键、反向输入或面向变化不重写请求。
+var _jump_slot_active := false
+var _jump_slot_at := 0
+var _jump_slot_physics := 0
+var _jump_slot_axis := 0
+
+# --- 跳跃状态机（issue 15）---
+## 剩余起跳准备帧（含当帧，正常帧倒数）：>0 表示处于 pre-jump，按地面姿态处理。
+var player_prejump_left := 0
+## 剩余落地恢复帧（含当帧，正常帧倒数）：>0 表示落地恢复受限。
+var player_landing_recovery_left := 0
+## 本次跳跃是否启动过空中招式 startup（决定默认 +1f 落地恢复，每跳一次）。
+var _air_move_started := false
+## 本次跳跃启动过的空中招式显式额外落地恢复累计帧数。
+var _air_extra_recovery := 0
+## 起跳准备期间生效的世界水平跳向（消费跳跃输入槽时冻结；0 为垂直跳，
+## 准备期内仍可用当前方向输入改成斜跳，不重置准备计时）。
+var _jump_direction := 0
 
 # --- 缓存消费结果（诊断口径：最近一次真正从缓存起手的招式与物理帧）---
 var _buffer_consumed_move_id := ""
@@ -153,6 +177,15 @@ func reset_to_initial_state() -> void:
 	_hitstop_left = 0
 	_hitstop_resume_pending = false
 	_player_just_landed = false
+	_jump_slot_active = false
+	_jump_slot_at = 0
+	_jump_slot_physics = 0
+	_jump_slot_axis = 0
+	player_prejump_left = 0
+	player_landing_recovery_left = 0
+	_air_move_started = false
+	_air_extra_recovery = 0
+	_jump_direction = 0
 	_clear_buffer()
 	_direction_history.clear()
 	_last_direction_digit = 5
@@ -212,6 +245,10 @@ func debug_snapshot() -> Dictionary:
 	var cancel_age := -1
 	if _current_move != null and _move_hit_confirmed:
 		cancel_age = _normal_frame_index - _hit_confirm_frame
+	var jump_slot_age := -1
+	if _jump_slot_active:
+		## 停顿中记录的 jump 尚未经历任何正常帧：原始年龄为负，按 0 显示。
+		jump_slot_age = maxi(0, _normal_frame_index - _jump_slot_at)
 	return {
 		"frame": _frame_index,
 		"facing": player_facing,
@@ -220,6 +257,10 @@ func debug_snapshot() -> Dictionary:
 		"move_id": player_move_id,
 		"move_attribute": _current_move.attribute_label() if _current_move != null else "",
 		"hitstop_left": _hitstop_left,
+		"prejump_left": player_prejump_left,
+		"landing_recovery_left": player_landing_recovery_left,
+		"jump_slot_direction": _jump_slot_axis if _jump_slot_active else null,
+		"jump_slot_age": jump_slot_age,
 		"buffered_key": _buffered_key,
 		"buffered_move_id": _buffered_move_id,
 		"buffer_age": buffer_age,
@@ -247,14 +288,24 @@ func _phase_input() -> void:
 	var input_stamp := _input_stamp()
 	if _buffered_key != "" and _normal_frame_index - _buffered_at >= GameParams.ACTION_BUFFER_FRAMES:
 		_clear_buffer()
+	if _jump_slot_active and _normal_frame_index - _jump_slot_at >= GameParams.ACTION_BUFFER_FRAMES:
+		_jump_slot_active = false
 	_record_direction()
 	if _frame_input.action_key != "":
 		_buffered_key = _frame_input.action_key
 		_buffered_at = input_stamp
+		_buffered_physics = _frame_index
 		var selected := _select_move_for_key(_frame_input.action_key, _current_stance(), input_stamp)
 		_buffered_move_id = selected["move_id"]
 		if _buffered_move_id != "" and int(selected["endpoint"]) >= 0:
 			_consume_direction_history_through(int(selected["endpoint"]))
+	## 跳跃输入槽独立记录：Space+下不触发跳跃（下方向优先），按下即冻结
+	## 当帧世界水平跳向；最新按下覆盖旧请求，按住不重复。
+	if _frame_input.jump_pressed and not _frame_input.down_held:
+		_jump_slot_active = true
+		_jump_slot_at = input_stamp
+		_jump_slot_physics = _frame_index
+		_jump_slot_axis = _frame_input.move_axis
 
 
 ## 输入记录时间戳（正常帧时钟口径）：正常帧记当前时钟；冻结帧记恢复首个正常帧
@@ -392,24 +443,21 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 	##    落地接续只在本帧刚落地、且当前空中招式显式配置了落地接续目标时，
 	##    把缓存的动作键按地面姿态重解析后消费（如 jB 的 D → 5D）；
 	##    落地本身不授予任何普通取消资格。取消资格不足或缓存已过期时输入作废。
-	if _buffered_move_id != "":
-		var consumed := false
-		if _player_just_landed:
-			var relanded := _select_move_for_key(_buffered_key, _current_stance(), _buffered_at)
-			if relanded["move_id"] != "" and int(relanded["endpoint"]) >= 0:
-				## 落地重解析识别出方向指令：与输入帧锚点同一消费口径，终点及之前
-				## 的历史一并消费（识别即消费，与是否真正起手无关）。
-				_consume_direction_history_through(int(relanded["endpoint"]))
-			consumed = _try_start_cancel(relanded["move_id"])
-		if not consumed and not _try_start_cancel(_buffered_move_id):
-			var buffered := _moves.get(_buffered_move_id) as MoveData
-			if buffered != null and _stance_matches(buffered) and _current_move == null:
-				var is_followup := combo_active and _jump_cancel_followups.has(_buffered_move_id)
-				_start_move(_buffered_move_id, buffered, is_followup)
-				_note_buffer_consumed(_buffered_move_id)
-				_clear_buffer()
-				if is_followup:
-					_jump_cancel_followups.clear()
+	##    跳跃输入槽独立消费（issue 15）：地面中立普通跳或命中确认 jump cancel
+	##    都转入 4f 起跳准备。显式组合（B+C 投，后续 issue 实装）优先级最高；
+	##    之后 jump 与动作缓存同时合法时比较原始请求物理帧——较新者优先、
+	##    同一物理帧攻击优先，每帧最多启动一个新动作；未选中的槽保留原年龄，
+	##    后续帧按新状态重查。
+	var action := _buffer_action_candidate()
+	if not action.is_empty() and _jump_slot_ready():
+		if _jump_slot_physics > _buffered_physics:
+			_consume_jump()
+		else:
+			_consume_action_candidate(action)
+	elif not action.is_empty():
+		_consume_action_candidate(action)
+	elif _jump_slot_ready():
+		_consume_jump()
 	## 空中招式落地：本帧没有配置的落地接续发生时，滞留地面姿态的空中招式作废
 	## （空中路线不因落地延续），连段以收招未接续结束。
 	if _current_move != null and _current_move.stance == MoveData.Stance.AIR and player_on_ground:
@@ -422,12 +470,102 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 		_end_combo(CombatEvent.ComboEndReason.CANCEL_WINDOW_CLOSED, events)
 
 
+func _buffer_action_candidate() -> Dictionary:
+	## 动作缓存的当帧可消费候选（判据唯一来源，仲裁与执行共用）：
+	## {"move_id": 起手招式, "is_followup": 合法接续起手, "relanded": 落地重解析路径}。
+	## 无候选返回空表。
+	if _buffered_key == "" and _buffered_move_id == "":
+		return {}
+	if _player_just_landed:
+		var relanded := _select_move_for_key(_buffered_key, _current_stance(), _buffered_at)
+		if _startable_cancel(String(relanded["move_id"])):
+			return {"move_id": relanded["move_id"], "is_followup": true, "relanded": true}
+	if _startable_cancel(_buffered_move_id):
+		return {"move_id": _buffered_move_id, "is_followup": true}
+	if _current_move != null or not _independent_start_allowed():
+		return {}
+	var buffered := _moves.get(_buffered_move_id) as MoveData
+	if buffered != null and _stance_matches(buffered):
+		return {"move_id": _buffered_move_id, "is_followup": combo_active and _jump_cancel_followups.has(_buffered_move_id)}
+	return {}
+
+
+func _consume_action_candidate(action: Dictionary) -> void:
+	## 执行 `_buffer_action_candidate` 给出的候选：取消路径按合法接续起手并
+	## 消费缓存；独立起手走空闲起手。落地重解析路径先按锚点消费方向历史。
+	if bool(action.get("relanded", false)):
+		var relanded := _select_move_for_key(_buffered_key, _current_stance(), _buffered_at)
+		if relanded["move_id"] != "" and int(relanded["endpoint"]) >= 0:
+			## 落地重解析识别出方向指令：与输入帧锚点同一消费口径，终点及之前
+			## 的历史一并消费（识别即消费，与是否真正起手无关）。
+			_consume_direction_history_through(int(relanded["endpoint"]))
+	var move_id := String(action["move_id"])
+	if _try_start_cancel(move_id):
+		return
+	var is_followup := bool(action["is_followup"])
+	_start_move(move_id, _moves.get(move_id) as MoveData, is_followup)
+	_note_buffer_consumed(move_id)
+	_clear_buffer()
+	if is_followup:
+		_jump_cancel_followups.clear()
+
+
+func _independent_start_allowed() -> bool:
+	## 缓存独立起手的状态门：pre-jump 四帧只可取消到显式配置的地面必杀——
+	## 当前数据模型未定义该配置位（spec 可选字段清单不含 pre-jump 取消目标），
+	## 因此准备期间一律只记录不消费。落地恢复首帧完全锁定（配置的落地接续走
+	## 取消路径，不受影响）；空跳恢复第 2、3 帧可取消为合法攻击；启动过空中
+	## 招式的落地恢复基础及额外恢复全程不可取消（挥空同样受限）。
+	## 投、防御与蹲下在各自 issue 实装时同样受限于此门。
+	if player_prejump_left > 0:
+		return false
+	if _player_just_landed:
+		return false
+	if player_landing_recovery_left > 0:
+		return not _air_move_started
+	return true
+
+
+func _jump_slot_ready() -> bool:
+	## 跳跃输入槽的当帧合法性：起跳准备、落地恢复与空中一律不可消费
+	## （无二段跳；受限恢复期不重新起跳）。地面中立是普通跳；招式阶段需要
+	## jump cancel 配置 + 命中确认 + 取消窗口 + 可追击木桩同时成立。
+	if not _jump_slot_active:
+		return false
+	if player_prejump_left > 0 or player_landing_recovery_left > 0:
+		return false
+	if not player_on_ground:
+		return false
+	if _current_move == null:
+		return player_phase == PlayerPhase.NEUTRAL
+	return _can_jump_cancel()
+
+
+func _consume_jump() -> void:
+	## 消费跳跃请求：冻结按下帧世界跳向并进入 4f 起跳准备（请求接受帧为
+	## 准备第 1 帧，倒数在运动阶段推进）。jump cancel 起跳取消当前招式、保留
+	## 连段并开放配置的空中追击起手；不重置原取消窗口或跳跃计时。
+	_jump_slot_active = false
+	_jump_direction = _jump_slot_axis
+	player_prejump_left = GameParams.PLAYER_PREJUMP_FRAMES
+	if _current_move != null:
+		_jump_cancel_followups.clear()
+		_jump_cancel_followups.append_array(_current_move.jump_cancel_targets)
+		_clear_current_move()
+
+
+func _startable_cancel(move_id: String) -> bool:
+	## 命中确认取消的资格判据（无副作用）：目标在开放名单内、姿态一致且
+	## 当前有招式在执行。
+	var move := _moves.get(move_id) as MoveData
+	return move != null and _stance_matches(move) and _current_move != null and _cancel_targets.has(move_id)
+
+
 func _try_start_cancel(move_id: String) -> bool:
 	## 命中确认取消：目标在开放名单内且姿态一致时按合法接续起手并消费缓存。
-	var move := _moves.get(move_id) as MoveData
-	if move == null or not _stance_matches(move) or _current_move == null or not _cancel_targets.has(move_id):
+	if not _startable_cancel(move_id):
 		return false
-	_start_move(move_id, move, true)
+	_start_move(move_id, _moves.get(move_id) as MoveData, true)
 	_note_buffer_consumed(move_id)
 	_clear_buffer()
 	return true
@@ -442,36 +580,35 @@ func _note_buffer_consumed(move_id: String) -> void:
 # --- 运动细节 ---
 
 func _motion_player(events: Array[CombatEvent]) -> void:
-	## 跳跃与 jump cancel 都在运动阶段起跳：起跳帧当帧不加重力（与木桩浮空同一积分
-	## 方式，滞空恰为 PLAYER_JUMP_AIRTIME_FRAMES 帧）。jump cancel 需要招式配置、
-	## 命中确认、取消窗口与可追击木桩同时成立；起跳取消当前招式、保留连段并开放
-	## 配置的空中追击起手；普通跳跃只有地面中立姿态可用（空中 Space 一律无效）。
-	var jumped_this_frame := false
-	if _frame_input.jump_pressed and player_on_ground:
-		if player_phase == PlayerPhase.NEUTRAL:
-			player_velocity.y = -GameParams.jump_velocity()
-			player_on_ground = false
-			jumped_this_frame = true
-		elif _can_jump_cancel():
-			player_velocity.y = -GameParams.jump_velocity()
-			player_on_ground = false
-			jumped_this_frame = true
-			_jump_cancel_followups.clear()
-			_jump_cancel_followups.append_array(_current_move.jump_cancel_targets)
-			_clear_current_move()
+	## 起跳准备与落地恢复都在运动阶段按正常帧倒数（停顿帧不推进）：消费阶段
+	## 把 pre-jump 置为 4，倒数到 0 的当帧离地——首个空中帧当帧不加重力
+	## （与木桩浮空同一积分方式，滞空恰为 PLAYER_JUMP_AIRTIME_FRAMES 帧）。
+	## 出招期间水平输入失效，只保留摩擦减速（地面/空中一致）；普通空中运动
+	## 保留起跳横向速度：方向输入不加速、不减速、也不翻转面向。
+	var takeoff_this_frame := false
+	if player_prejump_left > 0:
+		player_prejump_left -= 1
+		takeoff_this_frame = player_prejump_left == 0
+	elif player_landing_recovery_left > 0:
+		player_landing_recovery_left -= 1
+	var axis := _frame_input.move_axis
+	if (player_prejump_left > 0 or takeoff_this_frame) and _jump_direction != 0:
+		## 起跳准备按消费时冻结的世界跳向移动（含离地当帧——首个空中帧前方向
+		## 仍属准备期）：反向输入不重写斜跳请求；原始 8 请求（冻结方向为 0）
+		## 仍用当前输入改成斜跳，不重置准备计时。
+		axis = _jump_direction
 	if player_phase == PlayerPhase.NEUTRAL:
 		if player_on_ground:
-			if _frame_input.move_axis != 0:
-				player_velocity.x = move_toward(player_velocity.x, _frame_input.move_axis * GameParams.PLAYER_MOVE_SPEED, GameParams.PLAYER_ACCELERATION * GameParams.PHYSICS_TICK)
+			if axis != 0:
+				player_velocity.x = move_toward(player_velocity.x, axis * GameParams.PLAYER_MOVE_SPEED, GameParams.PLAYER_ACCELERATION * GameParams.PHYSICS_TICK)
 			else:
 				player_velocity.x = move_toward(player_velocity.x, 0.0, GameParams.PLAYER_FRICTION * GameParams.PHYSICS_TICK)
-		# 普通空中运动保留起跳横向速度：方向输入不加速、不减速、也不翻转面向
-		# （已明确规则，见执行路径；招式配置的运动效果按招式规则另行处理）。
 	else:
-		# 出招期间水平输入失效，只保留摩擦减速（地面/空中一致）。
 		player_velocity.x = move_toward(player_velocity.x, 0.0, GameParams.PLAYER_FRICTION * GameParams.PHYSICS_TICK)
-	if not player_on_ground and not jumped_this_frame:
+	if not player_on_ground:
 		player_velocity.y = minf(player_velocity.y + GameParams.GRAVITY * GameParams.PHYSICS_TICK, GameParams.MAX_FALL_SPEED)
+	if takeoff_this_frame:
+		_takeoff()
 	player_position += player_velocity * GameParams.PHYSICS_TICK
 	player_position.x = clampf(player_position.x, GameParams.stage_left_limit(), GameParams.stage_right_limit())
 	if player_position.y >= GameParams.ground_stand_y():
@@ -481,20 +618,45 @@ func _motion_player(events: Array[CombatEvent]) -> void:
 		var just_landed := not player_on_ground
 		player_on_ground = true
 		_player_just_landed = just_landed
-		if just_landed and not _jump_cancel_followups.is_empty():
-			# jump cancel 后落地仍未接续空中追击：追击资格作废，连段以收招未接续结束。
-			_jump_cancel_followups.clear()
-			if combo_active and _current_move == null:
-				_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
+		if just_landed:
+			_begin_landing_recovery()
+			if not _jump_cancel_followups.is_empty():
+				# jump cancel 后落地仍未接续空中追击：追击资格作废，连段以收招未接续结束。
+				_jump_cancel_followups.clear()
+				if combo_active and _current_move == null:
+					_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
 	else:
 		player_on_ground = false
 
 
 func _can_jump_cancel() -> bool:
 	## jump cancel 资格：与动作键取消共用同一命中确认取消窗口，外加本招配置了
-	## 空中追击起手。（判定发生在运动阶段——起跳当帧就要积分位置；与第 5 阶段的
-	## 取消判定在受身边界帧可能相差一帧，但连段与追击资格的最终语义一致。）
+	## 空中追击起手。
 	return _cancel_window_open() and not _current_move.jump_cancel_targets.is_empty()
+
+
+func _takeoff() -> void:
+	## 离地：首个空中帧，起跳速度按滞空帧数换算；空中招式跟踪复位——本次
+	## 跳跃尚未启动任何空中招式。空中阶段保留此刻的横向速度。
+	player_velocity.y = -GameParams.jump_velocity()
+	player_on_ground = false
+	_air_move_started = false
+	_air_extra_recovery = 0
+
+
+func _begin_landing_recovery() -> void:
+	## 落地恢复：基础 3f；本次跳跃启动过空中招式 startup 默认 +1f（每跳一次，
+	## 挥空同样计入），空中招式资源的 extra_landing_recovery_frames 显式叠加。
+	## 延长不改变空中阶段或 active 长度；按正常帧倒数（停顿帧不推进），恢复
+	## 结束才回到地面自由行动。恢复期间的动作限制在消费阶段判定。
+	var total := GameParams.PLAYER_LANDING_RECOVERY_BASE_FRAMES
+	if _air_move_started:
+		total += GameParams.PLAYER_AIR_ATTACK_LANDING_PENALTY_FRAMES + _air_extra_recovery
+	player_landing_recovery_left = total
+	## 落地恢复首帧的攻击只保留原始输入、不进入可执行缓存：落地当帧新按下的
+	## 动作键从缓存移除（更早的按下保留原龄，恢复结束后按新状态重查）。
+	if _buffered_key != "" and _buffered_physics == _frame_index:
+		_clear_buffer()
 
 
 func _cancel_window_open() -> bool:
@@ -615,6 +777,10 @@ func _start_move(move_id: String, move: MoveData, is_followup: bool) -> void:
 	_hit_confirm_frame = 0
 	_move_is_followup = is_followup
 	player_phase = PlayerPhase.STARTUP
+	if move.stance == MoveData.Stance.AIR and not player_on_ground:
+		## 空中招式启动即计入本次跳跃的着地惩罚（默认 +1f 一次）与显式额外恢复。
+		_air_move_started = true
+		_air_extra_recovery += move.extra_landing_recovery_frames
 
 
 func _clear_current_move() -> void:
@@ -636,8 +802,13 @@ func _clear_buffer() -> void:
 # --- 指令输入规则（issue 13：宽松谓词、候选锁定、variant 计窗与分层选招）---
 
 ## 动作键解析使用的姿态：空中按 AIR、地面按 GROUND（识别在输入帧按此锁定）。
+## 离地当帧也按 AIR——输入阶段仍踩地、运动阶段才离地，但 spec 规定下一个
+## 正常帧"离地并按空中姿态解析"（起跳准备剩余计数 1 即离地当帧；准备四帧
+## 本身仍全部按地面姿态）。
 func _current_stance() -> MoveData.Stance:
-	return MoveData.Stance.AIR if not player_on_ground else MoveData.Stance.GROUND
+	if not player_on_ground or player_prejump_left == 1:
+		return MoveData.Stance.AIR
+	return MoveData.Stance.GROUND
 
 
 ## 动作键事件选招：同一绑定的当前姿态招式中，按「指令层级（超必杀 > 普通必杀 >

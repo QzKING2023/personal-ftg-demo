@@ -552,6 +552,16 @@ func _fill_landing_edge(edge: SolverEdge, context: Array[ChainLink]) -> void:
 	if followup_idx < 0:
 		edge.reason = "落地接续上下文不包含 jump cancel 空中段（探针构造失败）"
 		return
+	## 来源空中招式（如 jB）在上下文中的取消链位置：issue 15 起临界帧对齐
+	## （命中恰在落地帧当帧）需要同时延迟空中起手与取消等待——起跳准备占用
+	## 4 个正常帧后，单靠起手延迟不足以把命中压回落地帧（木桩浮空硬直先耗尽）。
+	var from_link_idx := -1
+	for i in range(context.size()):
+		if context[i].move_id == edge.from_id and context[i].trigger == ChainLink.Trigger.PREV_HIT:
+			from_link_idx = i
+	if from_link_idx < 0:
+		edge.reason = "落地接续上下文不包含来源空中招式的取消链（探针构造失败）"
+		return
 	# 来源空中招式的命中序号：Space 链接不产生命中，按有招式的链接计数。
 	var from_hit_idx := -1
 	for i in range(context.size()):
@@ -560,28 +570,32 @@ func _fill_landing_edge(edge: SolverEdge, context: Array[ChainLink]) -> void:
 	var valid_trials := []
 	var latest_hit_trial := {}
 	for d in range(0, MAX_AIR_DELAY + 1):
-		var links: Array[ChainLink] = context.duplicate()
-		links[followup_idx] = _clone_link_with_wait(context[followup_idx], 1 + d)
-		links.append_array(_links_for_edge(edge.from_id, edge.to_id, EdgeKind.LANDING_CANCEL))
-		var compiled := _compile_chain(links)
-		if compiled.is_empty():
-			continue
-		var run := _run_schedule(compiled, {})
-		if run["ok"]:
-			var from_hit: int = run["hit_frames"][from_hit_idx]
-			valid_trials.append({
-				"d": d,
-				"lead": compiled["land_frame"] - from_hit,
-				"to_hit": run["hit_frames"][run["hit_frames"].size() - 1],
-				"from_hit": from_hit,
-				"inputs": compiled["inputs"],
-			})
-		elif run["verified"] > from_hit_idx and (latest_hit_trial.is_empty() or d > latest_hit_trial["d"]):
-			latest_hit_trial = {
-				"d": d,
-				"from_hit": run["hit_frames"][from_hit_idx],
-				"land": compiled["land_frame"],
-			}
+		for v in range(0, GameParams.CANCEL_WINDOW_FRAMES + 1):
+			var links: Array[ChainLink] = context.duplicate()
+			links[followup_idx] = _clone_link_with_wait(context[followup_idx], 1 + d)
+			links[from_link_idx] = _clone_link_with_wait(context[from_link_idx], v)
+			links.append_array(_links_for_edge(edge.from_id, edge.to_id, EdgeKind.LANDING_CANCEL))
+			var compiled := _compile_chain(links)
+			if compiled.is_empty():
+				continue
+			var run := _run_schedule(compiled, {})
+			if run["ok"]:
+				var from_hit: int = run["hit_frames"][from_hit_idx]
+				valid_trials.append({
+					"d": d,
+					"lead": compiled["land_frame"] - from_hit,
+					"to_hit": run["hit_frames"][run["hit_frames"].size() - 1],
+					"from_hit": from_hit,
+					"inputs": compiled["inputs"],
+				})
+			elif run["verified"] > from_hit_idx and (latest_hit_trial.is_empty()
+					or d > latest_hit_trial["d"] or (d == latest_hit_trial["d"] and v > latest_hit_trial["v"])):
+				latest_hit_trial = {
+					"d": d,
+					"v": v,
+					"from_hit": run["hit_frames"][from_hit_idx],
+					"land": compiled["land_frame"],
+				}
 	if valid_trials.is_empty():
 		if latest_hit_trial.is_empty():
 			var earliest := _compile_chain(context)
@@ -682,11 +696,15 @@ func _compile_chain(links: Array[ChainLink]) -> Dictionary:
 			ChainLink.Trigger.JUMP_FRAME:
 				if jump_frame < 0:
 					return {}
-				press = jump_frame + link.wait
+				## issue 15 起 Space 请求先经 4f 起跳准备：wait=1 对应离地后的
+				## 首个可按空中键帧（准备帧按地面姿态解析，不能承载空中起手）。
+				press = jump_frame + GameParams.PLAYER_PREJUMP_FRAMES + link.wait
 			ChainLink.Trigger.LAND_FRAME:
 				if land_frame < 0:
 					return {}
-				press = land_frame + link.wait
+				## issue 15 落地恢复首帧锁定：落地当帧的新按下不进可执行缓存——
+				## 接续键安排在落地前一帧按下（空中进入缓存），落地帧经重解析消费。
+				press = land_frame - 1 + link.wait
 		if press < 1:
 			return {}
 		for i in range(link.feed.length()):
@@ -701,15 +719,17 @@ func _compile_chain(links: Array[ChainLink]) -> Dictionary:
 			return {}
 		if link.press_space:
 			jump_frame = press
-			# 落地帧按 GameParams 的滞空不变量预测（起跳 40 帧，往返对称）——
-			# 这是镜像运行时文档化的常量，不是第二套物理；预测失误只会让探针
-			# 在真实结算中落空该接缝（宁可漏报，不会误报）。
-			land_frame = press + GameParams.PLAYER_JUMP_AIRTIME_FRAMES
+			# 落地帧按 GameParams 的分期不变量预测（准备 4f + 滞空 38f，往返对称）——
+			# 这是镜像运行时文档化的常量，不是第二套物理；空中命中的停顿会顺延真实
+			# 落地，预测失误只会让探针在真实结算中落空该接缝（宁可漏报，不会误报）。
+			land_frame = press + GameParams.PLAYER_PREJUMP_FRAMES + GameParams.PLAYER_JUMP_AIRTIME_FRAMES
 		if link.move_id != "":
 			var move := _table.get(link.move_id) as MoveData
 			if move == null:
 				return {}
-			last_hit = press + move.startup_frames
+			## 落地接续的起手帧是落地帧本身（前一帧按下、落地帧消费起手）。
+			var start_delay := 1 if link.trigger == ChainLink.Trigger.LAND_FRAME else 0
+			last_hit = press + start_delay + move.startup_frames
 			hit_frames.append(last_hit)
 			hit_moves.append(link.move_id)
 	var specs: Array[ScheduledInput] = []
@@ -893,12 +913,37 @@ func _landing_note(events: Array[CombatEvent], session: CombatSession, next_move
 # --- 空中延迟搜索 ---
 
 
-func _followup_indices(links: Array[ChainLink], from_index: int) -> Array[int]:
+## 上下文链接的私有副本：空中取消链接（PREV_HIT → 空中招式）被克隆并计入
+## 可调延迟——issue 15 起落地接缝的临界对齐需要同时延迟空中起手与取消等待
+## （起跳准备占 4 个正常帧后，单靠起手延迟无法把命中压回落地帧）。缓存上下文
+## 里的原链接绝不进入搜索（`_delay_dfs` 会原地改写 wait）。
+func _cloned_context_links(context: Array[ChainLink]) -> Array[ChainLink]:
+	var links: Array[ChainLink] = []
+	for link in context:
+		if link.trigger == ChainLink.Trigger.PREV_HIT and _is_air_move_link(link):
+			links.append(_clone_link_with_wait(link, link.wait))
+		else:
+			links.append(link)
+	return links
+
+
+## 可调延迟链接：空中段起手（JUMP_FRAME）与空中取消（PREV_HIT → 空中招式）。
+## 上下文里的空中取消已由 `_cloned_context_links` 克隆，追加链接由 `_links_for_edge`
+## 新建——全部可原地改写 wait。
+func _adjustable_indices(links: Array[ChainLink]) -> Array[int]:
 	var result: Array[int] = []
-	for i in range(from_index, links.size()):
-		if links[i].trigger == ChainLink.Trigger.JUMP_FRAME:
+	for i in range(links.size()):
+		if links[i].trigger == ChainLink.Trigger.JUMP_FRAME \
+				or (links[i].trigger == ChainLink.Trigger.PREV_HIT and _is_air_move_link(links[i])):
 			result.append(i)
 	return result
+
+
+func _is_air_move_link(link: ChainLink) -> bool:
+	if link.move_id == "":
+		return false
+	var move := _table.get(link.move_id) as MoveData
+	return move != null and move.stance == MoveData.Stance.AIR
 
 
 ## 空中段首按延迟搜索：按字典序枚举延迟向量（每个空中段 0..MAX_AIR_DELAY），
@@ -909,21 +954,40 @@ func _followup_indices(links: Array[ChainLink], from_index: int) -> Array[int]:
 func _delay_search(links: Array[ChainLink], adjustable: Array[int], delays_per_lap: int, opts: Dictionary) -> Dictionary:
 	if adjustable.is_empty():
 		return _run_schedule(_compile_chain(links), opts)
+	var size := maxi(1, delays_per_lap)
 	var delays: Array[int] = []
-	for i in range(maxi(1, delays_per_lap)):
+	for i in range(size):
 		delays.append(0)
-	return _delay_dfs(links, adjustable, delays, 0, opts)
+	return _delay_dfs(links, adjustable, _delay_caps(links, adjustable, size), delays, 0, opts)
 
 
-func _delay_dfs(links: Array[ChainLink], adjustable: Array[int], delays: Array[int], depth: int, opts: Dictionary) -> Dictionary:
+## 每个延迟槽的枚举上限：槽里有空中段起手（JUMP_FRAME）按 MAX_AIR_DELAY，
+## 只有空中取消（PREV_HIT）按取消窗口封顶——窗口外等待必然失败，不枚举。
+func _delay_caps(links: Array[ChainLink], adjustable: Array[int], vector_size: int) -> Array[int]:
+	var caps: Array[int] = []
+	for depth in range(vector_size):
+		var any_jump := false
+		for j in range(adjustable.size()):
+			if j % vector_size == depth and links[adjustable[j]].trigger == ChainLink.Trigger.JUMP_FRAME:
+				any_jump = true
+				break
+		caps.append(MAX_AIR_DELAY if any_jump else GameParams.CANCEL_WINDOW_FRAMES)
+	return caps
+
+
+func _delay_dfs(links: Array[ChainLink], adjustable: Array[int], caps: Array[int], delays: Array[int], depth: int, opts: Dictionary) -> Dictionary:
 	if depth == delays.size():
 		for j in range(adjustable.size()):
-			links[adjustable[j]].wait = 1 + delays[j % delays.size()]
+			## JUMP_FRAME 的 wait 1 = 离地后首个可按空中键帧（issue 15 起跳准备）；
+			## PREV_HIT 取消的 wait 0 = 命中确认当帧消费——两者都从最早的合法
+			## 等待起按字典序搜索。
+			var base := 1 if links[adjustable[j]].trigger == ChainLink.Trigger.JUMP_FRAME else 0
+			links[adjustable[j]].wait = base + delays[j % delays.size()]
 		return _run_schedule(_compile_chain(links), opts)
 	var best := {}
-	for d in range(0, MAX_AIR_DELAY + 1):
+	for d in range(0, caps[depth] + 1):
 		delays[depth] = d
-		var run := _delay_dfs(links, adjustable, delays, depth + 1, opts)
+		var run := _delay_dfs(links, adjustable, caps, delays, depth + 1, opts)
 		if run["ok"]:
 			return run
 		if best.is_empty() or run["verified"] > best["verified"]:
@@ -959,11 +1023,11 @@ func _simulate_route(route_ids: Array[String], contexts: Dictionary, edge_kinds:
 	if context.is_empty():
 		route.move_ids = []
 		return route
-	var links: Array[ChainLink] = context.duplicate()
+	var links := _cloned_context_links(context)
 	for i in range(1, route_ids.size()):
 		var kind: EdgeKind = edge_kinds.get("%s|%s" % [route_ids[i - 1], route_ids[i]], EdgeKind.CANCEL)
 		links.append_array(_links_for_edge(route_ids[i - 1], route_ids[i], kind))
-	var adjustable := _followup_indices(links, context.size())
+	var adjustable := _adjustable_indices(links)
 	var run := _delay_search(links, adjustable, adjustable.size(), {})
 	if run["ok"]:
 		route.hit_frames = run["hit_frames"]
@@ -1035,13 +1099,15 @@ func _simulate_cycle(cycle_ids: Array[String], contexts: Dictionary, edge_kinds:
 	for i in range(size):
 		var kind: EdgeKind = edge_kinds.get("%s|%s" % [cycle_ids[i], cycle_ids[(i + 1) % size]], EdgeKind.CANCEL)
 		lap_links.append_array(_links_for_edge(cycle_ids[i], cycle_ids[(i + 1) % size], kind))
-	var links: Array[ChainLink] = context.duplicate()
+	var links := _cloned_context_links(context)
 	for lap in range(MAX_CYCLE_LAPS):
 		# 同一圈的链接对象按引用重复：延迟按圈取模一致，多圈共享同一等待值。
 		for lap_link in lap_links:
 			links.append(lap_link)
-	var adjustable := _followup_indices(links, context.size())
-	var per_lap := _followup_indices(lap_links, 0).size()
+	var adjustable := _adjustable_indices(links)
+	## 每圈的延迟槽包含空中段起手与空中取消（结构按圈重复，模长对齐交替取槽）：
+	## issue 15 起落地接缝循环的证明需要每圈同时延迟两者。
+	var per_lap := _adjustable_indices(lap_links).size()
 	var opts := { "snapshot_every": size, "max_frames": MAX_CYCLE_FRAMES }
 	var run := _delay_search(links, adjustable, per_lap if per_lap > 0 else adjustable.size(), opts)
 	if not run.get("ok", false):
