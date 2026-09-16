@@ -84,6 +84,16 @@ func _initialize() -> void:
 	_test_hitstop_does_not_consume_direction_window()
 	_test_cancel_age_counts_normal_frames()
 	_test_cancel_diagnostics_and_consumption_record()
+	_test_crouch_entry_and_horizontal_component()
+	_test_guard_postures_ground_air_prejump()
+	_test_dummy_attack_lifecycle_observable()
+	_test_guard_attribute_matrix()
+	_test_block_guard_stun_hitstop_repeatable()
+	_test_player_hit_reaction_locks()
+	_test_crouch_blocked_in_restricted_phases()
+	_test_landing_guard_gates()
+	_test_guard_stun_holds_posture_block_string()
+	_test_guard_break_hits_through_hitstun()
 	print("")
 	if _failures == 0:
 		print("ALL SESSION TESTS PASSED")
@@ -109,6 +119,10 @@ func _test_initial_state() -> void:
 	_check(session.combo_hits == 0 and not session.combo_active, "combo starts empty and inactive")
 	_check(session.combo_total_damage == 0.0, "combo damage starts at zero")
 	_check(not session.player_attack_rect().has_area(), "no attack rect while neutral")
+	_check(not session.player_crouching, "player starts standing")
+	_check(session.player_guard == CombatSession.GuardPosture.NONE, "player starts unguarded")
+	_check(session.player_guard_stun_left == 0 and session.player_hitstun_left == 0, "player starts without guard stun or hitstun")
+	_check(session.dummy_move_id == "" and session.dummy_phase == CombatSession.PlayerPhase.NEUTRAL, "dummy starts without an attack")
 
 
 func _test_attack_phase_windows() -> void:
@@ -2382,6 +2396,424 @@ func _run_neutral(session: CombatSession, frames: int) -> int:
 		hits += _count_events(events, CombatEvent.Type.HIT)
 	return hits
 
+func _test_crouch_entry_and_horizontal_component() -> void:
+	# 蹲下（issue 16）：地面自由行动时 1/2/3 当帧进入蹲下；水平分量分别保留后退、
+	# 中立、前进（蹲下行走照常）；离开下方向当帧站起；4 为站防且保留后退行走。
+	var crouch3 := CombatSession.new()
+	var crouched_on_press := false
+	var x_after := 0.0
+	for frame in range(1, 16):
+		crouch3.step(_relative_input(crouch3, 3))
+		if frame == 1:
+			crouched_on_press = crouch3.player_crouching
+		x_after = crouch3.player_position.x
+	_check(crouched_on_press, "holding 3 enters crouch on the same frame")
+	_check(crouch3.player_crouching, "holding 3 keeps crouching")
+	_check(x_after > GameParams.PLAYER_SPAWN_X + 25.0, "crouch walking keeps the forward component of 3")
+	_check(crouch3.player_guard == CombatSession.GuardPosture.NONE, "3 is not a guard direction")
+
+	var crouch2 := CombatSession.new()
+	for frame in range(1, 6):
+		crouch2.step(_relative_input(crouch2, 2))
+	_check(crouch2.player_crouching, "holding 2 crouches in place")
+	_check(absf(crouch2.player_position.x - GameParams.PLAYER_SPAWN_X) < 0.5, "2 keeps its neutral horizontal component")
+
+	var crouch1 := CombatSession.new()
+	for frame in range(1, 16):
+		crouch1.step(_relative_input(crouch1, 1))
+	_check(crouch1.player_crouching and crouch1.player_guard == CombatSession.GuardPosture.CROUCH,
+		"1 enters the crouch-guard posture")
+	_check(crouch1.player_position.x < GameParams.PLAYER_SPAWN_X - 25.0, "crouch walking keeps the backward component of 1")
+
+	var stand := CombatSession.new()
+	stand.step(_relative_input(stand, 2))
+	stand.step(_relative_input(stand, 6))
+	_check(stand.player_crouching == false, "leaving the down direction stands up on the same frame")
+
+	var back := CombatSession.new()
+	for frame in range(1, 16):
+		back.step(_relative_input(back, 4))
+	_check(back.player_guard == CombatSession.GuardPosture.STANDING and not back.player_crouching,
+		"4 guards standing without crouching")
+	_check(back.player_position.x < GameParams.PLAYER_SPAWN_X - 25.0, "standing guard keeps the backward walk of 4")
+
+
+func _test_guard_postures_ground_air_prejump() -> void:
+	# 防御姿态（issue 16）：地面 4 为站防、1 为蹲防，其余方向不防御；真正离地后
+	# 4/1 均为空防且 1 的下方向不再形成蹲下；pre-jump 四帧与离地当帧不新进入防御。
+	var ground4 := CombatSession.new()
+	ground4.step(_relative_input(ground4, 4))
+	_check(ground4.player_guard == CombatSession.GuardPosture.STANDING, "ground 4 is the standing guard")
+	var ground1 := CombatSession.new()
+	ground1.step(_relative_input(ground1, 1))
+	_check(ground1.player_guard == CombatSession.GuardPosture.CROUCH, "ground 1 is the crouch guard")
+	for digit in [5, 2, 3, 6, 8]:
+		var probe := CombatSession.new()
+		probe.step(_relative_input(probe, digit))
+		_check(probe.player_guard == CombatSession.GuardPosture.NONE, "ground digit %d does not guard" % digit)
+
+	# 右面向垂直跳（木桩在右）：按住 4 贯穿准备与滞空。F1–F4 准备、F5 离地当帧
+	# 均不防御；F6 起真正离地后进入空防。
+	var air := CombatSession.new()
+	var guard_frames: Array[int] = []
+	for frame in range(1, 9):
+		air.step(FrameInput.make(-1, frame == 1, "", false))
+		guard_frames.append(air.player_guard)
+	_check(guard_frames[0] == CombatSession.GuardPosture.NONE and guard_frames[4] == CombatSession.GuardPosture.NONE,
+		"pre-jump frames and the takeoff frame never newly enter guard")
+	_check(guard_frames[5] == CombatSession.GuardPosture.AIR and guard_frames[7] == CombatSession.GuardPosture.AIR,
+		"4 becomes the air guard once truly airborne")
+
+	# 空中 1：空防 + 下方向只保留运动输入（不蹲下）。
+	var air_one := CombatSession.new()
+	for frame in range(1, 8):
+		air_one.step(FrameInput.make(-1, frame == 1, "", frame >= 6))
+	_check(air_one.player_guard == CombatSession.GuardPosture.AIR and not air_one.player_crouching,
+		"air 1 is the air guard and the down component forms no crouch")
+
+
+func _test_dummy_attack_lifecycle_observable() -> void:
+	# 木桩确定性攻击（issue 16）：请求当帧起手（请求帧为第 1 帧），阶段窗口与
+	# 命中框可观察；射程外挥空不产生事件；木桩被玩家命中时攻击被打断（后续不再
+	# 连接玩家）。
+	var strike := _dummy_strike("D_H", MoveData.AttackAttribute.HIGH, false)
+	var session := CombatSession.new({"D_H": strike})
+	session.dummy_position = Vector2(900.0, GameParams.ground_stand_y())
+	var phases: Array[int] = []
+	var any_event := false
+	var rect_only_in_active := true
+	var started_on_request_frame := false
+	for frame in range(1, 10):
+		var events := session.step(_relative_input(session, 5, "", "D_H" if frame == 1 else ""))
+		any_event = any_event or not events.is_empty()
+		phases.append(session.dummy_phase)
+		if frame == 1:
+			started_on_request_frame = session.dummy_move_id == "D_H"
+		rect_only_in_active = rect_only_in_active \
+			and (session.dummy_phase != CombatSession.PlayerPhase.ACTIVE or session.dummy_attack_rect().has_area())
+	_check(started_on_request_frame and phases[0] == CombatSession.PlayerPhase.STARTUP,
+		"the request starts the dummy move on the same frame (first startup frame)")
+	_check(_phase_range(phases, 1, 4, CombatSession.PlayerPhase.ACTIVE), "dummy active window follows its own data (frames 2-5)")
+	_check(_phase_range(phases, 5, 7, CombatSession.PlayerPhase.RECOVERY), "dummy recovery window follows its own data")
+	_check(phases[8] == CombatSession.PlayerPhase.NEUTRAL and session.dummy_move_id == "",
+		"dummy returns to neutral after its total frames")
+	_check(rect_only_in_active, "dummy attack rect exists only while active")
+	_check(not any_event and session.dummy_hp == GameParams.DUMMY_MAX_HP, "an out-of-range dummy attack produces no events")
+
+	# 木桩出招被打断：慢速攻击（前摇 8）尚未进入判定即被 5A 命中，攻击清除、
+	# 之后不再连接玩家。
+	var slow := _dummy_strike("D_S", MoveData.AttackAttribute.HIGH, false)
+	slow.startup_frames = 8
+	var interrupt := CombatSession.new({"D_S": slow, "5A": _probe_move("5A", "A")})
+	interrupt.dummy_position = interrupt.player_position + Vector2(70, 0)
+	var player_hits := 0
+	var player_got_hit := 0
+	for frame in range(1, 16):
+		var events := interrupt.step(_relative_input(interrupt, 5, "A" if frame == 1 else "", "D_S" if frame == 1 else ""))
+		player_hits += _count_events(events, CombatEvent.Type.HIT)
+		player_got_hit += _count_events(events, CombatEvent.Type.PLAYER_HIT)
+		if frame == 6:
+			_check(interrupt.dummy_move_id == "", "the dummy attack is cleared the frame the player's hit lands")
+	_check(player_hits == 1, "the player's attack lands once on the attacking dummy")
+	_check(player_got_hit == 0, "the interrupted dummy attack never connects with the player")
+
+
+## 属性矩阵单格：玩家全程按 digit 姿态输入，F1 附带木桩攻击请求（前摇 2 → F3
+## 连接）；返回 "blocked"/"hit"/"none"。
+func _matrix_outcome(move_id: String, digit: int) -> String:
+	var session := CombatSession.new(_dummy_attribute_table())
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	return _run_matrix_case(session, move_id, digit, 1)
+
+
+## 空中矩阵单格：F1 起跳（面向右、按住 4），F7 附带木桩攻击请求；返回结果同上。
+func _air_matrix_outcome(move_id: String) -> String:
+	var session := CombatSession.new(_dummy_attribute_table())
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	return _run_matrix_case(session, move_id, 4, 7, true)
+
+
+func _run_matrix_case(session: CombatSession, move_id: String, digit: int, request_frame: int, jump_start := false) -> String:
+	var result := "none"
+	for frame in range(1, 13):
+		var input: FrameInput
+		if jump_start:
+			input = FrameInput.make(-1, frame == 1, "", false)
+		else:
+			input = _relative_input(session, digit)
+		if frame == request_frame:
+			input.dummy_move_request = move_id
+		var events := session.step(input)
+		for event in events:
+			if event.type == CombatEvent.Type.BLOCKED:
+				result = "blocked"
+			elif event.type == CombatEvent.Type.PLAYER_HIT:
+				result = "hit"
+	return result
+
+
+func _test_guard_attribute_matrix() -> void:
+	# 属性矩阵（issue 16）：站防挡 high/mid/overhead、漏 low；蹲防挡 high/mid/low、
+	# 漏 overhead；空防默认挡带 air 的打击、漏纯地面属性；无姿态全漏。
+	# 判定全部来自显式数据（攻击属性 + 正交 air 标记），不以姿态猜测。
+	_check(_matrix_outcome("D_H", 4) == "blocked", "standing guard blocks high")
+	_check(_matrix_outcome("D_M", 4) == "blocked", "standing guard blocks mid")
+	_check(_matrix_outcome("D_O", 4) == "blocked", "standing guard blocks overhead")
+	_check(_matrix_outcome("D_L", 4) == "hit", "standing guard is hit by low")
+	_check(_matrix_outcome("D_H", 1) == "blocked", "crouch guard blocks high")
+	_check(_matrix_outcome("D_M", 1) == "blocked", "crouch guard blocks mid")
+	_check(_matrix_outcome("D_L", 1) == "blocked", "crouch guard blocks low")
+	_check(_matrix_outcome("D_O", 1) == "hit", "crouch guard is hit by overhead")
+	_check(_matrix_outcome("D_H", 5) == "hit", "no posture is hit by high")
+	_check(_air_matrix_outcome("D_A") == "blocked", "air guard blocks an air-flagged strike by default")
+	_check(_air_matrix_outcome("D_H") == "hit", "air guard is hit by a pure ground attribute")
+
+
+func _test_block_guard_stun_hitstop_repeatable() -> void:
+	# 防御命中（issue 16）：挡下当帧 BLOCKED 事件 + 防御硬直（= 打击 hitstun）+
+	# 随后 8 帧停顿冻结双方（硬直不倒数、木桩招式不推进）；停顿后逐帧倒数；
+	# 硬直期间不可出招、不可起跳；同一场景重跑事件序列一致（可重复观察）。
+	# 短窗口攻击（2/1/1 共 4 帧）：若不停顿，F4 就应收招——以 dummy_move_id 的
+	# 存续证明停顿冻结了木桩反馈。
+	var run := func() -> Dictionary:
+		var strike := _dummy_strike("D_H", MoveData.AttackAttribute.HIGH, false)
+		strike.active_frames = 1
+		strike.recovery_frames = 1
+		var session := CombatSession.new({"D_H": strike})
+		session.dummy_position = session.player_position + Vector2(70, 0)
+		var block_frames: Array[int] = []
+		var stun_counts: Array[int] = []
+		var dummy_move_alive: Array[bool] = []
+		for frame in range(1, 23):
+			## F5 按下动作键 A、F7 按下 Space：验证防御硬直期间不可出招、不可起跳
+			## （只记录不起手）。
+			var key := "A" if frame == 5 else ""
+			var input := _relative_input(session, 4, key, "D_H" if frame == 1 else "")
+			if frame == 7:
+				input.jump_pressed = true
+			var events := session.step(input)
+			block_frames.append(_count_events(events, CombatEvent.Type.BLOCKED))
+			stun_counts.append(session.player_guard_stun_left)
+			dummy_move_alive.append(session.dummy_move_id != "")
+		return {"block_frames": block_frames, "stun_counts": stun_counts, "dummy_move_alive": dummy_move_alive, "session": session}
+	var first: Dictionary = run.call()
+	var second: Dictionary = run.call()
+	_check(first["block_frames"] == second["block_frames"] and first["stun_counts"] == second["stun_counts"],
+		"the same blocking scenario replays identically (repeatable observability)")
+	var blocks: Array[int] = first["block_frames"]
+	var stuns: Array[int] = first["stun_counts"]
+	var alive: Array[bool] = first["dummy_move_alive"]
+	_check(blocks[2] == 1 and blocks.count(1) == 1, "exactly one BLOCKED event lands on the connect frame (F3)")
+	_check((first["session"] as CombatSession).player_hitstun_left == 0 and (first["session"] as CombatSession).dummy_hp == GameParams.DUMMY_MAX_HP,
+		"a blocked strike deals no hitstun and no dummy-side damage")
+	_check(stuns[2] == 10, "guard stun starts at the strike's own hitstun frames (10)")
+	_check(_range_all(stuns, 3, 10, 10), "guard stun freezes through the eight hitstop frames (F4-F11)")
+	_check(stuns[11] == 9 and stuns[12] == 8, "guard stun counts down one per normal frame after the freeze")
+	_check(_range_all(alive, 3, 10, true) and alive[11] == false,
+		"the dummy's move stays frozen through the hitstop and finishes only after it (F12)")
+	_check((first["session"] as CombatSession).player_move_id == "" and (first["session"] as CombatSession).player_prejump_left == 0,
+		"no move or jump can start during guard stun (frame-5 attack and frame-7 space stay buffered-only)")
+	_check(stuns[19] == 1 and stuns[20] == 0 and stuns[21] == 0, "guard stun reaches zero and stays there")
+
+
+func _test_player_hit_reaction_locks() -> void:
+	# 未防御命中（issue 16）：PLAYER_HIT 事件 + 受击硬直（= 打击 hitstun）+ 水平
+	# 击退 + Hitstop；受击硬直中不蹲下、不出招、不进入防御；硬直结束后恢复自由
+	# 行动（可蹲、可出招）。
+	var session := CombatSession.new({"D_H": _dummy_strike("D_H", MoveData.AttackAttribute.HIGH, false), "5A": _probe_move("5A", "A")})
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	var hit_frame := -1
+	var velocity_after_hit := 0.0
+	var hitstun_counts: Array[int] = []
+	var crouched_during_stun := false
+	var guarded_during_stun := false
+	var move_started_during_stun := false
+	for frame in range(1, 25):
+		var digit := 5
+		var key := ""
+		if frame == 5 or frame == 8:
+			digit = 2
+		if frame == 6:
+			key = "A"
+		if frame == 24:
+			key = "A"
+		var events := session.step(_relative_input(session, digit, key, "D_H" if frame == 1 else ""))
+		if _count_events(events, CombatEvent.Type.PLAYER_HIT) == 1:
+			hit_frame = frame
+			velocity_after_hit = session.player_velocity.x
+		hitstun_counts.append(session.player_hitstun_left)
+		if frame >= 5 and frame <= 10:
+			crouched_during_stun = crouched_during_stun or session.player_crouching
+			guarded_during_stun = guarded_during_stun or session.player_guard != CombatSession.GuardPosture.NONE
+			move_started_during_stun = move_started_during_stun or session.player_move_id != ""
+	_check(hit_frame == 3, "the unguarded strike connects on the dummy's first active frame (F3)")
+	_check(hitstun_counts[2] == 10, "player hitstun starts at the strike's own hitstun frames (10)")
+	_check(_range_all(hitstun_counts, 3, 10, 10), "player hitstun freezes through the hitstop")
+	_check(hitstun_counts[11] == 9, "player hitstun counts down after the freeze")
+	_check(velocity_after_hit < 0.0, "the hit applies horizontal knockback away from the dummy")
+	_check(not crouched_during_stun and not guarded_during_stun and not move_started_during_stun,
+		"hitstun locks posture: no crouch from 2, no guard, and the frame-6 attack never starts")
+	_check(session.dummy_hp == GameParams.DUMMY_MAX_HP, "the dummy attack does not change the dummy's own hp")
+	_check(session.player_hitstun_left == 0, "hitstun has fully counted down by the end of the script")
+	_check(session.player_move_id == "5A", "after hitstun ends the frame-24 attack starts normally")
+
+
+func _test_crouch_blocked_in_restricted_phases() -> void:
+	# 受限阶段不被下方向强行改姿态（issue 16）：出招、pre-jump、空中与空技落地
+	# 恢复中按住 2 不蹲；空跳落地恢复第 2、3 帧例外可进入蹲下（首帧钳掉）。
+	# 受击硬直中的姿态冻结见 _test_player_hit_reaction_locks。
+	var attacking := CombatSession.new({"5A": _probe_move("5A", "A")})
+	var crouched_during_move := false
+	for frame in range(1, 8):
+		attacking.step(_relative_input(attacking, 2, "A" if frame == 1 else ""))
+		crouched_during_move = crouched_during_move or attacking.player_crouching
+	_check(not crouched_during_move, "holding 2 during a move never crouches")
+
+	var prep := CombatSession.new()
+	var crouched_during_prep := false
+	for frame in range(1, 5):
+		var input := _relative_input(prep, 5 if frame == 1 else 2)
+		if frame == 1:
+			input.jump_pressed = true
+		prep.step(input)
+		crouched_during_prep = crouched_during_prep or prep.player_crouching
+	_check(not crouched_during_prep and prep.player_prejump_left > 0,
+		"holding 2 through pre-jump never crouches")
+
+	var airborne := CombatSession.new()
+	var crouched_in_air := false
+	for frame in range(1, 12):
+		var input := _relative_input(airborne, 5 if frame == 1 else 2)
+		if frame == 1:
+			input.jump_pressed = true
+		airborne.step(input)
+		if frame >= 6:
+			crouched_in_air = crouched_in_air or airborne.player_crouching
+	_check(not crouched_in_air and not airborne.player_on_ground, "holding 2 airborne never forms a crouch")
+
+	# 空跳（F1 请求 → F5 离地 → F43 落地）：落地首帧不蹲，恢复第 2、3 帧可蹲。
+	# 空技（F8 jA 挥空）：基础 +1f 恢复（F43–F46）全程不蹲，F47 恢复自由后可蹲。
+	var empty_jump := CombatSession.new()
+	var empty_frames := {}
+	for frame in range(1, 49):
+		var input := _relative_input(empty_jump, 5 if frame < 42 else 2)
+		if frame == 1:
+			input.jump_pressed = true
+		empty_jump.step(input)
+		if frame >= 42:
+			empty_frames[frame] = empty_jump.player_crouching
+	_check(empty_frames[43] == false, "the landing frame itself does not crouch (first-frame clamp)")
+	_check(empty_frames[44] == true and empty_frames[45] == true, "empty-jump recovery frames 2-3 crouch on demand")
+
+	var air_move := CombatSession.new()
+	var air_frames := {}
+	for frame in range(1, 49):
+		var input := _relative_input(air_move, 5 if frame < 42 else 2, "A" if frame == 8 else "")
+		if frame == 1:
+			input.jump_pressed = true
+		air_move.step(input)
+		if frame >= 42:
+			air_frames[frame] = air_move.player_crouching
+	_check(air_frames[43] == false and air_frames[44] == false and air_frames[46] == false,
+		"an air-move jump stays uncrouched through its whole landing recovery")
+	_check(air_frames[47] == true, "crouch returns the frame after the air-move landing recovery ends")
+
+
+func _test_landing_guard_gates() -> void:
+	# 落地防御门（issue 16）：任何跳跃的落地恢复首帧不可防御；空跳第 2、3 帧
+	# 可防御；空技恢复全程不可防御。落地前空中按 4 为空防（离地后成立）。
+	var empty_jump := CombatSession.new()
+	var guards := {}
+	for frame in range(1, 49):
+		var input := _relative_input(empty_jump, 5 if frame < 40 else 4)
+		if frame == 1:
+			input.jump_pressed = true
+		empty_jump.step(input)
+		if frame >= 40:
+			guards[frame] = empty_jump.player_guard
+	_check(guards[42] == CombatSession.GuardPosture.AIR, "4 stays the air guard while still airborne before landing")
+	_check(guards[43] == CombatSession.GuardPosture.NONE, "the landing frame itself cannot guard (first-frame clamp)")
+	_check(guards[44] == CombatSession.GuardPosture.STANDING and guards[45] == CombatSession.GuardPosture.STANDING,
+		"empty-jump recovery frames 2-3 can guard")
+	_check(guards[47] == CombatSession.GuardPosture.STANDING, "guarding resumes normally after the recovery")
+
+	var air_move := CombatSession.new()
+	var air_guards := {}
+	for frame in range(1, 49):
+		var input := _relative_input(air_move, 5 if frame < 40 else 4, "A" if frame == 8 else "")
+		if frame == 1:
+			input.jump_pressed = true
+		air_move.step(input)
+		if frame >= 42:
+			air_guards[frame] = air_move.player_guard
+	_check(air_guards[43] == CombatSession.GuardPosture.NONE and air_guards[44] == CombatSession.GuardPosture.NONE \
+		and air_guards[46] == CombatSession.GuardPosture.NONE,
+		"an air-move jump cannot guard through its whole landing recovery")
+	_check(air_guards[47] == CombatSession.GuardPosture.STANDING, "standing guard returns the frame after the recovery ends")
+
+
+func _test_guard_stun_holds_posture_block_string() -> void:
+	# 防御硬直保持姿态（issue 16）：硬直中松开方向、或按住下方向，姿态都冻结在
+	# 进入硬直时的站防——第二次打击在硬直中被同一姿态挡下（连防），无需重新
+	# 按住 4。短窗口攻击（2/1/1）：第一击 F3 挡下、停顿 F4–F11、F12 收招后木桩
+	# 空闲；F13 请求第二击、F15 连接时硬直仍在（剩 7 帧）。
+	var strike := _dummy_strike("D1", MoveData.AttackAttribute.HIGH, false)
+	strike.active_frames = 1
+	strike.recovery_frames = 1
+	var second := _dummy_strike("D2", MoveData.AttackAttribute.HIGH, false)
+	second.active_frames = 1
+	second.recovery_frames = 1
+	var session := CombatSession.new({"D1": strike, "D2": second})
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	var block_frames: Array[int] = []
+	var guard_at_f8 := 0
+	var crouched_at_f8 := false
+	for frame in range(1, 17):
+		var digit := 4
+		if frame >= 4:
+			digit = 2 if frame == 8 else 5
+		var request := "D1" if frame == 1 else ("D2" if frame == 13 else "")
+		var events := session.step(_relative_input(session, digit, "", request))
+		block_frames.append(_count_events(events, CombatEvent.Type.BLOCKED))
+		if frame == 8:
+			guard_at_f8 = session.player_guard
+			crouched_at_f8 = session.player_crouching
+	_check(block_frames == [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+		"the frame-3 block and the frame-15 block-in-stun both land exactly once")
+	_check(guard_at_f8 == CombatSession.GuardPosture.STANDING and not crouched_at_f8,
+		"guard stun freezes the posture: holding 2 mid-stun neither crouches nor flips the standing guard")
+	_check(session.player_guard == CombatSession.GuardPosture.STANDING,
+		"the held standing guard survives the whole block string")
+
+
+func _test_guard_break_hits_through_hitstun() -> void:
+	# 防御被打破（issue 16）：站防漏 low 被命中后进入受击硬直——姿态可观测量
+	# 冻结在站防（不改姿态），但硬直期间一律不设防：随后的 high 直接连中玩家，
+	# 不会被残留的站防姿态挡下。低段攻击（2/4/3）F3 命中、停顿 F4–F11、
+	# F17 收招；F18 请求高段（2/1/1）、F20 连接时受击硬直仍剩 2 帧。
+	var low := _dummy_strike("D_L", MoveData.AttackAttribute.LOW, false)
+	var high := _dummy_strike("D_H", MoveData.AttackAttribute.HIGH, false)
+	high.active_frames = 1
+	high.recovery_frames = 1
+	var session := CombatSession.new({"D_L": low, "D_H": high})
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	var player_hit_frames: Array[int] = []
+	var blocked_total := 0
+	var guard_at_f19 := 0
+	for frame in range(1, 22):
+		var request := "D_L" if frame == 1 else ("D_H" if frame == 18 else "")
+		var events := session.step(_relative_input(session, 4, "", request))
+		if _count_events(events, CombatEvent.Type.PLAYER_HIT) == 1:
+			player_hit_frames.append(frame)
+		blocked_total += _count_events(events, CombatEvent.Type.BLOCKED)
+		if frame == 19:
+			guard_at_f19 = session.player_guard
+	_check(player_hit_frames == [3, 20], "the low breaks the standing guard at F3 and the high connects again at F20")
+	_check(blocked_total == 0, "nothing is blocked once the guard is broken: hitstun leaves the player defenseless")
+	_check(guard_at_f19 == CombatSession.GuardPosture.STANDING,
+		"the posture observable stays frozen at standing through the hitstun (no posture switch, just no protection)")
+
+
 ## 从出招到回中立完整走一遍（第 1 帧按下动作键 A）。
 func _swing(session: CombatSession) -> Array[CombatEvent]:
 	_swing_start(session)
@@ -2418,15 +2850,18 @@ func _qcb_input(frame: int, key_frame: int, key: String) -> FrameInput:
 
 
 ## 相对小键盘方向 → FrameInput：按会话当前面向折算世界水平轴（3/6/9 为前），
-## 1/2/3 带下方向，5 为中立；key 为该帧动作键。左右面向用同一份数字脚本。
-func _relative_input(session: CombatSession, digit: int, key: String = "") -> FrameInput:
+## 1/2/3 带下方向，5 为中立；key 为该帧动作键，dummy_request 为该帧木桩攻击请求。
+## 左右面向用同一份数字脚本。
+func _relative_input(session: CombatSession, digit: int, key: String = "", dummy_request: String = "") -> FrameInput:
 	var axis := 0
 	if digit == 3 or digit == 6 or digit == 9:
 		axis = session.player_facing
 	elif digit == 1 or digit == 4 or digit == 7:
 		axis = -session.player_facing
 	var down := digit >= 1 and digit <= 3
-	return FrameInput.make(axis, false, key, down)
+	var input := FrameInput.make(axis, false, key, down)
+	input.dummy_move_request = dummy_request
+	return input
 
 
 ## 相对方向逐帧脚本：每项为 [digit] 或 [digit, "key"]。
@@ -2503,6 +2938,39 @@ func _probe_move(id: String, key: String) -> MoveData:
 	move.knockback = GameParams.MOVE_5A_KNOCKBACK
 	move.knockback_up = GameParams.ATTACK_KNOCKBACK_UP
 	return move
+
+
+## 木桩确定性攻击探针：显式攻击属性 + 正交 air 标记；无动作键绑定（玩家无法
+## 主动使用，隔离木桩攻击表）。短窗口（2/4/3）与 hitstun 10 便于逐帧断言。
+func _dummy_strike(id: String, attribute: int, air: bool) -> MoveData:
+	var move := _probe_move(id, "")
+	move.attack_attribute = attribute
+	move.air_attack = air
+	move.startup_frames = 2
+	move.active_frames = 4
+	move.recovery_frames = 3
+	move.hitstun_frames = 10
+	move.knockback = 100.0
+	move.knockback_up = 0.0
+	return move
+
+
+## 属性矩阵注入表：high/mid/low/overhead 纯地面属性 + air 正交标记的高位打击。
+func _dummy_attribute_table() -> Dictionary:
+	return {
+		"D_H": _dummy_strike("D_H", MoveData.AttackAttribute.HIGH, false),
+		"D_M": _dummy_strike("D_M", MoveData.AttackAttribute.MID, false),
+		"D_L": _dummy_strike("D_L", MoveData.AttackAttribute.LOW, false),
+		"D_O": _dummy_strike("D_O", MoveData.AttackAttribute.OVERHEAD, false),
+		"D_A": _dummy_strike("D_A", MoveData.AttackAttribute.HIGH, true),
+	}
+
+
+func _range_all(values: Array, from: int, to: int, expected: Variant) -> bool:
+	for i in range(from, to + 1):
+		if values[i] != expected:
+			return false
+	return true
 
 
 ## 空中派生注入表：j214D（AIR + 214 派生，SPECIAL 层与同键 jD 分层）、无派生 jD

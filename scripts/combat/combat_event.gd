@@ -5,6 +5,8 @@ extends RefCounted
 
 enum Type {
 	HIT,               ## 招式命中木桩
+	BLOCKED,           ## 玩家以防御姿态挡下一次木桩打击（方向见 direction）
+	PLAYER_HIT,        ## 玩家被木桩打击命中（未防御或姿态漏防；方向见 direction）
 	HITSTOP_STARTED,   ## 命中帧结算完毕，后续 HITSTOP_FRAMES 个物理帧冻结（Hitstop 开始边界）
 	HITSTOP_ENDED,     ## 冻结结束，本帧起恢复正常结算（Hitstop 结束边界 = 恢复首个正常帧）
 	COMBO_ENDED,       ## 当前连段结束（原因见 ComboEndReason）
@@ -42,6 +44,20 @@ static func hit(damage: float, direction: int, combo_hits: int) -> CombatEvent:
 static func hitstop_started() -> CombatEvent:
 	var event := CombatEvent.new()
 	event.type = Type.HITSTOP_STARTED
+	return event
+
+
+static func blocked(direction: int) -> CombatEvent:
+	var event := CombatEvent.new()
+	event.type = Type.BLOCKED
+	event.direction = direction
+	return event
+
+
+static func player_hit(direction: int) -> CombatEvent:
+	var event := CombatEvent.new()
+	event.type = Type.PLAYER_HIT
+	event.direction = direction
 	return event
 
 

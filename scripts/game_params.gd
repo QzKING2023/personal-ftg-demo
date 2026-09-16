@@ -149,6 +149,9 @@ const GROUND_COLOR := Color(0.24, 0.28, 0.34)
 const WALL_COLOR := Color(0.18, 0.20, 0.26)
 const CENTER_MARK_COLOR := Color(0.35, 0.40, 0.48)
 const PLAYER_COLOR := Color(0.30, 0.62, 0.90)
+# 玩家防御中的整体色调与蹲下的纵向压扁比例（蹲下与防御的可观察呈现，不影响结算）。
+const PLAYER_GUARD_COLOR := Color(0.62, 0.86, 0.76)
+const PLAYER_CROUCH_SCALE := 0.6
 const DUMMY_COLOR := Color(0.82, 0.56, 0.24)
 const VISOR_COLOR := Color(0.08, 0.08, 0.10)
 const HITBOX_COLOR := Color(1.0, 0.85, 0.25, 0.35)

@@ -21,6 +21,15 @@ enum DummyState {
 	AIR_RECOVERED,    ## 空中已受身（连段已结束，落地后才恢复中立）
 }
 
+## 防御姿态：地面 4 为站防、1 为蹲防；真正离地后 4/1 均为空防。
+## pre-jump、落地恢复首帧与空技恢复全程不进入防御（issue 16）。
+enum GuardPosture {
+	NONE = 0,     ## 未防御
+	STANDING = 1, ## 站防：挡 high/mid/overhead，漏 low
+	CROUCH = 2,   ## 蹲防：挡 high/mid/low，漏 overhead
+	AIR = 3,      ## 空防：默认挡带 air 的打击（正交 air 类别）
+}
+
 # --- 可观察的玩家状态 ---
 var player_position: Vector2
 var player_velocity: Vector2
@@ -29,6 +38,14 @@ var player_phase: PlayerPhase = PlayerPhase.NEUTRAL
 var player_on_ground := true
 ## 当前执行的招式 id（空闲时为空串）。
 var player_move_id := ""
+## 是否处于蹲下姿态（地面自由行动时 1/2/3 当帧进入；水平分量照常保留）。
+var player_crouching := false
+## 当前防御姿态（站防/蹲防/空防；受限阶段冻结，不因下方向强行切换）。
+var player_guard: GuardPosture = GuardPosture.NONE
+## 剩余防御硬直帧数（防御命中后按打击数据 hitstun_frames 计，含当前帧）。
+var player_guard_stun_left := 0
+## 剩余玩家受击硬直帧数（未防御命中后按打击数据 hitstun_frames 计；滞空暂停消耗）。
+var player_hitstun_left := 0
 
 # --- 可观察的木桩状态 ---
 var dummy_position: Vector2
@@ -38,6 +55,21 @@ var dummy_state: DummyState = DummyState.NEUTRAL
 var dummy_on_ground := true
 ## 剩余地面受击硬直帧数（含当前帧；归零即自然受身）。
 var dummy_hitstun_left := 0
+
+# --- 木桩确定性攻击（issue 16：属性矩阵与防御观察用）---
+## 木桩当前执行的招式 id（空闲时为空串）。木桩无自主决策，招式经 FrameInput
+## 的确定性请求启动（训练场不设置；测试/验证驱动）。
+var dummy_move_id := ""
+## 木桩招式阶段（与玩家共用同一套阶段枚举；空闲为 NEUTRAL）。
+var dummy_phase: PlayerPhase = PlayerPhase.NEUTRAL
+var _dummy_move: MoveData = null
+var _dummy_move_frame := 0
+## 本次木桩招式是否已连接过玩家身体（每次挥击至多一次防御/命中结算）。
+var _dummy_hit_once := false
+## 本帧待应用的木桩命中（命中判定阶段捕获，受击应用阶段结算）。
+var _pending_dummy_hit: MoveData = null
+## 本帧刚对玩家应用过防御硬直或受击硬直：当帧不消耗新硬直（与木桩受击同口径）。
+var _player_fresh_stun := false
 
 # --- 可观察的连段状态 ---
 ## 当前/最近一段连段的命中数；连段结束后保留，直到下一段首击重新计数。
@@ -150,6 +182,17 @@ func reset_to_initial_state() -> void:
 	player_phase = PlayerPhase.NEUTRAL
 	player_on_ground = true
 	player_move_id = ""
+	player_crouching = false
+	player_guard = GuardPosture.NONE
+	player_guard_stun_left = 0
+	player_hitstun_left = 0
+	_dummy_move = null
+	dummy_move_id = ""
+	dummy_phase = PlayerPhase.NEUTRAL
+	_dummy_move_frame = 0
+	_dummy_hit_once = false
+	_pending_dummy_hit = null
+	_player_fresh_stun = false
 	dummy_position = Vector2(GameParams.DUMMY_SPAWN_X, GameParams.ground_stand_y())
 	dummy_velocity = Vector2.ZERO
 	dummy_hp = GameParams.DUMMY_MAX_HP
@@ -235,6 +278,20 @@ func player_attack_rect() -> Rect2:
 	return Rect2(center - _current_move.hitbox_size * 0.5, _current_move.hitbox_size)
 
 
+## 木桩当前招式的命中框（世界坐标，朝玩家一侧）；没有进行中的招式时返回空矩形。
+func dummy_attack_rect() -> Rect2:
+	if _dummy_move == null:
+		return Rect2()
+	var facing := _dummy_attack_direction()
+	var center := dummy_position + Vector2(facing * _dummy_move.hitbox_offset(), 0.0)
+	return Rect2(center - _dummy_move.hitbox_size * 0.5, _dummy_move.hitbox_size)
+
+
+## 玩家身体矩形（防御/受击判定用；蹲下不改变受击几何——规格未定义蹲姿受击框）。
+func _player_body_rect() -> Rect2:
+	return Rect2(player_position - GameParams.BODY_SIZE * 0.5, GameParams.BODY_SIZE)
+
+
 ## 开发期诊断只读快照：面向、相对方向序列、识别招式、缓存剩余、取消资格与
 ## 姿态/速度等复现记录口径（执行路径阶段 1 的输入记录要求）。只读，不参与结算。
 func debug_snapshot() -> Dictionary:
@@ -256,6 +313,12 @@ func debug_snapshot() -> Dictionary:
 		"phase": player_phase,
 		"move_id": player_move_id,
 		"move_attribute": _current_move.attribute_label() if _current_move != null else "",
+		"crouching": player_crouching,
+		"guard": player_guard,
+		"guard_stun_left": player_guard_stun_left,
+		"hitstun_left": player_hitstun_left,
+		"dummy_move_id": dummy_move_id,
+		"dummy_phase": dummy_phase,
 		"hitstop_left": _hitstop_left,
 		"prejump_left": player_prejump_left,
 		"landing_recovery_left": player_landing_recovery_left,
@@ -306,6 +369,88 @@ func _phase_input() -> void:
 		_jump_slot_at = input_stamp
 		_jump_slot_physics = _frame_index
 		_jump_slot_axis = _frame_input.move_axis
+	if _hitstop_left > 0:
+		## 冻结帧到此为止：姿态与木桩请求属于结算，停顿中不推进。
+		return
+	_update_posture()
+	_process_dummy_request()
+
+
+## 木桩确定性攻击请求：仅在木桩空闲（中立、落地、无进行中招式）时按请求起手，
+## 请求帧为该招式第 1 帧；其余状态静默忽略（木桩无自主决策，不排队、不补发）。
+func _process_dummy_request() -> void:
+	if _frame_input.dummy_move_request == "" or _dummy_move != null:
+		return
+	if dummy_state != DummyState.NEUTRAL or not dummy_on_ground:
+		return
+	var move := _moves.get(_frame_input.dummy_move_request) as MoveData
+	if move == null or not move.is_strike():
+		return
+	_dummy_move = move
+	dummy_move_id = move.move_id
+	## 起始记 0：本帧运动阶段推进为第 1 帧——请求帧即该招式 F1，判定最早出现
+	## 在请求 + startup 帧（与玩家消费起手的帧序同一口径）。
+	_dummy_move_frame = 0
+	_dummy_hit_once = false
+	dummy_phase = PlayerPhase.STARTUP
+
+
+## 姿态解析（蹲下与防御，issue 16）：先于命中判定，使当帧进入的蹲下/防御
+## 参与同帧的防御判定。地面自由行动时 1/2/3 当帧蹲下（水平分量照常保留）、
+## 4 站防、1 蹲防；真正离地后 4/1 均为空防、下方向只保留运动输入。
+## 招式阶段、受击/防御硬直、pre-jump 与空技落地恢复中姿态冻结——防御硬直
+## 冻结即保持原防御姿态（连防），受击硬直冻结即不因下方向强行改姿态。
+## 空跳落地恢复第 2、3 帧与自由行动同门（可蹲可防）。
+func _update_posture() -> void:
+	if not _posture_reeval_open():
+		return
+	if not player_on_ground:
+		player_crouching = false
+		player_guard = GuardPosture.AIR if _holding_back() else GuardPosture.NONE
+		return
+	player_crouching = _frame_input.down_held
+	if _holding_back():
+		player_guard = GuardPosture.CROUCH if player_crouching else GuardPosture.STANDING
+	else:
+		player_guard = GuardPosture.NONE
+
+
+## 玩家是否处于受击/防御硬直（姿态冻结、不可出招/起跳/移动的共同判式）。
+func _player_stunned() -> bool:
+	return player_hitstun_left > 0 or player_guard_stun_left > 0
+
+
+## 清空蹲下/防御姿态（出招、起跳准备与落地首帧统一入口）。
+func _clear_posture() -> void:
+	player_crouching = false
+	player_guard = GuardPosture.NONE
+
+
+## 木桩攻击方向：木桩指向玩家一侧的水平符号（与玩家攻击用 player_facing 同构；
+## 木桩无面向状态，按双方位置即时折算，确定性成立）。
+func _dummy_attack_direction() -> int:
+	return 1 if player_position.x >= dummy_position.x else -1
+
+
+## 姿态重解析门：出招、受击/防御硬直、pre-jump 与空技落地恢复关闭；
+## 空跳落地恢复第 2、3 帧开放（与独立起手同一口径）。输入阶段读到的是含当帧
+## 的恢复倒计时（本帧运动归零 = 首个自由帧），因此以 >1 判受限，与消费阶段
+## 的起手门时序一致。
+func _posture_reeval_open() -> bool:
+	if _current_move != null:
+		return false
+	if _player_stunned():
+		return false
+	if player_prejump_left > 0:
+		return false
+	if player_landing_recovery_left > 1 and _air_move_started:
+		return false
+	return true
+
+
+## 是否按住“后”（相对帧首面向折算；与方向历史同一口径）。
+func _holding_back() -> bool:
+	return _frame_input.move_axis == -player_facing
 
 
 ## 输入记录时间戳（正常帧时钟口径）：正常帧记当前时钟；冻结帧记恢复首个正常帧
@@ -345,20 +490,30 @@ func _phase_hit_detection() -> void:
 	##    木桩中立时可被任何招式命中；受击中只有连段内的合法接续招式可以继续命中，
 	##    没有取消资格的独立招式不能绕过取消条件追击。同一次出招最多命中一次。
 	_pending_hit = null
-	if player_phase != PlayerPhase.ACTIVE or _hit_once_this_move:
-		return
-	if not player_attack_rect().intersects(_dummy_body_rect()):
-		return
-	if not _can_hit_dummy():
-		return
-	_hit_once_this_move = true
-	_pending_hit = _current_move
+	if player_phase == PlayerPhase.ACTIVE and not _hit_once_this_move \
+			and player_attack_rect().intersects(_dummy_body_rect()) and _can_hit_dummy():
+		_hit_once_this_move = true
+		_pending_hit = _current_move
+	## 木桩打击的对称判定：判定帧内检查木桩命中框与玩家身体的几何重叠，
+	## 每次挥击至多连接一次（防御或命中在受击应用阶段结算）。同帧双方都在
+	## 判定时按先玩家、后木桩的固定顺序应用（互换命中有效）。
+	_pending_dummy_hit = null
+	if dummy_phase == PlayerPhase.ACTIVE and not _dummy_hit_once \
+			and dummy_attack_rect().intersects(_player_body_rect()):
+		_dummy_hit_once = true
+		_pending_dummy_hit = _dummy_move
 
 
 func _phase_apply_hits(events: Array[CombatEvent]) -> void:
-	## 3. 受击应用：结算连段伤害递减、受击状态、硬直与击退。
-	if _pending_hit == null:
-		return
+	## 3. 受击应用：先结算玩家对木桩的命中，再结算木桩对玩家的连接（防御或
+	## 命中）。两侧各自独立判定是否存在，不能因一侧无命中而跳过另一侧。
+	if _pending_hit != null:
+		_apply_player_hit(events)
+	_phase_apply_dummy_hit(events)
+
+
+func _apply_player_hit(events: Array[CombatEvent]) -> void:
+	## 玩家命中木桩的结算：连段伤害递减、受击状态、硬直与击退。
 	var move := _pending_hit
 	if not combo_active or dummy_state == DummyState.NEUTRAL:
 		combo_hits = 0
@@ -382,6 +537,8 @@ func _phase_apply_hits(events: Array[CombatEvent]) -> void:
 		_:
 			push_error("未支持的命中结果类型: %d" % move.hit_result)
 	_dummy_fresh_hitstun = true
+	## 木桩受击打断其进行中的攻击（本帧已捕获的连接仍按互换命中结算）。
+	_clear_dummy_move()
 	dummy_velocity.x = player_facing * move.knockback
 	if move.hit_result == MoveData.HitResult.LAUNCH:
 		## 浮空命中必定重起跳：即使木桩仍在上一击的微浮中也给予完整滞空；
@@ -402,6 +559,52 @@ func _phase_apply_hits(events: Array[CombatEvent]) -> void:
 	_pending_hit = null
 
 
+## 木桩打击对玩家的结算（issue 16）：防御姿态按显式属性矩阵判定。挡下 →
+## 防御硬直（= 打击 hitstun）+ BLOCKED 事件 + Hitstop；漏防或无姿态 → 玩家
+## 受击硬直 + 水平击退 + PLAYER_HIT 事件 + Hitstop（进行中的招式被打断，连段
+## 以收招未接续结束）。玩家无生命值系统，打击数据对玩家只作用硬直与位移。
+func _phase_apply_dummy_hit(events: Array[CombatEvent]) -> void:
+	if _pending_dummy_hit == null:
+		return
+	var move := _pending_dummy_hit
+	var direction := _dummy_attack_direction()
+	if _blocks_attack(move):
+		player_guard_stun_left = move.hitstun_frames
+		events.append(CombatEvent.blocked(direction))
+	else:
+		if _current_move != null:
+			_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
+			_clear_current_move()
+		player_hitstun_left = move.hitstun_frames
+		player_velocity.x = direction * move.knockback
+		events.append(CombatEvent.player_hit(direction))
+	_player_fresh_stun = true
+	if _hitstop_left == 0:
+		## 同帧互换命中（玩家先命中木桩）只开启一个停顿窗口、只报一次边界事件。
+		_hitstop_left = GameParams.HITSTOP_FRAMES
+		events.append(CombatEvent.hitstop_started())
+	_pending_dummy_hit = null
+
+
+## 防御姿态 × 攻击属性矩阵：站防挡 high/mid/overhead、漏 low；蹲防挡
+## high/mid/low、漏 overhead；空防默认可挡带 air 的打击（正交类别；纯地面
+## 属性不在空防默认域内，未来例外须显式声明）；无姿态不挡。
+## 受击硬直中被打破的防御不提供保护——硬直期间一律不挡（姿态可观测量冻结
+## 只是"不改姿态"，不代表仍在防御）。
+func _blocks_attack(move: MoveData) -> bool:
+	if player_hitstun_left > 0:
+		return false
+	match player_guard:
+		GuardPosture.STANDING:
+			return move.attack_attribute != MoveData.AttackAttribute.LOW
+		GuardPosture.CROUCH:
+			return move.attack_attribute != MoveData.AttackAttribute.OVERHEAD
+		GuardPosture.AIR:
+			return move.air_attack
+		_:
+			return false
+
+
 func _phase_motion(events: Array[CombatEvent]) -> void:
 	## 4. 运动/落地/自然受身：先按已应用的速度积分位置，再处理落地、
 	## 身体重叠与木桩自然受身；招式帧计数也在本阶段末尾推进。
@@ -410,6 +613,7 @@ func _phase_motion(events: Array[CombatEvent]) -> void:
 	_update_free_action_facing()
 	_resolve_body_overlap()
 	_advance_move(events)
+	_advance_dummy_move()
 
 
 func _phase_cancel() -> void:
@@ -516,7 +720,9 @@ func _independent_start_allowed() -> bool:
 	## 因此准备期间一律只记录不消费。落地恢复首帧完全锁定（配置的落地接续走
 	## 取消路径，不受影响）；空跳恢复第 2、3 帧可取消为合法攻击；启动过空中
 	## 招式的落地恢复基础及额外恢复全程不可取消（挥空同样受限）。
-	## 投、防御与蹲下在各自 issue 实装时同样受限于此门。
+	## 受击硬直与防御硬直期间不可独立起手；投与蹲下/防御的姿态门各自独立判定。
+	if _player_stunned():
+		return false
 	if player_prejump_left > 0:
 		return false
 	if _player_just_landed:
@@ -527,10 +733,12 @@ func _independent_start_allowed() -> bool:
 
 
 func _jump_slot_ready() -> bool:
-	## 跳跃输入槽的当帧合法性：起跳准备、落地恢复与空中一律不可消费
-	## （无二段跳；受限恢复期不重新起跳）。地面中立是普通跳；招式阶段需要
-	## jump cancel 配置 + 命中确认 + 取消窗口 + 可追击木桩同时成立。
+	## 跳跃输入槽的当帧合法性：起跳准备、落地恢复、受击/防御硬直与空中一律
+	## 不可消费（无二段跳；受限恢复期不重新起跳）。地面中立是普通跳；招式阶段
+	## 需要 jump cancel 配置 + 命中确认 + 取消窗口 + 可追击木桩同时成立。
 	if not _jump_slot_active:
+		return false
+	if _player_stunned():
 		return false
 	if player_prejump_left > 0 or player_landing_recovery_left > 0:
 		return false
@@ -548,6 +756,8 @@ func _consume_jump() -> void:
 	_jump_slot_active = false
 	_jump_direction = _jump_slot_axis
 	player_prejump_left = GameParams.PLAYER_PREJUMP_FRAMES
+	## pre-jump 不新进入防御/蹲下：起跳准备期间姿态为空。
+	_clear_posture()
 	if _current_move != null:
 		_jump_cancel_followups.clear()
 		_jump_cancel_followups.append_array(_current_move.jump_cancel_targets)
@@ -586,6 +796,15 @@ func _motion_player(events: Array[CombatEvent]) -> void:
 	## 出招期间水平输入失效，只保留摩擦减速（地面/空中一致）；普通空中运动
 	## 保留起跳横向速度：方向输入不加速、不减速、也不翻转面向。
 	var takeoff_this_frame := false
+	if _player_fresh_stun:
+		## 命中/防御帧不消耗新硬直（与木桩受击同口径）；停顿帧不进入本函数，
+		## 硬直倒数自然冻结。受击硬直滞空暂停消耗（与木桩地面硬直同口径）；
+		## 防御硬直无滞空变体（空防在空中挡下），落地与否都逐帧倒数。
+		_player_fresh_stun = false
+	elif player_hitstun_left > 0 and player_on_ground:
+		player_hitstun_left -= 1
+	elif player_guard_stun_left > 0:
+		player_guard_stun_left -= 1
 	if player_prejump_left > 0:
 		player_prejump_left -= 1
 		takeoff_this_frame = player_prejump_left == 0
@@ -597,7 +816,10 @@ func _motion_player(events: Array[CombatEvent]) -> void:
 		## 仍属准备期）：反向输入不重写斜跳请求；原始 8 请求（冻结方向为 0）
 		## 仍用当前输入改成斜跳，不重置准备计时。
 		axis = _jump_direction
-	if player_phase == PlayerPhase.NEUTRAL:
+	## 出招与受击/防御硬直期间水平输入失效，只保留摩擦减速（地面/空中一致）；
+	## 普通空中运动保留起跳横向速度：方向输入不加速、不减速、也不翻转面向。
+	var stunned := _player_stunned()
+	if player_phase == PlayerPhase.NEUTRAL and not stunned:
 		if player_on_ground:
 			if axis != 0:
 				player_velocity.x = move_toward(player_velocity.x, axis * GameParams.PLAYER_MOVE_SPEED, GameParams.PLAYER_ACCELERATION * GameParams.PHYSICS_TICK)
@@ -620,6 +842,9 @@ func _motion_player(events: Array[CombatEvent]) -> void:
 		_player_just_landed = just_landed
 		if just_landed:
 			_begin_landing_recovery()
+			## 落地恢复首帧统一不可蹲/不可防御：当帧钳掉空中姿态，下一帧起按
+			## 落地恢复门重解析（空跳第 2、3 帧恢复，空技恢复全程关闭）。
+			_clear_posture()
 			if not _jump_cancel_followups.is_empty():
 				# jump cancel 后落地仍未接续空中追击：追击资格作废，连段以收招未接续结束。
 				_jump_cancel_followups.clear()
@@ -724,13 +949,15 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 	_dummy_fresh_hitstun = false
 
 
-## 地面自由行动（中立/移动；蹲下并入待蹲下 issue 落地，出招、受击与空中除外）
-## 时每帧面向木桩：在双方运动与位置更新后、身体重叠推出前重新指向，本帧的
-## 面向变化从下一物理帧的方向折算生效；后退不翻面，与木桩横向重合时保持当前
-## 面向。出招、受击硬直、倒地处理和空中阶段不进入本函数，保持进入该阶段时的
-## 面向；落地完成后的首个地面自由行动帧由本函数重新面向木桩。
+## 地面自由行动（中立/移动/蹲下；出招、受击/防御硬直与空中除外）时每帧面向
+## 木桩：在双方运动与位置更新后、身体重叠推出前重新指向，本帧的面向变化从下
+## 一物理帧的方向折算生效；后退不翻面，与木桩横向重合时保持当前面向。出招、
+## 受击硬直、倒地处理和空中阶段不进入本函数，保持进入该阶段时的面向；防御
+## 硬直与受击硬直同口径冻结。落地完成后的首个地面自由行动帧由本函数重新面向木桩。
 func _update_free_action_facing() -> void:
 	if player_phase != PlayerPhase.NEUTRAL or not player_on_ground:
+		return
+	if _player_stunned():
 		return
 	if is_equal_approx(dummy_position.x, player_position.x):
 		return
@@ -768,6 +995,29 @@ func _advance_move(events: Array[CombatEvent]) -> void:
 		_clear_current_move()
 
 
+## 木桩招式帧计数在运动阶段末尾推进（与玩家同一口径；停顿帧不推进）。
+func _advance_dummy_move() -> void:
+	if _dummy_move == null:
+		return
+	_dummy_move_frame += 1
+	if _dummy_move_frame < _dummy_move.active_from():
+		dummy_phase = PlayerPhase.STARTUP
+	elif _dummy_move_frame <= _dummy_move.active_to():
+		dummy_phase = PlayerPhase.ACTIVE
+	elif _dummy_move_frame < _dummy_move.total_frames():
+		dummy_phase = PlayerPhase.RECOVERY
+	else:
+		_clear_dummy_move()
+
+
+func _clear_dummy_move() -> void:
+	_dummy_move = null
+	dummy_move_id = ""
+	dummy_phase = PlayerPhase.NEUTRAL
+	_dummy_move_frame = 0
+	_dummy_hit_once = false
+
+
 func _start_move(move_id: String, move: MoveData, is_followup: bool) -> void:
 	_current_move = move
 	player_move_id = move_id
@@ -777,6 +1027,8 @@ func _start_move(move_id: String, move: MoveData, is_followup: bool) -> void:
 	_hit_confirm_frame = 0
 	_move_is_followup = is_followup
 	player_phase = PlayerPhase.STARTUP
+	## 招式阶段替换姿态：出招期间不蹲不防，收招后按输入重解析。
+	_clear_posture()
 	if move.stance == MoveData.Stance.AIR and not player_on_ground:
 		## 空中招式启动即计入本次跳跃的着地惩罚（默认 +1f 一次）与显式额外恢复。
 		_air_move_started = true

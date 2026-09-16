@@ -21,6 +21,7 @@ func _run_tests() -> void:
 	await _test_movement_and_bounds(player, session)
 	await _test_jump(player)
 	await _test_hud_layout_no_overlap(main)
+	await _test_crouch_and_guard_presentation(main, player, session)
 	await _test_attack_hit_and_feedback(main, player, dummy, session)
 	await _test_attack_range(session)
 	await _test_ground_combo_display(main, session)
@@ -106,6 +107,38 @@ func _test_hud_layout_no_overlap(main: Node2D) -> void:
 		"hint block stays clear of the status column")
 	_check(GameParams.STATUS_OFFSET.x + status_width <= GameParams.STAGE_WIDTH,
 		"status text fits inside the design viewport width")
+
+
+func _test_crouch_and_guard_presentation(main: Node2D, player: Player, session: CombatSession) -> void:
+	# 真实键盘路径（issue 16）：S 蹲下（当帧进入、视觉纵向压扁）；按住后方向进入
+	# 站防（整体变色），S+后方向为蹲防；松开后恢复站立无防御；诊断行显示防御姿态。
+	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
+	session.player_velocity = Vector2.ZERO
+	session.player_facing = 1
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	await physics_frame
+	var debug: Label = main.get_node("DebugLine")
+	Input.action_press("move_down")
+	await physics_frame
+	_check(session.player_crouching, "S crouches the player via the real keyboard path")
+	_check(player.is_showing_crouch(), "crouching squashes the player visuals")
+	Input.action_release("move_down")
+	await physics_frame
+	_check(not session.player_crouching, "releasing S stands back up")
+	Input.action_press("move_left")
+	await physics_frame
+	_check(session.player_guard == CombatSession.GuardPosture.STANDING, "holding the back direction enters the standing guard")
+	_check(player.is_showing_guard(), "guarding tints the player visuals")
+	_check(debug.text.contains("站防"), "the debug line shows the standing guard posture")
+	Input.action_press("move_down")
+	await physics_frame
+	_check(session.player_crouching and session.player_guard == CombatSession.GuardPosture.CROUCH, "S plus back enters the crouch guard")
+	_check(debug.text.contains("蹲防"), "the debug line shows the crouch guard posture")
+	Input.action_release("move_left")
+	Input.action_release("move_down")
+	await physics_frame
+	_check(not session.player_crouching and session.player_guard == CombatSession.GuardPosture.NONE, "releasing everything returns to plain standing")
+	_check(not player.is_showing_guard() and not player.is_showing_crouch(), "visuals return to normal after the posture clears")
 
 
 func _test_attack_hit_and_feedback(main: Node2D, player: Player, dummy: Dummy, session: CombatSession) -> void:

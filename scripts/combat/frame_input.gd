@@ -12,12 +12,16 @@ var jump_pressed := false
 ## 本帧刚按下的动作键："A"/"B"/"C"/"D" 之一，空串表示无。
 ## 动作键进入单槽缓存，由会话在消费阶段统一处理。
 var action_key := ""
+## 木桩确定性攻击请求（招式表内打击招式 id）：测试与验证驱动属性矩阵/防御
+## 观察用；训练场不设置（木桩无自主决策）。会话在木桩空闲时按请求起手。
+var dummy_move_request := ""
 
 
-static func make(move_axis: int = 0, jump_pressed: bool = false, action_key: String = "", down_held: bool = false) -> FrameInput:
+static func make(move_axis: int = 0, jump_pressed: bool = false, action_key: String = "", down_held: bool = false, dummy_move_request: String = "") -> FrameInput:
 	var input := FrameInput.new()
 	input.move_axis = move_axis
 	input.jump_pressed = jump_pressed
 	input.action_key = action_key
 	input.down_held = down_held
+	input.dummy_move_request = dummy_move_request
 	return input

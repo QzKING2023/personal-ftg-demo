@@ -6,7 +6,7 @@ extends Node2D
 const PlayerScene: PackedScene = preload("res://scenes/player.tscn")
 const DummyScene: PackedScene = preload("res://scenes/dummy.tscn")
 
-const HINT_TEXT := "移动 A/D 或 ←/→    下 S/↓    跳跃 Space    重置 R\n动作 U/I/K/J = A/B/C/D    派生 236+C / 214+D（方向按面向折算）"
+const HINT_TEXT := "移动 A/D 或 ←/→    下 S/↓ 蹲下    防御 按住后方向 4/1    跳跃 Space    重置 R\n动作 U/I/K/J = A/B/C/D    派生 236+C / 214+D（方向按面向折算）"
 
 ## 动作键 A/B/C/D 对应的输入动作名（物理键 U/I/K/J）；C/D 配合方向序列触发派生。
 const ACTION_KEYS: Array[String] = ["A", "B", "C", "D"]
@@ -165,12 +165,27 @@ func _update_debug_line() -> void:
 	var snap := session.debug_snapshot()
 	var facing_text := "→" if int(snap["facing"]) == 1 else "←"
 	var posture := "空中" if not bool(snap["on_ground"]) else "地面"
+	if bool(snap["crouching"]):
+		posture = "蹲下"
 	if int(snap["prejump_left"]) > 0:
 		posture = "准备" + str(int(snap["prejump_left"]))
 	elif int(snap["landing_recovery_left"]) > 0:
 		posture = "落地" + str(int(snap["landing_recovery_left"]))
 	if int(snap["hitstop_left"]) > 0:
 		posture = "停顿" + posture + str(int(snap["hitstop_left"]))
+	# 防御姿态与硬直（issue 16）：站防/蹲防/空防 + 防御硬直/受击硬直剩余帧。
+	var guard_text := "—"
+	match snap["guard"]:
+		CombatSession.GuardPosture.STANDING:
+			guard_text = "站防"
+		CombatSession.GuardPosture.CROUCH:
+			guard_text = "蹲防"
+		CombatSession.GuardPosture.AIR:
+			guard_text = "空防"
+	if int(snap["guard_stun_left"]) > 0:
+		guard_text += "·防僵" + str(int(snap["guard_stun_left"]))
+	if int(snap["hitstun_left"]) > 0:
+		guard_text += "·受击" + str(int(snap["hitstun_left"]))
 	var move_text := String(snap["move_id"])
 	if move_text == "":
 		move_text = "—"
@@ -203,8 +218,8 @@ func _update_debug_line() -> void:
 	var attribute := String(snap["move_attribute"])
 	if attribute != "":
 		attribute = " 属性" + attribute
-	_debug_line.text = "诊断 帧%d 面向%s %s 招式%s%s 缓存%s 跳槽%s 方向%s 取消%s" % [
-		int(snap["frame"]), facing_text, posture, move_text, attribute, buffer_text, jump_text, sequence, cancels,
+	_debug_line.text = "诊断 帧%d 面向%s %s 防御%s 招式%s%s 缓存%s 跳槽%s 方向%s 取消%s" % [
+		int(snap["frame"]), facing_text, posture, guard_text, move_text, attribute, buffer_text, jump_text, sequence, cancels,
 	]
 
 
