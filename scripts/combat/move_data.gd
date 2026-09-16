@@ -36,6 +36,14 @@ enum AttackAttribute {
 	OVERHEAD = 4, ## 蹲防不可、站防可
 }
 
+## 指令层级：同一动作键事件同时命中多招时的确定性选择顺序，
+## 超必杀 > 普通必杀 > 普通拳脚，同层再按 priority。
+enum CommandTier {
+	NORMAL = 0,  ## 普通拳脚（无方向指令）
+	SPECIAL = 1, ## 普通必杀（单组方向指令）
+	SUPER = 2,   ## 超必杀（多段指令 / 显式替代串）
+}
+
 ## 稳定 id：资源身份，不由文件名推断；manifest 与运行时/Solver 都以它引用招式。
 @export var move_id := ""
 ## 招式类别（打击/普通投）。
@@ -87,10 +95,18 @@ enum AttackAttribute {
 ## 落地本身不授予任何普通取消资格。空列表表示本招不支持落地接续。
 @export var landing_cancel_targets: Array[String] = []
 ## 方向派生记法："236C" 表示方向序列 236 + 动作键 C；空串为无方向要求的普通招式。
-## 按下动作键时用方向历史尾部匹配；识别成功即消费方向序列并把缓存锁定为本招。
+## 按下动作键时按指令规则匹配方向历史；识别成功即消费终点及之前的全部历史。
 @export var direction_derivation := ""
+## 宽松指令：方向段按轴谓词集合匹配（前 {3,6,9}、后 {1,4,7}、下 {1,2,3}、上 {7,8,9}），
+## 段间允许额外方向段，首个满足终点谓词的段锁定终点；默认严格——每段精确等于
+## 记法数字且终点必须是最后一个方向段。宽松/严格由招式规则声明，不按记法猜测。
+@export var lenient_command := false
 ## 显式输入替代串（如超必杀的 "23626D"）：只按声明生效，不由普通指令自动推导。
+## 每个替代串是一个独立 variant，输入窗口按其实际步数计。
 @export var input_alternatives: Array[String] = []
+## 指令层级：同键同帧多招命中时先于 priority 的确定性选择顺序（超必杀 > 普通必杀
+## > 普通拳脚）；同层再按 priority。同绑定同层级同优先级并列属于非法数据。
+@export var command_tier: CommandTier = CommandTier.NORMAL
 ## 同层并列时的选择顺序：数值大者优先；同绑定同优先级的并列属于非法数据。
 @export var priority := -1
 

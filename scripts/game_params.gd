@@ -112,8 +112,9 @@ const HIT_FLASH_TIME := 0.10
 # --- 连段输入与取消 ---
 # 动作键单槽缓存：输入帧年龄 0–5 有效，年龄 6 先过期；最新输入覆盖旧输入。
 const ACTION_BUFFER_FRAMES := 6
-# 方向历史独立于动作键缓存：输入帧年龄 0–23 有效，年龄 24 先过期。
-const DIRECTION_BUFFER_FRAMES := 24
+# 方向历史独立于动作键缓存：指令输入窗口按实际 variant 谓词步数 × 每方向步长
+# 计算（含首段帧），三/五/六步指令分别为 30/50/60 帧；长按与中立不增加步数。
+const DIRECTION_STEP_FRAMES := 10
 # 命中确认取消窗口：命中后第 0–N 帧（含两端）内允许取消。
 const CANCEL_WINDOW_FRAMES := 8
 # 连段伤害递减：第 n 击倍率 = max(下限, 1 - (n-1) × 递减步长)。

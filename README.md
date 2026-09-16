@@ -17,7 +17,7 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . --editor --quit
 # 主场景无头运行若干帧（冒烟）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . --quit-after 300
 
-# 战斗会话 seam 测试（277 项：逐帧输入 → 可观察状态与事件）
+# 战斗会话 seam 测试（366 项：逐帧输入 → 可观察状态与事件）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_combat_session.gd
 
 # 训练场集成测试（63 项：注入输入 + 真实物理帧）

@@ -20,6 +20,7 @@ func _initialize() -> void:
 	_test_contradictory_fields_rejected()
 	_test_cross_move_references_rejected()
 	_test_same_binding_different_priority_allowed()
+	_test_command_tier_and_lenient_validation()
 	_test_hand_edited_tres_missing_field_rejected()
 	_test_tres_type_error_rejected()
 	_test_manifest_errors_rejected()
@@ -249,6 +250,47 @@ func _test_same_binding_different_priority_allowed() -> void:
 		session.dummy_position = session.player_position + Vector2(70, 0)
 		session.step(FrameInput.make(0, false, "A"))
 		_check(session.player_move_id == "5H", "runtime resolves the same binding by declared priority")
+
+
+func _test_command_tier_and_lenient_validation() -> void:
+	# 指令分层校验（issue 13）：同姿态+同绑定+同层级+同优先级仍是并列——不同方向
+	# 记法也不放开（宽松/严格记法可能同时命中同一输入，无确定性选择）；同绑定同
+	# 优先级不同层级由「超必杀 > 普通必杀 > 普通拳脚」解析，是合法配置；未知层级
+	# 枚举值拒绝；宽松声明挂在没有任何方向记法的招式上属于矛盾字段。
+	var tiered := _valid_strike_list()
+	var super_move := _valid_strike("SD", "A")
+	super_move.direction_derivation = "236236A"
+	super_move.command_tier = MoveData.CommandTier.SUPER
+	tiered.append(super_move)
+	var errors := MoveTable.validate(tiered)
+	_check(errors.is_empty(), "same binding and priority across different tiers is resolvable and legal")
+
+	var tier_tie := _valid_strike_list()
+	var lenient := _valid_strike("623A", "A")
+	lenient.direction_derivation = "623A"
+	lenient.lenient_command = true
+	lenient.command_tier = MoveData.CommandTier.SPECIAL
+	var strict := _valid_strike("236A", "A")
+	strict.direction_derivation = "236A"
+	strict.command_tier = MoveData.CommandTier.SPECIAL
+	tier_tie.append(lenient)
+	tier_tie.append(strict)
+	errors = MoveTable.validate(tier_tie)
+	_check(not errors.is_empty() and errors[0].contains("并列"),
+		"same stance+binding+tier+priority with different notations is still an illegal tie")
+	_check(errors[0].contains("623A") and errors[0].contains("236A"), "tier tie error names both conflicting moves")
+
+	var bad_tier := _valid_strike_list()
+	(bad_tier[0] as MoveData).command_tier = 99
+	errors = MoveTable.validate(bad_tier)
+	_check(not errors.is_empty() and errors[0].contains("command_tier"),
+		"unknown command tier enum value is rejected naming the field")
+
+	var lenient_plain := _valid_strike_list()
+	(lenient_plain[0] as MoveData).lenient_command = true
+	errors = MoveTable.validate(lenient_plain)
+	_check(not errors.is_empty() and errors[0].contains("lenient_command"),
+		"lenient command without any direction notation is a contradictory field")
 
 
 # --- 文件级加载与手改资源 ---

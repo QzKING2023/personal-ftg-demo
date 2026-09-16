@@ -44,6 +44,15 @@ func _initialize() -> void:
 	_test_direction_sequence_consumed_after_lock()
 	_test_directions_never_start_moves_or_use_buffer()
 	_test_slow_direction_beats_action_buffer_window()
+	_test_lenient_623_accepts_extra_segments()
+	_test_strict_commands_reject_inserted_directions()
+	_test_lenient_locks_first_endpoint()
+	_test_same_move_prefers_latest_candidate()
+	_test_same_endpoint_prefers_nearest_start()
+	_test_super_variant_windows()
+	_test_command_tier_priority_ordering()
+	_test_consumption_covers_extra_segments_keeps_tail()
+	_test_consumed_hold_and_neutral_resegmentation()
 	_test_launcher_puts_dummy_in_float_hitstun()
 	_test_air_tech_ends_combo_before_landing()
 	_test_float_landing_keeps_remaining_hitstun()
@@ -759,16 +768,35 @@ func _test_damage_floor_and_no_hit_cap() -> void:
 
 
 func _test_direction_window_age_boundary() -> void:
-	# 方向历史年龄 0–23 有效、年龄 24 先过期：F1–F3 输入 236，
-	# F24 按 C（最早的 2 年龄 23）仍识别派生；F25 按 C 则 2 已过期，回落普通 5C。
+	# 窗口按实际 variant 步数计（issue 13）：214 为三步 × 10 = 30 帧，含首段帧。
+	# F1–F3 输入 214，F30 按 D（首段年龄 29）仍识别；F31（年龄 30）过期回落 5D。
+	# 左右面向成功/失败帧一致（左面向用下、下右、右的物理镜像）。
 	var session := CombatSession.new()
-	for frame in range(1, 25):
-		session.step(_qcf_input(frame, 24, "C"))
-	_check(session.player_move_id == "236C", "direction entry at age 23 is the last valid age for a derivative")
+	for frame in range(1, 31):
+		session.step(_qcb_input(frame, 30, "D"))
+	_check(session.player_move_id == "214D", "three-step command at age 29 (F30) is the last valid boundary")
 	var late_session := CombatSession.new()
-	for frame in range(1, 26):
-		late_session.step(_qcf_input(frame, 25, "C"))
-	_check(late_session.player_move_id == "5C", "direction entry at age 24 expires before the key press and falls back to the plain move")
+	for frame in range(1, 32):
+		late_session.step(_qcb_input(frame, 31, "D"))
+	_check(late_session.player_move_id == "5D", "age 30 (F31) expires before the key press and falls back to the plain move")
+	var mirror := CombatSession.new()
+	mirror.dummy_position = mirror.player_position + Vector2(-200, 0)
+	mirror.step(FrameInput.new())
+	for digit in [2, 1, 4]:
+		mirror.step(_relative_input(mirror, digit))
+	for i in range(26):
+		mirror.step(FrameInput.new())
+	mirror.step(_relative_input(mirror, 5, "D"))
+	_check(mirror.player_move_id == "214D", "left-facing mirror keeps the same success frame (F31, age 29)")
+	var mirror_late := CombatSession.new()
+	mirror_late.dummy_position = mirror_late.player_position + Vector2(-200, 0)
+	mirror_late.step(FrameInput.new())
+	for digit in [2, 1, 4]:
+		mirror_late.step(_relative_input(mirror_late, digit))
+	for i in range(27):
+		mirror_late.step(FrameInput.new())
+	mirror_late.step(_relative_input(mirror_late, 5, "D"))
+	_check(mirror_late.player_move_id == "5D", "left-facing mirror keeps the same failure frame (F32, age 30)")
 
 
 func _test_direction_sequence_consumed_after_lock() -> void:
@@ -802,6 +830,241 @@ func _test_slow_direction_beats_action_buffer_window() -> void:
 		var axis := 1 if frame >= 10 else 0
 		session.step(FrameInput.make(axis, false, "C" if frame == 20 else "", down))
 	_check(session.player_move_id == "236C", "direction spread over 19 frames still triggers the derivative")
+
+
+func _test_lenient_623_accepts_extra_segments() -> void:
+	# 宽松谓词 {前={3,6,9}}→{下={1,2,3}}→{前={3,6,9}}：323、313、63236 与标准 623
+	# 都成立（段间允许额外方向段，每段最多推进一个谓词步骤）；长按 3 只有一个
+	# 方向段，不能满足三个谓词（一个方向段不复用）。左右镜像识别结果一致。
+	var table := _command_rule_table()
+	for pair in [["323", [3, 2, 3]], ["313", [3, 1, 3]], ["63236", [6, 3, 2, 3, 6]], ["623", [6, 2, 3]]]:
+		var session := CombatSession.new(table)
+		for digit in pair[1]:
+			session.step(_relative_input(session, digit))
+		session.step(_relative_input(session, 5, "A"))
+		_check(session.player_move_id == "623A", "lenient 623A accepts input %s (extra direction segments allowed)" % pair[0])
+	var hold := CombatSession.new(table)
+	for i in range(3):
+		hold.step(_relative_input(hold, 3))
+	hold.step(_relative_input(hold, 3, "A"))
+	_check(hold.player_move_id == "5A", "holding 3 keeps a single segment and cannot satisfy three predicates")
+	var mirror := CombatSession.new(table)
+	mirror.dummy_position = mirror.player_position + Vector2(-200, 0)
+	mirror.step(FrameInput.new())
+	for digit in [3, 2, 3]:
+		mirror.step(_relative_input(mirror, digit))
+	mirror.step(_relative_input(mirror, 5, "A"))
+	_check(mirror.player_move_id == "623A", "left-facing mirror 323 recognizes the same lenient command")
+
+
+func _test_strict_commands_reject_inserted_directions() -> void:
+	# 236/214 严格匹配：段间插入其他非中立方向、终点后插入非中立方向都会失败；
+	# 超必杀长串不由普通指令自动推导；终点前的旧方向段（后退后搓招）不阻塞严格匹配。
+	var inserted := CombatSession.new()
+	_run_relative(inserted, [[2], [3], [4], [6, "C"]])
+	_check(inserted.player_move_id == "5C", "inserting 4 between 236 breaks the strict match")
+	var post := CombatSession.new()
+	_run_relative(post, [[2], [3], [6], [4, "C"]])
+	_check(post.player_move_id == "5C", "post-endpoint 4 breaks the strict 236C candidate")
+	var no_super := CombatSession.new()
+	_run_relative(no_super, [[2], [3], [6], [2], [6, "C"]])
+	_check(no_super.player_move_id == "5C", "23626 is not auto-derived from plain 236C")
+	var lead := CombatSession.new()
+	_run_relative(lead, [[4], [4], [2], [3], [6, "C"]])
+	_check(lead.player_move_id == "236C", "leading back segments do not break the strict tail match")
+
+
+func _test_lenient_locks_first_endpoint() -> void:
+	# 宽松指令在完成前置谓词后于第一个满足终点谓词的段锁定：F3 的 3 锁定终点，
+	# F4 的 6 不改写；锁定本身不消费、不起手，动作键帧才识别并消费终点及之前的
+	# 全部历史，终点后的 6 保留。
+	var session := CombatSession.new(_command_rule_table())
+	_run_relative(session, [[3], [2], [3]])
+	var lock := _lock_for(session, "623A")
+	_check(not lock.is_empty() and int(lock["endpoint"]) == 3 and int(lock["start"]) == 1,
+		"the lenient candidate locks its first legal endpoint at F3 (visible in diagnostics)")
+	_check(session.player_move_id == "" and String(session.debug_snapshot()["direction_sequence"]) == "323",
+		"the lock alone consumes nothing and starts no move")
+	_run_relative(session, [[6]])
+	lock = _lock_for(session, "623A")
+	_check(not lock.is_empty() and int(lock["endpoint"]) == 3, "the extra 6 at F4 does not rewrite the locked endpoint")
+	session.step(_relative_input(session, 5, "A"))
+	_check(session.player_move_id == "623A", "the action key at F5 recognizes the locked lenient match")
+	_check(String(session.debug_snapshot()["direction_sequence"]) == "6",
+		"consumption covers the endpoint and everything before it; the post-endpoint 6 survives")
+
+
+func _test_same_move_prefers_latest_candidate() -> void:
+	# 同招多候选：623、长中立、再 623 后按 A——选最近完成的候选（第二次的终点），
+	# 消费含第一次在内的全部历史（旧串不可留待再按 A 复用）；首串过期也不阻塞
+	# 同次动作事件识别较新的有效串。
+	var table := _command_rule_table()
+	var session := CombatSession.new(table)
+	for digit in [6, 2, 3]:
+		session.step(_relative_input(session, digit))
+	for i in range(21):
+		session.step(FrameInput.new())
+	for digit in [6, 2, 3]:
+		session.step(_relative_input(session, digit))
+	session.step(_relative_input(session, 5, "A"))
+	_check(session.player_move_id == "623A", "A@F28 selects the most recently completed candidate")
+	_run_neutral(session, 40)
+	session.step(_relative_input(session, 5, "A"))
+	_check(session.player_move_id == "5A", "the consumed old string cannot serve a second A press")
+	var expired_old := CombatSession.new(table)
+	for digit in [6, 2, 3]:
+		expired_old.step(_relative_input(expired_old, digit))
+	for i in range(21):
+		expired_old.step(FrameInput.new())
+	for digit in [6, 2, 3]:
+		expired_old.step(_relative_input(expired_old, digit))
+	for i in range(3):
+		expired_old.step(FrameInput.new())
+	expired_old.step(_relative_input(expired_old, 5, "A"))
+	_check(expired_old.player_move_id == "623A",
+		"the expired first candidate (age 30 at F31) does not block the newer valid one in the same action event")
+
+
+func _test_same_endpoint_prefers_nearest_start() -> void:
+	# 终点同帧的两个候选选起点更近者：6,3,2,3 中 F2 的 3 既完成起点 F1 候选的
+	# 下谓词、又自起一个前谓词候选，两个候选终点同为 F4。A@F31 时 F1 候选年龄 30
+	# 已过期、F2 候选年龄 29 仍有效——按更近起点识别；A@F32 两个起点都过期，
+	# 回落普通招式。
+	var table := _command_rule_table()
+	var session := CombatSession.new(table)
+	for digit in [6, 3, 2, 3]:
+		session.step(_relative_input(session, digit))
+	for i in range(26):
+		session.step(FrameInput.new())
+	session.step(_relative_input(session, 5, "A"))
+	_check(session.player_move_id == "623A", "endpoint tie picks the nearer start whose window is still valid at F31")
+	var late := CombatSession.new(table)
+	for digit in [6, 3, 2, 3]:
+		late.step(_relative_input(late, digit))
+	for i in range(27):
+		late.step(FrameInput.new())
+	late.step(_relative_input(late, 5, "A"))
+	_check(late.player_move_id == "5A", "both starts are expired at F32 and the plain move resolves")
+
+
+func _test_super_variant_windows() -> void:
+	# 窗口按实际命中的 variant 步数计，不按指令"原始长度"计：五步替代串 5×10=50f
+	# （F50 识别、F51 过期），六步基础串 6×10=60f（F60 识别、F61 过期）。
+	# 长按不生成新方向段，保持 6 不延长也不缩短窗口。
+	var table := _tier_table()
+	var s50 := CombatSession.new(table)
+	for digit in [2, 3, 6, 2, 6]:
+		s50.step(_relative_input(s50, digit))
+	for i in range(44):
+		s50.step(_relative_input(s50, 6))
+	s50.step(_relative_input(s50, 6, "D"))
+	_check(s50.player_move_id == "SD", "five-step alternative still valid at F50 (window 50f incl. the first segment)")
+	var s51 := CombatSession.new(table)
+	for digit in [2, 3, 6, 2, 6]:
+		s51.step(_relative_input(s51, digit))
+	for i in range(45):
+		s51.step(_relative_input(s51, 6))
+	s51.step(_relative_input(s51, 6, "D"))
+	_check(s51.player_move_id == "5D", "five-step alternative expires at F51")
+	var s60 := CombatSession.new(table)
+	for digit in [2, 3, 6, 2, 3, 6]:
+		s60.step(_relative_input(s60, digit))
+	for i in range(53):
+		s60.step(_relative_input(s60, 6))
+	s60.step(_relative_input(s60, 6, "D"))
+	_check(s60.player_move_id == "SD", "six-step variant still valid at F60 (window 60f)")
+	var s61 := CombatSession.new(table)
+	for digit in [2, 3, 6, 2, 3, 6]:
+		s61.step(_relative_input(s61, digit))
+	for i in range(54):
+		s61.step(_relative_input(s61, 6))
+	s61.step(_relative_input(s61, 6, "D"))
+	_check(s61.player_move_id == "5D", "six-step variant expires at F61")
+	# 26236 同为五步替代串，使用同一 50f 边界。
+	var s50b := CombatSession.new(table)
+	for digit in [2, 6, 2, 3, 6]:
+		s50b.step(_relative_input(s50b, digit))
+	for i in range(44):
+		s50b.step(_relative_input(s50b, 6))
+	s50b.step(_relative_input(s50b, 6, "D"))
+	_check(s50b.player_move_id == "SD", "the 26236 five-step alternative shares the same F50 boundary")
+	var s51b := CombatSession.new(table)
+	for digit in [2, 6, 2, 3, 6]:
+		s51b.step(_relative_input(s51b, digit))
+	for i in range(45):
+		s51b.step(_relative_input(s51b, 6))
+	s51b.step(_relative_input(s51b, 6, "D"))
+	_check(s51b.player_move_id == "5D", "the 26236 five-step alternative expires at F51 like 23626")
+
+
+func _test_command_tier_priority_ordering() -> void:
+	# 超必杀 > 普通必杀 > 普通拳脚，同层按配置 priority：即使超必杀 priority 最低，
+	# 23626 输入同时命中超必杀五步串与宽松 623D 时仍选超必杀；同层 priority 高者胜。
+	var table := _tier_table()
+	var super_case := CombatSession.new(table)
+	for digit in [2, 3, 6, 2, 6]:
+		super_case.step(_relative_input(super_case, digit))
+	super_case.step(_relative_input(super_case, 6, "D"))
+	_check(super_case.player_move_id == "SD", "the super tier outranks specials regardless of configured priority")
+	var special_case := CombatSession.new(table)
+	for digit in [6, 2, 3]:
+		special_case.step(_relative_input(special_case, digit))
+	special_case.step(_relative_input(special_case, 5, "D"))
+	_check(special_case.player_move_id == "623D", "the matched special outranks the plain normal on the same key")
+	var plain_case := CombatSession.new(table)
+	plain_case.step(_relative_input(plain_case, 5, "D"))
+	_check(plain_case.player_move_id == "5D", "without direction matches the plain normal resolves")
+	var same_layer := CombatSession.new(table)
+	for digit in [6, 3, 6]:
+		same_layer.step(_relative_input(same_layer, digit))
+	same_layer.step(_relative_input(same_layer, 5, "D"))
+	_check(same_layer.player_move_id == "623D", "within one tier the higher declared priority wins (623D p9 over 63D p5)")
+	var flipped := CombatSession.new(_tier_table(5, 9))
+	for digit in [6, 3, 6]:
+		flipped.step(_relative_input(flipped, digit))
+	flipped.step(_relative_input(flipped, 5, "D"))
+	_check(flipped.player_move_id == "63D", "swapping priorities flips the same-layer winner")
+
+
+func _test_consumption_covers_extra_segments_keeps_tail() -> void:
+	# 成功识别消费所选终点及之前的全部历史（含宽松匹配跳过的额外段）；
+	# 终点后的历史保留，残留段不能拼出新指令。
+	var table := _command_rule_table()
+	var session := CombatSession.new(table)
+	for digit in [6, 2, 1, 2, 6]:
+		session.step(_relative_input(session, digit))
+	session.step(_relative_input(session, 5, "A"))
+	_check(session.player_move_id == "623A", "lenient match across extra segments recognizes at the action key")
+	_check(String(session.debug_snapshot()["direction_sequence"]) == "",
+		"consumption removes the endpoint and every earlier segment (skipped extras included)")
+	session.step(_relative_input(session, 1))
+	session.step(_relative_input(session, 4, "D"))
+	_check(String(session.debug_snapshot()["buffered_move_id"]) == "5D",
+		"the leftover tail cannot reassemble 214D from consumed history (plain fallback buffered)")
+
+
+func _test_consumed_hold_and_neutral_resegmentation() -> void:
+	# 消费不会把持续按住的同一逻辑方向变成新方向段；中立打断连续按住后，
+	# 重新进入才形成新的独立段——三个独立 3 段各推进一个谓词，可再次识别。
+	var table := _command_rule_table()
+	var session := CombatSession.new(table)
+	for digit in [3, 2, 3]:
+		session.step(_relative_input(session, digit))
+	session.step(_relative_input(session, 3, "A"))
+	_check(session.player_move_id == "623A", "recognition at F4 while still holding 3")
+	session.step(_relative_input(session, 3))
+	_check(String(session.debug_snapshot()["direction_sequence"]) == "",
+		"holding 3 after consumption does not open a new segment")
+	session.step(_relative_input(session, 2))
+	session.step(_relative_input(session, 3, "A"))
+	_check(String(session.debug_snapshot()["buffered_move_id"]) == "5A",
+		"only the fresh 2/3 segments remain and cannot re-recognize 623A (plain fallback buffered)")
+	var neutral_broken := CombatSession.new(table)
+	for digit in [3, 5, 3, 5]:
+		neutral_broken.step(_relative_input(neutral_broken, digit))
+	neutral_broken.step(_relative_input(neutral_broken, 3, "A"))
+	_check(neutral_broken.player_move_id == "623A",
+		"neutral gaps split the hold into three independent segments satisfying three predicates")
 
 
 func _test_launcher_puts_dummy_in_float_hitstun() -> void:
@@ -1499,6 +1762,77 @@ func _qcf_input(frame: int, key_frame: int, key: String) -> FrameInput:
 	return FrameInput.make(axis, false, key if frame == key_frame else "", down)
 
 
+## 后四分之一圆输入脚本（面向右）：F1 ↓、F2 ↓+←、F3 ←，其余帧中立；key_frame 帧附带动作键。
+func _qcb_input(frame: int, key_frame: int, key: String) -> FrameInput:
+	var axis := -1 if frame == 2 or frame == 3 else 0
+	var down := frame == 1 or frame == 2
+	return FrameInput.make(axis, false, key if frame == key_frame else "", down)
+
+
+## 相对小键盘方向 → FrameInput：按会话当前面向折算世界水平轴（3/6/9 为前），
+## 1/2/3 带下方向，5 为中立；key 为该帧动作键。左右面向用同一份数字脚本。
+func _relative_input(session: CombatSession, digit: int, key: String = "") -> FrameInput:
+	var axis := 0
+	if digit == 3 or digit == 6 or digit == 9:
+		axis = session.player_facing
+	elif digit == 1 or digit == 4 or digit == 7:
+		axis = -session.player_facing
+	var down := digit >= 1 and digit <= 3
+	return FrameInput.make(axis, false, key, down)
+
+
+## 相对方向逐帧脚本：每项为 [digit] 或 [digit, "key"]。
+func _run_relative(session: CombatSession, frames: Array) -> void:
+	for item in frames:
+		session.step(_relative_input(session, item[0], item[1] if item.size() > 1 else ""))
+
+
+## 诊断快照中某招式当前的指令锁定候选（宽松首个终点锁定的可观察口径）。
+func _lock_for(session: CombatSession, move_id: String) -> Dictionary:
+	for entry in session.debug_snapshot()["direction_locks"]:
+		if entry["move_id"] == move_id:
+			return entry
+	return {}
+
+
+## 指令规则注入表：宽松 623A 与严格 214D（均 SPECIAL 层）分别与同键普通招式
+## 5A/5D（NORMAL 层）共存——层级、宽松与记法全部由数据表达。
+func _command_rule_table() -> Dictionary:
+	var dp := _probe_move("623A", "A")
+	dp.direction_derivation = "623A"
+	dp.lenient_command = true
+	dp.command_tier = MoveData.CommandTier.SPECIAL
+	var plain_a := _probe_move("5A", "A")
+	var qcb := _probe_move("214D", "D")
+	qcb.direction_derivation = "214D"
+	qcb.command_tier = MoveData.CommandTier.SPECIAL
+	var plain_d := _probe_move("5D", "D")
+	return {"623A": dp, "5A": plain_a, "214D": qcb, "5D": plain_d}
+
+
+## 指令分层注入表：同键 D 上超必杀 SD（六步基础串 + 五步替代串 23626/26236，
+## priority 最低）、宽松必杀 623D/63D（priority 可调）与普通 5D——验证层级与
+## 同层 priority 顺序。
+func _tier_table(p623 := 9, p63 := 5) -> Dictionary:
+	var super_move := _probe_move("SD", "D")
+	super_move.direction_derivation = "236236D"
+	super_move.input_alternatives = ["23626D", "26236D"]
+	super_move.command_tier = MoveData.CommandTier.SUPER
+	super_move.priority = 0
+	var dp := _probe_move("623D", "D")
+	dp.direction_derivation = "623D"
+	dp.lenient_command = true
+	dp.command_tier = MoveData.CommandTier.SPECIAL
+	dp.priority = p623
+	var short := _probe_move("63D", "D")
+	short.direction_derivation = "63D"
+	short.lenient_command = true
+	short.command_tier = MoveData.CommandTier.SPECIAL
+	short.priority = p63
+	var plain := _probe_move("5D", "D")
+	return {"SD": super_move, "623D": dp, "63D": short, "5D": plain}
+
+
 ## 测试用探针招式：字段齐全的合法打击招式（值取旧 GameParams 运行时默认，
 ## issue 11 起核心字段缺省是“未声明”哨兵值，程序内构造必须显式补齐）。
 func _probe_move(id: String, key: String) -> MoveData:
@@ -1523,12 +1857,13 @@ func _probe_move(id: String, key: String) -> MoveData:
 	return move
 
 
-## 空中派生注入表：j214D（AIR + 214 派生）、无派生 jD 回落与 jA（识别但不可
-## 接续场景的执行中招式）；地面无 D/A 招式，隔离姿态解析。
+## 空中派生注入表：j214D（AIR + 214 派生，SPECIAL 层与同键 jD 分层）、无派生 jD
+## 回落与 jA（识别但不可接续场景的执行中招式）；地面无 D/A 招式，隔离姿态解析。
 func _air_derivation_table() -> Dictionary:
 	var air_qcb := _probe_move("j214D", "D")
 	air_qcb.stance = MoveData.Stance.AIR
 	air_qcb.direction_derivation = "214D"
+	air_qcb.command_tier = MoveData.CommandTier.SPECIAL
 	air_qcb.air_attack = true
 	var air_plain := _probe_move("jD", "D")
 	air_plain.stance = MoveData.Stance.AIR

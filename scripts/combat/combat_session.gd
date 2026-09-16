@@ -72,11 +72,13 @@ var _buffered_key := ""
 var _buffered_move_id := ""
 var _buffered_at := 0
 
-# --- 方向输入历史（独立于动作键缓存：年龄 0–23 有效，年龄 24 先过期）---
+# --- 方向输入历史（独立于动作键缓存；窗口按各指令 variant 步数 × 每方向步长计）---
 ## Vector2i(小键盘方向, 输入帧)：方向按面向折算（前 6 / 后 4 / 下 2 / 斜 1、3 / 中立 5），
-## 只在发生变化时入历史；识别方向派生后整段消费。
+## 只在发生变化时入历史；条目保留至表内最长指令窗口（过期段不可能再参与匹配）。
 var _direction_history: Array[Vector2i] = []
 var _last_direction_digit := 5
+## 方向历史的保留时长：表内全部指令记法的最长窗口（步数 × DIRECTION_STEP_FRAMES）。
+var _direction_retention := GameParams.DIRECTION_STEP_FRAMES
 
 ## 本帧开放的命中确认取消目标（招式 id）。
 var _cancel_targets: Array[String] = []
@@ -91,6 +93,7 @@ func _init(move_table: Dictionary = {}) -> void:
 	## 空表默认加载共享 manifest（训练场与 Solver 同一份已校验数据）；
 	## 不回退代码内建的 GameParams 招式表——共享资源是唯一数据源（issue 11）。
 	_moves = move_table if not move_table.is_empty() else MoveData.default_table()
+	_direction_retention = _max_direction_window(_moves)
 	reset_to_initial_state()
 
 
@@ -178,6 +181,7 @@ func debug_snapshot() -> Dictionary:
 		"buffered_move_id": _buffered_move_id,
 		"buffer_age": buffer_age,
 		"direction_sequence": _collapsed_direction_sequence(),
+		"direction_locks": _direction_lock_entries(),
 		"cancel_targets": _cancel_targets.duplicate(),
 		"velocity": player_velocity,
 	}
@@ -187,25 +191,27 @@ func debug_snapshot() -> Dictionary:
 
 func _phase_input() -> void:
 	## 1. 记录输入：到期的缓存先过期，再记录本帧方向与动作键（最新输入覆盖旧输入）。
-	##    动作键在输入帧按姿态与方向历史锁定为具体招式；跳跃与移动在运动阶段生效，
-	##    Space 与方向输入不占动作键缓存。
+	##    动作键在输入帧（匹配锚点）按姿态与方向历史锁定为具体招式；跳跃与移动在
+	##    运动阶段生效，Space 与方向输入不占动作键缓存。指令识别成功时消费所选
+	##    终点及之前的全部方向历史，终点后的历史保留。
 	if _buffered_key != "" and _frame_index - _buffered_at >= GameParams.ACTION_BUFFER_FRAMES:
 		_clear_buffer()
 	_record_direction()
 	if _frame_input.action_key != "":
 		_buffered_key = _frame_input.action_key
 		_buffered_at = _frame_index
-		_buffered_move_id = _resolve_action(_frame_input.action_key)
-		if _buffered_move_id != "" and (_moves[_buffered_move_id] as MoveData).direction_derivation != "":
-			## 识别方向派生：消费整段方向历史，招式已在输入帧锁定。
-			_direction_history.clear()
+		var selected := _select_move_for_key(_frame_input.action_key, _current_stance(), _frame_index)
+		_buffered_move_id = selected["move_id"]
+		if _buffered_move_id != "" and int(selected["endpoint"]) >= 0:
+			_consume_direction_history_through(int(selected["endpoint"]))
 
 
 func _record_direction() -> void:
 	## 方向历史只记录变化：先把（水平轴、下方向、面向）折算成小键盘数字，
-	## 与上一帧不同才入历史；过期条目（年龄 ≥ 方向窗口）先清理。
+	## 与上一帧不同才入历史；先清理超过表内最长指令窗口的过期条目（各指令自己的
+	## 窗口在识别时按实际 variant 步数检查，这里只保证可能仍被需要的段不被丢弃）。
 	_direction_history = _direction_history.filter(
-		func(entry: Vector2i) -> bool: return _frame_index - entry.y < GameParams.DIRECTION_BUFFER_FRAMES
+		func(entry: Vector2i) -> bool: return _frame_index - entry.y < _direction_retention
 	)
 	var digit := _direction_digit()
 	if digit != _last_direction_digit:
@@ -326,7 +332,12 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 	if _buffered_move_id != "":
 		var consumed := false
 		if _player_just_landed:
-			consumed = _try_start_cancel(_resolve_action(_buffered_key))
+			var relanded := _select_move_for_key(_buffered_key, _current_stance(), _buffered_at)
+			if relanded["move_id"] != "" and int(relanded["endpoint"]) >= 0:
+				## 落地重解析识别出方向指令：与输入帧锚点同一消费口径，终点及之前
+				## 的历史一并消费（识别即消费，与是否真正起手无关）。
+				_consume_direction_history_through(int(relanded["endpoint"]))
+			consumed = _try_start_cancel(relanded["move_id"])
 		if not consumed and not _try_start_cancel(_buffered_move_id):
 			var buffered := _moves.get(_buffered_move_id) as MoveData
 			if buffered != null and _stance_matches(buffered) and _current_move == null:
@@ -549,75 +560,168 @@ func _clear_buffer() -> void:
 	_buffered_move_id = ""
 
 
-func _resolve_action(action_key: String) -> String:
-	## 动作键在输入帧锁定为具体招式 id：按招式数据声明的输入绑定解析（issue 11 起
-	## 绑定是数据字段，不再按 id 命名约定推断）。当前姿态先匹配方向派生（方向历史
-	## 按该姿态锁定的面向折算，issue 12 起空中派生同样生效），无派生再取同键
-	## 无派生招式。同绑定并列时取优先级最高者（校验保证合法表无并列；
-	## 投技不走单键解析）。
+# --- 指令输入规则（issue 13：宽松谓词、候选锁定、variant 计窗与分层选招）---
+
+## 动作键解析使用的姿态：空中按 AIR、地面按 GROUND（识别在输入帧按此锁定）。
+func _current_stance() -> MoveData.Stance:
+	return MoveData.Stance.AIR if not player_on_ground else MoveData.Stance.GROUND
+
+
+## 动作键事件选招：同一绑定的当前姿态招式中，按「指令层级（超必杀 > 普通必杀 >
+## 普通拳脚）→ 同层 priority」的确定性顺序选择。方向指令招式需要有效窗口内的
+## 完成候选，无方向记法的招式恒可匹配。同层同优先级并列属于非法数据（共享表由
+## MoveTable 校验拒绝）；注入表自负其稳定性，先到者保留。
+## 返回 {"move_id": 招式 id, "endpoint": 识别候选的终点帧（无方向匹配为 -1）}。
+func _select_move_for_key(action_key: String, stance: MoveData.Stance, anchor_frame: int) -> Dictionary:
+	var best := {"move_id": "", "endpoint": -1}
 	if action_key == "":
-		return ""
-	var stance := MoveData.Stance.AIR if not player_on_ground else MoveData.Stance.GROUND
-	var derivative_id := _match_direction_derivation(action_key, stance)
-	if derivative_id != "":
-		return derivative_id
-	return _best_by_priority(_binding_candidates(action_key, stance, true))
-
-
-## 声明了指定姿态、绑定该动作键且（plain 时）无方向派生的打击招式 id 列表。
-func _binding_candidates(action_key: String, stance: MoveData.Stance, plain_only: bool) -> Array[String]:
-	var ids: Array[String] = []
+		return best
+	var best_tier := -1
+	var best_priority := -1
+	var segments := _direction_segments(anchor_frame)
 	for move_id in _moves:
 		var move := _moves[move_id] as MoveData
-		if move == null or move.stance != stance or not move.is_strike():
+		if move == null or move.stance != stance or not move.is_strike() or move.action_key != action_key:
 			continue
-		if move.action_key != action_key:
-			continue
-		if plain_only and move.direction_derivation != "":
-			continue
-		ids.append(move_id)
-	return ids
-
-
-## 同绑定并列时按声明优先级选招（大者优先）。仍并列取表序首个只是未校验注入表
-## 的兜底——共享 manifest 已把同绑定同优先级并列拒绝为非法数据，不按表序猜测。
-func _best_by_priority(move_ids: Array[String]) -> String:
-	var best_id := ""
-	var best_priority := -999999
-	for move_id in move_ids:
-		var priority := (_moves[move_id] as MoveData).priority
-		if priority > best_priority:
-			best_id = move_id
-			best_priority = priority
-	return best_id
-
-
-func _match_direction_derivation(action_key: String, stance: MoveData.Stance) -> String:
-	## 方向派生匹配：方向历史滤除过期与中立条目并折叠相邻重复后，用序列尾部
-	## 匹配招式数据声明的 direction_derivation（"方向序列+动作键"），只考察
-	## 与当前姿态一致的招式（空中派生按空中锁定的面向折算）。多个派生同时
-	## 命中时取方向序列最长者；同长并列按优先级。
-	var sequence := _collapsed_direction_sequence()
-	if sequence == "":
-		return ""
-	var best_id := ""
-	var best_length := 0
-	var best_priority := -999999
-	for move_id in _moves:
-		var move := _moves[move_id] as MoveData
-		if move == null or move.stance != stance or not move.is_strike():
-			continue
-		if move.direction_derivation.length() < 2 or move.direction_derivation.length() < best_length:
-			continue
-		if not move.direction_derivation.ends_with(action_key):
-			continue
-		if not sequence.ends_with(move.direction_derivation.left(move.direction_derivation.length() - 1)):
-			continue
-		if move.direction_derivation.length() > best_length or (move.direction_derivation.length() == best_length and move.priority > best_priority):
-			best_id = move_id
-			best_length = move.direction_derivation.length()
+		var endpoint := -1
+		if _has_direction_notation(move):
+			var candidate := _best_valid_candidate(move, anchor_frame, segments)
+			if candidate.is_empty():
+				continue
+			endpoint = candidate["endpoint"]
+		if move.command_tier > best_tier or (move.command_tier == best_tier and move.priority > best_priority):
+			best_tier = move.command_tier
 			best_priority = move.priority
-	return best_id
+			best = {"move_id": move_id, "endpoint": endpoint}
+	return best
+
+
+## 招式在当前方向段中的最佳候选：全部记法（基础派生 + 显式替代串）逐一匹配，
+## 输入窗口按各记法实际步数计（步数 × 每方向步长，含首段帧）。候选选择：
+## 最近完成者优先；终点同帧选起点更近者（起点更近窗口更晚到期，旧候选过期
+## 不阻塞新候选）。
+func _best_valid_candidate(move: MoveData, anchor_frame: int, segments: Array[Vector2i]) -> Dictionary:
+	var best := {}
+	for notation in _move_notations(move):
+		var digits := notation.left(notation.length() - 1)
+		var window := digits.length() * GameParams.DIRECTION_STEP_FRAMES
+		for i in range(segments.size()):
+			var candidate := _match_direction_from(digits, move.lenient_command, segments, i)
+			if candidate.is_empty():
+				continue
+			if anchor_frame - int(candidate["start"]) >= window:
+				continue
+			if best.is_empty() or int(candidate["endpoint"]) > int(best["endpoint"]) \
+					or (int(candidate["endpoint"]) == int(best["endpoint"]) and int(candidate["start"]) > int(best["start"])):
+				best = candidate
+	return best
+
+
+## 从第 start_index 个方向段起匹配谓词序列，返回 {"start": 帧, "endpoint": 帧}。
+## 严格（默认）：连续方向段精确等于记法数字，且终点必须是最后一个方向段——
+## 段间或终点后插入其他非中立方向都会使候选失败；终点前的旧段不阻塞（后退后
+## 搓招），中立只占窗口不成段。宽松：每段按轴谓词集合匹配，不满足当前谓词的
+## 段作为额外段跳过；一个段最多推进一个谓词步骤，不能同时满足相邻步骤；
+## 完成前置谓词后在第一个满足终点谓词的段锁定（后续段不改写终点）。
+func _match_direction_from(digits: String, lenient: bool, segments: Array[Vector2i], start_index: int) -> Dictionary:
+	if lenient:
+		if not _lenient_set(digits[0].to_int()).has(segments[start_index].x):
+			return {}
+		var start_frame := segments[start_index].y
+		var pending := 1
+		for j in range(start_index + 1, segments.size()):
+			if _lenient_set(digits[pending].to_int()).has(segments[j].x):
+				pending += 1
+				if pending >= digits.length():
+					return {"start": start_frame, "endpoint": segments[j].y}
+		return {}
+	var end_index := start_index + digits.length() - 1
+	if end_index != segments.size() - 1:
+		return {}
+	for offset in digits.length():
+		if digits[offset].to_int() != segments[start_index + offset].x:
+			return {}
+	return {"start": segments[start_index].y, "endpoint": segments[end_index].y}
+
+
+## 宽松谓词的轴集合：前 {3,6,9}、后 {1,4,7}、下 {1,2,3}、上 {7,8,9}——
+## 记法数字按其轴分量归入集合（6 与 3 同为前谓词），斜方向随水平分量。
+func _lenient_set(digit: int) -> Array[int]:
+	match digit:
+		1, 4, 7:
+			return [1, 4, 7]
+		3, 6, 9:
+			return [3, 6, 9]
+		2:
+			return [1, 2, 3]
+		8:
+			return [7, 8, 9]
+		_:
+			return [digit]
+
+
+## 方向段视图：方向历史滤除中立（5 不成段但占窗口）及 through_frame 之后的条目
+## （锚点绑定重解析只看按下时点及之前的历史）。
+func _direction_segments(through_frame := -1) -> Array[Vector2i]:
+	var segments: Array[Vector2i] = []
+	for entry in _direction_history:
+		if entry.x == 5:
+			continue
+		if through_frame >= 0 and entry.y > through_frame:
+			continue
+		segments.append(entry)
+	return segments
+
+
+## 招式的全部指令记法：基础方向派生 + 显式输入替代串（每个替代串是独立 variant）。
+func _move_notations(move: MoveData) -> Array[String]:
+	var notations: Array[String] = []
+	if move.direction_derivation != "":
+		notations.append(move.direction_derivation)
+	notations.append_array(move.input_alternatives)
+	return notations
+
+
+func _has_direction_notation(move: MoveData) -> bool:
+	return move.direction_derivation != "" or not move.input_alternatives.is_empty()
+
+
+## 指令识别成功后的方向消费：移除所选终点及之前的全部方向历史（含宽松匹配跳过
+## 的额外段）；终点后的历史保留。消费不把持续按住的同一逻辑方向变成新段——
+## 新段必须离开再进入；中立不成段，但会打断同一方向的连续按住。
+func _consume_direction_history_through(frame: int) -> void:
+	_direction_history = _direction_history.filter(
+		func(entry: Vector2i) -> bool: return entry.y > frame
+	)
+
+
+## 方向历史的保留时长：表内全部指令记法的最长窗口。超过所有可能窗口的旧段
+## 不可能再参与匹配，未识别输入只保留有效尾部。
+func _max_direction_window(moves: Dictionary) -> int:
+	var retention := GameParams.DIRECTION_STEP_FRAMES
+	for move_id in moves:
+		var move := moves[move_id] as MoveData
+		if move == null:
+			continue
+		for notation in _move_notations(move):
+			retention = maxi(retention, (notation.length() - 1) * GameParams.DIRECTION_STEP_FRAMES)
+	return retention
+
+
+## 诊断只读快照：当前姿态下各方向指令招式已锁定、且仍在自身窗口内的候选
+## （宽松首个终点锁定的可观察口径）。不参与结算。
+func _direction_lock_entries() -> Array[Dictionary]:
+	var segments := _direction_segments(_frame_index)
+	var locks: Array[Dictionary] = []
+	for move_id in _moves:
+		var move := _moves[move_id] as MoveData
+		if move == null or move.stance != _current_stance() or not move.is_strike() or not _has_direction_notation(move):
+			continue
+		var candidate := _best_valid_candidate(move, _frame_index, segments)
+		if candidate.is_empty():
+			continue
+		locks.append({"move_id": move_id, "start": candidate["start"], "endpoint": candidate["endpoint"]})
+	return locks
 
 
 ## 方向历史的可读折叠：滤除中立与相邻重复条目后的相对方向序列（如 "236"/"214"）。

@@ -451,6 +451,7 @@ func _test_air_derivation_keyboard() -> void:
 	var air_qcb := (MoveData.default_table()["jD"] as MoveData).duplicate()
 	air_qcb.move_id = "j214D"
 	air_qcb.direction_derivation = "214D"
+	air_qcb.command_tier = MoveData.CommandTier.SPECIAL
 	ResourceSaver.save(air_qcb, "user://smoke_air_qcb.tres")
 	var shared_manifest := ResourceLoader.load("res://data/move_manifest.tres") as MoveManifest
 	var manifest := MoveManifest.new()

@@ -131,6 +131,14 @@ static func _validate_move(move: MoveData, errors: Array[String]) -> void:
 		errors.append("[%s] %s: priority — 优先级为负或未设置（当前 %d）" % [
 			source, id_label, move.priority,
 		])
+	if not _enum_in_range(move.command_tier, 0, 2):
+		errors.append("[%s] %s: command_tier — 未知指令层级枚举值 %d（合法范围 0–2：普通/必杀/超必杀）" % [
+			source, id_label, move.command_tier,
+		])
+	if move.lenient_command and move.direction_derivation == "" and move.input_alternatives.is_empty():
+		errors.append("[%s] %s: lenient_command — 矛盾：宽松指令必须声明方向记法（派生或替代串）" % [
+			source, id_label,
+		])
 	if move.extra_landing_recovery_frames < 0:
 		errors.append("[%s] %s: extra_landing_recovery_frames — 额外落地恢复为负或未设置（当前 %d）" % [
 			source, id_label, move.extra_landing_recovery_frames,
@@ -276,16 +284,16 @@ static func _validate_cross_move(move_list: Array, errors: Array[String]) -> voi
 				])
 			else:
 				seen_ids[typed.move_id] = source
-		# 同姿态+同输入绑定+同方向派生+同输入替代串+同优先级 = 并列，无确定性选择，
-		# 属于非法数据。替代串计入并列键：声明了不同替代串（如超必杀）的两招由
-		# 后续 issue 的指令分层解析，不因共享基础绑定被误判为并列。
+		# 同姿态+同输入绑定+同指令层级+同优先级 = 并列，无确定性选择，属于非法数据。
+		# 层级进入并列键、方向记法不再进入：超必杀与必杀可同键同优先级共存（由
+		# 指令分层解析），而不同记法（如宽松 623 与严格 236）可能同时命中同一输入，
+		# 同层同优先级时无稳定顺序，一并拒绝、不按表序猜测。
 		if typed.is_strike() and typed.action_key != "":
-			var key := "%d|%s|%s|%s|%d" % [
-				typed.stance, typed.action_key, typed.direction_derivation,
-				",".join(typed.input_alternatives), typed.priority,
+			var key := "%d|%s|%d|%d" % [
+				typed.stance, typed.action_key, typed.command_tier, typed.priority,
 			]
 			if binding_priority.has(key):
-				errors.append("[%s] 跨招式冲突: %s 与 %s 声明了相同姿态+输入绑定+方向派生且优先级并列（%d）" % [
+				errors.append("[%s] 跨招式冲突: %s 与 %s 声明了相同姿态+输入绑定+指令层级且优先级并列（%d）" % [
 					source, binding_priority[key], typed.move_id, typed.priority,
 				])
 			else:

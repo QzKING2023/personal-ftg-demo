@@ -29,4 +29,5 @@ jump_cancel_targets = Array[String](["jA"])
 landing_cancel_targets = Array[String]([])
 direction_derivation = "236C"
 input_alternatives = Array[String]([])
+command_tier = 1
 priority = 1
