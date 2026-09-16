@@ -21,16 +21,18 @@ func _ready() -> void:
 
 ## 从战斗会话同步本帧的呈现状态（位置、朝向、蹲下/防御姿态与命中框显示）。
 ## 蹲下以纵向压扁呈现、防御以整体变色呈现——姿态结算全部在会话中完成。
+## 命中框只在有实际判定框的招式（打击）显示：投技无命中框（issue 17）。
 func apply_session(session: CombatSession) -> void:
 	position = session.player_position
 	_visuals.scale.x = session.player_facing
 	_visuals.scale.y = GameParams.PLAYER_CROUCH_SCALE if session.player_crouching else 1.0
 	_visuals.modulate = GameParams.PLAYER_GUARD_COLOR \
 		if session.player_guard != CombatSession.GuardPosture.NONE else Color.WHITE
-	var active := session.player_phase == CombatSession.PlayerPhase.ACTIVE
+	var attack_rect := session.player_attack_rect()
+	var active := session.player_phase == CombatSession.PlayerPhase.ACTIVE and attack_rect.has_area()
 	_attack_visual.visible = active
 	if active:
-		_attack_visual.position = session.player_attack_rect().get_center() - session.player_position
+		_attack_visual.position = attack_rect.get_center() - session.player_position
 
 
 ## 呈现状态查询（smoke 集成测试用）：当前是否呈现蹲下/防御视觉。

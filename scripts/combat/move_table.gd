@@ -231,6 +231,11 @@ static func _validate_throw_fields(move: MoveData, source: String, id_label: Str
 		errors.append("[%s] %s: startup_frames — 普通投 startup 固定 5 帧（领域规则，不由资源覆盖，当前 %d）" % [
 			source, id_label, move.startup_frames,
 		])
+	if move.active_frames != GameParams.THROW_TECH_WINDOW_AFTER_GRAB + 1:
+		errors.append("[%s] %s: active_frames — 普通投 active 固定为投发生 1 帧 + 拆投延续 %d 帧 = %d 帧（领域规则：拆投窗口从首个 startup 帧起算约 15f，当前 %d）" % [
+			source, id_label, GameParams.THROW_TECH_WINDOW_AFTER_GRAB,
+			GameParams.THROW_TECH_WINDOW_AFTER_GRAB + 1, move.active_frames,
+		])
 	if move.action_key != "":
 		errors.append("[%s] %s: action_key — 矛盾：普通投是 B+C 组合输入，不声明单键绑定（当前 \"%s\"）" % [
 			source, id_label, move.action_key,
@@ -274,6 +279,8 @@ static func _validate_derivation_notation(move: MoveData, source: String, id_lab
 static func _validate_cross_move(move_list: Array, errors: Array[String]) -> void:
 	var seen_ids := {}
 	var binding_priority := {}
+	var throw_count := 0
+	var first_throw := ""
 	for move in move_list:
 		var typed := move as MoveData
 		var source := typed.resource_path if typed.resource_path != "" else PROGRAMMATIC_SOURCE
@@ -284,6 +291,16 @@ static func _validate_cross_move(move_list: Array, errors: Array[String]) -> voi
 				])
 			else:
 				seen_ids[typed.move_id] = source
+		if typed.is_throw():
+			# B+C 组合输入没有单键/层级/记法维度可区分多个投技——并列即无确定性
+			# 选择，属于非法数据（与同绑定同优先级并列同一口径）。
+			throw_count += 1
+			if throw_count == 1:
+				first_throw = typed.move_id if typed.move_id != "" else source
+			elif throw_count == 2:
+				errors.append("[%s] 跨招式冲突: 普通投 %s 与 %s 并列——B+C 组合输入至多一个投技" % [
+					source, first_throw, typed.move_id,
+				])
 		# 同姿态+同输入绑定+同指令层级+同优先级 = 并列，无确定性选择，属于非法数据。
 		# 层级进入并列键、方向记法不再进入：超必杀与必杀可同键同优先级共存（由
 		# 指令分层解析），而不同记法（如宽松 623 与严格 236）可能同时命中同一输入，

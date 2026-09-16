@@ -6,7 +6,8 @@ extends Resource
 ## 核心字段缺省值一律是“未声明”哨兵（0/-1/UNSET）：MoveTable 校验时缺字段即拒绝，
 ## 不静默修正，也不回退旧 GameParams 数值。
 
-## 招式类别：打击招式与普通投。投技行为在后续 issue 实装，表结构先行。
+## 招式类别：打击招式与普通投。普通投自 issue 17 起实装（B+C 组合输入），
+## 投结果参数（硬直/击退）是 GameParams 领域规则，不由资源表达。
 enum MoveKind {
 	UNSET = 0,   ## 未声明（非法）
 	STRIKE = 1,  ## 打击招式：必须声明伤害/属性/命中框/命中结果/受击硬直/击退
@@ -50,7 +51,7 @@ enum CommandTier {
 @export var move_kind: MoveKind = MoveKind.UNSET
 ## 姿态要求。
 @export var stance: Stance = Stance.UNSET
-## 输入绑定：动作键 A/B/C/D。普通投是 B+C 组合输入，不声明单键绑定（后续 issue 实装）。
+## 输入绑定：动作键 A/B/C/D。普通投是 B+C 组合输入，不声明单键绑定。
 @export var action_key := ""
 ## 前摇帧数：出招到判定出现之前。
 @export var startup_frames := -1
@@ -76,7 +77,7 @@ enum CommandTier {
 @export var hitstun_frames := -1
 ## 命中结果类型。
 @export var hit_result: HitResult = HitResult.UNSET
-## 投距：投技必填（普通投的领域数据，投技行为在后续 issue 实装）。
+## 投距：投技必填（身体中心水平距离上限；垂直方向须身体矩形重叠）。
 @export var throw_range := -1.0
 ## 空中招式显式额外落地恢复帧数（落地恢复基础规则在跳跃 issue 实装；默认 0）。
 @export var extra_landing_recovery_frames := 0
@@ -111,12 +112,22 @@ enum CommandTier {
 @export var priority := -1
 
 
+## 普通投的显式组合成员键（领域规则：B+C；投技资源不声明单键绑定）。
+## 会话与 Solver 的组合配对、组合等待判成员都以此为唯一来源。
+const THROW_COMBINATION_KEYS := ["B", "C"]
+
+
+## 是否投组合（B+C）的成员键。
+static func is_throw_combination_member(key: String) -> bool:
+	return THROW_COMBINATION_KEYS.has(key)
+
+
 func total_frames() -> int:
 	return startup_frames + active_frames + recovery_frames
 
 
-## 是否打击招式（校验与单键/取消链解析都以此排除投技——投技是 B+C 组合输入，
-## 组合解析在后续 issue 实装）。
+## 是否打击招式（校验、单键选择与取消链解析都以此排除投技——投技由
+## CombatSession 的 B+C 显式组合解析，不占单键缓存）。
 func is_strike() -> bool:
 	return move_kind == MoveKind.STRIKE
 

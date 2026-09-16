@@ -117,13 +117,17 @@ func _s4_qcb_during_move() -> void:
 	# 出招期间的 214D：5A 命中确认 → 取消进 5B → 5B 出招期间搓 214 按 J。
 	# 出招期间运动阶段不改面向，方向序列应稳定录得 214 → 经取消窗口接续 214D。
 	# 该场景与 S3 的对照用于证伪/证实“面向翻转污染”假设。
+	# issue 17 起 B 是投组合成员键：B@F12 在停顿内按下、等待 F15 到期，恢复首帧
+	# F15 即消费取消起手 5B（F19 命中）；214 于 F16–F18 搓入、D@F18 在 5B 命中帧
+	# 同帧取消起手 214D（F26 命中）。
 	var session := CombatSession.new()
 	_place_dummy(session, NEAR_OFFSET)
 	var trace: Array[String] = []
 	var run := _play(session, [
 		_step("U", 0, false, "A"),
-		_step("—", 0, false, "", false, 3),
+		_step("—", 0, false, "", false, 10),
 		_step("I", 0, false, "B"),
+		_step("—", 0, false, "", false, 3),
 		_step("S", 0, true),
 		_step("S+A", -1, true),
 		_step("A+J", -1, false, "D"),
@@ -140,8 +144,9 @@ func _s4_qcb_during_move() -> void:
 	var whiff_trace: Array[String] = []
 	var whiff_run := _play(whiff, [
 		_step("U", 0, false, "A"),
-		_step("—", 0, false, "", false, 3),
+		_step("—", 0, false, "", false, 10),
 		_step("I", 0, false, "B"),
+		_step("—", 0, false, "", false, 3),
 		_step("S", 0, true),
 		_step("S+A", -1, true),
 		_step("A+J", -1, false, "D"),

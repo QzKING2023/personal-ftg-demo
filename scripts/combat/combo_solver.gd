@@ -179,10 +179,17 @@ class SolverReport extends RefCounted:
 
 
 var _table: Dictionary = {}
+## 表内是否含普通投（B/C 成员键因此有组合等待；issue 17）。
+var _table_has_throw := false
 
 
 func _init(move_table: Dictionary) -> void:
 	_table = move_table
+	for move_id in _table:
+		var move := _table[move_id] as MoveData
+		if move != null and move.is_throw():
+			_table_has_throw = true
+			break
 
 
 ## 分析共享 manifest 指向的招式表；表未通过校验时拒绝分析并报告同一原因。
@@ -483,7 +490,11 @@ func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache
 		# 有效等待 = 取消仍在窗口内，且目标命中（等待 + 目标前摇）不晚于木桩恢复。
 		# recover_age 在来源招式的规范入口上下文中测量；路线/循环里的真实可行性
 		# 总是由逐帧模拟复验，这里只影响报告标注。
-		edge.wait_to = mini(from_move.cancel_window_frames, edge.recover_age - to_move.startup_frames)
+		## B/C 的组合等待使有效等待上界收窄（命中当帧按下 w=0 恰好消费，其余
+		## 等待档需窗口容纳 +3 等待）；下限为 0——w=0 总是可用档。
+		var key_wait := _single_key_wait(to_move.action_key)
+		edge.wait_to = maxi(0, mini(from_move.cancel_window_frames - key_wait,
+			edge.recover_age - to_move.startup_frames - key_wait))
 		var prefix := ""
 		if to_move.direction_derivation != "":
 			prefix = "（方向派生 %s：取消帧前喂入方向序列）" % to_move.direction_derivation
@@ -727,8 +738,20 @@ func _compile_chain(links: Array[ChainLink]) -> Dictionary:
 			var move := _table.get(link.move_id) as MoveData
 			if move == null:
 				return {}
-			## 落地接续的起手帧是落地帧本身（前一帧按下、落地帧消费起手）。
-			var start_delay := 1 if link.trigger == ChainLink.Trigger.LAND_FRAME else 0
+			var key_wait := _single_key_wait(link.key)
+			var start_delay := 0
+			if key_wait == 0:
+				## 落地接续的起手帧是落地帧本身（前一帧按下、落地帧消费起手）。
+				## B/C 落地目标（现无此数据）的等待使落地帧消费不可达——按下方
+				## +3 模型预测的帧不会命中，逐帧复验会如实判该边无效。
+				start_delay = 1 if link.trigger == ChainLink.Trigger.LAND_FRAME else 0
+			elif link.trigger == ChainLink.Trigger.PREV_HIT and link.wait == 0:
+				## B/C 是投组合成员键（表内含 BC 投，issue 17）：命中当帧按下的单键
+				## 其组合等待与随后的停顿重叠——恢复首个正常帧即按单键消费。
+				start_delay = 1
+			else:
+				## 其余场景按下时不再有停顿在身前，+3 物理帧等待全额计入正常帧。
+				start_delay = key_wait
 			last_hit = press + start_delay + move.startup_frames
 			hit_frames.append(last_hit)
 			hit_moves.append(link.move_id)
@@ -1170,6 +1193,15 @@ func _is_plain_ground_id(move_id: String) -> bool:
 	if move == null or move.stance != MoveData.Stance.GROUND or move.direction_derivation != "":
 		return false
 	return move.is_strike() and move.action_key != ""
+
+
+## 单键按下的组合等待（issue 17）：表内含 BC 投时，成员键 B/C 的单键输入在
+## 配对窗口（+3 物理帧）末才按单键处理——等待按物理帧推进、停顿不合并按键，
+## 消费资格仍按取消窗口/姿态的当帧状态复验。非成员键与无投表为 0。
+func _single_key_wait(key: String) -> int:
+	if _table_has_throw and MoveData.is_throw_combination_member(key):
+		return GameParams.THROW_COMBINATION_TOLERANCE
+	return 0
 
 
 ## 招式的起手动作键：取招式数据声明的输入绑定（issue 11 起绑定是数据字段）；

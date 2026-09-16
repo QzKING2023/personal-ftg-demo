@@ -131,6 +131,20 @@ const CANCEL_WINDOW_FRAMES := 8
 const COMBO_DAMAGE_DECAY := 0.1
 const COMBO_DAMAGE_FLOOR := 0.1
 
+# --- 普通投（issue 17）---
+# 组合配对容差：B+C 最早与最晚新按下相差 ≤3 个物理帧（4 个采样帧的配对窗口）；
+# 参与组合的单键（B/C）在配对窗口结束前不作为单键处理。按物理帧推进，
+# Hitstop 不把相隔超过 3 帧的两键合并。
+const THROW_COMBINATION_TOLERANCE := 3
+# 拆投窗口在投发生（startup 末帧）后延续的帧数；窗口从首个 startup 帧起算，
+# 总长约 15f（startup 5f + 投发生 1f + 延续 10f）——招式资源的 active_frames
+# 必须等于本值 + 1，由 MoveTable 校验，不由资源改写。
+const THROW_TECH_WINDOW_AFTER_GRAB := 10
+# 投结果给予木桩的地面受击硬直与投向击退（投技 schema 不含伤害/击退字段，
+# 结果参数集中在此；投不造成 HP 变化、不进入连段计数）。
+const THROW_HITSTUN_FRAMES := 20
+const THROW_KNOCKBACK := 240.0
+
 # --- 木桩 ---
 const DUMMY_MAX_HP := 100
 const DUMMY_FRICTION := 2000.0

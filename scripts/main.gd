@@ -6,7 +6,7 @@ extends Node2D
 const PlayerScene: PackedScene = preload("res://scenes/player.tscn")
 const DummyScene: PackedScene = preload("res://scenes/dummy.tscn")
 
-const HINT_TEXT := "移动 A/D 或 ←/→    下 S/↓ 蹲下    防御 按住后方向 4/1    跳跃 Space    重置 R\n动作 U/I/K/J = A/B/C/D    派生 236+C / 214+D（方向按面向折算）"
+const HINT_TEXT := "移动 A/D 或 ←/→    下 S/↓ 蹲下    防御 按住后方向 4/1    跳跃 Space    重置 R\n动作 U/I/K/J = A/B/C/D    派生 236+C / 214+D（方向按面向折算）\n投 I+K = B+C（≤3帧内同按，投距内成立）"
 
 ## 动作键 A/B/C/D 对应的输入动作名（物理键 U/I/K/J）；C/D 配合方向序列触发派生。
 const ACTION_KEYS: Array[String] = ["A", "B", "C", "D"]
@@ -49,7 +49,7 @@ func _physics_process(_delta: float) -> void:
 	_player.apply_session(session)
 	_dummy.apply_session(session)
 	for event in events:
-		if event.type == CombatEvent.Type.HIT:
+		if event.type == CombatEvent.Type.HIT or event.type == CombatEvent.Type.THROW_HIT:
 			_dummy.flash()
 	_update_dummy_status()
 	_update_debug_line()
@@ -65,9 +65,13 @@ func _read_frame_input() -> FrameInput:
 	input.move_axis = roundi(Input.get_axis("move_left", "move_right"))
 	input.down_held = Input.is_action_pressed("move_down")
 	input.jump_pressed = Input.is_action_just_pressed("jump")
+	# 全部新按下与按住的动作键都进入会话（B+C 组合按配对容差与持键判定，
+	# 同帧单键选择由会话按 D>C>B>A 折算，issue 17）。
 	for key in ACTION_KEYS:
 		if Input.is_action_just_pressed("attack_" + key.to_lower()):
-			input.action_key = key
+			input.pressed_action_keys.append(key)
+		if Input.is_action_pressed("attack_" + key.to_lower()):
+			input.held_action_keys.append(key)
 	return input
 
 
@@ -206,6 +210,16 @@ func _update_debug_line() -> void:
 			1:
 				dir_text = "→"
 		jump_text = "%s龄%d" % [dir_text, int(snap["jump_slot_age"])]
+	# 按住的动作键（issue 17 原始按键记录）：组合配对与持键规则的可观察口径。
+	var held_text := "—"
+	var held_keys: Array = snap["held_action_keys"]
+	if not held_keys.is_empty():
+		held_text = "+".join(PackedStringArray(held_keys))
+	# 普通投拆投窗口剩余帧（投进行中且结果未成立时可观察）。
+	var throw_text := "—"
+	if int(snap["throw_window_left"]) >= 0:
+		throw_text = "余%d" % int(snap["throw_window_left"])
+	var pending_text := "待投" if bool(snap["pending_combination"]) else ""
 	var sequence := String(snap["direction_sequence"])
 	if sequence == "":
 		sequence = "—"
@@ -218,8 +232,9 @@ func _update_debug_line() -> void:
 	var attribute := String(snap["move_attribute"])
 	if attribute != "":
 		attribute = " 属性" + attribute
-	_debug_line.text = "诊断 帧%d 面向%s %s 防御%s 招式%s%s 缓存%s 跳槽%s 方向%s 取消%s" % [
-		int(snap["frame"]), facing_text, posture, guard_text, move_text, attribute, buffer_text, jump_text, sequence, cancels,
+	_debug_line.text = "诊断 帧%d 面向%s %s 防御%s 招式%s%s 缓存%s 跳槽%s 按住%s 投窗%s%s 方向%s 取消%s" % [
+		int(snap["frame"]), facing_text, posture, guard_text, move_text, attribute, buffer_text, jump_text,
+		held_text, throw_text, pending_text, sequence, cancels,
 	]
 
 

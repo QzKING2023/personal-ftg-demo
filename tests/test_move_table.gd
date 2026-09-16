@@ -45,7 +45,7 @@ func _test_default_manifest_loads_shared_table() -> void:
 	var result := MoveTable.load_default()
 	_check(result.ok, "default manifest loads and validates")
 	_check(result.errors.is_empty(), "default manifest reports no errors")
-	var expected_ids := ["5A", "5B", "5C", "236C", "jA", "jB", "jD", "5D", "214D"]
+	var expected_ids := ["5A", "5B", "5C", "236C", "jA", "jB", "jD", "5D", "214D", "BC"]
 	_check(result.moves.keys() == expected_ids, "table preserves manifest order and ids (stable enumeration)")
 	for move_id in expected_ids:
 		var move := result.moves[move_id] as MoveData
@@ -59,6 +59,7 @@ func _test_default_table_entries_match_manifest() -> void:
 		"5A": [5, 7, 13, 10], "5B": [4, 6, 13, 12], "5C": [6, 5, 16, 14],
 		"236C": [6, 5, 18, 18], "5D": [5, 7, 15, 18], "214D": [7, 5, 20, 22],
 		"jA": [4, 6, 10, 8], "jB": [4, 6, 12, 12], "jD": [4, 7, 14, 20],
+		"BC": [5, 11, 10, -1],
 	}
 	for move_id in expected:
 		var move := result.moves[move_id] as MoveData
@@ -73,6 +74,9 @@ func _test_default_table_entries_match_manifest() -> void:
 	_check(air.stance == MoveData.Stance.AIR and air.is_finisher, "jD is an air finisher")
 	for move_id in result.moves:
 		var move := result.moves[move_id] as MoveData
+		if move.is_throw():
+			_check(move.action_key == "" and move.throw_range == 64.0, "BC stays the B+C combination throw with its range (no single-key binding)")
+			continue
 		_check(move.move_kind == MoveData.MoveKind.STRIKE, "%s declares move kind strike" % move_id)
 		_check(move.action_key != "" and move.priority >= 0, "%s declares input binding and priority" % move_id)
 		_check(move.attack_attribute != MoveData.AttackAttribute.UNSET, "%s declares an attack attribute" % move_id)
@@ -133,6 +137,16 @@ func _test_throw_requires_range_and_fixed_startup() -> void:
 	errors = MoveTable.validate([slow_throw])
 	_check(not errors.is_empty() and errors[0].contains("startup_frames") and errors[0].contains("5"),
 		"throw startup must stay the fixed 5f domain rule, not resource-overridable")
+	var short_window := _valid_throw()
+	short_window.active_frames = 3
+	errors = MoveTable.validate([short_window])
+	_check(not errors.is_empty() and errors[0].contains("active_frames") and errors[0].contains("10"),
+		"throw active must stay the grab frame plus the ten tech-window frames (about-15f domain rule)")
+	var doubled := [_valid_throw(), _valid_throw()]
+	(doubled[1] as MoveData).move_id = "BC2"
+	errors = MoveTable.validate(doubled)
+	_check(not errors.is_empty() and errors[0].contains("并列"),
+		"two throws in one table are an illegal tie for the single B+C combination")
 
 
 # --- 类型/帧数/枚举/方向谓词/矛盾字段 ---
@@ -376,12 +390,12 @@ func _test_startup_edit_syncs_session_and_solver() -> void:
 	_check(session_hit == 9, "session hit frame follows the edited startup (6 -> 9)")
 	var report := ComboSolver.analyze(moves)
 	var route := _find_route(report, ["5A", "5B", "5D"])
-	_check(route != null and route.hit_frames == [9, 13, 18],
-		"solver report follows the same edited startup (route hit frames 9/13/18)")
+	_check(route != null and route.hit_frames == [9, 14, 19],
+		"solver report follows the same edited startup (route hit frames 9/14/19; the B cancel lands one normal frame after the confirm)")
 	var baseline := ComboSolver.analyze()
 	var baseline_route := _find_route(baseline, ["5A", "5B", "5D"])
-	_check(baseline_route != null and baseline_route.hit_frames == [6, 10, 15],
-		"unmodified shared table keeps the baseline route (6/10/15)")
+	_check(baseline_route != null and baseline_route.hit_frames == [6, 11, 16],
+		"unmodified shared table keeps the baseline route (6/11/16 with the B pairing wait)")
 
 
 func _test_damage_edit_syncs_session_and_solver() -> void:
@@ -480,6 +494,7 @@ func _valid_throw() -> MoveData:
 	move.move_kind = MoveData.MoveKind.THROW
 	move.action_key = ""
 	move.startup_frames = 5
+	move.active_frames = GameParams.THROW_TECH_WINDOW_AFTER_GRAB + 1
 	move.throw_range = 64.0
 	return move
 

@@ -22,6 +22,7 @@ func _run_tests() -> void:
 	await _test_jump(player)
 	await _test_hud_layout_no_overlap(main)
 	await _test_crouch_and_guard_presentation(main, player, session)
+	await _test_throw_keyboard(main, session)
 	await _test_attack_hit_and_feedback(main, player, dummy, session)
 	await _test_attack_range(session)
 	await _test_ground_combo_display(main, session)
@@ -139,6 +140,75 @@ func _test_crouch_and_guard_presentation(main: Node2D, player: Player, session: 
 	await physics_frame
 	_check(not session.player_crouching and session.player_guard == CombatSession.GuardPosture.NONE, "releasing everything returns to plain standing")
 	_check(not player.is_showing_guard() and not player.is_showing_crouch(), "visuals return to normal after the posture clears")
+
+
+func _test_throw_keyboard(main: Node2D, session: CombatSession) -> void:
+	# 真实键盘路径（issue 17）：I+K 在 3 帧容差内先后按下且保持按住 → B+C 组合
+	# 在投距内当帧启动普通投（startup 5f + 拆投窗口）；未被拆投时窗口关闭当帧
+	# 成立投结果——木桩沿投向进入地面受击，无 HP 伤害、不进连段计数；
+	# 投距外同样的键序被拒绝，不启动投也不回退 5B/5C。
+	for i in 90:
+		await physics_frame
+		if session.player_phase == CombatSession.PlayerPhase.NEUTRAL and session.dummy_state == CombatSession.DummyState.NEUTRAL:
+			break
+	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
+	session.player_velocity = Vector2.ZERO
+	session.player_facing = 1
+	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_velocity = Vector2.ZERO
+	await physics_frame
+	Input.action_press("attack_b")
+	await physics_frame
+	await physics_frame
+	Input.action_press("attack_c")
+	var throwing := false
+	var saw_window := false
+	for i in 20:
+		await physics_frame
+		throwing = throwing or session.player_move_id == "BC"
+		saw_window = saw_window or int(session.debug_snapshot()["throw_window_left"]) >= 0
+	Input.action_release("attack_b")
+	Input.action_release("attack_c")
+	_check(throwing, "keyboard I then K within the 3-frame tolerance starts the B+C throw")
+	_check(saw_window, "the tech window is observably tracked while the throw runs")
+	var hit := false
+	for i in 30:
+		await physics_frame
+		if session.dummy_state == CombatSession.DummyState.GROUND_HITSTUN:
+			hit = true
+			break
+	_check(hit, "the un-teched throw result puts the dummy into ground hitstun via the real input path")
+	_check(session.dummy_hp == GameParams.DUMMY_MAX_HP, "the throw result deals no HP damage")
+	_check(session.combo_hits == 0 and not session.combo_active, "the throw never counts as a combo hit")
+	var settled := false
+	for i in 60:
+		await physics_frame
+		if session.dummy_state == CombatSession.DummyState.NEUTRAL:
+			settled = true
+			break
+	_check(settled, "the thrown dummy recovers naturally after the throw hitstun")
+
+	# 投距外：同样的键序组合被拒绝——不启动投、不回退拳脚、木桩不受影响。
+	for i in 90:
+		await physics_frame
+		if session.player_phase == CombatSession.PlayerPhase.NEUTRAL and session.dummy_state == CombatSession.DummyState.NEUTRAL:
+			break
+	session.dummy_position = Vector2(850.0, GameParams.ground_stand_y())
+	await physics_frame
+	var any_move := ""
+	Input.action_press("attack_b")
+	await physics_frame
+	await physics_frame
+	Input.action_press("attack_c")
+	for i in 24:
+		await physics_frame
+		any_move = session.player_move_id
+	Input.action_release("attack_b")
+	Input.action_release("attack_c")
+	_check(any_move == "" and session.dummy_hp == GameParams.DUMMY_MAX_HP,
+		"the same B+C sequence out of throw range starts nothing and never falls back to a strike")
+	var hint: Label = main.get_node("Hint")
+	_check(hint.text.contains("投"), "the hint line documents the B+C throw input")
 
 
 func _test_attack_hit_and_feedback(main: Node2D, player: Player, dummy: Dummy, session: CombatSession) -> void:

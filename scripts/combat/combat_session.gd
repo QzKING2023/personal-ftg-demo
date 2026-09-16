@@ -96,6 +96,26 @@ var _pending_hit: MoveData = null
 ## 本帧刚应用过受击硬直：命中的当帧不消耗新硬直（先刷新、后落地/自然受身）。
 var _dummy_fresh_hitstun := false
 
+# --- 显式组合与普通投（issue 17）---
+## 表内是否含普通投（B+C 显式组合存在时，成员键 B/C 的单键输入有 3f 组合等待）。
+var _table_has_throw := false
+## 投技资源（表内至多一个，MoveTable 校验拒绝多个投技；注入表取首个）。
+var _throw_move: MoveData = null
+## 动作键原始按下记录：键 → [按下物理帧, 是否已被组合消费]。配对容差按物理帧
+## 推进（Hitstop 不合并相隔超过 3 帧的两键）；长期按住无新按下不构成配对。
+var _key_presses := {}
+## 本帧按住的动作键集合（原始按下/按住/松开的可观察口径，不参与单键选择）。
+var _key_held: Array[String] = []
+## 单键缓存的组合等待：成员键按下后配对窗口内只是候选，窗口末帧起按单键处理。
+var _buffer_waiting := false
+## 等待候选锁定的方向消费终点（识别在按下帧锚点完成，消费推迟到按单键处理时）。
+var _buffered_endpoint := -1
+## 已配齐待执行的投组合意图（配齐物理帧；0 = 无）。Hitstop 中配齐只记录意图，
+## 恢复首个正常帧尝试一次；更新的动作输入会将其覆盖。
+var _pending_throw_physics := 0
+## 投结果是否已应用（拆投窗口关闭时一次性成立；有效拆投阻止）。
+var _throw_result_applied := false
+
 ## 会话帧计数（从 1 开始）：物理帧号，Hitstop 中也递增（事件与诊断的时间轴）。
 var _frame_index := 0
 
@@ -165,6 +185,12 @@ func _init(move_table: Dictionary = {}) -> void:
 	## 不回退代码内建的 GameParams 招式表——共享资源是唯一数据源（issue 11）。
 	_moves = move_table if not move_table.is_empty() else MoveData.default_table()
 	_direction_retention = _max_direction_window(_moves)
+	for move_id in _moves:
+		var move := _moves[move_id] as MoveData
+		if move != null and move.is_throw():
+			_table_has_throw = true
+			_throw_move = move
+			break
 	reset_to_initial_state()
 
 
@@ -229,6 +255,12 @@ func reset_to_initial_state() -> void:
 	_air_move_started = false
 	_air_extra_recovery = 0
 	_jump_direction = 0
+	_key_presses.clear()
+	_key_held.clear()
+	_buffer_waiting = false
+	_buffered_endpoint = -1
+	_pending_throw_physics = 0
+	_throw_result_applied = false
 	_clear_buffer()
 	_direction_history.clear()
 	_last_direction_digit = 5
@@ -269,10 +301,10 @@ func hitstop_active() -> bool:
 	return _hitstop_left > 0
 
 
-## 当前招式的命中框（世界坐标）；没有进行中的招式时返回空矩形。
-## 判定阶段与非判定阶段共用同一几何，是否生效由 player_phase 决定。
+## 当前招式的命中框（世界坐标）；没有进行中的打击招式时返回空矩形（投技无
+## 命中框）。判定阶段与非判定阶段共用同一几何，是否生效由 player_phase 决定。
 func player_attack_rect() -> Rect2:
-	if _current_move == null:
+	if _current_move == null or not _current_move.is_strike():
 		return Rect2()
 	var center := player_position + Vector2(player_facing * _current_move.hitbox_offset(), 0.0)
 	return Rect2(center - _current_move.hitbox_size * 0.5, _current_move.hitbox_size)
@@ -306,6 +338,9 @@ func debug_snapshot() -> Dictionary:
 	if _jump_slot_active:
 		## 停顿中记录的 jump 尚未经历任何正常帧：原始年龄为负，按 0 显示。
 		jump_slot_age = maxi(0, _normal_frame_index - _jump_slot_at)
+	var throw_window_left := -1
+	if _current_move != null and _current_move.is_throw() and not _throw_result_applied:
+		throw_window_left = _current_move.active_to() - _move_frame + 1
 	return {
 		"frame": _frame_index,
 		"facing": player_facing,
@@ -327,6 +362,9 @@ func debug_snapshot() -> Dictionary:
 		"buffered_key": _buffered_key,
 		"buffered_move_id": _buffered_move_id,
 		"buffer_age": buffer_age,
+		"held_action_keys": _key_held.duplicate(),
+		"pending_combination": _pending_throw_physics > 0,
+		"throw_window_left": throw_window_left,
 		"buffer_consumed_move_id": _buffer_consumed_move_id,
 		"buffer_consumed_frame": _buffer_consumed_frame,
 		"direction_sequence": _collapsed_direction_sequence(),
@@ -345,23 +383,43 @@ func _phase_input() -> void:
 	##    动作键在输入帧（匹配锚点）按姿态与方向历史锁定为具体招式；跳跃与移动在
 	##    运动阶段生效，Space 与方向输入不占动作键缓存。指令识别成功时消费所选
 	##    终点及之前的全部方向历史，终点后的历史保留。
+	##    显式组合（B+C 投，issue 17）在单键写入前配对：配齐即消费两个按下事件并
+	##    记录组合意图（配齐帧为组合输入时点），本帧不再写单键缓存；参与组合的
+	##    成员单键在配对窗口内只是候选，窗口末帧起按单键处理（保留原按下帧的
+	##    姿态、方向匹配与缓存起龄点，此时才消费锁定的方向历史）。
 	##    冻结帧也走本函数：正常帧时钟暂停使到期检查成为空操作，方向与动作键
-	##    照常采样记录（最新覆盖旧输入），只是不起动、不取消、不消费。
-	##    停顿中记录的输入按恢复首个正常帧起算年龄（恢复帧年龄 0，与跳跃槽同一口径）。
+	##    照常采样记录（最新覆盖旧输入），只是不起动、不取消、不消费；组合配对
+	##    与等待按物理帧推进（Hitstop 不合并相隔超过 3 帧的两键）。停顿中记录的
+	##    输入按恢复首个正常帧起算年龄（恢复帧年龄 0，与跳跃槽同一口径）。
 	var input_stamp := _input_stamp()
 	if _buffered_key != "" and _normal_frame_index - _buffered_at >= GameParams.ACTION_BUFFER_FRAMES:
 		_clear_buffer()
 	if _jump_slot_active and _normal_frame_index - _jump_slot_at >= GameParams.ACTION_BUFFER_FRAMES:
 		_jump_slot_active = false
 	_record_direction()
-	if _frame_input.action_key != "":
+	_record_action_key_events()
+	var combination_completed := false
+	if _table_has_throw:
+		combination_completed = _check_throw_combination()
+	## 更新的动作输入覆盖停顿中记录的投组合意图（同帧配齐的按键不视为“更新”）。
+	if not combination_completed and not _frame_input.pressed_action_keys.is_empty() \
+			and _pending_throw_physics > 0 and _frame_index > _pending_throw_physics:
+		_pending_throw_physics = 0
+	if not combination_completed and _frame_input.action_key != "":
 		_buffered_key = _frame_input.action_key
 		_buffered_at = input_stamp
 		_buffered_physics = _frame_index
+		_buffer_waiting = _table_has_throw and _is_combination_member(_buffered_key)
 		var selected := _select_move_for_key(_frame_input.action_key, _current_stance(), input_stamp)
 		_buffered_move_id = selected["move_id"]
-		if _buffered_move_id != "" and int(selected["endpoint"]) >= 0:
-			_consume_direction_history_through(int(selected["endpoint"]))
+		_buffered_endpoint = int(selected["endpoint"])
+		if not _buffer_waiting and _buffered_move_id != "" and _buffered_endpoint >= 0:
+			_consume_direction_history_through(_buffered_endpoint)
+	## 组合等待到期：配对窗口末帧（按下 + 3 个物理帧）起按单键处理。
+	if _buffer_waiting and _frame_index >= _buffered_physics + GameParams.THROW_COMBINATION_TOLERANCE:
+		_buffer_waiting = false
+		if _buffered_move_id != "" and _buffered_endpoint >= 0:
+			_consume_direction_history_through(_buffered_endpoint)
 	## 跳跃输入槽独立记录：Space+下不触发跳跃（下方向优先），按下即冻结
 	## 当帧世界水平跳向；最新按下覆盖旧请求，按住不重复。
 	if _frame_input.jump_pressed and not _frame_input.down_held:
@@ -374,6 +432,45 @@ func _phase_input() -> void:
 		return
 	_update_posture()
 	_process_dummy_request()
+
+
+## 原始动作键事件记录（issue 17）：新按下写入按下记录（最新覆盖，标记未消费），
+## 按住集合直接快照。记录只描述输入，不参与单键选择；组合配对与“配齐帧仍全部
+## 按住”从这里读取。
+func _record_action_key_events() -> void:
+	_key_held = _frame_input.held_action_keys.duplicate()
+	for key in _frame_input.pressed_action_keys:
+		_key_presses[key] = [_frame_index, false]
+
+
+func _is_combination_member(key: String) -> bool:
+	return MoveData.is_throw_combination_member(key)
+
+
+## B+C 显式组合配对（issue 17）：本帧有成员键新按下时，检查搭档是否有 ≤3 个
+## 物理帧内未消费的新按下、且两键本帧都按住——配齐即消费两个按下事件、记录
+## 组合意图（消费阶段尝试执行）；等待中的成员单键候选随之作废（组成按下事件
+## 只贡献这一次组合，不能补发单键）。首键提前松开、仅有长期按住或超出容差的
+## 按下都不配对。
+func _check_throw_combination() -> bool:
+	for key in _frame_input.pressed_action_keys:
+		if not _is_combination_member(key):
+			continue
+		var partner := "C" if key == "B" else "B"
+		if not _key_held.has(key) or not _key_held.has(partner):
+			continue
+		if not _key_presses.has(partner):
+			continue
+		var partner_press: Array = _key_presses[partner]
+		if bool(partner_press[1]) or _frame_index - int(partner_press[0]) > GameParams.THROW_COMBINATION_TOLERANCE:
+			continue
+		(_key_presses[key] as Array)[1] = true
+		partner_press[1] = true
+		_pending_throw_physics = _frame_index
+		if _is_combination_member(_buffered_key):
+			_clear_buffer()
+		return true
+	return false
 
 
 ## 木桩确定性攻击请求：仅在木桩空闲（中立、落地、无进行中招式）时按请求起手，
@@ -490,7 +587,8 @@ func _phase_hit_detection() -> void:
 	##    木桩中立时可被任何招式命中；受击中只有连段内的合法接续招式可以继续命中，
 	##    没有取消资格的独立招式不能绕过取消条件追击。同一次出招最多命中一次。
 	_pending_hit = null
-	if player_phase == PlayerPhase.ACTIVE and not _hit_once_this_move \
+	if player_phase == PlayerPhase.ACTIVE and not _hit_once_this_move and _current_move != null \
+			and _current_move.is_strike() \
 			and player_attack_rect().intersects(_dummy_body_rect()) and _can_hit_dummy():
 		_hit_once_this_move = true
 		_pending_hit = _current_move
@@ -648,10 +746,13 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 	##    把缓存的动作键按地面姿态重解析后消费（如 jB 的 D → 5D）；
 	##    落地本身不授予任何普通取消资格。取消资格不足或缓存已过期时输入作废。
 	##    跳跃输入槽独立消费（issue 15）：地面中立普通跳或命中确认 jump cancel
-	##    都转入 4f 起跳准备。显式组合（B+C 投，后续 issue 实装）优先级最高；
-	##    之后 jump 与动作缓存同时合法时比较原始请求物理帧——较新者优先、
-	##    同一物理帧攻击优先，每帧最多启动一个新动作；未选中的槽保留原年龄，
-	##    后续帧按新状态重查。
+	##    都转入 4f 起跳准备。显式组合（B+C 投，issue 17）优先级最高：先尝试
+	##    已配齐的投意图、结算拆投与投结果，之后 jump 与动作缓存同时合法时比较
+	##    原始请求物理帧——较新者优先、同一物理帧攻击优先，每帧最多启动一个
+	##    新动作；未选中的槽保留原年龄，后续帧按新状态重查。
+	_attempt_pending_throw(events)
+	_evaluate_throw_tech(events)
+	_apply_throw_result(events)
 	var action := _buffer_action_candidate()
 	if not action.is_empty() and _jump_slot_ready():
 		if _jump_slot_physics > _buffered_physics:
@@ -677,8 +778,10 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 func _buffer_action_candidate() -> Dictionary:
 	## 动作缓存的当帧可消费候选（判据唯一来源，仲裁与执行共用）：
 	## {"move_id": 起手招式, "is_followup": 合法接续起手, "relanded": 落地重解析路径}。
-	## 无候选返回空表。
+	## 无候选返回空表。组合等待中的成员单键只是候选，不参与消费（issue 17）。
 	if _buffered_key == "" and _buffered_move_id == "":
+		return {}
+	if _buffer_waiting:
 		return {}
 	if _player_just_landed:
 		var relanded := _select_move_for_key(_buffered_key, _current_stance(), _buffered_at)
@@ -762,6 +865,72 @@ func _consume_jump() -> void:
 		_jump_cancel_followups.clear()
 		_jump_cancel_followups.append_array(_current_move.jump_cancel_targets)
 		_clear_current_move()
+
+
+# --- 普通投结算（issue 17）---
+
+## 普通投执行门：仅地面站立、可自由行动可投（蹲下、pre-jump、空中、招式阶段、
+## 受击/防御硬直与落地恢复一律禁用——空跳恢复第 2、3 帧的攻击例外不适用于投）。
+## 投距 = 身体中心水平距离 ≤ 投技 throw_range 且身体矩形垂直重叠。
+## 返回 0（可执行）、ThrowFailReason.STATE 或 ThrowFailReason.RANGE。
+func _throw_start_gate() -> int:
+	if _current_move != null or _player_stunned() or not player_on_ground \
+			or player_prejump_left > 0 or player_landing_recovery_left > 0 or player_crouching:
+		return CombatEvent.ThrowFailReason.STATE
+	if absf(player_position.x - dummy_position.x) > _throw_move.throw_range:
+		return CombatEvent.ThrowFailReason.RANGE
+	if absf(player_position.y - dummy_position.y) >= GameParams.BODY_SIZE.y:
+		return CombatEvent.ThrowFailReason.RANGE
+	return 0
+
+
+## 已配齐的投组合意图：配齐当帧（或停顿后恢复首个正常帧）尝试一次。状态或
+## 投距不满足即拒绝并结束请求——不等待之后收招或进入投距，也不回退 B/C；
+## 重新尝试必须有新组合输入。投起手走与独立招式同一口径（F1 = 配齐帧）。
+func _attempt_pending_throw(events: Array[CombatEvent]) -> void:
+	if _pending_throw_physics == 0 or _throw_move == null:
+		return
+	_pending_throw_physics = 0
+	var gate := _throw_start_gate()
+	if gate != 0:
+		events.append(CombatEvent.throw_failed(gate))
+		return
+	_start_move(_throw_move.move_id, _throw_move, false)
+	_throw_result_applied = false
+	_note_buffer_consumed(_throw_move.move_id)
+	## 无关的更新输入（如同帧前的 D）不因投起手被丢弃：单槽缓存按自身年龄
+	## 继续存在，投进行中不可消费、之后按正常规则过期或起手。
+
+
+## 拆投：窗口从首个 startup 帧到投发生后延续 10f 的末帧（active_to，含两端）。
+## 窗口内的木桩拆投请求阻止投结果——投被当帧打破，玩家回中立、木桩不受任何
+## 投结果影响；结果已成立或窗口已关的请求无效。
+func _evaluate_throw_tech(events: Array[CombatEvent]) -> void:
+	if not _frame_input.dummy_tech_request:
+		return
+	if _current_move == null or not _current_move.is_throw() or _throw_result_applied:
+		return
+	if _move_frame > _current_move.active_to():
+		return
+	_clear_current_move()
+	events.append(CombatEvent.throw_teched())
+
+
+## 投结果：拆投窗口关闭当帧一次性成立——木桩沿投向击退并进入地面受击硬直
+## （投不造成 HP 伤害、不进入连段计数）；投结果打断木桩进行中的攻击（与玩家
+## 命中木桩同一口径）。同帧拆投先于本判定，窗口末帧拆投仍然成立。
+func _apply_throw_result(events: Array[CombatEvent]) -> void:
+	if _current_move == null or not _current_move.is_throw() or _throw_result_applied:
+		return
+	if _move_frame < _current_move.active_to():
+		return
+	_throw_result_applied = true
+	dummy_state = DummyState.GROUND_HITSTUN
+	dummy_hitstun_left = GameParams.THROW_HITSTUN_FRAMES
+	_dummy_fresh_hitstun = true
+	_clear_dummy_move()
+	dummy_velocity.x = player_facing * GameParams.THROW_KNOCKBACK
+	events.append(CombatEvent.throw_hit(player_facing))
 
 
 func _startable_cancel(move_id: String) -> bool:
@@ -1049,6 +1218,8 @@ func _clear_current_move() -> void:
 func _clear_buffer() -> void:
 	_buffered_key = ""
 	_buffered_move_id = ""
+	_buffer_waiting = false
+	_buffered_endpoint = -1
 
 
 # --- 指令输入规则（issue 13：宽松谓词、候选锁定、variant 计窗与分层选招）---

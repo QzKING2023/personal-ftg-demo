@@ -48,20 +48,20 @@ func _test_default_table_reports_ground_route() -> void:
 	var ab := _find_edge(report, "5A", "5B")
 	_check(ab != null and ab.valid, "5A -> 5B is a valid continuation")
 	if ab != null:
-		_check(ab.valid and ab.hit_age == 4 and ab.recover_age == 21, "5A -> 5B timing: earliest hit at age 4 (startup 4), dummy recoverable through age 21 (airtime 10 + hitstun 12 - 1)")
-		_check(ab.valid and ab.wait_from == 0 and ab.wait_to == GameParams.CANCEL_WINDOW_FRAMES, "5A -> 5B valid wait range 0-8 (cancel window binds, stun would allow 17)")
+		_check(ab.valid and ab.hit_age == 5 and ab.recover_age == 21, "5A -> 5B timing: earliest hit at age 5 (B pairing wait 1 + startup 4), dummy recoverable through age 21 (airtime 10 + hitstun 12 - 1)")
+		_check(ab.valid and ab.wait_from == 0 and ab.wait_to == GameParams.CANCEL_WINDOW_FRAMES - GameParams.THROW_COMBINATION_TOLERANCE, "5A -> 5B valid wait range 0-5 (cancel window minus the B pairing wait binds; stun would allow 16)")
 	var bd := _find_edge(report, "5B", "5D")
 	_check(bd != null and bd.valid and bd.hit_age == 5 and bd.recover_age == 21, "5B -> 5D valid: earliest hit at age 5, recover age 21")
 	var derivative := _find_edge(report, "5A", "236C")
 	_check(derivative != null and derivative.valid, "derivative edge 5A -> 236C is validated by feeding 236 before the cancel frame")
 	if derivative != null:
-		_check(derivative.valid and derivative.hit_age == 6, "236C connects 6 frames after 5A's confirm (its own startup)")
+		_check(derivative.valid and derivative.hit_age == 7, "236C connects 7 frames after 5A's confirm (pairing wait 1 + its own startup 6)")
 	var derivative_two := _find_edge(report, "5B", "214D")
 	_check(derivative_two != null and derivative_two.valid and derivative_two.hit_age == 7, "derivative edge 5B -> 214D is valid (feed 214 during 5B)")
 	var route := _find_route(report, ["5A", "5B", "5D"])
 	_check(route != null, "report contains the readable 5A -> 5B -> 5D route")
 	if route != null:
-		_check(route.hit_frames == [6, 10, 15], "route hit frames are 6/10/15, matching the runtime ground route")
+		_check(route.hit_frames == [6, 11, 16], "route hit frames are 6/11/16 (B cancels land one normal frame after each confirm)")
 		_check(route.combo_hits == 3, "route counts 3 hits")
 		_check(_approx(route.total_damage, 35.2), "route total damage is 35.2 with decay applied")
 		_check("收尾" in route.note, "route notes the finisher ending while keeping the knockdown handling")
@@ -89,7 +89,7 @@ func _test_numbers_match_runtime_session() -> void:
 	_check(hit_frame == 6 and recover_frame == 6 + 10 + GameParams.HITSTOP_FRAMES + GameParams.HITSTUN_FRAMES - 1, "runtime 5A hits on frame 6 and naturally recovers after the freeze-extended knockdown")
 	_check(ab != null and ab.valid and ab.recover_age == recover_frame - hit_frame - GameParams.HITSTOP_FRAMES, "solver recover age (21 normal frames) matches the runtime session minus the frozen frames")
 	var route := _find_route(report, ["5A", "5B", "5D"])
-	_check(route != null and route.hit_frames == [6, 10, 15], "solver route hit frames match the runtime ground-route test")
+	_check(route != null and route.hit_frames == [6, 11, 16], "solver route hit frames follow the new B pairing-wait timing (w=0 cancels resume on the first normal frame)")
 
 
 func _test_injected_valid_back_edge_reports_cycle() -> void:
@@ -102,7 +102,7 @@ func _test_injected_valid_back_edge_reports_cycle() -> void:
 		var cycle := report.cycles[0]
 		_check(cycle.route == ["5A", "5B"], "cycle route is 5A -> 5B -> back to 5A")
 		_check(cycle.sustained and cycle.proven, "cycle is proven by lap simulation with dummy-state recurrence")
-		_check(cycle.period_frames == 27, "cycle period is 27 frames (4th starter hit recurs the 1st exactly)")
+		_check(cycle.period_frames == 30, "cycle period is 30 frames (4th starter hit recurs the 1st exactly, B pairing wait included)")
 		_check(cycle.laps_observed == 4, "state recurrence is observed at the start of lap 4")
 	var ba := _find_edge(report, "5B", "5A")
 	_check(ba != null and ba.valid and ba.hit_age == 5 and ba.recover_age == 21, "back edge 5B -> 5A is valid: earliest hit age 5 <= recover age 21")
@@ -159,10 +159,11 @@ func _test_finisher_back_edge_not_misreported() -> void:
 
 
 func _test_wait_window_clamped_by_window_and_hitstun() -> void:
-	# 有效等待范围由取消窗口与「命中不晚于木桩恢复」共同收窄：
-	# 5F（硬直 4、无击飞、窗口 8）→ 5B（前摇 4）：最早命中恰在恢复帧当帧（判定先于恢复结算），
-	# 边界有效但只有 w=0 可用；5F → 5A（前摇 5）：命中晚于恢复——等待超时排除。
-	# 5G（硬直 12、无击飞、窗口 2）→ 5B：硬直允许到 w=8，窗口 2 是收窄方。
+	# 有效等待范围由取消窗口与「命中不晚于木桩恢复」共同收窄（B 是投组合成员键，
+	# 表内含 BC 投：命中当帧按下 w=0 于恢复首个正常帧消费，其余等待档 +3）：
+	# 5F（硬直 4、无击飞、窗口 8）→ 5B（前摇 4 + 等待 1）：最早命中第 5 帧已过恢复——
+	# 与 5F → 5A（前摇 5）同样等待超时排除。
+	# 5G（硬直 12、无击飞、窗口 2）→ 5B：只有 w=0 的消费年龄落在窗口 2 内。
 	var table := MoveData.default_table()
 	var quick := _injected_move("5F", "F")
 	quick.startup_frames = 2
@@ -187,10 +188,9 @@ func _test_wait_window_clamped_by_window_and_hitstun() -> void:
 	table["5G"] = wide
 	var report := ComboSolver.analyze(table)
 	var fb := _find_edge(report, "5F", "5B")
-	_check(fb != null and fb.valid, "boundary edge 5F -> 5B is valid: earliest hit lands exactly on the recovery frame (detection precedes the tick)")
+	_check(fb != null and not fb.valid, "5F -> 5B is now excluded too: the B pairing wait pushes the earliest hit one frame past the 4-frame stun")
 	if fb != null:
-		_check(fb.valid and fb.hit_age == 4 and fb.recover_age == 4, "timing: earliest hit age 4 = recover age 4")
-		_check(fb.valid and fb.wait_from == 0 and fb.wait_to == 0, "5F -> 5B valid wait range is only 0-0 (hitstun 4 minus startup 4; configured window 8)")
+		_check("等待超时" in fb.reason, "exclusion reason is the wait timeout (earliest hit age 5 > recover age 4)")
 	var fa := _find_edge(report, "5F", "5A")
 	_check(fa != null and not fa.valid, "5F -> 5A with startup 5 exceeding the stun is excluded")
 	if fa != null:
@@ -198,7 +198,7 @@ func _test_wait_window_clamped_by_window_and_hitstun() -> void:
 	var gb := _find_edge(report, "5G", "5B")
 	_check(gb != null and gb.valid, "5G -> 5B is valid (earliest hit age 4 <= recover age 12)")
 	if gb != null:
-		_check(gb.valid and gb.wait_from == 0 and gb.wait_to == 2, "5G -> 5B valid wait range is clamped by the cancel window to 0-2 (stun would allow 8)")
+		_check(gb.valid and gb.wait_from == 0 and gb.wait_to == 0, "5G -> 5B valid wait range is clamped by the cancel window to 0-0 (window 2 only admits the hit-frame press; stun would allow 7)")
 
 
 # --- 测试用例（旧 ftg-combo issue 07：空中接续与有限资源）---
@@ -215,7 +215,7 @@ func _test_default_table_air_edges() -> void:
 	var air_cancel := _find_edge(report, "jA", "jB", ComboSolver.EdgeKind.CANCEL)
 	_check(air_cancel != null and air_cancel.valid, "jA -> jB is a valid air cancel")
 	if air_cancel != null:
-		_check(air_cancel.valid and air_cancel.hit_age == 4 and air_cancel.wait_to == GameParams.CANCEL_WINDOW_FRAMES, "jA -> jB hits at age 4; the cancel window (8) binds, not the dummy recovery")
+		_check(air_cancel.valid and air_cancel.hit_age == 5 and air_cancel.wait_to == GameParams.CANCEL_WINDOW_FRAMES - GameParams.THROW_COMBINATION_TOLERANCE, "jA -> jB hits at age 5 (B pairing wait 1 + startup 4); the cancel window minus the wait binds, not the dummy recovery")
 	var air_finisher := _find_edge(report, "jB", "jD", ComboSolver.EdgeKind.CANCEL)
 	_check(air_finisher != null and air_finisher.valid and air_finisher.hit_age == 4, "jB -> jD is a valid air cancel into the finisher")
 	var landing := _find_edge(report, "jB", "5D", ComboSolver.EdgeKind.LANDING_CANCEL)
@@ -232,7 +232,7 @@ func _test_full_air_route_matches_runtime() -> void:
 	_check(route != null, "the full air route 5A -> 236C -> Space -> jA -> jB -> jD is reported")
 	if route == null:
 		return
-	_check(route.hit_frames == [6, 12, 21, 25, 29], "air route hits on frames 6/12/21/25/29 (w=0 cancels, earliest air press after pre-jump)")
+	_check(route.hit_frames == [6, 13, 22, 27, 31], "air route hits on frames 6/13/22/27/31 (w=0 cancels with the B pairing wait, earliest air press after pre-jump)")
 	_check(route.combo_hits == 5 and _approx(route.total_damage, 53.0), "air route counts 5 hits for 53.0 total, matching the runtime air-route test")
 	var replay := _replay_inputs(route.inputs, route.hit_frames[route.hit_frames.size() - 1])
 	_check(replay.hit_frames == route.hit_frames, "replaying the solver schedule on a fresh CombatSession reproduces every hit frame")
@@ -247,7 +247,7 @@ func _test_landing_route_and_critical_frame() -> void:
 	var route := _find_route(report, ["5A", "236C", "jA", "jB", "5D"])
 	_check(route != null, "the landing-continuation route 5A -> 236C -> jA -> jB -> 5D is reported")
 	if route != null:
-		_check(route.hit_frames == [6, 12, 42, 54, 59], "landing route delays the air cancel so jB hits exactly on the landing frame (critical alignment)")
+		_check(route.hit_frames == [6, 13, 43, 55, 60], "landing route delays the air cancel so jB hits exactly on the landing frame (critical alignment, with the B pairing wait)")
 		_check(route.combo_hits == 5 and _approx(route.total_damage, 51.8), "landing route totals 51.8, matching the runtime same-frame landing test")
 		var route_replay := _replay_inputs(route.inputs, route.hit_frames[route.hit_frames.size() - 1])
 		_check(route_replay.hit_frames == route.hit_frames and route_replay.combo_hits == 5, "the landing route's own schedule replays identically on a fresh session")
@@ -371,7 +371,7 @@ func _test_injected_landing_back_edge_reports_cycle() -> void:
 		var cycle := report.cycles[0]
 		_check(cycle.route == ["236C", "jA", "jB", "5A"], "cycle route is 236C -> jA -> jB -> 5A -> back to 236C (canonical rotation)")
 		_check(cycle.sustained and cycle.proven, "the cycle is proven by dummy-state recurrence across laps")
-		_check(cycle.period_frames == 53, "cycle period is 53 frames per lap (jump cancel now spends 4 pre-jump normal frames)")
+		_check(cycle.period_frames == 54, "cycle period is 54 frames per lap (jump cancel spends 4 pre-jump normal frames; the B pairing wait re-aligns the landing seam)")
 		_check(cycle.laps_observed == 2, "recurrence is observed at the start of lap 2: the 236C relaunch normalizes the dummy state at the cycle-start hit every lap")
 	var finite := _find_route(report, ["5A", "236C", "jA", "jB", "jD"])
 	_check(finite != null and finite.combo_hits == 5, "the finite jD-finisher air route is still reported as a plain route, distinct from the cycle")
