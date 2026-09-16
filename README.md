@@ -26,7 +26,7 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/te
 # Combo Solver 测试（112 项：开头会打印默认招式表的可读验证报告）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_combo_solver.gd
 
-# 共享招式表测试（issue 01：manifest 加载、整表校验、双端共享与拒绝）
+# 共享招式表测试（issue 11：manifest 加载、整表校验、双端共享与拒绝）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_move_table.gd
 
 # 搓招与空中运动诊断回路（逐帧打印物理键/相对方向/面向/识别招式/缓存/取消/命中；
@@ -58,7 +58,7 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/di
 - `combat_session.gd`：`CombatSession.step(FrameInput)` 返回本帧战斗事件，
   并维护可观察的玩家状态（位置/朝向/招式阶段/是否落地）与木桩状态
   （位置/生命值/受击状态/剩余硬直帧）。
-- 招式数据是共享的本地类型化资源（issue 01）：`data/moves/*.tres` 每招一份
+- 招式数据是共享的本地类型化资源（issue 11）：`data/moves/*.tres` 每招一份
   `MoveData`，由 `data/move_manifest.tres` 统一引用；`move_table.gd` 的
   `MoveTable` 负责加载与整表校验——缺核心字段、类型错误、负帧数、未知枚举、
   非法方向谓词、矛盾字段组合或跨招式非法引用都会整表拒绝，错误按
@@ -79,7 +79,7 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/di
 ## 手感参数
 
 非招式参数（舞台、移动、跳跃、重力、木桩、HUD 与全部颜色）集中在
-`scripts/game_params.gd`。招式窗口/伤害/属性/绑定/优先级等自 issue 01 起是
+`scripts/game_params.gd`。招式窗口/伤害/属性/绑定/优先级等自 issue 11 起是
 共享资源数据：`data/moves/*.tres`（冻结首版数值见规格）+ `data/move_manifest.tres`；
 `GameParams` 中的 `MOVE_*` 常量仅作测试断言基线，运行时不读取。改招式帧数/伤害
 直接编辑对应 `.tres`，训练场与 Solver 同步生效；改完需重新运行项目（资源缓存

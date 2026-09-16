@@ -404,7 +404,7 @@ func _approx_hp(value: float, expected: float) -> bool:
 
 
 func _test_backward_qcb_keyboard(main: Node2D, session: CombatSession) -> void:
-	# 后退不翻面（issue 02）：真实键盘路径下地面中立直接搓 214——S → S+A → A → J。
+	# 后退不翻面（issue 12）：真实键盘路径下地面中立直接搓 214——S → S+A → A → J。
 	# 按住“后”不翻转面向，214D 被识别、执行并命中（阶段 1 的用户症状经真实
 	# 输入适配路径回归）。
 	for i in 60:
@@ -445,7 +445,7 @@ func _test_backward_qcb_keyboard(main: Node2D, session: CombatSession) -> void:
 
 
 func _test_air_derivation_keyboard() -> void:
-	# 配置的空中方向派生走真实训练场输入路径（issue 02）：临时合法 manifest =
+	# 配置的空中方向派生走真实训练场输入路径（issue 12）：临时合法 manifest =
 	# 共享 9 招 + 空中派生 j214D（AIR + 214 + D）。前跳后 S → S+A → A → J 在空中
 	# 识别并起手 j214D；木桩在射程外——成功出招但未命中可区分。
 	var air_qcb := (MoveData.default_table()["jD"] as MoveData).duplicate()
@@ -515,7 +515,7 @@ func _test_air_derivation_keyboard() -> void:
 
 
 func _test_session_runs_shared_manifest(main: Node2D) -> void:
-	# 训练场会话运行的是共享 manifest 的同一份数据（issue 01）：招式集合与代表字段
+	# 训练场会话运行的是共享 manifest 的同一份数据（issue 11）：招式集合与代表字段
 	# 都来自 data/move_manifest.tres，冻结首版数值与 GameParams 基线一致。
 	var shared := MoveTable.load_default()
 	_check(shared.ok, "shared manifest loads and validates for the training ground")

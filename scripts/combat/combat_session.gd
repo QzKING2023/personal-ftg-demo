@@ -89,7 +89,7 @@ var _player_just_landed := false
 
 func _init(move_table: Dictionary = {}) -> void:
 	## 空表默认加载共享 manifest（训练场与 Solver 同一份已校验数据）；
-	## 不回退代码内建的 GameParams 招式表——共享资源是唯一数据源（issue 01）。
+	## 不回退代码内建的 GameParams 招式表——共享资源是唯一数据源（issue 11）。
 	_moves = move_table if not move_table.is_empty() else MoveData.default_table()
 	reset_to_initial_state()
 
@@ -550,9 +550,9 @@ func _clear_buffer() -> void:
 
 
 func _resolve_action(action_key: String) -> String:
-	## 动作键在输入帧锁定为具体招式 id：按招式数据声明的输入绑定解析（issue 01 起
+	## 动作键在输入帧锁定为具体招式 id：按招式数据声明的输入绑定解析（issue 11 起
 	## 绑定是数据字段，不再按 id 命名约定推断）。当前姿态先匹配方向派生（方向历史
-	## 按该姿态锁定的面向折算，issue 02 起空中派生同样生效），无派生再取同键
+	## 按该姿态锁定的面向折算，issue 12 起空中派生同样生效），无派生再取同键
 	## 无派生招式。同绑定并列时取优先级最高者（校验保证合法表无并列；
 	## 投技不走单键解析）。
 	if action_key == "":

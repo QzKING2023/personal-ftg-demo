@@ -16,7 +16,7 @@ const ACTION_PHYSICAL_KEYS := {"A": "U", "B": "I", "C": "K", "D": "J"}
 
 ## 本局战斗会话（战斗状态的唯一来源）；招式表校验失败时为 null，训练场拒绝运行。
 var session: CombatSession
-## 共享招式表 manifest 路径（训练场与 Combo Solver 读同一份已校验数据，issue 01）。
+## 共享招式表 manifest 路径（训练场与 Combo Solver 读同一份已校验数据，issue 11）。
 var manifest_path := MoveTable.DEFAULT_MANIFEST_PATH
 ## 非空 = 招式表被拒绝的原因（与 Solver 观察到的同一拒绝原因）。
 var table_error := ""

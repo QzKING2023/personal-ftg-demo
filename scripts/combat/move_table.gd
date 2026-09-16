@@ -1,6 +1,6 @@
 class_name MoveTable
 extends RefCounted
-## 共享招式表（issue 01）：manifest 统一加载 + 整表校验。
+## 共享招式表（issue 11）：manifest 统一加载 + 整表校验。
 ## 训练场（CombatSession）与 Combo Solver 都从这里取得同一份已校验数据；
 ## 非法表整表拒绝——不跳过招式、不静默修正、不回退旧 GameParams 数值。
 ## 每条错误按「资源来源｜招式 id｜字段｜冲突原因」可定位。

@@ -1,5 +1,5 @@
 extends SceneTree
-## Combo Solver seam 测试（issue 06 + 07）：地面/空中路线、jump cancel、落地接续、
+## Combo Solver seam 测试（旧 ftg-combo issue 06 + 07）：地面/空中路线、jump cancel、落地接续、
 ## 有限滞空资源区分与循环报告。
 ## 运行：godot --headless --path . -s res://tests/test_combo_solver.gd
 ## Solver 只用私有 CombatSession 探针；本文件同时打印默认招式表的可读报告供设计者查阅。
@@ -39,7 +39,7 @@ func _initialize() -> void:
 		quit(1)
 
 
-# --- 测试用例（issue 06：地面接续）---
+# --- 测试用例（旧 ftg-combo issue 06：地面接续）---
 
 func _test_default_table_reports_ground_route() -> void:
 	var report := ComboSolver.analyze()
@@ -199,7 +199,7 @@ func _test_wait_window_clamped_by_window_and_hitstun() -> void:
 		_check(gb.valid and gb.wait_from == 0 and gb.wait_to == 2, "5G -> 5B valid wait range is clamped by the cancel window to 0-2 (stun would allow 8)")
 
 
-# --- 测试用例（issue 07：空中接续与有限资源）---
+# --- 测试用例（旧 ftg-combo issue 07：空中接续与有限资源）---
 
 func _test_default_table_air_edges() -> void:
 	# 验收 1：空中姿态取消、jump cancel 配置与显式落地接续都进入接续图，并在真实结算中验证。
@@ -520,7 +520,7 @@ func _approx(value: float, expected: float, tolerance := 0.05) -> bool:
 
 
 ## 测试注入招式：字段齐全的合法打击招式（值取旧 GameParams 运行时默认，
-## issue 01 起核心字段缺省是“未声明”哨兵值，程序内构造必须显式补齐；
+## issue 11 起核心字段缺省是“未声明”哨兵值，程序内构造必须显式补齐；
 ## 注入表只喂给 Solver 探针，不经过 MoveTable 校验，键名可超出 A–D）。
 func _injected_move(id: String, key: String) -> MoveData:
 	var move := MoveData.new()

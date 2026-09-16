@@ -40,7 +40,7 @@ const PHYSICS_TICK := 1.0 / PHYSICS_FPS
 const ATTACK_HITBOX_SIZE := Vector2(64, 60)
 const ATTACK_HITBOX_GAP := 4.0
 
-# 5A 地面起手（issue 01 的基础招式；连段内击退调低以保证 5B 能追上）。
+# 5A 地面起手（issue 11 的基础招式；连段内击退调低以保证 5B 能追上）。
 const MOVE_5A_DAMAGE := 10
 const MOVE_5A_STARTUP_FRAMES := 5
 const MOVE_5A_ACTIVE_FRAMES := 7

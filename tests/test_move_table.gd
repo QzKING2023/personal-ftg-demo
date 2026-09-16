@@ -1,5 +1,5 @@
 extends SceneTree
-## 共享招式表 seam 测试（issue 01）：本地类型化资源 + manifest 统一加载 + 整表校验。
+## 共享招式表 seam 测试（issue 11）：本地类型化资源 + manifest 统一加载 + 整表校验。
 ## 覆盖：两处消费者（CombatSession/训练场 与 Combo Solver）读同一份已校验数据、
 ## 修改代表字段后行为与报告同步变化、非法表整表拒绝且错误可定位（资源来源、
 ## 招式 id、字段、冲突原因）、不静默修正/跳过/回退旧 GameParams。

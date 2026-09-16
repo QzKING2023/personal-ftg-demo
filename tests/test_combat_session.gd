@@ -211,7 +211,7 @@ func _test_knockback_applied_before_motion() -> void:
 
 
 func _test_ground_facing_tracks_dummy() -> void:
-	# 面向规则（issue 02）：地面自由行动（中立/移动）时每帧面向木桩——后退不翻面；
+	# 面向规则（issue 12）：地面自由行动（中立/移动）时每帧面向木桩——后退不翻面；
 	# 木桩换侧后地面自由行动重新面向；与木桩横向重合时保持当前面向。
 	var session := CombatSession.new()
 	for i in range(4):
@@ -297,7 +297,7 @@ func _test_turn_keeps_direction_history() -> void:
 
 
 func _test_qcf_qcb_work_in_both_facings() -> void:
-	# 左右面向使用同一套相对方向输入（issue 02）：236C 与 214D 在两侧面向的
+	# 左右面向使用同一套相对方向输入（issue 12）：236C 与 214D 在两侧面向的
 	# 地面中立均能识别并执行；后退后的方向历史不再因移动翻转而失败。
 	# 右面向 214D：木桩在右，S → S+A → A+J（世界左 = 后）。
 	var right_qcb := CombatSession.new()
@@ -358,7 +358,7 @@ func _test_qcf_after_walkback_both_facings() -> void:
 
 
 func _test_air_direction_derivation_resolves_by_locked_facing() -> void:
-	# 空中方向派生（issue 02）：空中方向历史按锁定面向折算，配置的空中派生
+	# 空中方向派生（issue 12）：空中方向历史按锁定面向折算，配置的空中派生
 	# （注入表的 j214D）能被识别并执行；镜像一致；未识别回落为无派生空中招式，
 	# 识别但不可接续、成功出招但未命中三种结果可区分。
 	# 1) 成功出招但未命中：右面向前跳（木桩在远处），空中 S → S+A → A → D。
@@ -415,7 +415,7 @@ func _test_air_direction_derivation_resolves_by_locked_facing() -> void:
 
 
 func _test_phase_locked_facing_and_crossing() -> void:
-	# 阶段面向锁定（issue 02）：出招与空中阶段保持进入阶段时的面向；空中越过
+	# 阶段面向锁定（issue 12）：出招与空中阶段保持进入阶段时的面向；空中越过
 	# 木桩不自动转身；落地完成后（回到地面自由行动）重新面向木桩。
 	# 1) 地面出招期间木桩换到另一侧：整招面向不变，收招回到自由行动后翻转。
 	var ground_move := CombatSession.new()
@@ -1500,7 +1500,7 @@ func _qcf_input(frame: int, key_frame: int, key: String) -> FrameInput:
 
 
 ## 测试用探针招式：字段齐全的合法打击招式（值取旧 GameParams 运行时默认，
-## issue 01 起核心字段缺省是“未声明”哨兵值，程序内构造必须显式补齐）。
+## issue 11 起核心字段缺省是“未声明”哨兵值，程序内构造必须显式补齐）。
 func _probe_move(id: String, key: String) -> MoveData:
 	var move := MoveData.new()
 	move.move_id = id

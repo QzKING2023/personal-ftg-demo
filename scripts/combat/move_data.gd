@@ -1,6 +1,6 @@
 class_name MoveData
 extends Resource
-## 招式数据：描述一招的全部可配置结算参数（类型化本地资源，issue 01 起由
+## 招式数据：描述一招的全部可配置结算参数（类型化本地资源，issue 11 起由
 ## data/moves/*.tres 承载、data/move_manifest.tres 统一引用）。
 ## 运行时战斗逻辑与 Combo Solver 只读这份配置；调整帧数/伤害不需要改 CombatSession。
 ## 核心字段缺省值一律是“未声明”哨兵（0/-1/UNSET）：MoveTable 校验时缺字段即拒绝，

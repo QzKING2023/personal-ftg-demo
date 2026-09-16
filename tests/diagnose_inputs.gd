@@ -7,7 +7,7 @@ extends SceneTree
 ## 失败阶段区分：未识别 / 识别后未能接续 / 成功出招但未命中（见各场景断言与备注）。
 ## 运行：Godot --headless --path . -s res://tests/diagnose_inputs.gd
 ## 退出码非 0 = 仍有未修复的用户症状。面向规则（地面自由行动每帧面向木桩、
-## 后退不翻面、空中按锁定面向折算）已随 issue 02 落地，本回路应为全绿基线。
+## 后退不翻面、空中按锁定面向折算）已随 issue 12 落地，本回路应为全绿基线。
 
 const NEAR_OFFSET := 70.0   ## 木桩放在命中范围内的身前偏移
 const FAR_OFFSET := 400.0   ## 木桩放在射程外

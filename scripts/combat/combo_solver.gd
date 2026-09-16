@@ -1,6 +1,6 @@
 class_name ComboSolver
 extends RefCounted
-## 开发期 Combo Solver：地面与空中接续验证、有限资源区分与循环报告（issue 06 + 07）。
+## 开发期 Combo Solver：地面与空中接续验证、有限资源区分与循环报告（旧 ftg-combo issue 06 + 07）。
 ## 只读招式数据，用一次性 CombatSession 探针得出与运行时一致的接续结论——
 ## 前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生、jump cancel 与
 ## 落地接缝都在真实结算中检验，不在 Solver 里复刻第二套帧物理。
@@ -127,7 +127,7 @@ class SolverCycle extends RefCounted:
 
 
 ## 分析报告：接续边、可读路线、循环与可读文本。refused = 招式表未通过校验，
-## Solver 拒绝分析且不产出任何结论（与训练场观察同一拒绝原因，issue 01）。
+## Solver 拒绝分析且不产出任何结论（与训练场观察同一拒绝原因，issue 11）。
 class SolverReport extends RefCounted:
 	var safe := true
 	var summary := ""
@@ -138,7 +138,7 @@ class SolverReport extends RefCounted:
 	var notes: Array[String] = []
 	var refused := false
 	var refusal_reason := ""
-	## 共享招式表摘要行（设计者核对资源编辑是否进入报告，issue 01）。
+	## 共享招式表摘要行（设计者核对资源编辑是否进入报告，issue 11）。
 	var table_lines: Array[String] = []
 
 	func to_lines() -> Array[String]:
@@ -689,7 +689,7 @@ func _compile_chain(links: Array[ChainLink]) -> Dictionary:
 			var axis := _feed_axis(digit, facing)
 			if not _merge_input(inputs, press - link.feed.length() + i, axis, _feed_down(digit), false, ""):
 				return {}
-			# 面向镜像运行时（issue 02 起）：地面自由行动的面向每帧指向木桩，
+			# 面向镜像运行时（issue 12 起）：地面自由行动的面向每帧指向木桩，
 			# 水平输入不再翻转面向；探针按面向钉住木桩，喂入全程面向恒定。
 			# 取消/落地喂入发生在招式或空中阶段，面向同样锁定。
 		if not _merge_input(inputs, press, 0, false, link.press_space, link.key):
@@ -1084,8 +1084,8 @@ func _is_plain_ground_id(move_id: String) -> bool:
 	return move.is_strike() and move.action_key != ""
 
 
-## 招式的起手动作键：取招式数据声明的输入绑定（issue 01 起绑定是数据字段）；
-## 空中方向派生在运行时按锁定面向生效（issue 02），但 Solver 首版不调度空中
+## 招式的起手动作键：取招式数据声明的输入绑定（issue 11 起绑定是数据字段）；
+## 空中方向派生在运行时按锁定面向生效（issue 12），但 Solver 首版不调度空中
 ## 派生的方向喂入（喂入仅地面），故带派生的空中招式不可单键起手；投技不可单键起手。
 func _start_key_for(move_id: String) -> String:
 	var move := _table.get(move_id) as MoveData
