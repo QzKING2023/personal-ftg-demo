@@ -15,7 +15,13 @@ func _initialize() -> void:
 	_test_configurable_move_data()
 	_test_hitstun_recovery()
 	_test_knockback_applied_before_motion()
-	_test_facing_follows_movement()
+	_test_ground_facing_tracks_dummy()
+	_test_direction_folding_uses_frame_start_facing()
+	_test_turn_keeps_direction_history()
+	_test_qcf_qcb_work_in_both_facings()
+	_test_qcf_after_walkback_both_facings()
+	_test_air_direction_derivation_resolves_by_locked_facing()
+	_test_phase_locked_facing_and_crossing()
 	_test_movement_and_wall_clamp()
 	_test_body_overlap_blocks_player()
 	_test_jump_arc()
@@ -204,14 +210,247 @@ func _test_knockback_applied_before_motion() -> void:
 	_check(not session.dummy_on_ground, "dummy is airborne on the hit frame")
 
 
-func _test_facing_follows_movement() -> void:
+func _test_ground_facing_tracks_dummy() -> void:
+	# 面向规则（issue 02）：地面自由行动（中立/移动）时每帧面向木桩——后退不翻面；
+	# 木桩换侧后地面自由行动重新面向；与木桩横向重合时保持当前面向。
 	var session := CombatSession.new()
-	for i in range(2):
+	for i in range(4):
 		session.step(FrameInput.make(-1))
-	_check(session.player_facing == -1, "moving left faces left")
-	for i in range(2):
+	_check(session.player_facing == 1, "backward walk keeps facing the dummy (no flip)")
+	_check(session.player_position.x < session.dummy_position.x, "backward walk moves the player away but stays left of the dummy")
+	for i in range(4):
 		session.step(FrameInput.make(1))
-	_check(session.player_facing == 1, "moving right faces right")
+	_check(session.player_facing == 1, "forward walk keeps facing the dummy")
+	# 木桩换到玩家左侧（显式中间状态）：地面自由行动下一帧重新面向木桩。
+	session.dummy_position = Vector2(session.player_position.x - 200.0, GameParams.ground_stand_y())
+	session.step(FrameInput.new())
+	_check(session.player_facing == -1, "ground neutral re-faces the dummy after it changes sides")
+	# 横向重合（无水平差）时保持当前面向。
+	session.dummy_position.x = session.player_position.x
+	var facing_before := session.player_facing
+	session.step(FrameInput.new())
+	_check(session.player_facing == facing_before, "horizontal overlap keeps the current facing")
+
+
+func _test_direction_folding_uses_frame_start_facing() -> void:
+	# 方向折算契约（spec 面向 seam）：先用物理帧开始时的面向采样，再在地面自由
+	# 行动的运动与位置更新后重新指向木桩；本帧产生的面向变化从下一物理帧生效，
+	# 不改写已记录的历史段。左右面向镜像一致。
+	# 右侧用例：玩家在木桩右侧却仍面向 +1（显式中间状态），世界右输入。
+	var right := CombatSession.new()
+	right.dummy_position = right.player_position - Vector2(200.0, 0.0)
+	right.player_facing = 1
+	right.step(FrameInput.make(1))
+	_check(String(right.debug_snapshot()["direction_sequence"]) == "6", "F1 world-right records relative 6 with the frame-start facing")
+	_check(right.player_facing == -1, "facing flips to the dummy after the frame's motion")
+	right.step(FrameInput.make(1))
+	_check(String(right.debug_snapshot()["direction_sequence"]) == "64", "F2 same physical key records 4 only from the next frame")
+	# 左侧镜像：玩家在木桩左侧、帧首面向 -1，世界左输入同样得到 F1=6、F2=4。
+	var left := CombatSession.new()
+	left.dummy_position = left.player_position + Vector2(200.0, 0.0)
+	left.player_facing = -1
+	left.step(FrameInput.make(-1))
+	_check(String(left.debug_snapshot()["direction_sequence"]) == "6", "mirror F1 world-left records relative 6")
+	_check(left.player_facing == 1, "mirror facing flips to the dummy after the frame's motion")
+	left.step(FrameInput.make(-1))
+	_check(String(left.debug_snapshot()["direction_sequence"]) == "64", "mirror F2 same physical key records 4 from the next frame")
+
+
+func _test_turn_keeps_direction_history() -> void:
+	# 转身不清空方向历史，也不按新面向重解释旧段（spec「转身前历史」seam）：
+	# 序列中途木桩换侧使面向翻转，旧段保持录入时的相对数字，新面向只用于
+	# 之后的采样——跨转身仍组成同一指令。
+	# 1) 地面版：面向 +1 输入 2、3 后木桩换到左侧；换侧后的首个运动帧面向翻
+	#    为 -1，再下一帧世界左按新面向记 6——历史保持 236 并识别 236C。
+	var turn := CombatSession.new()
+	turn.dummy_position = turn.player_position + Vector2(70, 0)
+	turn.step(FrameInput.make(0, false, "", true))
+	turn.step(FrameInput.make(1, false, "", true))
+	turn.dummy_position = Vector2(turn.player_position.x - 70.0, GameParams.ground_stand_y())
+	turn.step(FrameInput.new())
+	_check(turn.player_facing == -1, "facing turned toward the moved dummy before the command ends")
+	turn.step(FrameInput.make(-1, false, "C"))
+	_check(String(turn.debug_snapshot()["direction_sequence"]) == "", "the recognized 236C consumed the cross-turn history")
+	_check(turn.player_move_id == "236C", "the command completed across the turn still recognizes 236C")
+	var turn_hits := _run_neutral(turn, 30)
+	_check(turn_hits == 1, "the cross-turn 236C executes and hits")
+	# 2) 空跳落地版：跳跃后段按面向 +1 录得 2、3（保持方向窗口内），落地帧前
+	#    木桩已在左侧——落地完成重新面向 -1，下一帧世界左记 6 并按 C：
+	#    旧 2/3 不清空、不反转，跨落地转身组成 236C。
+	var land := CombatSession.new()
+	land.dummy_position = Vector2(900.0, GameParams.ground_stand_y())
+	land.step(FrameInput.make(0, true))
+	for i in range(24):
+		land.step(FrameInput.new())
+	land.step(FrameInput.make(0, false, "", true))
+	land.step(FrameInput.make(1, false, "", true))
+	land.dummy_position = Vector2(50.0, GameParams.ground_stand_y())
+	for i in range(50):
+		land.step(FrameInput.new())
+		if land.player_on_ground:
+			break
+	_check(land.player_on_ground, "the empty jump lands before the command ends")
+	_check(land.player_facing == -1, "landing re-faces the dummy now on the left")
+	_check(String(land.debug_snapshot()["direction_sequence"]) == "23", "the air-recorded 2 and 3 survive the landing turn")
+	land.step(FrameInput.make(-1, false, "C"))
+	_check(land.player_move_id == "236C", "the post-landing 6 completes 236C from the kept history")
+
+
+func _test_qcf_qcb_work_in_both_facings() -> void:
+	# 左右面向使用同一套相对方向输入（issue 02）：236C 与 214D 在两侧面向的
+	# 地面中立均能识别并执行；后退后的方向历史不再因移动翻转而失败。
+	# 右面向 214D：木桩在右，S → S+A → A+J（世界左 = 后）。
+	var right_qcb := CombatSession.new()
+	right_qcb.dummy_position = right_qcb.player_position + Vector2(70, 0)
+	var right_qcb_hits := _play_script(right_qcb, [
+		[0, true, ""], [-1, true, ""], [-1, false, "D"],
+	])
+	_check(right_qcb.player_move_id == "214D", "ground-neutral 214 starts 214D while facing right")
+	right_qcb_hits += _run_neutral(right_qcb, 30)
+	_check(right_qcb_hits == 1, "the backward quarter circle connects as a single hit while facing right")
+	# 左面向 236C：木桩在左，先走向木桩使面向 -1，S → S+A → A+K（世界左 = 前）。
+	var left_qcf := CombatSession.new()
+	left_qcf.dummy_position = left_qcf.player_position - Vector2(70, 0)
+	var left_qcf_hits := _play_script(left_qcf, [
+		[-1, false, ""], [-1, false, ""],
+		[0, true, ""], [-1, true, ""], [-1, false, "C"],
+	])
+	_check(left_qcf.player_move_id == "236C", "mirror 236 starts 236C while facing left")
+	left_qcf_hits += _run_neutral(left_qcf, 30)
+	_check(left_qcf_hits == 1, "the mirror quarter circle connects as a single hit while facing left")
+	# 左面向 214D：木桩在左，S → S+D → D+J（世界右 = 后）。
+	var left_qcb := CombatSession.new()
+	left_qcb.dummy_position = left_qcb.player_position - Vector2(70, 0)
+	var left_qcb_hits := _play_script(left_qcb, [
+		[-1, false, ""], [-1, false, ""],
+		[0, true, ""], [1, true, ""], [1, false, "D"],
+	])
+	_check(left_qcb.player_move_id == "214D", "mirror 214 starts 214D while facing left")
+	left_qcb_hits += _run_neutral(left_qcb, 35)
+	_check(left_qcb_hits == 1, "the mirror backward quarter circle connects while facing left")
+
+
+func _test_qcf_after_walkback_both_facings() -> void:
+	# 后退后的方向历史（阶段 1 遗留症状的永久回归）：后退不翻面，随后朝木桩
+	# 搓 236 应被识别——序列内同一物理键不再被两种面向解释。
+	# 右面向：按 A 后退（世界左、远离木桩），再 S → S+D → D+K。
+	var right := CombatSession.new()
+	right.dummy_position = right.player_position + Vector2(70, 0)
+	var right_hits := _play_script(right, [
+		[-1, false, ""], [-1, false, ""], [-1, false, ""], [-1, false, ""],
+		[0, false, ""],
+		[0, true, ""], [1, true, ""], [1, false, ""], [1, false, "C"],
+	])
+	_check(right.player_move_id == "236C", "236 toward the dummy works right after walking back")
+	right_hits += _run_neutral(right, 30)
+	_check(right_hits == 1, "the after-walkback 236C connects")
+	# 左面向镜像：按 D 后退（世界右、远离木桩），再 S → S+A → A+K。
+	var left := CombatSession.new()
+	left.dummy_position = left.player_position - Vector2(70, 0)
+	var left_hits := _play_script(left, [
+		[1, false, ""], [1, false, ""], [1, false, ""], [1, false, ""],
+		[0, false, ""],
+		[0, true, ""], [-1, true, ""], [-1, false, ""], [-1, false, "C"],
+	])
+	_check(left.player_move_id == "236C", "mirror 236 toward the dummy works right after walking back")
+	left_hits += _run_neutral(left, 30)
+	_check(left_hits == 1, "the mirror after-walkback 236C connects")
+
+
+func _test_air_direction_derivation_resolves_by_locked_facing() -> void:
+	# 空中方向派生（issue 02）：空中方向历史按锁定面向折算，配置的空中派生
+	# （注入表的 j214D）能被识别并执行；镜像一致；未识别回落为无派生空中招式，
+	# 识别但不可接续、成功出招但未命中三种结果可区分。
+	# 1) 成功出招但未命中：右面向前跳（木桩在远处），空中 S → S+A → A → D。
+	var whiff := CombatSession.new(_air_derivation_table())
+	whiff.dummy_position = Vector2(900.0, GameParams.ground_stand_y())
+	whiff.step(FrameInput.make(1, true))
+	_play_script(whiff, [
+		[0, true, ""], [-1, true, ""], [-1, false, "D"],
+	])
+	_check(whiff.player_move_id == "j214D", "air 214 folded by the locked facing starts the configured j214D")
+	_check(not whiff.player_on_ground, "j214D starts while still airborne")
+	var whiff_hits := _run_neutral(whiff, 50)
+	_check(whiff_hits == 0 and whiff.dummy_hp == GameParams.DUMMY_MAX_HP, "started-but-whiffed is observable: no hit, no damage")
+	# 2) 左面向镜像：木桩在左，面向 -1 前跳，S → S+D → D → D（世界右 = 后）。
+	var mirror := CombatSession.new(_air_derivation_table())
+	mirror.dummy_position = Vector2(50.0, GameParams.ground_stand_y())
+	_play_script(mirror, [[-1, false, ""]])
+	mirror.step(FrameInput.make(-1, true))
+	_play_script(mirror, [
+		[0, true, ""], [1, true, ""], [1, false, "D"],
+	])
+	_check(mirror.player_move_id == "j214D", "mirror air 214 with the locked facing starts j214D")
+	# 3) 未识别（方向序列不匹配）：空中 2→3→6 + D 回落为无派生 jD。
+	var mismatch := CombatSession.new(_air_derivation_table())
+	mismatch.dummy_position = Vector2(900.0, GameParams.ground_stand_y())
+	mismatch.step(FrameInput.make(1, true))
+	_play_script(mismatch, [
+		[0, true, ""], [1, true, ""], [1, false, ""], [1, false, "D"],
+	])
+	_check(mismatch.player_move_id == "jD", "air 236 falls back to the plain air move for the key (derivation not matched)")
+	# 4) 识别但不可接续：jA 执行中搓 214 + D——派生被识别并缓存，但当前招式
+	#    不能取消、落地后空中姿态不再匹配，缓存过期作废，全程不起手 j214D。
+	var stuck := CombatSession.new(_air_derivation_table())
+	stuck.dummy_position = Vector2(900.0, GameParams.ground_stand_y())
+	stuck.step(FrameInput.make(1, true))
+	_play_script(stuck, [
+		[0, false, "A"], [0, true, ""], [-1, true, ""], [-1, false, "D"],
+	])
+	_check(stuck.player_move_id == "jA", "jA is in progress when the air 214 finishes")
+	_check(String(stuck.debug_snapshot()["buffered_move_id"]) == "j214D", "the air derivation is recognized and buffered (observable via diagnostics)")
+	var saw_stuck_start := false
+	for i in range(60):
+		_run_neutral(stuck, 1)
+		saw_stuck_start = saw_stuck_start or stuck.player_move_id == "j214D"
+	_check(not saw_stuck_start and stuck.player_on_ground, "recognized-but-uncontinuable never starts the buffered j214D")
+	_check(stuck.dummy_hp == GameParams.DUMMY_MAX_HP, "the uncontinuable buffer produces no hit")
+	# 5) 空中派生不在地面解析（姿态分离）：地面 214 + D 无地面 D 招式，不起手。
+	var ground := CombatSession.new(_air_derivation_table())
+	ground.dummy_position = Vector2(900.0, GameParams.ground_stand_y())
+	_play_script(ground, [
+		[0, true, ""], [-1, true, ""], [-1, false, "D"],
+	])
+	_check(ground.player_move_id == "" and ground.player_phase == CombatSession.PlayerPhase.NEUTRAL, "air derivations do not resolve from the ground stance")
+
+
+func _test_phase_locked_facing_and_crossing() -> void:
+	# 阶段面向锁定（issue 02）：出招与空中阶段保持进入阶段时的面向；空中越过
+	# 木桩不自动转身；落地完成后（回到地面自由行动）重新面向木桩。
+	# 1) 地面出招期间木桩换到另一侧：整招面向不变，收招回到自由行动后翻转。
+	var ground_move := CombatSession.new()
+	ground_move.dummy_position = Vector2(900.0, GameParams.ground_stand_y())
+	ground_move.step(FrameInput.make(0, false, "A"))
+	ground_move.dummy_position = Vector2(50.0, GameParams.ground_stand_y())
+	var move_facing_locked := true
+	for i in range(24):
+		ground_move.step(FrameInput.new())
+		move_facing_locked = move_facing_locked and ground_move.player_facing == 1
+	_check(move_facing_locked, "facing stays locked for the whole ground move while the dummy changes sides")
+	ground_move.step(FrameInput.new())
+	_check(ground_move.player_facing == -1, "free action re-faces the dummy after the move recovers")
+	# 2) 空中越过木桩（显式中间状态：升空中、向前水平速度、面向 +1、木桩在
+	#    前下方；高度取在身体垂直重叠带之上，越过木桩横向位置后面向不变，
+	#    落地完成后重新面向木桩。
+	var crossing := CombatSession.new()
+	crossing.dummy_position = crossing.player_position + Vector2(100.0, 0.0)
+	crossing.player_on_ground = false
+	crossing.player_velocity = Vector2(1000.0, 0.0)
+	crossing.player_position.y -= 100.0
+	var crossed := false
+	var air_facing_locked := true
+	var landed_facing := 0
+	for i in range(60):
+		crossing.step(FrameInput.new())
+		if not crossing.player_on_ground:
+			air_facing_locked = air_facing_locked and crossing.player_facing == 1
+			crossed = crossed or crossing.player_position.x > crossing.dummy_position.x
+		else:
+			landed_facing = crossing.player_facing
+			break
+	_check(crossed, "the player sails past the dummy's horizontal position mid-air")
+	_check(air_facing_locked, "crossing the dummy mid-air never flips the takeoff facing")
+	_check(landed_facing == -1, "after landing the player re-faces the dummy left behind")
 
 
 func _test_movement_and_wall_clamp() -> void:
@@ -271,20 +510,21 @@ func _test_jump_ignored_during_attack() -> void:
 
 func _test_air_input_keeps_takeoff_velocity_and_facing() -> void:
 	# 已明确规则（执行路径）：普通空中运动保留起跳横向速度，玩家方向输入
-	# 不能主动改变空中横向速度或面向。前跳后按住反方向 / 松开水平键都不得
-	# 改变速度向量或面向，直到落地。
+	# 不能主动改变空中横向速度或面向。木桩放在左侧（起跳面向 -1，向右行走
+	# 是后退）；前跳后按住反方向 / 松开水平键都不得改变速度向量或面向，直到落地。
 	var session := CombatSession.new()
 	session.dummy_position = Vector2(100.0, GameParams.ground_stand_y())
 	for i in range(20):
 		session.step(FrameInput.make(1))
+	_check(session.player_facing == -1, "backward walk faces the dummy on the left before takeoff")
 	session.step(FrameInput.make(1, true))
 	var takeoff_vx := session.player_velocity.x
-	_check(takeoff_vx > 300.0, "forward jump takes off at walking speed")
+	_check(takeoff_vx > 300.0, "backward jump takes off at walking speed")
 	for i in range(38):
 		session.step(FrameInput.make(-1))
 	_check(not session.player_on_ground, "player is still airborne while holding reverse")
 	_check(is_equal_approx(session.player_velocity.x, takeoff_vx), "holding reverse in the air keeps the takeoff horizontal velocity")
-	_check(session.player_facing == 1, "holding reverse in the air never flips the facing")
+	_check(session.player_facing == -1, "holding reverse in the air never flips the takeoff facing")
 	for i in range(10):
 		session.step(FrameInput.make(-1))
 	_check(session.player_on_ground, "player still lands normally after holding reverse mid-air")
@@ -299,7 +539,7 @@ func _test_air_input_keeps_takeoff_velocity_and_facing() -> void:
 		release.step(FrameInput.new())
 	_check(not release.player_on_ground, "player is still airborne after releasing horizontal input")
 	_check(is_equal_approx(release.player_velocity.x, release_takeoff), "releasing horizontal input mid-air keeps the takeoff velocity (no air friction decay)")
-	_check(release.player_facing == 1, "facing stays unchanged after releasing mid-air")
+	_check(release.player_facing == -1, "facing stays unchanged after releasing mid-air")
 
 
 func _test_air_action_without_air_move_ignored() -> void:
@@ -1214,6 +1454,23 @@ func _test_air_tech_breaks_combo_before_late_pursuit() -> void:
 
 # --- 辅助 ---
 
+## 依次喂入 [axis, down, key] 单帧步并结算，返回总命中数。
+func _play_script(session: CombatSession, steps: Array) -> int:
+	var hits := 0
+	for step in steps:
+		var events := session.step(FrameInput.make(step[0], false, step[2], step[1]))
+		hits += _count_events(events, CombatEvent.Type.HIT)
+	return hits
+
+
+## 连续 frames 帧中立无输入，返回总命中数（等待招式结算完成）。
+func _run_neutral(session: CombatSession, frames: int) -> int:
+	var hits := 0
+	for i in range(frames):
+		var events := session.step(FrameInput.new())
+		hits += _count_events(events, CombatEvent.Type.HIT)
+	return hits
+
 ## 从出招到回中立完整走一遍（第 1 帧按下动作键 A）。
 func _swing(session: CombatSession) -> Array[CombatEvent]:
 	_swing_start(session)
@@ -1264,6 +1521,22 @@ func _probe_move(id: String, key: String) -> MoveData:
 	move.knockback = GameParams.MOVE_5A_KNOCKBACK
 	move.knockback_up = GameParams.ATTACK_KNOCKBACK_UP
 	return move
+
+
+## 空中派生注入表：j214D（AIR + 214 派生）、无派生 jD 回落与 jA（识别但不可
+## 接续场景的执行中招式）；地面无 D/A 招式，隔离姿态解析。
+func _air_derivation_table() -> Dictionary:
+	var air_qcb := _probe_move("j214D", "D")
+	air_qcb.stance = MoveData.Stance.AIR
+	air_qcb.direction_derivation = "214D"
+	air_qcb.air_attack = true
+	var air_plain := _probe_move("jD", "D")
+	air_plain.stance = MoveData.Stance.AIR
+	air_plain.air_attack = true
+	var air_a := _probe_move("jA", "A")
+	air_a.stance = MoveData.Stance.AIR
+	air_a.air_attack = true
+	return {"j214D": air_qcb, "jD": air_plain, "jA": air_a}
 
 
 ## 浮空受身探针表：5C 硬直 12、取消窗 60、收招总长 15 帧——

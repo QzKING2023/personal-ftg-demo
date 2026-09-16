@@ -6,8 +6,8 @@ extends SceneTree
 ## 姿态、横向速度与命中结果——并按用户期望给出红/绿判定。
 ## 失败阶段区分：未识别 / 识别后未能接续 / 成功出招但未命中（见各场景断言与备注）。
 ## 运行：Godot --headless --path . -s res://tests/diagnose_inputs.gd
-## 退出码非 0 = 仍有未修复的用户症状；面向规则相关的红色项依赖第 2 阶段
-## 面向/输入决策，见 .scratch/ftg-combat-foundation/diagnosis.md。
+## 退出码非 0 = 仍有未修复的用户症状。面向规则（地面自由行动每帧面向木桩、
+## 后退不翻面、空中按锁定面向折算）已随 issue 02 落地，本回路应为全绿基线。
 
 const NEAR_OFFSET := 70.0   ## 木桩放在命中范围内的身前偏移
 const FAR_OFFSET := 400.0   ## 木桩放在射程外
@@ -192,8 +192,9 @@ func _s5_jump_reverse_input() -> void:
 func _s6_air_direction_sequence() -> void:
 	# 空中输入方向序列：空中搓 2 → 1 → 4（S → S+A → A）后按 K / J。
 	# 已明确的规则：空中方向输入不改变横向速度或面向（与 S5 同一回归）。
-	# 现状记录：空中动作解析跳过方向派生——C 无 jC 配置不起手，D 解析为 jD；
-	# “锁定面向”不构成空中搓招支持，属能力缺口（规则待第 2 阶段定义），不计红绿。
+	# 现状记录：空中方向历史按锁定面向折算；共享表未配置空中派生，C 无 jC
+	# 配置不起手，D 回落解析为无派生 jD——空中派生的识别路径由注入表的
+	# session 测试与 smoke 临时 manifest 用例覆盖，此处保持现状基线。
 	var session := CombatSession.new()
 	_place_dummy(session, FAR_OFFSET)
 	var trace: Array[String] = []
@@ -216,8 +217,8 @@ func _s6_air_direction_sequence() -> void:
 	var move_ids: Array = run["move_ids"]
 	_expect(not move_ids.has("jC") and not move_ids.has("236C") and not move_ids.has("214D"),
 		"S6: 空中按 K 不起手任何招式（无 jC 配置，现状）")
-	_expect(move_ids.has("jD"), "S6: 空中按 J 解析为 jD（空中解析跳过方向派生，现状记录）")
-	_note("S6 分类：空中方向序列被记录但派生被跳过——能力缺口，非缺陷；规则待第 2 阶段决策")
+	_expect(move_ids.has("jD"), "S6: 空中按 J 回落解析为 jD（共享表未配置空中派生，现状记录）")
+	_note("S6 分类：空中方向序列按锁定面向记录；未配置空中派生时回落无派生招式，属数据配置而非能力缺口")
 
 
 func _s7_qcf_after_walkback() -> void:

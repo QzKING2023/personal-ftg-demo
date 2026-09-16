@@ -287,6 +287,7 @@ func _phase_motion(events: Array[CombatEvent]) -> void:
 	## 身体重叠与木桩自然受身；招式帧计数也在本阶段末尾推进。
 	_motion_player(events)
 	_motion_dummy(events)
+	_update_free_action_facing()
 	_resolve_body_overlap()
 	_advance_move(events)
 
@@ -378,7 +379,6 @@ func _motion_player(events: Array[CombatEvent]) -> void:
 	if player_phase == PlayerPhase.NEUTRAL:
 		if player_on_ground:
 			if _frame_input.move_axis != 0:
-				player_facing = 1 if _frame_input.move_axis > 0 else -1
 				player_velocity.x = move_toward(player_velocity.x, _frame_input.move_axis * GameParams.PLAYER_MOVE_SPEED, GameParams.PLAYER_ACCELERATION * GameParams.PHYSICS_TICK)
 			else:
 				player_velocity.x = move_toward(player_velocity.x, 0.0, GameParams.PLAYER_FRICTION * GameParams.PHYSICS_TICK)
@@ -478,6 +478,19 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 	_dummy_fresh_hitstun = false
 
 
+## 地面自由行动（中立/移动；蹲下并入待蹲下 issue 落地，出招、受击与空中除外）
+## 时每帧面向木桩：在双方运动与位置更新后、身体重叠推出前重新指向，本帧的
+## 面向变化从下一物理帧的方向折算生效；后退不翻面，与木桩横向重合时保持当前
+## 面向。出招、受击硬直、倒地处理和空中阶段不进入本函数，保持进入该阶段时的
+## 面向；落地完成后的首个地面自由行动帧由本函数重新面向木桩。
+func _update_free_action_facing() -> void:
+	if player_phase != PlayerPhase.NEUTRAL or not player_on_ground:
+		return
+	if is_equal_approx(dummy_position.x, player_position.x):
+		return
+	player_facing = 1 if dummy_position.x > player_position.x else -1
+
+
 ## 玩家与木桩身体不互相穿透：垂直重叠时把玩家沿水平方向推出木桩（木桩不动）。
 func _resolve_body_overlap() -> void:
 	var dx := player_position.x - dummy_position.x
@@ -538,17 +551,17 @@ func _clear_buffer() -> void:
 
 func _resolve_action(action_key: String) -> String:
 	## 动作键在输入帧锁定为具体招式 id：按招式数据声明的输入绑定解析（issue 01 起
-	## 绑定是数据字段，不再按 id 命名约定推断）。地面先匹配方向派生（最长派生优先），
-	## 无派生再取同键无派生招式；空中只匹配无方向派生的空中招式。同绑定并列时取
-	## 优先级最高者（校验保证合法表无并列；投技不走单键解析）。
+	## 绑定是数据字段，不再按 id 命名约定推断）。当前姿态先匹配方向派生（方向历史
+	## 按该姿态锁定的面向折算，issue 02 起空中派生同样生效），无派生再取同键
+	## 无派生招式。同绑定并列时取优先级最高者（校验保证合法表无并列；
+	## 投技不走单键解析）。
 	if action_key == "":
 		return ""
-	if not player_on_ground:
-		return _best_by_priority(_binding_candidates(action_key, MoveData.Stance.AIR, true))
-	var derivative_id := _match_direction_derivation(action_key)
+	var stance := MoveData.Stance.AIR if not player_on_ground else MoveData.Stance.GROUND
+	var derivative_id := _match_direction_derivation(action_key, stance)
 	if derivative_id != "":
 		return derivative_id
-	return _best_by_priority(_binding_candidates(action_key, MoveData.Stance.GROUND, true))
+	return _best_by_priority(_binding_candidates(action_key, stance, true))
 
 
 ## 声明了指定姿态、绑定该动作键且（plain 时）无方向派生的打击招式 id 列表。
@@ -579,10 +592,11 @@ func _best_by_priority(move_ids: Array[String]) -> String:
 	return best_id
 
 
-func _match_direction_derivation(action_key: String) -> String:
-	## 方向派生匹配（只在地面）：方向历史滤除过期与中立条目并折叠相邻重复后，
-	## 用序列尾部匹配招式数据声明的 direction_derivation（"方向序列+动作键"）。
-	## 多个派生同时命中时取方向序列最长者；同长并列按优先级。
+func _match_direction_derivation(action_key: String, stance: MoveData.Stance) -> String:
+	## 方向派生匹配：方向历史滤除过期与中立条目并折叠相邻重复后，用序列尾部
+	## 匹配招式数据声明的 direction_derivation（"方向序列+动作键"），只考察
+	## 与当前姿态一致的招式（空中派生按空中锁定的面向折算）。多个派生同时
+	## 命中时取方向序列最长者；同长并列按优先级。
 	var sequence := _collapsed_direction_sequence()
 	if sequence == "":
 		return ""
@@ -591,7 +605,7 @@ func _match_direction_derivation(action_key: String) -> String:
 	var best_priority := -999999
 	for move_id in _moves:
 		var move := _moves[move_id] as MoveData
-		if move == null or move.stance != MoveData.Stance.GROUND or not move.is_strike():
+		if move == null or move.stance != stance or not move.is_strike():
 			continue
 		if move.direction_derivation.length() < 2 or move.direction_derivation.length() < best_length:
 			continue

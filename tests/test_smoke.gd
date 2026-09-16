@@ -27,6 +27,8 @@ func _run_tests() -> void:
 	await _test_direction_derivative_and_float(main, session)
 	await _test_jump_cancel_air_pursuit(main, session)
 	await _test_full_air_route_keyboard(main, session)
+	await _test_backward_qcb_keyboard(main, session)
+	await _test_air_derivation_keyboard()
 	await _test_session_runs_shared_manifest(main)
 	await _test_main_refuses_invalid_manifest()
 	await _test_reset(main)
@@ -399,6 +401,117 @@ func _test_full_air_route_keyboard(main: Node2D, session: CombatSession) -> void
 
 func _approx_hp(value: float, expected: float) -> bool:
 	return absf(value - expected) < 0.05
+
+
+func _test_backward_qcb_keyboard(main: Node2D, session: CombatSession) -> void:
+	# 后退不翻面（issue 02）：真实键盘路径下地面中立直接搓 214——S → S+A → A → J。
+	# 按住“后”不翻转面向，214D 被识别、执行并命中（阶段 1 的用户症状经真实
+	# 输入适配路径回归）。
+	for i in 60:
+		await physics_frame
+		if session.player_phase == CombatSession.PlayerPhase.NEUTRAL and session.dummy_state == CombatSession.DummyState.NEUTRAL:
+			break
+	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
+	session.player_velocity = Vector2.ZERO
+	session.player_facing = 1
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_velocity = Vector2.ZERO
+	var hp_before := session.dummy_hp
+	await physics_frame
+	Input.action_press("move_down")
+	await physics_frame
+	Input.action_press("move_left")
+	await physics_frame
+	Input.action_release("move_down")
+	Input.action_press("attack_d")
+	await physics_frame
+	Input.action_release("attack_d")
+	Input.action_release("move_left")
+	var locked := false
+	for i in 6:
+		await physics_frame
+		if session.player_move_id == "214D":
+			locked = true
+			break
+	_check(locked, "keyboard 214 from ground neutral (holding back) locks 214D")
+	_check(session.player_facing == 1, "holding back keeps facing the dummy through the whole keyboard input")
+	var hit := false
+	for i in 30:
+		await physics_frame
+		if session.dummy_hp < hp_before:
+			hit = true
+			break
+	_check(hit, "the keyboard 214D connects on the nearby dummy")
+
+
+func _test_air_derivation_keyboard() -> void:
+	# 配置的空中方向派生走真实训练场输入路径（issue 02）：临时合法 manifest =
+	# 共享 9 招 + 空中派生 j214D（AIR + 214 + D）。前跳后 S → S+A → A → J 在空中
+	# 识别并起手 j214D；木桩在射程外——成功出招但未命中可区分。
+	var air_qcb := (MoveData.default_table()["jD"] as MoveData).duplicate()
+	air_qcb.move_id = "j214D"
+	air_qcb.direction_derivation = "214D"
+	ResourceSaver.save(air_qcb, "user://smoke_air_qcb.tres")
+	var shared_manifest := ResourceLoader.load("res://data/move_manifest.tres") as MoveManifest
+	var manifest := MoveManifest.new()
+	manifest.move_paths = shared_manifest.move_paths.duplicate()
+	manifest.move_paths.append("user://smoke_air_qcb.tres")
+	ResourceSaver.save(manifest, "user://smoke_air_manifest.tres")
+
+	var air_main: Node2D = load("res://scenes/main.tscn").instantiate()
+	air_main.set("manifest_path", "user://smoke_air_manifest.tres")
+	root.add_child(air_main)
+	await process_frame
+	var session: CombatSession = air_main.get("session")
+	_check(session != null, "training ground runs the temp manifest with the configured air derivative")
+	if session == null:
+		air_main.queue_free()
+		await process_frame
+		return
+	_check((session.move_table() as Dictionary).has("j214D"), "session table contains the configured j214D")
+	session.dummy_position = Vector2(900.0, GameParams.ground_stand_y())
+	await physics_frame
+	var hp_before := session.dummy_hp
+	# 前跳（面向 +1，木桩在远处）。
+	Input.action_press("jump")
+	Input.action_press("move_right")
+	await physics_frame
+	Input.action_release("jump")
+	Input.action_release("move_right")
+	await physics_frame
+	_check(not session.player_on_ground, "forward jump lifts the player before the air input")
+	# 空中 S → S+A → A → J：按锁定面向折算为 2→1→4 + D。
+	Input.action_press("move_down")
+	await physics_frame
+	Input.action_press("move_left")
+	await physics_frame
+	Input.action_release("move_down")
+	Input.action_press("attack_d")
+	await physics_frame
+	Input.action_release("attack_d")
+	Input.action_release("move_left")
+	var locked := false
+	for i in 6:
+		await physics_frame
+		if session.player_move_id == "j214D":
+			locked = true
+			break
+	_check(locked, "keyboard air 214 folded by the locked facing starts the configured j214D")
+	_check(not session.player_on_ground, "j214D starts while still airborne via the real input path")
+	var whiffed := true
+	for i in 30:
+		await physics_frame
+		if session.dummy_hp < hp_before:
+			whiffed = false
+			break
+	_check(whiffed and session.dummy_hp == hp_before, "started-but-whiffed is distinguishable on the real input path")
+	# 收尾：等落地并清理临时场景（不影响后续测试的主场景）。
+	for i in 60:
+		await physics_frame
+		if session.player_on_ground:
+			break
+	air_main.queue_free()
+	await process_frame
 
 
 func _test_session_runs_shared_manifest(main: Node2D) -> void:

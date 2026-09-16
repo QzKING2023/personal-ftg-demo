@@ -689,10 +689,9 @@ func _compile_chain(links: Array[ChainLink]) -> Dictionary:
 			var axis := _feed_axis(digit, facing)
 			if not _merge_input(inputs, press - link.feed.length() + i, axis, _feed_down(digit), false, ""):
 				return {}
-			# 面向镜像运行时：中立帧上的水平输入会翻转面向（仅 START 前的喂入帧是中立帧；
-			# 取消/落地喂入发生在招式中，不翻转）。探针按面向钉住木桩，几何始终成立。
-			if link.trigger == ChainLink.Trigger.START and axis != 0:
-				facing = 1 if axis > 0 else -1
+			# 面向镜像运行时（issue 02 起）：地面自由行动的面向每帧指向木桩，
+			# 水平输入不再翻转面向；探针按面向钉住木桩，喂入全程面向恒定。
+			# 取消/落地喂入发生在招式或空中阶段，面向同样锁定。
 		if not _merge_input(inputs, press, 0, false, link.press_space, link.key):
 			return {}
 		if link.press_space:
@@ -1086,7 +1085,8 @@ func _is_plain_ground_id(move_id: String) -> bool:
 
 
 ## 招式的起手动作键：取招式数据声明的输入绑定（issue 01 起绑定是数据字段）；
-## 空中招式只在无方向派生时可由单键起手（方向派生在空中不生效）；投技不可单键起手。
+## 空中方向派生在运行时按锁定面向生效（issue 02），但 Solver 首版不调度空中
+## 派生的方向喂入（喂入仅地面），故带派生的空中招式不可单键起手；投技不可单键起手。
 func _start_key_for(move_id: String) -> String:
 	var move := _table.get(move_id) as MoveData
 	if move == null or move.is_throw():
