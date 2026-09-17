@@ -159,6 +159,16 @@ var _air_extra_recovery := 0
 ## 准备期内仍可用当前方向输入改成斜跳，不重置准备计时）。
 var _jump_direction := 0
 
+# --- 冲刺状态机（issue 18）---
+## 剩余冲刺帧数（含当帧，正常帧在运动阶段倒数）：>0 表示 66 前冲 / 44 后撤
+## 进行中。触发帧的输入阶段置为 PLAYER_DASH_FRAMES + 1——同帧运动倒数吸收一帧，
+## 帧末可观察值从 12 递减到 1，归零后的下一帧起回到地面自由行动（与准备/落地
+## 恢复的"运动归零当帧即自由帧"同一口径）。
+var player_dash_left := 0
+## 冲刺世界方向（触发时面向 × 前(+1)/后(-1)；冲刺期间面向锁定，不受击打断
+## 不改写）。
+var _dash_direction := 0
+
 # --- 缓存消费结果（诊断口径：最近一次真正从缓存起手的招式与物理帧）---
 var _buffer_consumed_move_id := ""
 var _buffer_consumed_frame := 0
@@ -255,6 +265,8 @@ func reset_to_initial_state() -> void:
 	_air_move_started = false
 	_air_extra_recovery = 0
 	_jump_direction = 0
+	player_dash_left = 0
+	_dash_direction = 0
 	_key_presses.clear()
 	_key_held.clear()
 	_buffer_waiting = false
@@ -275,7 +287,7 @@ func step(input: FrameInput) -> Array[CombatEvent]:
 	_frame_input = input
 	if _hitstop_left > 0:
 		## 冻结帧：只采样记录输入，不推进动作、位置、速度、受击、落地与受身计时。
-		_phase_input()
+		_phase_input(events)
 		_hitstop_left -= 1
 		if _hitstop_left == 0:
 			_hitstop_resume_pending = true
@@ -286,7 +298,7 @@ func step(input: FrameInput) -> Array[CombatEvent]:
 		events.append(CombatEvent.hitstop_ended())
 	_normal_frame_index += 1
 	_player_just_landed = false
-	_phase_input()
+	_phase_input(events)
 	_phase_hit_detection()
 	_phase_apply_hits(events)
 	_phase_motion(events)
@@ -357,6 +369,8 @@ func debug_snapshot() -> Dictionary:
 		"hitstop_left": _hitstop_left,
 		"prejump_left": player_prejump_left,
 		"landing_recovery_left": player_landing_recovery_left,
+		"dash_left": player_dash_left,
+		"dash_direction": (_dash_direction if player_dash_left > 0 else null),
 		"jump_slot_direction": _jump_slot_axis if _jump_slot_active else null,
 		"jump_slot_age": jump_slot_age,
 		"buffered_key": _buffered_key,
@@ -378,7 +392,7 @@ func debug_snapshot() -> Dictionary:
 
 # --- 结算管线（顺序不可调换）---
 
-func _phase_input() -> void:
+func _phase_input(events: Array[CombatEvent]) -> void:
 	## 1. 记录输入：到期的缓存先过期，再记录本帧方向与动作键（最新输入覆盖旧输入）。
 	##    动作键在输入帧（匹配锚点）按姿态与方向历史锁定为具体招式；跳跃与移动在
 	##    运动阶段生效，Space 与方向输入不占动作键缓存。指令识别成功时消费所选
@@ -428,10 +442,49 @@ func _phase_input() -> void:
 		_jump_slot_physics = _frame_index
 		_jump_slot_axis = _frame_input.move_axis
 	if _hitstop_left > 0:
-		## 冻结帧到此为止：姿态与木桩请求属于结算，停顿中不推进。
+		## 冻结帧到此为止：姿态、冲刺触发与木桩请求属于结算，停顿中不推进。
 		return
+	_check_dash_start(events)
 	_update_posture()
 	_process_dummy_request()
+
+
+## 66 前冲 / 44 后撤触发（issue 18）：方向历史只在变化时记录条目，因此"两个独立
+## 同向方向段 + 中间至少一个逻辑中立帧"恰是紧邻的 [同向段, 中立, 新同向段] 三条
+## 历史——新段的上一条是中立、再上一条与它同数字。第二段到来当帧触发；冻结帧
+## 只记录不触发（停顿中的段与恢复首帧同时间戳，同一配对口径）。旧段仍受方向
+## 历史保留窗口约束；冲刺不消费方向历史（与指令识别的独立规则，236C/214D 等
+## 指令不受冲刺影响）。
+func _check_dash_start(events: Array[CombatEvent]) -> void:
+	if _direction_history.size() < 3:
+		return
+	var last: Vector2i = _direction_history[_direction_history.size() - 1]
+	if (last.x != 6 and last.x != 4) or last.y != _input_stamp():
+		return
+	if _direction_history[_direction_history.size() - 2].x != 5:
+		return
+	if _direction_history[_direction_history.size() - 3].x != last.x:
+		return
+	if not _dash_start_allowed():
+		return
+	player_dash_left = GameParams.PLAYER_DASH_FRAMES + 1
+	_dash_direction = player_facing if last.x == 6 else -player_facing
+	## 冲刺是承诺性的地面位移状态：进入时清姿态，期间不蹲不防。
+	_clear_posture()
+	events.append(CombatEvent.dash_started(_dash_direction))
+
+
+## 冲刺识别门：仅地面自由行动（中立/移动/蹲下）——出招、受击/防御硬直、
+## pre-jump、空中、任意落地恢复与冲刺进行中都不识别。落地恢复按输入阶段口径
+## 以 >1 判受限（本帧运动归零 = 首个自由帧，与姿态重解析门同一时序）。
+func _dash_start_allowed() -> bool:
+	if player_dash_left > 0 or _current_move != null or _player_stunned():
+		return false
+	if not player_on_ground:
+		return false
+	if player_prejump_left > 0 or player_landing_recovery_left > 1:
+		return false
+	return true
 
 
 ## 原始动作键事件记录（issue 17）：新按下写入按下记录（最新覆盖，标记未消费），
@@ -529,16 +582,18 @@ func _dummy_attack_direction() -> int:
 	return 1 if player_position.x >= dummy_position.x else -1
 
 
-## 姿态重解析门：出招、受击/防御硬直、pre-jump 与空技落地恢复关闭；
+## 姿态重解析门：出招、受击/防御硬直、pre-jump、冲刺与空技落地恢复关闭；
 ## 空跳落地恢复第 2、3 帧开放（与独立起手同一口径）。输入阶段读到的是含当帧
 ## 的恢复倒计时（本帧运动归零 = 首个自由帧），因此以 >1 判受限，与消费阶段
-## 的起手门时序一致。
+## 的起手门时序一致；冲刺倒计时同口径（>1 时本帧仍是冲刺帧）。
 func _posture_reeval_open() -> bool:
 	if _current_move != null:
 		return false
 	if _player_stunned():
 		return false
 	if player_prejump_left > 0:
+		return false
+	if player_dash_left > 1:
 		return false
 	if player_landing_recovery_left > 1 and _air_move_started:
 		return false
@@ -673,6 +728,9 @@ func _phase_apply_dummy_hit(events: Array[CombatEvent]) -> void:
 		if _current_move != null:
 			_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
 			_clear_current_move()
+		## 受击打断进行中的冲刺（issue 18）：硬直与击退接管运动，冲刺计数清零。
+		player_dash_left = 0
+		_dash_direction = 0
 		player_hitstun_left = move.hitstun_frames
 		player_velocity.x = direction * move.knockback
 		events.append(CombatEvent.player_hit(direction))
@@ -823,10 +881,12 @@ func _independent_start_allowed() -> bool:
 	## 因此准备期间一律只记录不消费。落地恢复首帧完全锁定（配置的落地接续走
 	## 取消路径，不受影响）；空跳恢复第 2、3 帧可取消为合法攻击；启动过空中
 	## 招式的落地恢复基础及额外恢复全程不可取消（挥空同样受限）。
-	## 受击硬直与防御硬直期间不可独立起手；投与蹲下/防御的姿态门各自独立判定。
+	## 受击硬直与防御硬直期间不可独立起手；冲刺是承诺性位移状态，期间不可
+	## 起手（缓存的输入保留原龄，冲刺结束按新状态重查）；投与蹲下/防御的姿态
+	## 门各自独立判定。
 	if _player_stunned():
 		return false
-	if player_prejump_left > 0:
+	if player_prejump_left > 0 or player_dash_left > 0:
 		return false
 	if _player_just_landed:
 		return false
@@ -836,14 +896,14 @@ func _independent_start_allowed() -> bool:
 
 
 func _jump_slot_ready() -> bool:
-	## 跳跃输入槽的当帧合法性：起跳准备、落地恢复、受击/防御硬直与空中一律
-	## 不可消费（无二段跳；受限恢复期不重新起跳）。地面中立是普通跳；招式阶段
-	## 需要 jump cancel 配置 + 命中确认 + 取消窗口 + 可追击木桩同时成立。
+	## 跳跃输入槽的当帧合法性：起跳准备、落地恢复、冲刺、受击/防御硬直与空中
+	## 一律不可消费（无二段跳；受限恢复期不重新起跳）。地面中立是普通跳；招式
+	## 阶段需要 jump cancel 配置 + 命中确认 + 取消窗口 + 可追击木桩同时成立。
 	if not _jump_slot_active:
 		return false
 	if _player_stunned():
 		return false
-	if player_prejump_left > 0 or player_landing_recovery_left > 0:
+	if player_prejump_left > 0 or player_landing_recovery_left > 0 or player_dash_left > 0:
 		return false
 	if not player_on_ground:
 		return false
@@ -869,13 +929,13 @@ func _consume_jump() -> void:
 
 # --- 普通投结算（issue 17）---
 
-## 普通投执行门：仅地面站立、可自由行动可投（蹲下、pre-jump、空中、招式阶段、
-## 受击/防御硬直与落地恢复一律禁用——空跳恢复第 2、3 帧的攻击例外不适用于投）。
-## 投距 = 身体中心水平距离 ≤ 投技 throw_range 且身体矩形垂直重叠。
+## 普通投执行门：仅地面站立、可自由行动可投（蹲下、pre-jump、冲刺、空中、招式
+## 阶段、受击/防御硬直与落地恢复一律禁用——空跳恢复第 2、3 帧的攻击例外不适用
+## 于投）。投距 = 身体中心水平距离 ≤ 投技 throw_range 且身体矩形垂直重叠。
 ## 返回 0（可执行）、ThrowFailReason.STATE 或 ThrowFailReason.RANGE。
 func _throw_start_gate() -> int:
 	if _current_move != null or _player_stunned() or not player_on_ground \
-			or player_prejump_left > 0 or player_landing_recovery_left > 0 or player_crouching:
+			or player_prejump_left > 0 or player_landing_recovery_left > 0 or player_dash_left > 0 or player_crouching:
 		return CombatEvent.ThrowFailReason.STATE
 	if absf(player_position.x - dummy_position.x) > _throw_move.throw_range:
 		return CombatEvent.ThrowFailReason.RANGE
@@ -979,6 +1039,8 @@ func _motion_player(events: Array[CombatEvent]) -> void:
 		takeoff_this_frame = player_prejump_left == 0
 	elif player_landing_recovery_left > 0:
 		player_landing_recovery_left -= 1
+	elif player_dash_left > 0:
+		player_dash_left -= 1
 	var axis := _frame_input.move_axis
 	if (player_prejump_left > 0 or takeoff_this_frame) and _jump_direction != 0:
 		## 起跳准备按消费时冻结的世界跳向移动（含离地当帧——首个空中帧前方向
@@ -986,9 +1048,13 @@ func _motion_player(events: Array[CombatEvent]) -> void:
 		## 仍用当前输入改成斜跳，不重置准备计时。
 		axis = _jump_direction
 	## 出招与受击/防御硬直期间水平输入失效，只保留摩擦减速（地面/空中一致）；
-	## 普通空中运动保留起跳横向速度：方向输入不加速、不减速、也不翻转面向。
+	## 普通空中运动保留起跳横向速度：方向输入不改变普通空中速度或面向。
+	## 冲刺期间（含触发当帧——输入阶段已置计数）水平速度锁定为冲刺速度：
+	## 不响应方向输入也不衰减，恰持续 PLAYER_DASH_FRAMES 帧后交回普通移动。
 	var stunned := _player_stunned()
-	if player_phase == PlayerPhase.NEUTRAL and not stunned:
+	if player_dash_left > 0:
+		player_velocity.x = _dash_direction * GameParams.PLAYER_DASH_SPEED
+	elif player_phase == PlayerPhase.NEUTRAL and not stunned:
 		if player_on_ground:
 			if axis != 0:
 				player_velocity.x = move_toward(player_velocity.x, axis * GameParams.PLAYER_MOVE_SPEED, GameParams.PLAYER_ACCELERATION * GameParams.PHYSICS_TICK)
@@ -1122,11 +1188,14 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 ## 木桩：在双方运动与位置更新后、身体重叠推出前重新指向，本帧的面向变化从下
 ## 一物理帧的方向折算生效；后退不翻面，与木桩横向重合时保持当前面向。出招、
 ## 受击硬直、倒地处理和空中阶段不进入本函数，保持进入该阶段时的面向；防御
-## 硬直与受击硬直同口径冻结。落地完成后的首个地面自由行动帧由本函数重新面向木桩。
+## 硬直与受击硬直同口径冻结。冲刺期间面向锁定在启动时的值（issue 18），冲刺
+## 结束后的首个地面自由行动帧由本函数重新面向木桩。
 func _update_free_action_facing() -> void:
 	if player_phase != PlayerPhase.NEUTRAL or not player_on_ground:
 		return
 	if _player_stunned():
+		return
+	if player_dash_left > 0:
 		return
 	if is_equal_approx(dummy_position.x, player_position.x):
 		return

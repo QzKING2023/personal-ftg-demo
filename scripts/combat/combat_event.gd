@@ -14,6 +14,7 @@ enum Type {
 	THROW_HIT,         ## 普通投结果成立（未被拆投；投向见 direction）
 	THROW_TECHED,      ## 拆投成立：投结果被阻止
 	THROW_FAILED,      ## 已配齐的普通投尝试被拒绝（原因见 ThrowFailReason）
+	DASH_STARTED,      ## 66 前冲 / 44 后撤启动（世界方向见 direction；issue 18）
 }
 
 ## 连段结束原因：收尾、取消窗口关闭、招式收招未接续、木桩自然受身/恢复。
@@ -109,4 +110,11 @@ static func throw_failed(reason: ThrowFailReason) -> CombatEvent:
 	var event := CombatEvent.new()
 	event.type = Type.THROW_FAILED
 	event.throw_fail_reason = reason
+	return event
+
+
+static func dash_started(direction: int) -> CombatEvent:
+	var event := CombatEvent.new()
+	event.type = Type.DASH_STARTED
+	event.direction = direction
 	return event

@@ -23,6 +23,7 @@ func _run_tests() -> void:
 	await _test_hud_layout_no_overlap(main)
 	await _test_crouch_and_guard_presentation(main, player, session)
 	await _test_throw_keyboard(main, session)
+	await _test_dash_keyboard(main, session)
 	await _test_attack_hit_and_feedback(main, player, dummy, session)
 	await _test_attack_range(session)
 	await _test_ground_combo_display(main, session)
@@ -209,6 +210,80 @@ func _test_throw_keyboard(main: Node2D, session: CombatSession) -> void:
 		"the same B+C sequence out of throw range starts nothing and never falls back to a strike")
 	var hint: Label = main.get_node("Hint")
 	_check(hint.text.contains("投"), "the hint line documents the B+C throw input")
+
+
+func _test_dash_keyboard(main: Node2D, session: CombatSession) -> void:
+	# 真实键盘路径（issue 18）：长按方向不冲刺；双击前方向（中间松开一帧）当帧
+	# 启动 66 前冲，诊断行显示"冲"；双击后方向启动 44 后撤，显示"撤"，玩家
+	# 沿启动时面向的相反方向位移。
+	for i in 90:
+		await physics_frame
+		if session.player_phase == CombatSession.PlayerPhase.NEUTRAL and session.dummy_state == CombatSession.DummyState.NEUTRAL:
+			break
+	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
+	session.player_velocity = Vector2.ZERO
+	session.player_facing = 1
+	session.dummy_position = Vector2(850.0, GameParams.ground_stand_y())
+	session.dummy_velocity = Vector2.ZERO
+	await physics_frame
+	var debug: Label = main.get_node("DebugLine")
+
+	# 长按对照：单一段永不冲刺。
+	Input.action_press("move_right")
+	var hold_dashed := false
+	for i in 30:
+		await physics_frame
+		hold_dashed = hold_dashed or session.player_dash_left > 0
+	Input.action_release("move_right")
+	await physics_frame
+	_check(not hold_dashed, "holding the direction key alone never dashes")
+
+	# 66 前冲：按下 → 松开一帧 → 再按下。
+	var dash_max := 0
+	var forward_text := false
+	var x_before := 0.0
+	Input.action_press("move_right")
+	await physics_frame
+	Input.action_release("move_right")
+	await physics_frame
+	x_before = session.player_position.x
+	Input.action_press("move_right")
+	for i in 15:
+		await physics_frame
+		dash_max = maxi(dash_max, session.player_dash_left)
+		forward_text = forward_text or debug.text.contains("冲")
+	Input.action_release("move_right")
+	await physics_frame
+	_check(dash_max == GameParams.PLAYER_DASH_FRAMES, "double-tapping the forward key starts the 12-frame dash via the real input path")
+	_check(forward_text, "the debug line shows the forward dash (冲) while it runs")
+	_check(session.player_position.x > x_before + GameParams.PLAYER_DASH_FRAMES * 4.0,
+		"the forward dash visibly advances the player toward the dummy side")
+
+	# 44 后撤：同一面向下双击后方向。
+	for i in 20:
+		await physics_frame
+		if session.player_dash_left == 0 and session.player_phase == CombatSession.PlayerPhase.NEUTRAL:
+			break
+	var back_max := 0
+	var back_text := false
+	var x_before_back := session.player_position.x
+	Input.action_press("move_left")
+	await physics_frame
+	Input.action_release("move_left")
+	await physics_frame
+	x_before_back = session.player_position.x
+	Input.action_press("move_left")
+	for i in 15:
+		await physics_frame
+		back_max = maxi(back_max, session.player_dash_left)
+		back_text = back_text or debug.text.contains("撤")
+	Input.action_release("move_left")
+	await physics_frame
+	_check(back_max == GameParams.PLAYER_DASH_FRAMES, "double-tapping the back key starts the backdash with the same duration")
+	_check(back_text, "the debug line shows the backdash (撤)")
+	_check(session.player_position.x < x_before_back - GameParams.PLAYER_DASH_FRAMES * 4.0,
+		"the backdash moves the player away from the dummy while facing stays locked toward it")
+	_check(session.player_facing == 1, "facing stays locked toward the dummy through both dashes")
 
 
 func _test_attack_hit_and_feedback(main: Node2D, player: Player, dummy: Dummy, session: CombatSession) -> void:

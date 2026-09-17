@@ -27,6 +27,11 @@ const PLAYER_LANDING_RECOVERY_BASE_FRAMES := 3
 # 空中攻击着地惩罚：本次跳跃启动过空中招式 startup 时，落地恢复默认额外 +1f
 # （每跳一次）；招式资源可用 extra_landing_recovery_frames 显式叠加更多。
 const PLAYER_AIR_ATTACK_LANDING_PENALTY_FRAMES := 1
+# 冲刺（issue 18）：66 前冲 / 44 后撤——两个独立同向方向段（中间至少一个逻辑
+# 中立帧）的第二段到来当帧触发；持续帧数是规格冻结值，速度是手感参数。
+# 持续按住不重复触发，仅地面自由行动识别，启动时锁定面向。
+const PLAYER_DASH_FRAMES := 12
+const PLAYER_DASH_SPEED := 480.0
 const GRAVITY := 1400.0
 const MAX_FALL_SPEED := 1000.0
 

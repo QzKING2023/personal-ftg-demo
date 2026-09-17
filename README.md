@@ -1,7 +1,7 @@
 # FTG Demo
 
 用 Godot 4.5 原生形状绘制的横向格斗手感验证 Demo：单训练场、一名玩家、一个木桩。
-启动即进入训练场，可移动、跳跃、出招、命中木桩观察受击反馈，随时重置。
+启动即进入训练场，可移动、冲刺、跳跃、出招、防御、投与命中木桩观察受击反馈，随时重置。
 
 ## 运行
 
@@ -17,10 +17,10 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . --editor --quit
 # 主场景无头运行若干帧（冒烟）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . --quit-after 300
 
-# 战斗会话 seam 测试（401 项：逐帧输入 → 可观察状态与事件）
+# 战斗会话 seam 测试（632 项：逐帧输入 → 可观察状态与事件）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_combat_session.gd
 
-# 训练场集成测试（85 项：注入输入 + 真实物理帧）
+# 训练场集成测试（111 项：注入输入 + 真实物理帧）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_smoke.gd
 
 # Combo Solver 测试（112 项：开头会打印默认招式表的可读验证报告）
@@ -40,10 +40,12 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/di
 | 行为 | 键位 |
 | --- | --- |
 | 左右移动 | A / D 或 ← / → |
-| 下方向（搓招用） | S / ↓ |
+| 下方向（蹲下/搓招用） | S / ↓ |
 | 跳跃 | Space |
 | 动作 A / B / C / D | U / I / K / J |
 | 方向派生 236+C / 214+D | 依次输入方向序列（数字按面向折算）后按动作键 C（K）/ D（J） |
+| 前冲 / 后撤（66/44） | 双击 →/←（两次同向之间松开至少一帧） |
+| 普通投（B+C 组合） | I+K 3 帧内先后按下（投距内成立，木桩拆投由测试请求驱动） |
 | 重置场景 | R |
 
 ## 架构：战斗会话
@@ -110,12 +112,12 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/di
 ## 已知限制（按规划暂不决策）
 
 - 木桩血量归零后不会消失或重生，仍可继续受击（训练桩行为）。
-- 停顿内的 jump 按下尚无独立缓存槽（Space 在 Hitstop 内无效，恢复后取消窗口
-  仍按正常帧开放——跳跃输入槽与 pre-jump 见后续 issue）；防御、投技、冲刺、
-  蹲防、AI、回合与计时均未实现。
+- 木桩无 AI、无回合计时与胜负流程；high-jump、二段跳与空中特殊追击窗口
+  属首版范围外，未定义输入或参数。
 - 空中可以出招（保留空中动量），无空中跳跃次数限制外的额外规则。
 - 无音效、无屏幕震动（HUD 有木桩头顶血条、左上角按键提示、右上角状态显示与
-  左下角诊断行——面向/方向序列/识别招式/缓存剩余/停顿剩余/取消龄与资格）。
+  左下角诊断行——面向/姿态/冲刺剩余/方向序列/识别招式/缓存剩余/停顿剩余/
+  取消龄与资格）。
 
 ## 目录结构
 

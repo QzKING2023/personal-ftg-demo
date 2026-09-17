@@ -103,6 +103,11 @@ func _initialize() -> void:
 	_test_throw_disabled_states()
 	_test_throw_range_failure_observable()
 	_test_throw_hitstop_intent_attempts_once()
+	_test_dash_two_taps_trigger_duration_and_free_return()
+	_test_dash_hold_and_pattern_rules()
+	_test_dash_restricted_states()
+	_test_dash_mirror_both_facings()
+	_test_dash_action_locks_and_hit_interrupt()
 	print("")
 	if _failures == 0:
 		print("ALL SESSION TESTS PASSED")
@@ -1868,16 +1873,22 @@ func _test_cached_jump_direction_seam() -> void:
 	# 世界左+Space 为前跳 9，恢复后按世界右仍向左起跳。
 	var session := CombatSession.new()
 	session.dummy_position = session.player_position + Vector2(70, 0)
-	var slot_dir_at_f26 := 2
+	var slot_dir_at_f26 := -1
 	var takeoff_vx := 0.0
 	for frame in range(1, 40):
 		var axis := 1 if frame == 23 else (-1 if frame >= 30 else 0)
 		var input := FrameInput.make(axis, frame == 23)
-		if frame == 14:
+		# C 是 B+C 组合成员（issue 17）：F11 按下经 3f 组合等待后于 F14 起手 5C，
+		# F20 首个判定帧命中（停顿 F21–F28、F29 恢复）——保持 spec seam 的原时间线。
+		if frame == 11:
 			input = FrameInput.make(0, false, "C")
 		session.step(input)
 		if frame == 26:
-			slot_dir_at_f26 = int(session.debug_snapshot()["jump_slot_direction"])
+			# 槽已被消费/不存在时读 null：显式记 -1，让时间线漂移表现为断言失败
+			# 而不是运行时错误静默中止整个测试函数。
+			var slot_dir: Variant = session.debug_snapshot()["jump_slot_direction"]
+			if slot_dir != null:
+				slot_dir_at_f26 = int(slot_dir)
 		if frame == 29:
 			_check(session.player_prejump_left == 4, "the frozen diagonal request is consumed on the resume frame (pre-jump starts)")
 		if frame == 33 and not session.player_on_ground:
@@ -1890,7 +1901,7 @@ func _test_cached_jump_direction_seam() -> void:
 	var vertical_vx := 0.0
 	for frame in range(1, 40):
 		var axis := 1 if frame >= 30 else 0
-		var input := FrameInput.make(axis, frame == 23, "C" if frame == 14 else "")
+		var input := FrameInput.make(axis, frame == 23, "C" if frame == 11 else "")
 		vertical.step(input)
 		if frame == 33 and not vertical.player_on_ground:
 			vertical_vx = vertical.player_velocity.x
@@ -1902,7 +1913,7 @@ func _test_cached_jump_direction_seam() -> void:
 	for frame in range(1, 40):
 		var axis := -1 if frame == 23 else (1 if frame >= 30 else 0)
 		var input := FrameInput.make(axis, frame == 23)
-		if frame == 14:
+		if frame == 11:
 			input = FrameInput.make(0, false, "C")
 		mirror.step(input)
 		if frame == 33 and not mirror.player_on_ground:
@@ -3384,6 +3395,260 @@ func _test_throw_hitstop_intent_attempts_once() -> void:
 	var overridden: Dictionary = base.call(26, 27)
 	_check(overridden["fail_frames"].is_empty() and not (overridden["move_ids"] as Array).has("BC"),
 		"a newer action input (A on F27) overrides the pending throw intent: no attempt happens on resume")
+
+
+# --- 66 前冲与 44 后撤（issue 18）---
+
+## 冲刺双击脚本：F1 按下第一个同向段、F2 逻辑中立、F3 第二段起按住到 hold_end。
+## 记录每帧步后的 dash_left、水平位置、面向与 DASH_STARTED 的 (帧, 世界方向)；
+## digit 只接受 4/6（世界轴按会话面向折算，左右面向可用同一份脚本镜像）。
+func _dash_script(session: CombatSession, digit: int, total: int, hold_end: int) -> Dictionary:
+	var dash_counts: Array[int] = []
+	var positions: Array[float] = []
+	var facings: Array[int] = []
+	var start_frames: Array[int] = []
+	var start_directions: Array[int] = []
+	for frame in range(1, total + 1):
+		var d := digit if frame == 1 or (frame >= 3 and frame <= hold_end) else 5
+		var events := session.step(_relative_input(session, d))
+		dash_counts.append(session.player_dash_left)
+		positions.append(session.player_position.x)
+		facings.append(session.player_facing)
+		for event in events:
+			if event.type == CombatEvent.Type.DASH_STARTED:
+				start_frames.append(frame)
+				start_directions.append(event.direction)
+	return {
+		"dash_counts": dash_counts, "positions": positions, "facings": facings,
+		"start_frames": start_frames, "start_directions": start_directions,
+	}
+
+
+func _test_dash_two_taps_trigger_duration_and_free_return() -> void:
+	# 66/44 触发与 12f 持续（issue 18）：两个独立同向方向段（中间至少一个逻辑
+	# 中立帧）的第二段到来当帧启动冲刺，dash_left 从 12 逐帧倒数到 1，恰 12 帧后
+	# 回到地面自由行动（下一帧可起手普通招式）；位移恰为 12 × 冲刺速度 × 物理帧
+	# 步长；44 与 66 时间线一致、方向相反、面向保持锁定并清掉按后进入的站防。
+	var run := func(digit: int) -> Dictionary:
+		var session := CombatSession.new()
+		var result := _dash_script(session, digit, 16, 14)
+		result["session"] = session
+		return result
+	var forward: Dictionary = run.call(6)
+	var f_counts: Array[int] = forward["dash_counts"]
+	var f_positions: Array[float] = forward["positions"]
+	_check((forward["start_frames"] as Array) == [3] and (forward["start_directions"] as Array) == [1],
+		"the second forward segment starts the dash on its own frame (F3), world direction +1")
+	_check(f_counts.slice(2, 14) == [12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
+		"dash_left counts down 12 through 1 across exactly twelve dash frames (F3-F14)")
+	_check(f_counts[14] == 0, "dash_left reaches 0 on the first frame after the dash (F15)")
+	var dash_distance := GameParams.PLAYER_DASH_FRAMES * GameParams.PLAYER_DASH_SPEED * GameParams.PHYSICS_TICK
+	_check(_approx(f_positions[13] - f_positions[1], dash_distance, 0.01),
+		"the forward dash covers exactly twelve frames of dash-speed movement (%dpx at the default param)" % int(dash_distance))
+	var back: Dictionary = run.call(4)
+	var b_counts: Array[int] = back["dash_counts"]
+	var b_positions: Array[float] = back["positions"]
+	_check((back["start_frames"] as Array) == [3] and (back["start_directions"] as Array) == [-1],
+		"44 taps start the backdash on the second segment's own frame, world direction -1")
+	_check(b_counts == f_counts, "both dashes share the exact countdown timeline")
+	_check(_approx(b_positions[13] - b_positions[1], -dash_distance, 0.01),
+		"the backdash covers the same distance in the opposite direction")
+	var b_session := back["session"] as CombatSession
+	_check(b_session.player_facing == 1, "the facing stays locked toward the dummy during the backdash (no flip while moving away)")
+	_check(b_session.player_guard == CombatSession.GuardPosture.NONE, "the dash clears the standing guard the first back tap held")
+
+	# 冲刺期间按 A 不起手、结束下一帧起手：证明 12f 后回到地面自由行动。
+	var blocked := CombatSession.new()
+	var blocked_moves: Array[String] = []
+	for frame in range(1, 17):
+		var key := "A" if frame == 6 or frame == 15 else ""
+		var d := 6 if frame == 1 or (frame >= 3 and frame <= 14) else 5
+		blocked.step(_relative_input(blocked, d, key))
+		blocked_moves.append(blocked.player_move_id)
+	_check(_range_all(blocked_moves, 5, 13, ""), "an action key pressed mid-dash (F6) never starts while the dash runs")
+	_check(blocked_moves[14] == "5A", "the frame after the dash ends (F15) accepts a fresh attack start")
+
+
+func _test_dash_hold_and_pattern_rules() -> void:
+	# 持续按住与非法模式（issue 18）：长按只生成一个方向段，永不冲刺；两段之间
+	# 没有逻辑中立帧（6-3-6、6-2-6）不触发；中立间隙后插有其他方向段（6-5-3-5-6）
+	# 时新段的上一段不是同向段，不触发；冲刺后继续按住不重复触发，保留期内的
+	# 新双击才再次冲刺。
+	var hold := CombatSession.new()
+	var hold_events: Array[CombatEvent] = []
+	for frame in range(1, 31):
+		hold_events.append_array(hold.step(_relative_input(hold, 6)))
+	_check(_count_events(hold_events, CombatEvent.Type.DASH_STARTED) == 0 and hold.player_dash_left == 0,
+		"holding the forward direction never forms a second segment and never dashes")
+
+	var no_gap := CombatSession.new()
+	var no_gap_events: Array[CombatEvent] = []
+	for frame in range(1, 4):
+		no_gap_events.append_array(no_gap.step(_relative_input(no_gap, [6, 3, 6][frame - 1])))
+	for frame in range(4, 21):
+		no_gap_events.append_array(no_gap.step(_relative_input(no_gap, 6)))
+	_check(_count_events(no_gap_events, CombatEvent.Type.DASH_STARTED) == 0,
+		"6-3-6 keeps a non-neutral direction between the forward segments: no dash without a logical neutral frame")
+
+	var no_gap_down := CombatSession.new()
+	var down_events: Array[CombatEvent] = []
+	for frame in range(1, 4):
+		down_events.append_array(no_gap_down.step(_relative_input(no_gap_down, [6, 2, 6][frame - 1])))
+	for frame in range(4, 21):
+		down_events.append_array(no_gap_down.step(_relative_input(no_gap_down, 6)))
+	_check(_count_events(down_events, CombatEvent.Type.DASH_STARTED) == 0,
+		"6-2-6 without any neutral frame between the forward segments never dashes")
+
+	var diagonal := CombatSession.new()
+	var diag_events: Array[CombatEvent] = []
+	for frame in range(1, 6):
+		diag_events.append_array(diagonal.step(_relative_input(diagonal, [6, 5, 3, 5, 6][frame - 1])))
+	_check(_count_events(diag_events, CombatEvent.Type.DASH_STARTED) == 0,
+		"a diagonal segment between the neutral gap and the new tap (6-5-3-5-6) breaks the pattern")
+
+	# 第一段 F3 触发后按住到 F40 只有一次冲刺；F41 松开、F42 再按下时旧第一段已出
+	# 保留窗口不触发；F43 松开、F44 与 F42 段组成新双击 → 第二次冲刺。
+	var retrigger := CombatSession.new()
+	var start_frames: Array[int] = []
+	for frame in range(1, 45):
+		var digit := 5
+		if frame == 1 or (frame >= 3 and frame <= 40) or frame == 42 or frame == 44:
+			digit = 6
+		var events := retrigger.step(_relative_input(retrigger, digit))
+		if _count_events(events, CombatEvent.Type.DASH_STARTED) > 0:
+			start_frames.append(frame)
+	_check(start_frames == [3, 44],
+		"holding through the dash triggers exactly once; only a fresh in-retention double tap dashes again")
+
+
+func _test_dash_restricted_states() -> void:
+	# 受限状态不识别（issue 18）：出招、受击（含其 Hitstop）、pre-jump、空中与
+	# 落地恢复期间第二段到来不触发；状态解除后新的同向段当帧触发（方向历史统一，
+	# 受限时记录的旧第一段仍可与新段组成 66，保留窗口内有效）。
+	var move_phase := CombatSession.new()
+	var move_start_frames: Array[int] = []
+	for frame in range(1, 29):
+		var digit := 5
+		var key := ""
+		if frame == 1:
+			key = "A"
+		elif frame in [2, 4, 26, 28]:
+			digit = 6
+		var events := move_phase.step(_relative_input(move_phase, digit, key))
+		if _count_events(events, CombatEvent.Type.DASH_STARTED) > 0:
+			move_start_frames.append(frame)
+	_check(move_start_frames == [26],
+		"the second segment inside the running 5A never starts a dash; the first free-frame segment pairs with the in-move first segment and dashes (F26)")
+
+	# 木桩 5A F1 请求、F6 命中玩家（硬直 12 + 停顿 F7-F14，恢复自由约 F27）：
+	# 停顿/硬直内的双击（F7/F11 两段）不触发；F27 的第一个自由帧上，新的 6 段与
+	# 停顿中记录的旧 6 段组成 66 → 当帧冲刺。
+	var hitstun := CombatSession.new()
+	hitstun.dummy_position = hitstun.player_position + Vector2(100, 0)
+	var hit_frame := -1
+	var hitstun_start_frames: Array[int] = []
+	for frame in range(1, 31):
+		var digit := 5
+		var request := "5A" if frame == 1 else ""
+		if frame in [7, 11, 27, 29]:
+			digit = 6
+		var events := hitstun.step(_relative_input(hitstun, digit, "", request))
+		if _count_events(events, CombatEvent.Type.PLAYER_HIT) > 0:
+			hit_frame = frame
+		if _count_events(events, CombatEvent.Type.DASH_STARTED) > 0:
+			hitstun_start_frames.append(frame)
+	_check(hit_frame == 6, "the dummy strike actually connects with the player on F6 (setup sanity)")
+	_check(hitstun_start_frames == [27],
+		"the second segment inside the hitstop/hitstun never starts a dash; the first free-frame segment pairs with the frozen first segment and dashes (F27)")
+
+	# pre-jump / 空中 / 落地恢复：Space F1 起跳（准备 F1-F4、空中 F5-F42、落地 F43、
+	# 恢复 F43-F45）；双击分别落在准备（F2/F4）与空中（F6/F8），落地恢复内的第二段
+	# （F45）被拒；F47 的新段与 F45 段组成新双击 → 冲刺。
+	var jump_case := CombatSession.new()
+	jump_case.dummy_position = Vector2(100.0, GameParams.ground_stand_y())
+	var jump_start_frames: Array[int] = []
+	for frame in range(1, 49):
+		var digit := 5
+		var jump := frame == 1
+		if frame in [2, 4, 6, 8, 43, 45, 47]:
+			digit = 6
+		var input := _relative_input(jump_case, digit)
+		input.jump_pressed = jump
+		var events := jump_case.step(input)
+		if _count_events(events, CombatEvent.Type.DASH_STARTED) > 0:
+			jump_start_frames.append(frame)
+	_check(jump_start_frames == [47],
+		"double taps during pre-jump, airtime and landing recovery never start a dash; the first free tap pair (F45/F47) does")
+
+
+func _test_dash_mirror_both_facings() -> void:
+	# 左右面向镜像（issue 18）：同一份相对数字脚本（6-5-6）在左右面向下都在第二段
+	# 当帧触发；世界方向相反、位移大小相等、时间线一致、冲刺期间面向保持锁定。
+	var run := func(dummy_offset: float) -> Dictionary:
+		var session := CombatSession.new()
+		session.dummy_position = Vector2(session.player_position.x + dummy_offset, GameParams.ground_stand_y())
+		var result := _dash_script(session, 6, 15, 14)
+		result["session"] = session
+		return result
+	var right: Dictionary = run.call(300.0)
+	var left: Dictionary = run.call(-300.0)
+	var dash_distance := GameParams.PLAYER_DASH_FRAMES * GameParams.PLAYER_DASH_SPEED * GameParams.PHYSICS_TICK
+	_check((right["start_frames"] as Array) == [3] and (right["start_directions"] as Array) == [1],
+		"facing right: the digit script dashes toward the dummy (world +1)")
+	_check((left["start_frames"] as Array) == [3] and (left["start_directions"] as Array) == [-1],
+		"facing left: the same digit script dashes toward the dummy (world -1)")
+	_check((right["dash_counts"] as Array) == (left["dash_counts"] as Array), "both facings share the exact twelve-frame countdown")
+	_check(_approx((right["positions"] as Array)[13] - (right["positions"] as Array)[1], dash_distance, 0.01),
+		"facing right covers the full dash displacement")
+	_check(_approx((left["positions"] as Array)[13] - (left["positions"] as Array)[1], -dash_distance, 0.01),
+		"facing left covers the mirrored displacement of equal magnitude")
+	_check((right["facings"] as Array).slice(2, 14).count(1) == 12 and (left["facings"] as Array).slice(2, 14).count(-1) == 12,
+		"the facing locked at dash start stays constant for the whole dash on both sides")
+
+
+func _test_dash_action_locks_and_hit_interrupt() -> void:
+	# 冲刺期间的动作门与被打断（issue 18）：冲刺中 Space 不进入 pre-jump、B+C 投
+	# 组合被状态拒绝（STATE 原因可观察，停顿后恢复首帧尝试一次）；木桩打击命中
+	# 冲刺中的玩家当帧打断冲刺——进入受击硬直、冲刺计数清零、速度被击退改写。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(100, 0)
+	var prejump_seen := false
+	var throw_fail_frames: Array[int] = []
+	var dash_start_frames: Array[int] = []
+	var hit_frame := -1
+	var dash_left_at_hit := -1
+	var velocity_after_hit := 0.0
+	var hitstun_at_hit := -1
+	for frame in range(1, 24):
+		var digit := 6 if frame == 1 or (frame >= 3 and frame <= 14) else 5
+		var request := "5A" if frame == 3 else ""
+		var input := _relative_input(session, digit, "", request)
+		if frame == 5:
+			input.jump_pressed = true
+		if frame >= 6:
+			input.held_action_keys.append("B")
+		if frame == 6:
+			input.pressed_action_keys.append("B")
+		if frame == 9:
+			input.pressed_action_keys.append("C")
+			input.held_action_keys.append("C")
+		var events := session.step(input)
+		prejump_seen = prejump_seen or session.player_prejump_left > 0
+		if _throw_fail_events(events, CombatEvent.ThrowFailReason.STATE) > 0:
+			throw_fail_frames.append(frame)
+		if _count_events(events, CombatEvent.Type.DASH_STARTED) > 0:
+			dash_start_frames.append(frame)
+		if _count_events(events, CombatEvent.Type.PLAYER_HIT) > 0:
+			hit_frame = frame
+			dash_left_at_hit = session.player_dash_left
+			hitstun_at_hit = session.player_hitstun_left
+			velocity_after_hit = session.player_velocity.x
+	_check(dash_start_frames == [3], "the dash itself starts on F3 and never re-triggers")
+	_check(not prejump_seen, "Space pressed mid-dash never enters pre-jump preparation")
+	_check(throw_fail_frames == [17],
+		"the B+C combination completed inside the dash's hitstop is state-rejected once on the resume frame (F17)")
+	_check(hit_frame == 8 and dash_left_at_hit == 0 and hitstun_at_hit > 0 and velocity_after_hit < 0.0,
+		"the dummy strike landing mid-dash (F8) interrupts it on the same frame: dash cleared, hitstun applied, knockback away from the dummy")
 
 
 ## 从出招到回中立完整走一遍（第 1 帧按下动作键 A）。

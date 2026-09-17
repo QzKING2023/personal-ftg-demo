@@ -6,7 +6,7 @@ extends Node2D
 const PlayerScene: PackedScene = preload("res://scenes/player.tscn")
 const DummyScene: PackedScene = preload("res://scenes/dummy.tscn")
 
-const HINT_TEXT := "移动 A/D 或 ←/→    下 S/↓ 蹲下    防御 按住后方向 4/1    跳跃 Space    重置 R\n动作 U/I/K/J = A/B/C/D    派生 236+C / 214+D（方向按面向折算）\n投 I+K = B+C（≤3帧内同按，投距内成立）"
+const HINT_TEXT := "移动 A/D 或 ←/→    下 S/↓ 蹲下    防御 按住后方向 4/1    跳跃 Space    重置 R\n动作 U/I/K/J = A/B/C/D    派生 236+C / 214+D（方向按面向折算）\n冲刺 双击 →/←（66/44，中间松开一帧）    投 I+K = B+C（≤3帧内同按，投距内成立）"
 
 ## 动作键 A/B/C/D 对应的输入动作名（物理键 U/I/K/J）；C/D 配合方向序列触发派生。
 const ACTION_KEYS: Array[String] = ["A", "B", "C", "D"]
@@ -175,6 +175,9 @@ func _update_debug_line() -> void:
 		posture = "准备" + str(int(snap["prejump_left"]))
 	elif int(snap["landing_recovery_left"]) > 0:
 		posture = "落地" + str(int(snap["landing_recovery_left"]))
+	# 冲刺（issue 18）：前冲/后撤以启动时锁定的面向区分（方向与面向同向为前冲）。
+	if int(snap["dash_left"]) > 0:
+		posture = ("冲" if int(snap["dash_direction"]) == int(snap["facing"]) else "撤") + str(int(snap["dash_left"]))
 	if int(snap["hitstop_left"]) > 0:
 		posture = "停顿" + posture + str(int(snap["hitstop_left"]))
 	# 防御姿态与硬直（issue 16）：站防/蹲防/空防 + 防御硬直/受击硬直剩余帧。
