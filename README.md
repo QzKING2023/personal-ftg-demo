@@ -26,11 +26,12 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/te
 # Combo Solver 测试（112 项：开头会打印默认招式表的可读验证报告）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_combo_solver.gd
 
-# Combo Solver 入口/路线/循环证明测试（issue 19–21：solve 入口与操作说明、配置缺口
-# 与方向 variant、循环状态去重键与截断/未完成观测上报）
+# Combo Solver 入口/路线/循环/空间分层测试（issue 19–22：solve 入口与操作说明、
+# 配置缺口与方向 variant、循环状态去重键与截断/未完成观测上报、timing/spatial 分层）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_solver_entry.gd
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_solver_route.gd
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_solver_cycles.gd
+Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_solver_spatial.gd
 
 # 共享招式表测试（issue 11：manifest 加载、整表校验、双端共享与拒绝）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_move_table.gd
@@ -91,8 +92,11 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/di
   循环（ADR-0002）。报告帧号与年龄按正常战斗帧计：Hitstop 冻结物理帧不消耗窗口，
   回放输入表时以空输入跳过冻结帧。它不修改运行时战斗状态，不设命中数/时长上限，
   也不证明空间/中立/碰撞连接；空中段只能经配置的 jump cancel 进入，玩家滞空与
-  木桩浮空作为有限资源不会被当作可自动续期。设计者直接跑 Solver 测试即可看到
-  默认表的可读报告。
+  木桩浮空作为有限资源不会被当作可自动续期。报告区分 timing-valid 与可选
+  spatial-valid（issue 22）：无空间数据时路线仅 timing-valid，固定接触位不构成
+  空间证明；提供空间数据（SolverOptions.spatial）后在地面、左右镜像的
+  48/64/80 px 三组身体中心距离上复验并附 spatial-valid，不搜索走位、中立、
+  墙角、推挤、跨身或屏幕边界。设计者直接跑 Solver 测试即可看到默认表的可读报告。
 
 ## 手感参数
 
@@ -151,5 +155,6 @@ tests/test_combo_solver.gd    Combo Solver 测试（含可读报告打印）
 tests/test_solver_entry.gd    Solver 正式入口 solve() 与操作说明测试（issue 19）
 tests/test_solver_route.gd    Solver 配置缺口与方向 variant 测试（issue 20）
 tests/test_solver_cycles.gd   Solver 循环证明与观测上限测试（issue 21）
+tests/test_solver_spatial.gd  Solver 时序/空间证明分层测试（issue 22）
 tests/diagnose_inputs.gd      搓招与空中运动诊断回路（逐帧诊断记录与症状判定）
 ```

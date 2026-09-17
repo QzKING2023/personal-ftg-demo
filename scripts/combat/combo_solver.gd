@@ -17,9 +17,19 @@ extends RefCounted
 ## 刷新——只有每圈由真实命中重建资源的回边才能通过逐圈模拟。
 ## 几何接触是假设不是证明：探针把木桩钉在玩家面前（面向侧），不证明空间/中立/
 ## 碰撞连接；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围。
+## 空间分层（issue 22）：无空间数据时全部路线仅 timing-valid；调用方经
+## SolverOptions.spatial 提供站位与碰撞几何后，空间探针才在地面、左右镜像的
+## 48/64/80 px 三组身体中心水平距离上逐条复验 timing-valid 路线并附
+## spatial-valid——相交判定复用真实结算，不搜索走位、中立、墙角、推挤、跨身
+## 或屏幕边界；配置缺口与时序失败不作空间失败上报。
 
 ## 探针站位：玩家中心与木桩中心的横向间距（命中框中段，面向侧，几何接触假设）。
 const PIN_DX := 70.0
+## 空间探针的固定站位网格（issue 22，规格冻结）：地面、左右镜像的三组身体
+## 中心水平距离。48 = 身体贴身（BODY_SIZE.x）、64 = 首版投距上限、80 = 更远
+## 一档；不搜索其余站位——走位、中立、墙角、推挤、跨身、屏幕边界都不在
+## 证明范围。
+const SPATIAL_PROBE_DISTANCES := [48.0, 64.0, 80.0]
 ## 动作键 → 物理键（操作说明用）：与训练场 main.gd 的 ACTION_PHYSICAL_KEYS 及
 ## project.godot 输入映射保持一致（tests/test_solver_entry.gd 断言两处不漂移）。
 const ACTION_PHYSICAL_KEYS := {"A": "U", "B": "I", "C": "K", "D": "J"}
@@ -43,7 +53,7 @@ const RECOVER_HORIZON := 240
 ## 上限不会截掉任何可行延迟，枚举是完备的。
 const MAX_AIR_DELAY := 40
 
-const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性命中确认接续——前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生、jump cancel 与落地接缝都在真实 CombatSession 结算中检验；cancel_targets、jump_cancel_targets 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（普通命中不刷新木桩滞空、空中无二段跳），不会被当作可自动续期；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。"
+const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性命中确认接续——前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生、jump cancel 与落地接缝都在真实 CombatSession 结算中检验；cancel_targets、jump_cancel_targets 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（普通命中不刷新木桩滞空、空中无二段跳），不会被当作可自动续期；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。空间分层：无空间数据时全部路线仅 timing-valid，固定接触位不构成空间证明；提供空间数据（SolverOptions.spatial）后另附 spatial-valid，且只在地面、左右镜像的 48/64/80 px 三组身体中心水平距离上复验，不搜索走位、中立、墙角、推挤、跨身或屏幕边界，配置缺口与时序失败不作空间失败上报。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。"
 
 ## 接续边类型：普通命中确认取消 / jump cancel / 显式落地接续。
 enum EdgeKind {
@@ -135,11 +145,22 @@ class SolverEdge extends RefCounted:
 
 ## 一条经逐帧模拟验证的可读路线（合法接续链，含命中帧、伤害与完整输入表）。
 class SolverRoute extends RefCounted:
+	## 空间分层三态（issue 22）：UNVERIFIED＝未提供空间数据，或时序未成立
+	## （时序失败不作空间复验，不标空间失败）；VALID＝全部验证面向 ×
+	## 48/64/80 px 站位复验成立；INVALID＝至少一组站位复验失败。
+	enum SpatialState { UNVERIFIED, VALID, INVALID }
+
 	var move_ids: Array[String] = []
 	var hit_frames: Array[int] = []
 	var combo_hits := 0
 	var total_damage := 0.0
 	var note := ""
+	## timing 层结论：接续链在固定探针接触位的真实结算中逐帧成立。
+	var timing_valid := false
+	var spatial_state: SpatialState = SpatialState.UNVERIFIED
+	## INVALID 时的具体失败（每组失败站位一条，如「80 px：……」）；面向镜像
+	## 由 solve() 的签名对拍保证，失败按站位去重合并，不按面向重复罗列。
+	var spatial_failures: Array[String] = []
 	## 本路线的逐帧输入表（含方向喂入、Space 与落地帧按键），回放到全新
 	## CombatSession 应逐帧复现 hit_frames / combo_hits / total_damage。
 	var inputs: Array[ScheduledInput] = []
@@ -185,6 +206,20 @@ class SolverStartState extends RefCounted:
 	var air_frames := 0
 
 
+## 空间验证数据（issue 22）：调用方显式提供站位与碰撞几何后，空间探针才在
+## 固定站位网格（地面站位 × 验证面向左右镜像 × 48/64/80 px 身体中心水平距离）
+## 上逐条复验 timing-valid 路线。命中框取共享招式表的 hitbox 声明（调用方
+## 已提供的表即命中框来源），验证面向取 SolverOptions.facings（默认左右镜像
+## [1, -1]）；垂直轨迹首版固定为地面站位（双方站地），空中段的玩家弧线与
+## 木桩浮空由真实结算携带，不作空间假设。空间复验在真实 CombatSession 中
+## 进行，不维护第二套碰撞物理——身体矩形必须与运行时几何一致，不一致即
+## 拒绝分析。
+class SolverSpatialData extends RefCounted:
+	## 身体矩形尺寸（玩家与木桩共用）。必须等于 GameParams.BODY_SIZE——
+	## 与运行时不一致的碰撞盒无法在真实结算中复验。
+	var body_size := GameParams.BODY_SIZE
+
+
 ## 搜索选项（issue 19）：共享资源表、可选显式起始状态与验证面向。
 ## move_table 非空时优先于 manifest_path（程序注入实验表，不经过 MoveTable 校验）；
 ## facings 为空时默认 [1, -1]——左右面向分别验证并镜像对拍。
@@ -197,6 +232,8 @@ class SolverOptions extends RefCounted:
 	var start: SolverStartState = null
 	## 要验证的面向列表（默认左右都验证；±1 之外无定义）。
 	var facings: Array[int] = [1, -1]
+	## 空间验证数据（null = 不做空间验证，路线仅 timing-valid；issue 22）。
+	var spatial: SolverSpatialData = null
 
 
 ## 分析报告：接续边、可读路线、循环与可读文本。refused = 招式表未通过校验，
@@ -228,6 +265,9 @@ class SolverReport extends RefCounted:
 	## 输入绑定与方向 variant（issue 20）：每个可起手招式的全部声明记法
 	## （方向派生 + 显式替代串）及逐条探针验证结果。
 	var binding_lines: Array[String] = []
+	## 空间分层说明（issue 22）：timing-valid 与可选 spatial-valid 的分层结果、
+	## 站位网格与失败明细；solve() 在多面向合并后生成。
+	var spatial_lines: Array[String] = []
 	## 操作说明：逐路线的真实键位回放指引（方向键/Space/动作键 + 等待帧），按验证面向分节。
 	var guide_lines: Array[String] = []
 	## 本次报告验证过的面向（+1 右 / -1 左）。
@@ -278,9 +318,18 @@ class SolverReport extends RefCounted:
 			lines.append("（无可读路线）")
 		for route in routes:
 			var suffix := "（%s）" % route.note if route.note != "" else ""
-			lines.append("%s：命中帧 %s，%d hit，伤害 %.1f%s" % [
+			lines.append("%s：命中帧 %s，%d hit，伤害 %.1f%s｜%s" % [
 				route.label(), ComboSolver._hit_frames_text(route.hit_frames), route.combo_hits, route.total_damage, suffix,
+				ComboSolver._route_layer_tag(route),
 			])
+		lines.append("--- 空间分层 ---")
+		if spatial_lines.is_empty():
+			for line in ComboSolver._no_spatial_lines():
+				lines.append(line)
+		else:
+			for line in spatial_lines:
+				lines.append(line)
+		lines.append("空间证明不搜索走位、中立、墙角、推挤、跨身或屏幕边界；配置缺口与时序失败不作空间失败上报。")
 		lines.append("--- 循环 ---")
 		if cycles.is_empty():
 			lines.append("未发现经逐圈状态重现证明的有效循环（结构性回边的断链/截断/未完成观测见注）。")
@@ -302,6 +351,9 @@ var _table: Dictionary = {}
 var _table_has_throw := false
 ## 本次分析运行的验证面向（+1 右 / -1 左；探针钉位与方向喂入按它镜像）。
 var _facing := 1
+## 本次运行的探针钉位间距：timing 探针用固定接触位 PIN_DX；空间复验逐档
+## 换入 48/64/80 px（issue 22）——钉位是探针的几何假设，空间层对它做显式复验。
+var _pin_dx := PIN_DX
 ## 显式起始战斗状态（null = 默认地面中立；issue 19）。
 var _start: SolverStartState = null
 
@@ -347,6 +399,17 @@ static func solve(options: SolverOptions = null) -> SolverReport:
 		return _refused_start_state("air_frames=%d 超出普通跳 %d 帧滞空（落地后不再是空中姿态）" % [
 			opts.start.air_frames, GameParams.PLAYER_JUMP_AIRTIME_FRAMES,
 		])
+	if opts.spatial != null:
+		if opts.spatial.body_size != GameParams.BODY_SIZE:
+			return _refused_spatial(
+				"空间数据的身体矩形 %s 与运行时身体矩形 %s 不一致——空间复验在真实 CombatSession 结算中进行，Solver 不维护第二套碰撞物理" % [
+					opts.spatial.body_size, GameParams.BODY_SIZE,
+				],
+				"调整 SolverSpatialData.body_size 与 GameParams.BODY_SIZE 一致后重新分析。")
+		if opts.start != null and opts.start.stance == MoveData.Stance.AIR:
+			return _refused_spatial(
+				"首版空间探针只验证地面站位（双方站地）的 48/64/80 px 距离网格，与显式空中起始不匹配",
+				"使用地面起始做空间验证（空中站位的网格不在首版范围）。")
 	var table := opts.move_table
 	if table.is_empty():
 		var result := MoveTable.load_manifest(opts.manifest_path)
@@ -354,14 +417,14 @@ static func solve(options: SolverOptions = null) -> SolverReport:
 			return _refused_report(result)
 		table = result.moves
 	var facings: Array[int] = opts.facings.duplicate() if not opts.facings.is_empty() else [1, -1]
-	var primary := ComboSolver.new(table)._analyze(facings[0], opts.start, true)
+	var primary := ComboSolver.new(table)._analyze(facings[0], opts.start, true, opts.spatial)
 	var facing_texts: Array[String] = []
 	for facing in facings:
 		facing_texts.append(_facing_text(facing))
 	primary.start_lines.append("验证面向：%s" % "、".join(facing_texts))
 	var primary_sections := _signature_sections(primary, facings[0])
 	for i in range(1, facings.size()):
-		var run := ComboSolver.new(table)._analyze(facings[i], opts.start, true)
+		var run := ComboSolver.new(table)._analyze(facings[i], opts.start, true, opts.spatial)
 		primary.verified_facings.append(facings[i])
 		var sections := _signature_sections(run, facings[i])
 		var diff: Array[String] = []
@@ -375,9 +438,11 @@ static func solve(options: SolverOptions = null) -> SolverReport:
 			primary.notes.append("面向 %s 与面向 %s 的%s结果不一致——镜像对称被打破，请回报该差异" % [
 				_facing_text(facings[i]), _facing_text(facings[0]), "、".join(diff),
 			])
+		_merge_route_spatial(primary, run)
 		primary.guide_lines.append_array(run.guide_lines)
 	if facings.size() > 1:
 		primary.summary += "左右面向分别验证%s。" % ("，镜像一致" if primary.mirror_consistent else "，但结果不一致（见注）")
+	primary.spatial_lines = _spatial_report_lines(primary, facings, opts.spatial != null)
 	return primary
 
 
@@ -387,7 +452,8 @@ static func _facing_text(facing: int) -> String:
 
 ## 镜像对拍的相对签名：把逐帧输入按各自面向折算成相对方向后逐节比较——
 ## 左右两次运行只有「世界轴镜像」之别时应完全相等。落地接续边的对齐窗口与
-## 回放样本、路线的断链注记都参与签名，面向相关的差异不会被漏报。
+## 回放样本、路线的断链注记与空间分层结论（issue 22）都参与签名，面向相关
+## 的差异不会被漏报。
 static func _signature_sections(report: SolverReport, facing: int) -> Dictionary:
 	var edge_parts: Array[String] = []
 	for edge in report.edges:
@@ -402,9 +468,9 @@ static func _signature_sections(report: SolverReport, facing: int) -> Dictionary
 			input_parts.append("%d/%s/%s/%d" % [
 				spec.frame, spec.key, str(spec.jump), _relative_digit(spec.axis, spec.down, facing),
 			])
-		route_parts.append("%s#%s#%d#%.1f#%s#%s" % [
+		route_parts.append("%s#%s#%d#%.1f#%s#%s#%d#%s" % [
 			route.label(), str(route.hit_frames), route.combo_hits, route.total_damage,
-			";".join(input_parts), route.note,
+			";".join(input_parts), route.note, route.spatial_state, ";".join(route.spatial_failures),
 		])
 	var cycle_parts: Array[String] = []
 	for cycle in report.cycles:
@@ -444,6 +510,88 @@ static func _edge_sort_key(edge: SolverEdge) -> String:
 	return "%s|%s|%d" % [edge.from_id, edge.to_id, edge.kind]
 
 
+## 路线分层标签（issue 22）：timing 层结论在前，空间层三态在后；时序未成立
+## 的路线不作空间复验——时序失败不标作空间失败。
+static func _route_layer_tag(route: SolverRoute) -> String:
+	if not route.timing_valid:
+		return "timing 未成立；空间不作验证"
+	match route.spatial_state:
+		SolverRoute.SpatialState.VALID:
+			return "timing-valid；spatial-valid"
+		SolverRoute.SpatialState.INVALID:
+			return "timing-valid；空间失败，见空间分层"
+	return "timing-valid；空间未验证"
+
+
+## 多面向空间结果合并（issue 22）：spatial-valid 须全部验证面向成立；任一面向
+## 失败即 INVALID，失败按站位取并集——镜像对称时两侧失败相同（去重后不重复
+## 罗列），镜像被打破时把每个面向的失败站位都收进列表，不漏报。
+static func _merge_route_spatial(primary: SolverReport, other: SolverReport) -> void:
+	for route in primary.routes:
+		if route.spatial_state == SolverRoute.SpatialState.UNVERIFIED:
+			continue
+		var peer := _route_by_label(other, route.label())
+		if peer == null or peer.spatial_state != SolverRoute.SpatialState.INVALID:
+			continue
+		route.spatial_state = SolverRoute.SpatialState.INVALID
+		for failure in peer.spatial_failures:
+			if not route.spatial_failures.has(failure):
+				route.spatial_failures.append(failure)
+
+
+## 按标签取路线（多面向合并用；路线标签在面向间镜像一致）。
+static func _route_by_label(report: SolverReport, label: String) -> SolverRoute:
+	for route in report.routes:
+		if route.label() == label:
+			return route
+	return null
+
+
+## 未提供空间数据时的分层声明（solve() 的空间分层节与旧入口 analyze() 的
+## 报告兜底共用同一文案，防两处漂移）：仅 timing-valid，固定接触位是几何假设。
+static func _no_spatial_lines() -> Array[String]:
+	return [
+		"未提供空间数据（solve() 的 SolverOptions.spatial）：全部路线仅 timing-valid——固定探针接触位 %d px 是几何假设，不构成空间证明。" % PIN_DX,
+		"提供空间数据后，空间探针在地面、左右镜像的 48/64/80 px 三组身体中心水平距离上逐条复验 timing-valid 路线并附上空间证明标记。",
+	]
+
+
+## 空间分层节（issue 22）：站位网格、逐路线结果与范围边界。solve() 生成本节并
+## 保证其中已合并全部验证面向的结果；未提供空间数据时必须输出「仅
+## timing-valid」的分层声明，不允许静默省略。
+static func _spatial_report_lines(report: SolverReport, facings: Array[int], provided: bool) -> Array[String]:
+	var lines: Array[String] = []
+	if not provided:
+		return _no_spatial_lines()
+	var facing_texts: Array[String] = []
+	for facing in facings:
+		facing_texts.append("%+d" % facing)
+	lines.append("已提供空间数据：空间探针在地面站位（双方站地）、验证面向 %s（左右镜像）的身体中心水平距离 48、64、80 px 三组站位上逐条复验 timing-valid 路线——命中框与身体矩形的相交在真实 CombatSession 结算中判定（身体矩形 %s、命中框取共享招式表声明；垂直轨迹按真实结算，不作空间假设）。复验与 timing 层共用同一套空中延迟搜索：存在一组延迟使整条链接通即算该站位成立，不要求与操作说明的样本帧表逐帧相同。" % [
+		"、".join(facing_texts), GameParams.BODY_SIZE,
+	])
+	var valid_count := 0
+	var invalid_count := 0
+	var unverified_count := 0
+	for route in report.routes:
+		match route.spatial_state:
+			SolverRoute.SpatialState.VALID:
+				valid_count += 1
+			SolverRoute.SpatialState.INVALID:
+				invalid_count += 1
+			_:
+				unverified_count += 1
+	lines.append("spatial-valid %d 条、空间失败 %d 条、空间未验证 %d 条（timing 未成立的路线不作空间复验——时序失败与配置缺口都不标作空间失败）。" % [
+		valid_count, invalid_count, unverified_count,
+	])
+	for route in report.routes:
+		if route.spatial_state == SolverRoute.SpatialState.INVALID:
+			lines.append("%s：%s" % [route.label(), "；".join(route.spatial_failures)])
+	if not report.cycles.is_empty():
+		lines.append("循环证明保持 timing-valid：循环性证明在固定接触位 %d px 上完成，空间分层只覆盖可读路线的站位网格。" % PIN_DX)
+	lines.append("操作说明的帧表按固定接触位 %d px 编排；空间分层只在 48/64/80 px 三组站位复验，不外推到其余站位。" % PIN_DX)
+	return lines
+
+
 ## 世界轴输入按面向折算的小键盘相对方向（前 6 / 后 4 / 下 2 / 斜 1、3 / 中立 5）。
 static func _relative_digit(axis: int, down: bool, facing: int) -> int:
 	var horizontal := 0
@@ -470,6 +618,15 @@ static func _refused_start_state(reason: String) -> SolverReport:
 	return report
 
 
+## 空间数据非法（身体矩形与运行时不一致、地面网格配空中起始）：拒绝分析并
+## 指出修正方向——不能在真实结算中复验的几何不产出任何分层结论。
+static func _refused_spatial(reason: String, advice: String) -> SolverReport:
+	var report := _refused_base(reason)
+	report.summary = "空间数据非法，拒绝分析：%s" % reason
+	report.refusal_advice = advice
+	return report
+
+
 static func _refused_base(reason: String) -> SolverReport:
 	var report := SolverReport.new()
 	report.refused = true
@@ -482,15 +639,19 @@ static func _refused_base(reason: String) -> SolverReport:
 
 ## 单面向一次完整分析：facing 决定探针钉位与方向喂入的镜像方向；start 为显式
 ## 起始状态（null = 默认地面中立）；sort_outputs 按稳定键排序边与路线（solve 用，
-## 旧入口 analyze 保留表序枚举）。
-func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false) -> SolverReport:
+## 旧入口 analyze 保留表序枚举）；spatial 非空时在路线产出后做 48/64/80 px
+## 站位复验（issue 22，旧入口 analyze 不做空间分层）。
+func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false, spatial: SolverSpatialData = null) -> SolverReport:
 	_facing = facing
 	_start = start
+	_pin_dx = PIN_DX
 	var report := SolverReport.new()
 	report.scope = SCOPE_TEXT
 	report.verified_facings = [facing]
 	report.table_lines = _table_summary_lines()
 	report.start_lines = _start_state_lines()
+	if spatial != null:
+		report.start_lines.append("空间验证：已提供空间数据——地面站位 × 48/64/80 px 身体中心水平距离网格（验证面向与结果见空间分层节）")
 	report.first_candidates = _first_candidates()
 	report.binding_lines = _binding_variant_lines()
 	if _table_has_throw:
@@ -545,6 +706,8 @@ func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false
 				report.notes.append("结构性循环 %s：%s" % [label, cycle.reason])
 			else:
 				report.notes.append("结构性循环 %s 在逐圈模拟中断开，不构成有效循环：%s" % [label, cycle.reason])
+	if spatial != null:
+		_verify_routes_spatial(report, contexts, edge_kinds)
 	report.safe = report.cycles.is_empty()
 	if sort_outputs:
 		## 稳定排序（issue 19）：排序键含全部并列维度（from/to/kind 唯一、路线标签唯一），
@@ -1828,22 +1991,30 @@ func _walk_routes(node_id: String, path: Array[String], adj: Dictionary, routes:
 			routes.append(route)
 
 
-## 路线模拟：搜索一组空中段延迟，使整条链的每次接续都在真实结算中成立；
-## 每次取消都在命中确认当帧（w=0）消费，落地接续键压在预测的落地帧上。
-func _simulate_route(route_ids: Array[String], contexts: Dictionary, edge_kinds: Dictionary) -> SolverRoute:
-	var route := SolverRoute.new()
-	route.move_ids = route_ids.duplicate()
+## 路线的单次完整模拟：入口上下文 + 逐边接续链，空中段延迟逐向量搜索（每次
+## 取消都在命中确认当帧 w=0 消费，落地接续键压在预测的落地帧上）。空间复验
+## （issue 22）换钉位间距后复用同一入口——timing 与 spatial 两层结论出自
+## 同一套真实结算。
+func _route_run(route_ids: Array[String], contexts: Dictionary, edge_kinds: Dictionary) -> Dictionary:
 	var context: Array[ChainLink] = contexts.get(route_ids[0], [])
 	if context.is_empty():
-		route.move_ids = []
-		return route
+		return _empty_run("路线起点 %s 无合法入口上下文" % route_ids[0])
 	var links := _cloned_context_links(context)
 	for i in range(1, route_ids.size()):
 		var kind: EdgeKind = edge_kinds.get("%s|%s" % [route_ids[i - 1], route_ids[i]], EdgeKind.CANCEL)
 		links.append_array(_links_for_edge(route_ids[i - 1], route_ids[i], kind))
 	var adjustable := _adjustable_indices(links)
-	var run := _delay_search(links, adjustable, adjustable.size(), {})
+	return _delay_search(links, adjustable, adjustable.size(), {})
+
+
+## 路线对象构造：单次模拟结果转为可读路线——完全成立记 timing_valid 并携带
+## 逐帧输入/命中/伤害；中途断链则截断到已验证前缀并用注记说明断点。
+func _simulate_route(route_ids: Array[String], contexts: Dictionary, edge_kinds: Dictionary) -> SolverRoute:
+	var route := SolverRoute.new()
+	route.move_ids = route_ids.duplicate()
+	var run := _route_run(route_ids, contexts, edge_kinds)
 	if run["ok"]:
+		route.timing_valid = true
 		route.hit_frames = run["hit_frames"]
 		route.inputs = run["compiled"]["inputs"]
 		route.combo_hits = run["session"].combo_hits
@@ -1852,10 +2023,45 @@ func _simulate_route(route_ids: Array[String], contexts: Dictionary, edge_kinds:
 				and run["ended_reasons"][run["ended_reasons"].size() - 1] == CombatEvent.ComboEndReason.FINISHER:
 			route.note = "收尾结束路线，保留木桩倒地处理"
 	else:
+		route.timing_valid = false
 		var verified: int = run["verified"]
 		route.move_ids = route_ids.slice(0, verified)
 		route.note = "路线在第 %d 招后断开（%s），路线在此截断" % [mini(verified + 1, route_ids.size()), run["reason"]]
 	return route
+
+
+# --- 空间分层（issue 22：timing-valid 之上的可选空间证明）---
+
+
+## 逐条复验 timing-valid 路线：换入 48/64/80 px 钉位（本面向）重跑同一套逐帧
+## 结算——命中框与身体矩形的相交由真实 CombatSession 判定。时序未成立的路线
+## 不作空间复验（时序失败不标作空间失败）；失败按站位记录，面向镜像由
+## solve() 的签名对拍保证，不按面向重复罗列。
+func _verify_routes_spatial(report: SolverReport, contexts: Dictionary, edge_kinds: Dictionary) -> void:
+	for route in report.routes:
+		if not route.timing_valid:
+			continue
+		var failures: Array[String] = []
+		for distance in SPATIAL_PROBE_DISTANCES:
+			_pin_dx = distance
+			var run := _route_run(route.move_ids, contexts, edge_kinds)
+			if not run["ok"]:
+				failures.append("%d px：%s" % [distance, _spatial_failure_text(run)])
+		_pin_dx = PIN_DX
+		route.spatial_state = SolverRoute.SpatialState.VALID if failures.is_empty() \
+			else SolverRoute.SpatialState.INVALID
+		route.spatial_failures = failures
+
+
+## 空间失败的具体条件：挥空＝招式已起手但命中框未与木桩身体矩形相交（站位
+## 太远，碰撞条件不成立）；其余断链如实附原始原因——站位已点名，不把它
+## 伪装成碰撞 miss。
+func _spatial_failure_text(run: Dictionary) -> String:
+	if run["break_kind"] == "whiff":
+		return "第 %d 招（%s）已起手但命中框未与木桩身体矩形相交（碰撞条件不成立）" % [
+			run["verified"] + 1, run["next_expected_move"],
+		]
+	return "该站位复验断链（%s）" % run["reason"]
 
 
 # --- 循环 ---
@@ -1995,7 +2201,7 @@ func _proof_inputs(run: Dictionary) -> Array[ScheduledInput]:
 func _new_session() -> CombatSession:
 	var session := CombatSession.new(_table)
 	session.player_facing = _facing
-	session.dummy_position = session.player_position + Vector2(_facing * PIN_DX, 0.0)
+	session.dummy_position = session.player_position + Vector2(_facing * _pin_dx, 0.0)
 	if _is_air_start():
 		session.step(FrameInput.make(0, true, ""))
 		_pin_dummy(session)
@@ -2005,10 +2211,11 @@ func _new_session() -> CombatSession:
 	return session
 
 
-## 几何接触是求解前提而非证明对象：每帧把木桩钉回玩家面前的横向间距（面向侧），
-## 只保留垂直方向的真实浮空/落地物理。
+## 几何接触是求解前提而非证明对象：每帧把木桩钉回玩家面前的横向间距（面向侧，
+## timing 探针 = PIN_DX，空间复验 = 当前站位档），只保留垂直方向的真实浮空/
+## 落地物理。
 func _pin_dummy(session: CombatSession) -> void:
-	session.dummy_position.x = session.player_position.x + session.player_facing * PIN_DX
+	session.dummy_position.x = session.player_position.x + session.player_facing * _pin_dx
 
 
 func _dummy_pursuable(session: CombatSession) -> bool:
