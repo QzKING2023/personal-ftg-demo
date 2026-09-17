@@ -1,6 +1,9 @@
 class_name ComboSolver
 extends RefCounted
 ## 开发期 Combo Solver：地面与空中接续验证、有限资源区分与循环报告（旧 ftg-combo issue 06 + 07）。
+## 正式入口是 solve()（ftg-combat-foundation issue 19）：接受共享招式表、可选显式起始
+## 战斗状态与搜索选项，默认左右面向分别验证并镜像对拍，输出稳定排序的候选、起始
+## 状态说明与真实键位操作说明；analyze()/analyze_manifest() 保留为旧接口（表序枚举）。
 ## 只读招式数据，用一次性 CombatSession 探针得出与运行时一致的接续结论——
 ## 前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生、jump cancel 与
 ## 落地接缝都在真实结算中检验，不在 Solver 里复刻第二套帧物理。
@@ -14,6 +17,11 @@ extends RefCounted
 
 ## 探针站位：玩家中心与木桩中心的横向间距（命中框中段，面向侧，几何接触假设）。
 const PIN_DX := 70.0
+## 动作键 → 物理键（操作说明用）：与训练场 main.gd 的 ACTION_PHYSICAL_KEYS 及
+## project.godot 输入映射保持一致（tests/test_solver_entry.gd 断言两处不漂移）。
+const ACTION_PHYSICAL_KEYS := {"A": "U", "B": "I", "C": "K", "D": "J"}
+## 镜像对拍失败时报告的差异节名（issue 19）。
+const _SECTION_LABELS := {"edges": "接续边", "routes": "路线", "cycles": "循环"}
 ## 逐圈模拟的观测上限（圈数/帧数）。仅用于防止死循环，不是连段语义的一部分；
 ## 达到上限仍未断链的回边保守上报为循环（宁可误报，不可掩盖）。
 const MAX_CYCLE_LAPS := 8
@@ -126,6 +134,31 @@ class SolverCycle extends RefCounted:
 		return " → ".join(route) + " → 回到 " + route[0]
 
 
+## 起始战斗状态（issue 19）：分析起点的显式描述。
+## 缺省（null）＝地面中立、空输入缓存/方向历史、地面中立木桩、固定探针接触位；
+## 中间状态必须由调用方显式提供——空中姿态以确定性探针序（Space 垂直跳 + 4f
+## 起跳准备 + N 空中帧）带入，首招候选随之切换为该姿态下当前可执行的招式。
+class SolverStartState extends RefCounted:
+	## 起始姿态：地面中立（默认）或空中（显式中间状态）。
+	var stance: MoveData.Stance = MoveData.Stance.GROUND
+	## 空中起始时已消耗的空中帧数（0 = 自首个空中帧起分析）。
+	var air_frames := 0
+
+
+## 搜索选项（issue 19）：共享资源表、可选显式起始状态与验证面向。
+## move_table 非空时优先于 manifest_path（程序注入实验表，不经过 MoveTable 校验）；
+## facings 为空时默认 [1, -1]——左右面向分别验证并镜像对拍。
+class SolverOptions extends RefCounted:
+	## 共享招式表 manifest（与训练场同一份已校验数据）。
+	var manifest_path := MoveTable.DEFAULT_MANIFEST_PATH
+	## 显式注入表（可选；优先于 manifest）。
+	var move_table := {}
+	## 起始战斗状态（null = 默认地面中立）。
+	var start: SolverStartState = null
+	## 要验证的面向列表（默认左右都验证；±1 之外无定义）。
+	var facings: Array[int] = [1, -1]
+
+
 ## 分析报告：接续边、可读路线、循环与可读文本。refused = 招式表未通过校验，
 ## Solver 拒绝分析且不产出任何结论（与训练场观察同一拒绝原因，issue 11）。
 class SolverReport extends RefCounted:
@@ -138,18 +171,39 @@ class SolverReport extends RefCounted:
 	var notes: Array[String] = []
 	var refused := false
 	var refusal_reason := ""
+	## 拒绝报告的修正建议（表非法 → 修资源；起始状态非法 → 调用方调整选项）。
+	var refusal_advice := ""
 	## 共享招式表摘要行（设计者核对资源编辑是否进入报告，issue 11）。
 	var table_lines: Array[String] = []
+	## 起始状态说明（issue 19）：缺省/显式起始、固定接触位、验证面向与镜像结论。
+	var start_lines: Array[String] = []
+	## 首招候选：起始状态下当前可执行的单键招式（稳定 id 序；投与空中派生见注）。
+	var first_candidates: Array[String] = []
+	## 操作说明：逐路线的真实键位回放指引（方向键/Space/动作键 + 等待帧），按验证面向分节。
+	var guide_lines: Array[String] = []
+	## 本次报告验证过的面向（+1 右 / -1 左）。
+	var verified_facings: Array[int] = []
+	## 多面向验证的镜像一致性（单面向恒为 true）。
+	var mirror_consistent := true
 
 	func to_lines() -> Array[String]:
 		var lines: Array[String] = []
 		lines.append("=== Combo Solver：地面与空中接续验证 ===")
 		if refused:
-			lines.append("拒绝分析：招式表未通过校验——" + refusal_reason)
-			lines.append("修改招式资源后重新分析；Solver 与训练场使用同一份 manifest，两处会同步拒绝。")
+			lines.append(summary)
+			if refusal_advice != "":
+				lines.append(refusal_advice)
 			return lines
 		lines.append(summary)
 		lines.append(scope)
+		lines.append("--- 起始状态 ---")
+		for line in start_lines:
+			lines.append(line)
+		lines.append("--- 首招候选 ---")
+		if first_candidates.is_empty():
+			lines.append("（起始状态没有可单键起手的招式）")
+		for line in first_candidates:
+			lines.append(line)
 		lines.append("--- 共享招式表 ---")
 		if table_lines.is_empty():
 			lines.append("（招式表为程序注入，无共享资源摘要）")
@@ -164,15 +218,19 @@ class SolverReport extends RefCounted:
 		if routes.is_empty():
 			lines.append("（无可读路线）")
 		for route in routes:
-			var frames := ", ".join(route.hit_frames.map(func(frame: int) -> String: return str(frame)))
 			var suffix := "（%s）" % route.note if route.note != "" else ""
-			lines.append("%s：命中帧 %s，%d hit，伤害 %.1f%s" % [route.label(), frames, route.combo_hits, route.total_damage, suffix])
+			lines.append("%s：命中帧 %s，%d hit，伤害 %.1f%s" % [
+				route.label(), ComboSolver._hit_frames_text(route.hit_frames), route.combo_hits, route.total_damage, suffix,
+			])
 		lines.append("--- 循环 ---")
 		if cycles.is_empty():
 			lines.append("未发现可无限重复的有效循环。")
 		for cycle in cycles:
 			var period := ("周期 %d 帧，" % cycle.period_frames) if cycle.period_frames > 0 else ""
 			lines.append("%s：%s%s" % [cycle.label(), period, cycle.reason])
+		lines.append("--- 操作说明 ---")
+		for line in guide_lines:
+			lines.append(line)
 		for note in notes:
 			lines.append("注：%s" % note)
 		return lines
@@ -181,6 +239,10 @@ class SolverReport extends RefCounted:
 var _table: Dictionary = {}
 ## 表内是否含普通投（B/C 成员键因此有组合等待；issue 17）。
 var _table_has_throw := false
+## 本次分析运行的验证面向（+1 右 / -1 左；探针钉位与方向喂入按它镜像）。
+var _facing := 1
+## 显式起始战斗状态（null = 默认地面中立；issue 19）。
+var _start: SolverStartState = null
 
 
 func _init(move_table: Dictionary) -> void:
@@ -212,21 +274,141 @@ static func analyze(move_table: Dictionary = {}) -> SolverReport:
 	return ComboSolver.new(table)._analyze()
 
 
+## 正式入口（issue 19）：接受共享资源表、可选显式起始战斗状态与搜索选项。
+## 缺省起始状态为地面中立（空输入缓存/方向历史、地面中立木桩、固定探针接触位）；
+## 默认左右面向分别验证，并以相对输入签名镜像对拍确认两侧结果对称；显式传入
+## 空中等中间状态时，首招候选随之切换为该状态下当前可执行的招式。一次性探针不
+## 修改任何活动会话；非法表与训练场观察同一拒绝原因（issue 11）。
+static func solve(options: SolverOptions = null) -> SolverReport:
+	var opts := options if options != null else SolverOptions.new()
+	if opts.start != null and opts.start.stance == MoveData.Stance.AIR \
+			and (opts.start.air_frames < 0 or opts.start.air_frames >= GameParams.PLAYER_JUMP_AIRTIME_FRAMES):
+		return _refused_start_state("air_frames=%d 超出普通跳 %d 帧滞空（落地后不再是空中姿态）" % [
+			opts.start.air_frames, GameParams.PLAYER_JUMP_AIRTIME_FRAMES,
+		])
+	var table := opts.move_table
+	if table.is_empty():
+		var result := MoveTable.load_manifest(opts.manifest_path)
+		if not result.ok:
+			return _refused_report(result)
+		table = result.moves
+	var facings: Array[int] = opts.facings.duplicate() if not opts.facings.is_empty() else [1, -1]
+	var primary := ComboSolver.new(table)._analyze(facings[0], opts.start, true)
+	var facing_texts: Array[String] = []
+	for facing in facings:
+		facing_texts.append(_facing_text(facing))
+	primary.start_lines.append("验证面向：%s" % "、".join(facing_texts))
+	var primary_sections := _signature_sections(primary, facings[0])
+	for i in range(1, facings.size()):
+		var run := ComboSolver.new(table)._analyze(facings[i], opts.start, true)
+		primary.verified_facings.append(facings[i])
+		var sections := _signature_sections(run, facings[i])
+		var diff: Array[String] = []
+		for section in ["edges", "routes", "cycles"]:
+			if sections[section] != primary_sections[section]:
+				diff.append(_SECTION_LABELS[section])
+		if diff.is_empty():
+			primary.notes.append("面向 %s 镜像验证一致：接续边/路线/循环与相对输入在两侧完全对称" % _facing_text(facings[i]))
+		else:
+			primary.mirror_consistent = false
+			primary.notes.append("面向 %s 与面向 %s 的%s结果不一致——镜像对称被打破，请回报该差异" % [
+				_facing_text(facings[i]), _facing_text(facings[0]), "、".join(diff),
+			])
+		primary.guide_lines.append_array(run.guide_lines)
+	if facings.size() > 1:
+		primary.summary += "左右面向分别验证%s。" % ("，镜像一致" if primary.mirror_consistent else "，但结果不一致（见注）")
+	return primary
+
+
+static func _facing_text(facing: int) -> String:
+	return "右（+1，玩家在木桩左侧）" if facing == 1 else "左（-1，玩家在木桩右侧）"
+
+
+## 镜像对拍的相对签名：把逐帧输入按各自面向折算成相对方向后逐节比较——
+## 左右两次运行只有「世界轴镜像」之别时应完全相等。落地接续边的对齐窗口与
+## 回放样本、路线的断链注记都参与签名，面向相关的差异不会被漏报。
+static func _signature_sections(report: SolverReport, facing: int) -> Dictionary:
+	var edge_parts: Array[String] = []
+	for edge in report.edges:
+		var align_parts: Array[String] = []
+		for spec in edge.align_inputs:
+			align_parts.append("%d/%s/%s/%d" % [
+				spec.frame, spec.key, str(spec.jump), _relative_digit(spec.axis, spec.down, facing),
+			])
+		edge_parts.append("%s>%s:%d:%s:%d:%d:%d:%d:%d:%d:%s:%s" % [
+			edge.from_id, edge.to_id, edge.kind, str(edge.valid),
+			edge.wait_from, edge.wait_to, edge.hit_age, edge.recover_age,
+			edge.align_from, edge.align_to, edge.reason, ";".join(align_parts),
+		])
+	var route_parts: Array[String] = []
+	for route in report.routes:
+		var input_parts: Array[String] = []
+		for spec in route.inputs:
+			input_parts.append("%d/%s/%s/%d" % [
+				spec.frame, spec.key, str(spec.jump), _relative_digit(spec.axis, spec.down, facing),
+			])
+		route_parts.append("%s#%s#%d#%.1f#%s#%s" % [
+			route.label(), str(route.hit_frames), route.combo_hits, route.total_damage,
+			";".join(input_parts), route.note,
+		])
+	var cycle_parts: Array[String] = []
+	for cycle in report.cycles:
+		cycle_parts.append("%s#%d#%s#%s#%s" % [
+			cycle.label(), cycle.period_frames, str(cycle.proven), str(cycle.sustained), cycle.reason,
+		])
+	return {"edges": "|".join(edge_parts), "routes": "|".join(route_parts), "cycles": "|".join(cycle_parts)}
+
+
+## 世界轴输入按面向折算的小键盘相对方向（前 6 / 后 4 / 下 2 / 斜 1、3 / 中立 5）。
+static func _relative_digit(axis: int, down: bool, facing: int) -> int:
+	var horizontal := 0
+	if axis == facing:
+		horizontal = 1
+	elif axis == -facing:
+		horizontal = -1
+	return 5 + horizontal - (3 if down else 0)
+
+
 static func _refused_report(result) -> SolverReport:
+	var report := _refused_base(result.first_error())
+	report.summary = "招式表未通过校验，拒绝分析：%s" % report.refusal_reason
+	report.refusal_advice = "修改招式资源后重新分析；Solver 与训练场使用同一份 manifest，两处会同步拒绝。"
+	return report
+
+
+## 显式起始状态非法（如 air_frames 超出滞空）：拒绝分析并指出修正方向，
+## 不静默钳制到最近合法值——错误请求不应伪装成另一种起始条件。
+static func _refused_start_state(reason: String) -> SolverReport:
+	var report := _refused_base(reason)
+	report.summary = "显式起始状态非法，拒绝分析：%s" % reason
+	report.refusal_advice = "调整 SolverOptions.start 后重新分析（空中起始的 air_frames 须在 0 到滞空帧数-1 之间）。"
+	return report
+
+
+static func _refused_base(reason: String) -> SolverReport:
 	var report := SolverReport.new()
 	report.refused = true
-	report.refusal_reason = result.first_error()
-	report.summary = "招式表未通过校验，拒绝分析：%s" % report.refusal_reason
+	report.refusal_reason = reason
 	report.scope = SCOPE_TEXT
 	return report
 
 
 # --- 分析主体 ---
 
-func _analyze() -> SolverReport:
+## 单面向一次完整分析：facing 决定探针钉位与方向喂入的镜像方向；start 为显式
+## 起始状态（null = 默认地面中立）；sort_outputs 按稳定键排序边与路线（solve 用，
+## 旧入口 analyze 保留表序枚举）。
+func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false) -> SolverReport:
+	_facing = facing
+	_start = start
 	var report := SolverReport.new()
 	report.scope = SCOPE_TEXT
+	report.verified_facings = [facing]
 	report.table_lines = _table_summary_lines()
+	report.start_lines = _start_state_lines()
+	report.first_candidates = _first_candidates()
+	if _table_has_throw:
+		report.notes.append("普通投是 B+C 组合输入，无单键起手，不在首招候选（组合输入调度不在本入口范围）")
 	var contexts := _build_contexts()
 	var timing_cache := {}
 	var valid_adj := {}
@@ -257,10 +439,10 @@ func _analyze() -> SolverReport:
 					var key := "%s|%s" % [from_id, to_id]
 					if not edge_kinds.has(key):
 						edge_kinds[key] = kind
-	## 图的路线起点：可用普通动作键（5X）起手、无方向派生的地面招式（按表内顺序，确定性枚举）。
+	## 图的路线起点：起始姿态下单键可起手、无方向派生的打击招式（按表内顺序，确定性枚举）。
 	var sources: Array[String] = []
 	for move_id in _table:
-		if _is_plain_ground_id(move_id):
+		if _is_plain_start_id(move_id):
 			sources.append(move_id)
 	for start_id in sources:
 		_walk_routes(start_id, [start_id], valid_adj, report.routes, contexts, edge_kinds)
@@ -273,7 +455,15 @@ func _analyze() -> SolverReport:
 				" → ".join(cycle_ids) + " → 回到 " + cycle_ids[0], cycle.reason,
 			])
 	report.safe = report.cycles.is_empty()
+	if sort_outputs:
+		## 稳定排序（issue 19）：排序键含全部并列维度（from/to/kind 唯一、路线标签唯一），
+		## 与枚举顺序无关的确定输出，供跨运行/跨面向对拍。
+		report.edges.sort_custom(func(a: SolverEdge, b: SolverEdge) -> bool:
+			return "%s|%s|%d" % [a.from_id, a.to_id, a.kind] < "%s|%s|%d" % [b.from_id, b.to_id, b.kind])
+		report.routes.sort_custom(func(a: SolverRoute, b: SolverRoute) -> bool:
+			return a.label() < b.label())
 	report.summary = _build_summary(report)
+	report.guide_lines = _guide_lines(report)
 	return report
 
 
@@ -315,15 +505,169 @@ func _build_summary(report: SolverReport) -> String:
 	]
 
 
-# --- 上下文：如何从中立地面按出某招 ---
+# --- 起始状态说明与首招候选（issue 19）---
 
-## 每个可达招式的入口接续链：地面普通招式/方向派生直接起手；空中招式优先经
-## 表内第一个可达 launcher 的 jump cancel 进入，其次经已可达空中招式的取消进入。
-func _build_contexts() -> Dictionary:
-	var contexts := {}
+
+func _is_air_start() -> bool:
+	return _start != null and _start.stance == MoveData.Stance.AIR
+
+
+## 起始状态说明：缺省/显式起始、空缓存/方向历史、木桩状态与固定接触位。
+## 验证面向与镜像结论由 solve() 在多面向运行后追加。
+func _start_state_lines() -> Array[String]:
+	var lines: Array[String] = []
+	if _is_air_start():
+		lines.append("起始状态：显式提供——玩家空中姿态，自第 %d 个空中帧起分析（探针序：Space 垂直跳 + %d 帧起跳准备 + %d 空中帧）；空输入缓存/空方向历史；木桩地面中立" % [
+			_start.air_frames + 1, GameParams.PLAYER_PREJUMP_FRAMES, _start.air_frames,
+		])
+	elif _start != null:
+		lines.append("起始状态：显式提供——玩家地面中立；空输入缓存/空方向历史；木桩地面中立")
+	else:
+		lines.append("起始状态：默认地面中立——玩家地面中立；空输入缓存/空方向历史；木桩地面中立")
+	lines.append("固定探针接触位：玩家与木桩身体中心水平间距 %d px（几何接触是假设，不构成空间证明）" % PIN_DX)
+	return lines
+
+
+## 首招候选：起始姿态下当前可执行、且可用本 Solver 输入表达（单键 + 方向喂入）
+## 起手的打击招式，按稳定 id 序输出。空中招式在默认地面起始下不出现（只能经配置
+## 的 jump cancel 进入）；显式空中起始下地面招式同理不出现。
+func _first_candidates() -> Array[String]:
+	var ids: Array[String] = []
 	for move_id in _table:
 		var move := _table[move_id] as MoveData
-		if move == null or move.stance != MoveData.Stance.GROUND:
+		if move == null or move.stance != _start_stance() or not move.is_strike():
+			continue
+		if _start_key_for(move_id) == "":
+			continue
+		ids.append(move_id)
+	ids.sort()
+	var lines: Array[String] = []
+	for move_id in ids:
+		var move := _table[move_id] as MoveData
+		var physical: String = ACTION_PHYSICAL_KEYS.get(move.action_key, move.action_key)
+		if move.direction_derivation == "":
+			lines.append("%s｜%s 键（%s）" % [move_id, physical, move.action_key])
+		else:
+			var digits := move.direction_derivation.left(move.direction_derivation.length() - 1)
+			lines.append("%s｜方向 %s + %s 键（%s）" % [move_id, digits, physical, move.action_key])
+	return lines
+
+
+# --- 操作说明（issue 19：真实键位回放指引）---
+
+
+## 操作说明分节：每个验证面向一节——面向/站位/起始头 + 键位图例 + 逐路线回放行。
+## 相对方向（前/后/下）按本节面向折算成真实物理键，等待帧写明两次输入之间的空档。
+func _guide_lines(report: SolverReport) -> Array[String]:
+	var lines: Array[String] = []
+	lines.append("【%s｜%s｜与木桩中心间距 %d px】" % [_facing_label(), _start_guide_label(), PIN_DX])
+	lines.append("键位：%s" % _key_legend())
+	if _is_air_start():
+		lines.append("空中起始探针序：先 Space 垂直起跳 → %d 帧起跳准备 → %d 空中帧；本节路线帧号自离地后第 %d 空中帧起计" % [
+			GameParams.PLAYER_PREJUMP_FRAMES, _start.air_frames, _start.air_frames + 1,
+		])
+	for route in report.routes:
+		lines.append(_route_guide_line(route))
+	return lines
+
+
+func _facing_label() -> String:
+	return "面向" + _facing_text(_facing)
+
+
+func _start_guide_label() -> String:
+	if _is_air_start():
+		return "空中起始（第 %d 空中帧起）" % (_start.air_frames + 1)
+	return "地面中立起始"
+
+
+func _forward_key() -> String:
+	return "D" if _facing == 1 else "A"
+
+
+func _back_key() -> String:
+	return "A" if _facing == 1 else "D"
+
+
+func _key_legend() -> String:
+	# 物理键与方向箭头成对出现（左面向下前 = A/←、后 = D/→，随面向互换）。
+	var forward_arrow := "→" if _facing == 1 else "←"
+	var back_arrow := "←" if _facing == 1 else "→"
+	return "前=%s/%s 后=%s/%s 下=S/↓ 跳=Space 动作 U/I/K/J=A/B/C/D" % [
+		_forward_key(), forward_arrow, _back_key(), back_arrow,
+	]
+
+
+## 一条路线的回放行：输入表逐帧转为真实键操作，帧间空档以「等 N 帧」标注；
+## 动作键按下按链接顺序对应路线中的招式，方向喂入以相对方向 + 物理键双标注。
+func _route_guide_line(route: SolverRoute) -> String:
+	var header := "%s（%d hit · 伤害 %.1f · 命中帧 %s）" % [
+		route.label(), route.combo_hits, route.total_damage, _hit_frames_text(route.hit_frames),
+	]
+	if route.inputs.is_empty():
+		return header + "：（断链路线，无可回放输入%s）" % (("——" + route.note) if route.note != "" else "")
+	var ops: Array[String] = []
+	var move_idx := 0
+	var prev := 0
+	for spec in route.inputs:
+		if spec.frame - prev > 1:
+			ops.append("等 %d 帧" % (spec.frame - prev - 1))
+		if spec.key != "":
+			var move_id := route.move_ids[move_idx] if move_idx < route.move_ids.size() else ""
+			move_idx += 1
+			ops.append("F%d 按 %s（%s）" % [spec.frame, ACTION_PHYSICAL_KEYS.get(spec.key, spec.key), move_id])
+		elif spec.jump:
+			ops.append("F%d Space（起跳）" % spec.frame)
+		else:
+			var digit := _relative_digit(spec.axis, spec.down, _facing)
+			ops.append("F%d %s[%s]" % [spec.frame, _digit_label(digit), _direction_keys(digit)])
+		prev = spec.frame
+	return header + "：" + "；".join(ops)
+
+
+static func _hit_frames_text(hit_frames: Array[int]) -> String:
+	return ", ".join(hit_frames.map(func(frame: int) -> String: return str(frame)))
+
+
+func _digit_label(digit: int) -> String:
+	match digit:
+		1:
+			return "↓+后"
+		2:
+			return "↓"
+		3:
+			return "↓+前"
+		4:
+			return "后"
+		6:
+			return "前"
+		_:
+			return "·"
+
+
+## 相对方向数字对应的真实物理键（本节面向下 前/后的世界键随面向互换）。
+func _direction_keys(digit: int) -> String:
+	var keys: Array[String] = []
+	if digit == 1 or digit == 2 or digit == 3:
+		keys.append("S")
+	if digit == 3 or digit == 6:
+		keys.append(_forward_key())
+	elif digit == 1 or digit == 4:
+		keys.append(_back_key())
+	return "+".join(keys)
+
+
+# --- 上下文：如何从起始状态按出某招 ---
+
+## 每个可达招式的入口接续链：起始姿态（默认地面；显式空中起始为空中）的单键
+## 招式直接起手；其余姿态经配置接缝增长——空中优先经表内第一个可达 launcher 的
+## jump cancel 进入，其次同姿态取消，显式落地接续把地面招式接在空中段后。
+func _build_contexts() -> Dictionary:
+	var contexts := {}
+	var stance := _start_stance()
+	for move_id in _table:
+		var move := _table[move_id] as MoveData
+		if move == null or move.stance != stance:
 			continue
 		var key := _start_key_for(move_id)
 		if key == "":
@@ -342,18 +686,29 @@ func _build_contexts() -> Dictionary:
 			if contexts.has(move_id):
 				continue
 			var move := _table[move_id] as MoveData
-			if move == null or move.stance != MoveData.Stance.AIR or _start_key_for(move_id) == "":
+			if move == null or _start_key_for(move_id) == "":
 				continue
-			var links := _air_context_via_jump(move_id, contexts)
+			var links := _context_via_jump(move_id, contexts)
 			if links.is_empty():
-				links = _air_context_via_cancel(move_id, contexts)
+				links = _context_via_cancel(move_id, contexts)
+			if links.is_empty():
+				links = _context_via_landing(move_id, contexts)
 			if not links.is_empty():
 				contexts[move_id] = links
 				grew = true
 	return contexts
 
 
-func _air_context_via_jump(move_id: String, contexts: Dictionary) -> Array[ChainLink]:
+func _start_stance() -> MoveData.Stance:
+	if _start != null:
+		return _start.stance
+	return MoveData.Stance.GROUND
+
+
+func _context_via_jump(move_id: String, contexts: Dictionary) -> Array[ChainLink]:
+	var target := _table[move_id] as MoveData
+	if target == null or target.stance != MoveData.Stance.AIR:
+		return []
 	for launcher_id in _table:
 		var launcher := _table[launcher_id] as MoveData
 		if launcher == null or launcher.stance != MoveData.Stance.GROUND:
@@ -368,10 +723,13 @@ func _air_context_via_jump(move_id: String, contexts: Dictionary) -> Array[Chain
 	return []
 
 
-func _air_context_via_cancel(move_id: String, contexts: Dictionary) -> Array[ChainLink]:
+func _context_via_cancel(move_id: String, contexts: Dictionary) -> Array[ChainLink]:
+	var target := _table[move_id] as MoveData
+	if target == null:
+		return []
 	for source_id in _table:
 		var source := _table[source_id] as MoveData
-		if source == null or source.stance != MoveData.Stance.AIR:
+		if source == null or source.stance != target.stance:
 			continue
 		if not (source.cancel_targets as Array[String]).has(move_id):
 			continue
@@ -379,6 +737,24 @@ func _air_context_via_cancel(move_id: String, contexts: Dictionary) -> Array[Cha
 			continue
 		var links: Array[ChainLink] = (contexts[source_id] as Array[ChainLink]).duplicate()
 		links.append_array(_links_for_edge(source_id, move_id, EdgeKind.CANCEL))
+		return links
+	return []
+
+
+func _context_via_landing(move_id: String, contexts: Dictionary) -> Array[ChainLink]:
+	var target := _table[move_id] as MoveData
+	if target == null or target.stance != MoveData.Stance.GROUND:
+		return []
+	for source_id in _table:
+		var source := _table[source_id] as MoveData
+		if source == null or source.stance != MoveData.Stance.AIR:
+			continue
+		if not (source.landing_cancel_targets as Array[String]).has(move_id):
+			continue
+		if not contexts.has(source_id):
+			continue
+		var links: Array[ChainLink] = (contexts[source_id] as Array[ChainLink]).duplicate()
+		links.append_array(_links_for_edge(source_id, move_id, EdgeKind.LANDING_CANCEL))
 		return links
 	return []
 
@@ -458,9 +834,9 @@ func _build_edge(from_id: String, to_id: String, kind: EdgeKind, contexts: Dicti
 	if _start_key_for(to_id) == "":
 		edge.reason = "目标无法由动作键起手，超出本 Solver 的输入表达范围"
 		return edge
-	var context: Array[ChainLink] = contexts.get(from_id, [])
+	var context: Array[ChainLink] = contexts.get(from_id, [] as Array[ChainLink])
 	if context.is_empty():
-		edge.reason = "无法从中立地面构造到达 %s 的合法上下文（jump cancel / 取消链不可达）" % from_id
+		edge.reason = "无法从起始状态构造到达 %s 的合法上下文（起始姿态 / jump cancel / 取消 / 落地接续链不可达）" % from_id
 		return edge
 	match kind:
 		EdgeKind.JUMP_CANCEL:
@@ -561,7 +937,10 @@ func _fill_landing_edge(edge: SolverEdge, context: Array[ChainLink]) -> void:
 			followup_idx = i
 			break
 	if followup_idx < 0:
-		edge.reason = "落地接续上下文不包含 jump cancel 空中段（探针构造失败）"
+		if _is_air_start():
+			edge.reason = "显式空中起始暂不验证落地接缝：临界对齐搜索依赖 jump cancel 进入的空中段（属后续路线分析范围）；地面起始的默认分析覆盖该接缝"
+		else:
+			edge.reason = "落地接续上下文不包含 jump cancel 空中段（探针构造失败）"
 		return
 	## 来源空中招式（如 jB）在上下文中的取消链位置：issue 15 起临界帧对齐
 	## （命中恰在落地帧当帧）需要同时延迟空中起手与取消等待——起跳准备占用
@@ -696,7 +1075,7 @@ func _compile_chain(links: Array[ChainLink]) -> Dictionary:
 	var last_hit := 0
 	var jump_frame := -1
 	var land_frame := -1
-	var facing := 1
+	var facing := _facing
 	for link in links:
 		var press := -1
 		match link.trigger:
@@ -1157,9 +1536,19 @@ func _simulate_cycle(cycle_ids: Array[String], contexts: Dictionary, edge_kinds:
 
 
 ## 私有一次性会话：与训练场会话无关，Solver 不修改任何运行时战斗状态。
+## 起始状态在会话上一次成形：面向与钉位按验证面向镜像；显式空中起始先以
+## Space 垂直跳 + 4f 起跳准备 + N 空中帧的确定性探针序把玩家带入目标空中帧
+## （探针序本身不产生命中，分析时间轴从其后的首个正常帧计为第 1 帧）。
 func _new_session() -> CombatSession:
 	var session := CombatSession.new(_table)
-	session.dummy_position = session.player_position + Vector2(PIN_DX, 0.0)
+	session.player_facing = _facing
+	session.dummy_position = session.player_position + Vector2(_facing * PIN_DX, 0.0)
+	if _is_air_start():
+		session.step(FrameInput.make(0, true, ""))
+		_pin_dummy(session)
+		for i in GameParams.PLAYER_PREJUMP_FRAMES - 1 + _start.air_frames:
+			session.step(FrameInput.new())
+			_pin_dummy(session)
 	return session
 
 
@@ -1187,10 +1576,10 @@ func _dummy_pursuable(session: CombatSession) -> bool:
 		or session.dummy_state == CombatSession.DummyState.AIR_HITSTUN
 
 
-func _is_plain_ground_id(move_id: String) -> bool:
-	## 路线起点：地面、无方向派生、可由动作键起手的打击招式（按表内顺序，确定性枚举）。
+func _is_plain_start_id(move_id: String) -> bool:
+	## 路线起点：起始姿态、无方向派生、可由动作键起手的打击招式（按表内顺序，确定性枚举）。
 	var move := _table.get(move_id) as MoveData
-	if move == null or move.stance != MoveData.Stance.GROUND or move.direction_derivation != "":
+	if move == null or move.stance != _start_stance() or move.direction_derivation != "":
 		return false
 	return move.is_strike() and move.action_key != ""
 
