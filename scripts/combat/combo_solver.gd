@@ -8,8 +8,11 @@ extends RefCounted
 ## 前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生、jump cancel 与
 ## 落地接缝都在真实结算中检验，不在 Solver 里复刻第二套帧物理。
 ## 约束：不修改任何运行时战斗状态（所有探针使用私有会话，与训练场会话无关）；
-## 不设全局命中数或总时长上限——循环以「逐圈模拟 + 木桩时序状态重现」证明，
-## 观测上限内不断链的回边保守上报为循环，不会被上限掩盖。
+## 不设全局命中数或总时长上限——循环以「逐圈模拟 + 影响未来结算的会话状态快照
+## 重现」证明（issue 21：状态键经 CombatSession.settlement_state 覆盖双方姿态/
+## 阶段、招式帧、面向、速度、受击、连段资格、缓存、方向历史、落地与 jump 标记）。
+## 只有快照完全重现的回边才上报为循环；观测上限内不断链但未重现的回边以
+## 截断/未完成观测如实上报，不宣称完整证明。
 ## 有限资源不被视为可自动续期：玩家滞空固定且空中无二段跳，木桩浮空不被普通命中
 ## 刷新——只有每圈由真实命中重建资源的回边才能通过逐圈模拟。
 ## 几何接触是假设不是证明：探针把木桩钉在玩家面前（面向侧），不证明空间/中立/
@@ -28,16 +31,19 @@ const _GAP_CONFIG_FIELDS := {
 	EdgeKind.JUMP_CANCEL: {"field": "jump_cancel_targets", "seam": "jump cancel"},
 	EdgeKind.LANDING_CANCEL: {"field": "landing_cancel_targets", "seam": "落地接续"},
 }
-## 逐圈模拟的观测上限（圈数/帧数）。仅用于防止死循环，不是连段语义的一部分；
-## 达到上限仍未断链的回边保守上报为循环（宁可误报，不可掩盖）。
+## 逐圈模拟的观测上限（圈数/帧数）。达到上限时以截断/未完成观测上报，不把它
+## 当作完整证明（issue 21）；上限只限制观测，不是连段语义的一部分。
 const MAX_CYCLE_LAPS := 8
 const MAX_CYCLE_FRAMES := 2400
-## 单招探针观测木桩恢复的帧数上限。
+## 单招探针观测木桩恢复的帧数上限（自命中帧起算）：上限内未自然受身时，恢复
+## 年龄按截断观测标注，不伪装成实测恢复。
 const RECOVER_HORIZON := 240
-## 空中段首按延迟（相对起跳后第 1 帧）的扫描上限；超过玩家滞空的延迟必然失效。
-const MAX_AIR_DELAY := GameParams.PLAYER_JUMP_AIRTIME_FRAMES
+## 空中段首按延迟（相对起跳后第 1 帧）的扫描上限。规格冻结为 40 帧（issue 21）；
+## 它不低于玩家滞空（38 帧），超过滞空的延迟在真实结算中必然因落地作废——
+## 上限不会截掉任何可行延迟，枚举是完备的。
+const MAX_AIR_DELAY := 40
 
-const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性命中确认接续——前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生、jump cancel 与落地接缝都在真实 CombatSession 结算中检验；cancel_targets、jump_cancel_targets 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（普通命中不刷新木桩滞空、空中无二段跳），不会被当作可自动续期；循环判定不设全局命中数或总时长上限，以逐圈模拟加木桩时序状态重现证明。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。"
+const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性命中确认接续——前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生、jump cancel 与落地接缝都在真实 CombatSession 结算中检验；cancel_targets、jump_cancel_targets 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（普通命中不刷新木桩滞空、空中无二段跳），不会被当作可自动续期；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。"
 
 ## 接续边类型：普通命中确认取消 / jump cancel / 显式落地接续。
 enum EdgeKind {
@@ -104,7 +110,10 @@ class SolverEdge extends RefCounted:
 	## 目标最早命中落在命中确认后第几帧（最早取消 w=0 + 目标前摇）。
 	var hit_age := -1
 	## 木桩可追击至命中确认后第几帧（含；命中判定先于当帧恢复结算）。
+	## 240 帧恢复观测上限内未自然受身时为截断值，recover_truncated 置位。
 	var recover_age := -1
+	## 恢复年龄是否为截断观测（上限内未观测到自然受身，非实测恢复）。
+	var recover_truncated := false
 	## 落地接续专用：空中命中允许落在落地帧前 align_from–align_to 帧
 	## （align_from = 0 即命中恰在落地帧当帧——临界帧规则）。
 	var align_from := -1
@@ -139,17 +148,27 @@ class SolverRoute extends RefCounted:
 		return " → ".join(move_ids)
 
 
-## 一个经逐圈模拟验证的循环。
+## 一个经逐圈模拟验证的循环（issue 21：快照完全重现才上报为循环）。
+## 结局分类用枚举表达，不依赖 reason 措辞字符串（注记归类与汇总计数都读它）。
 class SolverCycle extends RefCounted:
+	enum Outcome { PROVEN, BROKEN, HORIZON_TRUNCATED, LAPS_EXHAUSTED }
+
 	var route: Array[String] = []
-	## 一圈的帧数；仅 proven 时有意义。
+	## 一圈的帧数；仅 PROVEN 时有意义。
 	var period_frames := -1
-	## 木桩时序状态在两圈之间完全重现（循环可无限重复的证明）。
+	## 逐圈会话状态快照完全重现（循环可无限重复的证明）；与 Outcome.PROVEN 同义。
 	var proven := false
-	## 是否上报为有效循环（proven，或观测上限内未断链的保守上报）。
-	var sustained := false
+	## 逐圈模拟结局：PROVEN＝快照重现；BROKEN＝断链；HORIZON_TRUNCATED＝帧数
+	## 上限先于 8 圈对拍到达（链条仍成立）；LAPS_EXHAUSTED＝8 圈全部命中成立但
+	## 快照未重现。后两种是「未证明且未断链」的未完成观测。
+	var outcome: Outcome = Outcome.BROKEN
 	var laps_observed := 0
 	var reason := ""
+	## 起始状态说明：分析起点（缺省/显式）与入口招式的真实键位起手方式。
+	var start_text := ""
+	## 证明回放的逐帧输入表（截到重现对拍帧为止）：回放到该帧恰好看完
+	## 「入口圈 + 重现为止的完整圈数」，逐圈状态快照可在回放中复核。
+	var inputs: Array[ScheduledInput] = []
 
 	func label() -> String:
 		return " → ".join(route) + " → 回到 " + route[0]
@@ -192,6 +211,9 @@ class SolverReport extends RefCounted:
 	var gaps: Array[SolverEdge] = []
 	var routes: Array[SolverRoute] = []
 	var cycles: Array[SolverCycle] = []
+	## 未证明且未断链的结构性循环数（截断/未完成观测；明细见 notes，
+	## 汇总措辞据此声明「不宣称完整证明」，issue 21）。
+	var incomplete_cycle_count := 0
 	var notes: Array[String] = []
 	var refused := false
 	var refusal_reason := ""
@@ -261,10 +283,12 @@ class SolverReport extends RefCounted:
 			])
 		lines.append("--- 循环 ---")
 		if cycles.is_empty():
-			lines.append("未发现可无限重复的有效循环。")
+			lines.append("未发现经逐圈状态重现证明的有效循环（结构性回边的断链/截断/未完成观测见注）。")
 		for cycle in cycles:
 			var period := ("周期 %d 帧，" % cycle.period_frames) if cycle.period_frames > 0 else ""
 			lines.append("%s：%s%s" % [cycle.label(), period, cycle.reason])
+			lines.append("  起始状态：%s" % cycle.start_text)
+			lines.append("  逐帧输入 %d 条（真实键位回放见操作说明的循环行）" % cycle.inputs.size())
 		lines.append("--- 操作说明 ---")
 		for line in guide_lines:
 			lines.append(line)
@@ -384,8 +408,14 @@ static func _signature_sections(report: SolverReport, facing: int) -> Dictionary
 		])
 	var cycle_parts: Array[String] = []
 	for cycle in report.cycles:
-		cycle_parts.append("%s#%d#%s#%s#%s" % [
-			cycle.label(), cycle.period_frames, str(cycle.proven), str(cycle.sustained), cycle.reason,
+		var input_parts: Array[String] = []
+		for spec in cycle.inputs:
+			input_parts.append("%d/%s/%s/%d" % [
+				spec.frame, spec.key, str(spec.jump), _relative_digit(spec.axis, spec.down, facing),
+			])
+		cycle_parts.append("%s#%d#%s#%d#%s#%s#%s" % [
+			cycle.label(), cycle.period_frames, str(cycle.proven),
+			cycle.laps_observed, cycle.reason, cycle.start_text, ";".join(input_parts),
 		])
 	return {
 		"edges": "|".join(edge_parts),
@@ -505,12 +535,16 @@ func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false
 		_walk_routes(start_id, [start_id], valid_adj, report.routes, contexts, edge_kinds)
 	for cycle_ids in _elementary_cycles(valid_adj):
 		var cycle := _simulate_cycle(cycle_ids, contexts, edge_kinds)
-		if cycle.sustained:
+		if cycle.outcome == SolverCycle.Outcome.PROVEN:
 			report.cycles.append(cycle)
 		else:
-			report.notes.append("结构性循环 %s 在逐圈模拟中断开，不构成有效循环：%s" % [
-				" → ".join(cycle_ids) + " → 回到 " + cycle_ids[0], cycle.reason,
-			])
+			var label: String = " → ".join(cycle_ids) + " → 回到 " + cycle_ids[0]
+			if cycle.outcome == SolverCycle.Outcome.HORIZON_TRUNCATED \
+					or cycle.outcome == SolverCycle.Outcome.LAPS_EXHAUSTED:
+				report.incomplete_cycle_count += 1
+				report.notes.append("结构性循环 %s：%s" % [label, cycle.reason])
+			else:
+				report.notes.append("结构性循环 %s 在逐圈模拟中断开，不构成有效循环：%s" % [label, cycle.reason])
 	report.safe = report.cycles.is_empty()
 	if sort_outputs:
 		## 稳定排序（issue 19）：排序键含全部并列维度（from/to/kind 唯一、路线标签唯一），
@@ -520,6 +554,8 @@ func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false
 		report.gaps.sort_custom(func(a: SolverEdge, b: SolverEdge) -> bool:
 			return _edge_sort_key(a) < _edge_sort_key(b))
 		report.routes.sort_custom(func(a: SolverRoute, b: SolverRoute) -> bool:
+			return a.label() < b.label())
+		report.cycles.sort_custom(func(a: SolverCycle, b: SolverCycle) -> bool:
 			return a.label() < b.label())
 	report.summary = _build_summary(report)
 	report.guide_lines = _guide_lines(report)
@@ -552,14 +588,17 @@ func _build_summary(report: SolverReport) -> String:
 		if edge.valid:
 			valid_count += 1
 	if report.safe:
-		return "未发现可无限重复的有效循环：接续边 %d 条（有效 %d、排除 %d），配置缺口 %d 条，可读路线 %d 条。" % [
+		var text := "未发现经逐圈状态重现证明的有效循环：接续边 %d 条（有效 %d、排除 %d），配置缺口 %d 条，可读路线 %d 条。" % [
 			report.edges.size(), valid_count, report.edges.size() - valid_count, report.gaps.size(), report.routes.size(),
 		]
+		if report.incomplete_cycle_count > 0:
+			text += "另有 %d 个结构性循环观测截断/未完成（见注），不宣称完整证明。" % report.incomplete_cycle_count
+		return text
 	var parts: Array[String] = []
 	for cycle in report.cycles:
 		var period := ("，周期 %d 帧" % cycle.period_frames) if cycle.period_frames > 0 else ""
 		parts.append(cycle.label() + period)
-	return "检测到 %d 个有效循环：%s；命中确认取消链可在木桩自然受身前无限重复，请调整招式数据。" % [
+	return "检测到 %d 个经逐圈状态重现证明的有效循环：%s；命中确认取消链可在木桩自然受身前无限重复，请调整招式数据。" % [
 		report.cycles.size(), "；".join(parts),
 	]
 
@@ -670,8 +709,8 @@ func _gap_probe_table(from_id: String, to_id: String, kind: EdgeKind) -> Diction
 
 func _gap_reason(edge: SolverEdge) -> String:
 	var config: Dictionary = _GAP_CONFIG_FIELDS[edge.kind]
-	var timing := "最早命中在命中确认后第 %d 帧，不晚于木桩恢复（第 %d 帧），有效等待 0–%d 帧" % [
-		edge.hit_age, edge.recover_age, edge.wait_to,
+	var timing := "最早命中在命中确认后第 %d 帧，不晚于木桩恢复（第 %d 帧），有效等待 0–%d 帧%s" % [
+		edge.hit_age, edge.recover_age, edge.wait_to, _recover_truncation_note(edge.recover_truncated),
 	]
 	match edge.kind:
 		EdgeKind.JUMP_CANCEL:
@@ -680,6 +719,16 @@ func _gap_reason(edge: SolverEdge) -> String:
 			timing = "空中命中可落在落地帧前 %d 帧（0＝恰在落地帧，临界规则）接地面起手" % edge.align_from
 	return "%s——经一次性探针验证成立；缺配置：%s 不在 %s.%s，%s 是运行时硬约束，补配后才成为合法接续边，不因此宣布为合法连段" % [
 		timing, edge.to_id, edge.from_id, config["field"], config["seam"],
+	]
+
+
+## 恢复观测截断附注（issue 21）：木桩在观测上限内未自然受身时，恢复年龄是
+## 截断下限不是实测恢复——如实标注，不把观测上限伪装成恢复证明。
+func _recover_truncation_note(truncated: bool) -> String:
+	if not truncated:
+		return ""
+	return "；注意：%d 帧恢复观测上限内未观测到木桩自然受身，第 %d 帧是截断下限而非实测恢复（实际恢复不早于该帧），不构成完整恢复观测" % [
+		RECOVER_HORIZON, RECOVER_HORIZON,
 	]
 
 
@@ -781,6 +830,8 @@ func _guide_lines(report: SolverReport) -> Array[String]:
 		])
 	for route in report.routes:
 		lines.append(_route_guide_line(route))
+	for cycle in report.cycles:
+		lines.append(_cycle_guide_line(cycle))
 	return lines
 
 
@@ -819,14 +870,30 @@ func _route_guide_line(route: SolverRoute) -> String:
 	]
 	if route.inputs.is_empty():
 		return header + "：（断链路线，无可回放输入%s）" % (("——" + route.note) if route.note != "" else "")
+	return header + "：" + _replay_ops_text(route.inputs, route.move_ids)
+
+
+## 一个已证明循环的逐帧回放行（与本节面向一致的真实键位）：回放截到重现对拍帧，
+## 重复执行末圈即可无限延续。
+func _cycle_guide_line(cycle: SolverCycle) -> String:
+	return "循环逐帧回放｜%s（周期 %d 帧 · 第 %d 圈起状态重现）：%s" % [
+		cycle.label(), cycle.period_frames, cycle.laps_observed,
+		_replay_ops_text(cycle.inputs, _cycle_replay_move_ids(cycle)),
+	]
+
+
+## 输入表逐帧转为真实键操作：帧间空档以「等 N 帧」标注；动作键按下按提供的
+## 招式对应表依序标注所属招式，方向喂入以相对方向 + 物理键双标注（路线与循环
+## 的回放行共用同一口径，防两处漂移）。
+func _replay_ops_text(inputs: Array[ScheduledInput], move_ids: Array[String]) -> String:
 	var ops: Array[String] = []
 	var move_idx := 0
 	var prev := 0
-	for spec in route.inputs:
+	for spec in inputs:
 		if spec.frame - prev > 1:
 			ops.append("等 %d 帧" % (spec.frame - prev - 1))
 		if spec.key != "":
-			var move_id := route.move_ids[move_idx] if move_idx < route.move_ids.size() else ""
+			var move_id := move_ids[move_idx] if move_idx < move_ids.size() else ""
 			move_idx += 1
 			ops.append("F%d 按 %s（%s）" % [spec.frame, ACTION_PHYSICAL_KEYS.get(spec.key, spec.key), move_id])
 		elif spec.jump:
@@ -835,7 +902,19 @@ func _route_guide_line(route: SolverRoute) -> String:
 			var digit := _relative_digit(spec.axis, spec.down, _facing)
 			ops.append("F%d %s[%s]" % [spec.frame, _digit_label(digit), _direction_keys(digit)])
 		prev = spec.frame
-	return header + "：" + "；".join(ops)
+	return "；".join(ops)
+
+
+## 循环回放行的招式对应表：第 n 次动作键按下属于循环中第 (n-1) mod 圈长 个招式
+## ——入口招式即 route[0]，其后沿回边逐圈推进，与逐圈链接的编排一致。
+func _cycle_replay_move_ids(cycle: SolverCycle) -> Array[String]:
+	var ids: Array[String] = []
+	var presses := 0
+	for spec in cycle.inputs:
+		if spec.key != "":
+			ids.append(cycle.route[presses % cycle.route.size()])
+			presses += 1
+	return ids
 
 
 static func _hit_frames_text(hit_frames: Array[int]) -> String:
@@ -1069,6 +1148,7 @@ func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache
 		edge.reason = "起手招式未在首个判定帧命中（探针几何假设被打破）"
 		return
 	edge.recover_age = timing["recover_age"]
+	edge.recover_truncated = timing.get("recover_truncated", false)
 	var links: Array[ChainLink] = context.duplicate()
 	links.append_array(_links_for_edge(edge.from_id, edge.to_id, EdgeKind.CANCEL))
 	var run := _run_schedule(_compile_chain(links), {})
@@ -1089,8 +1169,9 @@ func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache
 			prefix = "（方向派生 %s：取消帧前喂入方向序列）" % to_move.direction_derivation
 		elif from_move.stance == MoveData.Stance.AIR:
 			prefix = "（空中取消）"
-		edge.reason = "%s有效等待 0–%d 帧 + 目标前摇 %d 帧：最早命中在命中确认后第 %d 帧，不晚于木桩恢复（第 %d 帧），余量 %d 帧" % [
+		edge.reason = "%s有效等待 0–%d 帧 + 目标前摇 %d 帧：最早命中在命中确认后第 %d 帧，不晚于木桩恢复（第 %d 帧），余量 %d 帧%s" % [
 			prefix, edge.wait_to, to_move.startup_frames, edge.hit_age, edge.recover_age, edge.recover_age - edge.hit_age,
+			_recover_truncation_note(edge.recover_truncated),
 		]
 		return
 	var last_end: int = run["ended_reasons"][run["ended_reasons"].size() - 1] if not run["ended_reasons"].is_empty() else -1
@@ -1329,6 +1410,9 @@ func _clone_link_with_wait(link: ChainLink, wait: int) -> ChainLink:
 
 ## 单招探针：起手命中帧与木桩恢复年龄（可追击的最后一帧相对命中的年龄），按上下文进入。
 ## 年龄按正常战斗帧计：命中后的 Hitstop 冻结帧以空输入步过、不占正常帧号。
+## 恢复观测上限自命中帧起算（issue 21）：观察「命中后多少帧恢复」而非会话启动后
+## 240 帧——长上下文里的正常恢复不会被误判为截断；上限内未自然受身时按截断观测
+## 如实标注（truncated），恢复年龄是截断值而非实测恢复。
 func _source_timing(move_id: String, context: Array[ChainLink], cache: Dictionary) -> Dictionary:
 	if cache.has(move_id):
 		return cache[move_id]
@@ -1341,7 +1425,7 @@ func _source_timing(move_id: String, context: Array[ChainLink], cache: Dictionar
 			var session: CombatSession = run["session"]
 			var frame: int = run["last_frame"]
 			var recover_age := -1
-			while frame < RECOVER_HORIZON:
+			while frame < hit_frame + RECOVER_HORIZON:
 				if session.hitstop_active():
 					session.step(FrameInput.new())
 					_pin_dummy(session)
@@ -1353,9 +1437,11 @@ func _source_timing(move_id: String, context: Array[ChainLink], cache: Dictionar
 					# 命中判定先于当帧恢复结算：离开可追击状态的帧即恢复帧。
 					recover_age = frame - hit_frame
 					break
-			if recover_age == -1:
-				recover_age = RECOVER_HORIZON - hit_frame
-			timing = { "hit_frame": hit_frame, "recover_age": recover_age }
+			timing = {
+				"hit_frame": hit_frame,
+				"recover_age": RECOVER_HORIZON if recover_age == -1 else recover_age,
+				"recover_truncated": recover_age == -1,
+			}
 	cache[move_id] = timing
 	return timing
 
@@ -1478,7 +1564,8 @@ func _feed_down(digit: int) -> bool:
 
 ## 在真实 CombatSession 中逐帧执行输入表：每次命中须落在预期帧且连段计数递增；
 ## 连段提前结束、预期帧落空或预期之外的命中都断链。snapshot_every > 0 时在每
-## 第 N 次命中（循环起点）快照木桩时序状态，快照完全重现即证明循环可无限重复。
+## 第 N 次命中（循环起点）快照影响未来结算的会话状态（CombatSession.settlement_state，
+## issue 21 全量键），快照完全重现即证明循环可无限重复。
 ## 时间轴口径（issue 14 起）：输入表与预期命中帧都按正常战斗帧编排——命中后的
 ## 8 帧 Hitstop 由会话冻结，探针以空输入跳过、不占用正常帧号；因此取消等待、
 ## 命中年龄与回放帧全部与规格的正常帧语义一致。观测上限按物理帧计（含冻结帧）。
@@ -1557,7 +1644,7 @@ func _run_schedule(compiled: Dictionary, opts: Dictionary) -> Dictionary:
 			verified += 1
 			if snapshot_every > 0 and (verified - 1) % snapshot_every == 0:
 				laps_observed = (verified - 1) / snapshot_every + 1
-				var state := _dummy_timing_state(session)
+				var state := session.settlement_state()
 				for previous in snapshots:
 					if previous[1] == state:
 						proven_period = frame - previous[0]
@@ -1696,15 +1783,30 @@ func _delay_dfs(links: Array[ChainLink], adjustable: Array[int], caps: Array[int
 			var base := 1 if links[adjustable[j]].trigger == ChainLink.Trigger.JUMP_FRAME else 0
 			links[adjustable[j]].wait = base + delays[j % delays.size()]
 		return _run_schedule(_compile_chain(links), opts)
+	## 循环证明模式（snapshot_every > 0）只有「逐圈状态快照重现」才算成功——
+	## 链条走完但未重现的延迟向量不提前停止搜索（issue 21：另一组延迟可能完成
+	## 证明）；路线模式保持首条完整成立即返回。
+	var proof_mode: bool = opts.get("snapshot_every", 0) > 0
 	var best := {}
 	for d in range(0, caps[depth] + 1):
 		delays[depth] = d
 		var run := _delay_dfs(links, adjustable, caps, delays, depth + 1, opts)
-		if run["ok"]:
+		if run["proven_period"] > 0 or (run["ok"] and not proof_mode):
 			return run
-		if best.is_empty() or run["verified"] > best["verified"]:
+		if best.is_empty() or _run_ranks_higher(run, best):
 			best = run
 	return best
+
+
+## 失败运行的代表性排序：观测截断（链条在帧数上限处仍成立）优先于断链——它是
+## 更强的「未证明但未断」证据，避免把某组延迟下的截断误述为另一组的断链；
+## 同类再按已验证命中数取走得更远者。
+func _run_ranks_higher(run: Dictionary, best: Dictionary) -> bool:
+	var run_truncated: bool = run.get("break_kind", "") == "horizon"
+	var best_truncated: bool = best.get("break_kind", "") == "horizon"
+	if run_truncated != best_truncated:
+		return run_truncated
+	return run["verified"] > best["verified"]
 
 
 # --- 路线 ---
@@ -1796,9 +1898,11 @@ func _canonical_cycle(path: Array[String]) -> Array[String]:
 
 
 ## 循环模拟：入口上下文把会话带到起点招式的命中，随后逐圈按固定接续链出招
-## （每圈同一组空中延迟），每圈回到起点招式命中时快照木桩时序状态；
-## 快照完全重现即证明循环可无限重复。空中延迟逐向量搜索——只有存在一组延迟
-## 使链条逐圈不断，循环才成立（有限滞空资源的回边在此被区分出来）。
+## （每圈同一组空中延迟），每圈回到起点招式命中时快照影响未来结算的会话状态
+## （CombatSession.settlement_state 全量键，issue 21）；快照完全重现才上报为
+## 有效循环。空中延迟逐向量搜索——只有存在一组延迟使链条逐圈不断，循环才成立
+## （有限滞空资源的回边在此被区分出来）。观测上限达到时按截断/未完成观测如实
+## 上报，不宣称完整证明。
 func _simulate_cycle(cycle_ids: Array[String], contexts: Dictionary, edge_kinds: Dictionary) -> SolverCycle:
 	var cycle := SolverCycle.new()
 	cycle.route = cycle_ids.duplicate()
@@ -1822,24 +1926,63 @@ func _simulate_cycle(cycle_ids: Array[String], contexts: Dictionary, edge_kinds:
 	var per_lap := _adjustable_indices(lap_links).size()
 	var opts := { "snapshot_every": size, "max_frames": MAX_CYCLE_FRAMES }
 	var run := _delay_search(links, adjustable, per_lap if per_lap > 0 else adjustable.size(), opts)
-	if not run.get("ok", false):
-		# 观测帧数达到上限仍未见断链：保守上报为有效循环——宁可误报，不可用上限掩盖
-		# （长周期循环的 8 圈可能超出 MAX_CYCLE_FRAMES，这与逐圈断链是两种情形）。
-		if run.get("break_kind", "") == "horizon":
-			cycle.sustained = true
-			cycle.reason = "观测帧数达到上限（%d 帧）仍未见断链，保守上报为有效循环（未以命中数/时长上限掩盖；周期过长未能完成 8 圈对拍）" % MAX_CYCLE_FRAMES
-			return cycle
-		cycle.reason = run.get("reason", "逐圈模拟中断链")
-		return cycle
-	cycle.sustained = true
-	cycle.laps_observed = run["laps_observed"]
-	if run["proven_period"] > 0:
+	if run.get("proven_period", -1) > 0:
+		cycle.outcome = SolverCycle.Outcome.PROVEN
 		cycle.proven = true
 		cycle.period_frames = run["proven_period"]
-		cycle.reason = "逐圈模拟中木桩时序状态完全重现，循环可无限重复（每圈由真实命中重建受击/浮空资源，无自然受身断点）"
-	else:
-		cycle.reason = "观测 %d 帧 / %d 圈内全部预期命中成立、未见断链，保守上报为有效循环（未以命中数/时长上限掩盖）" % [run["last_frame"], cycle.laps_observed]
+		cycle.laps_observed = run["laps_observed"]
+		cycle.start_text = _cycle_start_text(cycle_ids[0])
+		cycle.inputs = _proof_inputs(run)
+		cycle.reason = "证明成立——逐圈模拟中影响未来结算的会话状态在第 %d 圈起点与更早一圈完全重现（周期 %d 帧），循环可无限重复；每圈由真实命中重建受击/浮空资源，无自然受身断点" % [
+			cycle.laps_observed, cycle.period_frames,
+		]
+		return cycle
+	cycle.laps_observed = run.get("laps_observed", 0)
+	if run.get("break_kind", "") == "horizon":
+		## 帧数上限先于 8 圈对拍到达：链条仍成立但观测被截断——不当作有效循环上报，
+		## 也不用「断链」误述（这与逐圈断链是两种情形）。
+		cycle.outcome = SolverCycle.Outcome.HORIZON_TRUNCATED
+		cycle.reason = "观测截断：达到 %d 帧观测上限时链条仍成立（已验证 %d 次预期命中），未完成 %d 圈逐圈状态重现对拍——不宣称完整证明（周期过长时可提高帧数上限复验）" % [
+			MAX_CYCLE_FRAMES, run.get("verified", 0), MAX_CYCLE_LAPS,
+		]
+		return cycle
+	if run.get("ok", false):
+		## 8 圈全部预期命中成立、链条未断，但逐圈状态快照未重现：循环性未获证明。
+		cycle.outcome = SolverCycle.Outcome.LAPS_EXHAUSTED
+		cycle.reason = "未完成观测：%d 圈内每次预期命中均成立、链条未断，但逐圈会话状态快照未在观测范围内重现——不宣称完整证明（不能排除状态依赖未建模差异，可提高圈数上限复验）" % MAX_CYCLE_LAPS
+		return cycle
+	cycle.outcome = SolverCycle.Outcome.BROKEN
+	cycle.reason = run.get("reason", "逐圈模拟中断链")
 	return cycle
+
+
+## 循环起始状态说明：分析起点（缺省/显式）与入口招式的真实键位起手方式。
+func _cycle_start_text(start_id: String) -> String:
+	var move := _table.get(start_id) as MoveData
+	if move == null:
+		return "入口 %s 不在招式表中" % start_id
+	var key: String = ACTION_PHYSICAL_KEYS.get(move.action_key, move.action_key)
+	var entry := "%s 键（%s）起手" % [key, move.action_key]
+	if move.direction_derivation != "":
+		entry = "方向 %s + %s 键（%s）起手" % [
+			move.direction_derivation.left(move.direction_derivation.length() - 1), key, move.action_key,
+		]
+	if _is_air_start():
+		return "显式空中起始（自第 %d 空中帧），入口 %s %s" % [_start.air_frames + 1, start_id, entry]
+	return "默认地面中立（空输入缓存/空方向历史、木桩地面中立、接触位 %d px），入口 %s %s" % [
+		PIN_DX, start_id, entry,
+	]
+
+
+## 证明回放输入：编译表截到重现对拍帧（含）——回放到该帧恰好看完「入口圈 +
+## 重现为止的完整圈数」，每圈起点的状态快照可在回放中逐圈复核。
+func _proof_inputs(run: Dictionary) -> Array[ScheduledInput]:
+	var inputs: Array[ScheduledInput] = []
+	var last: int = run.get("last_frame", 0)
+	for spec in run["compiled"]["inputs"]:
+		if spec.frame <= last:
+			inputs.append(spec)
+	return inputs
 
 
 # --- 探针基础设施 ---
@@ -1866,19 +2009,6 @@ func _new_session() -> CombatSession:
 ## 只保留垂直方向的真实浮空/落地物理。
 func _pin_dummy(session: CombatSession) -> void:
 	session.dummy_position.x = session.player_position.x + session.player_facing * PIN_DX
-
-
-## 木桩时序状态：决定后续命中/恢复演化的全部可观察量（横向被钉住，不参与比较；
-## 含会话级 Hitstop 冻结标记——快照点恒为命中当帧，但冻结状态影响未来时间轴）。
-func _dummy_timing_state(session: CombatSession) -> Array:
-	return [
-		session.dummy_state,
-		session.dummy_hitstun_left,
-		session.dummy_velocity.y,
-		session.dummy_position.y,
-		session.dummy_on_ground,
-		session.hitstop_active(),
-	]
 
 
 func _dummy_pursuable(session: CombatSession) -> bool:

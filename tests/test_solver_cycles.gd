@@ -1,0 +1,370 @@
+extends SceneTree
+## Combo Solver 循环证明与有限空中资源（ftg-combat-foundation issue 21）：
+## 状态去重键覆盖影响未来结算的全部会话状态；真实回边须由逐圈状态快照重现后才
+## 报告为循环；8 圈 / 2400 帧 / 240 帧恢复观测 / 40 帧空中延迟上限达到时以截断或
+## 未完成观测上报，不宣称完整证明；循环报告携带路径、起始状态、逐帧输入与证明
+## 结果，并保持确定性排序。
+## 运行：godot --headless --path . -s res://tests/test_solver_cycles.gd
+
+var _failures := 0
+
+
+func _initialize() -> void:
+	print("")
+	_test_settlement_state_excludes_frame_counters()
+	_test_settlement_state_covers_player_side_fields()
+	_test_valid_back_edge_proven_with_replay_materials()
+	_test_proof_distinguishes_entry_lap_player_state()
+	_test_frame_cap_reports_truncation_not_cycle()
+	_test_laps_exhausted_reports_incomplete_observation()
+	_test_recovery_horizon_truncation_annotated()
+	_test_cycle_report_carries_start_and_replay()
+	_test_cycles_sorted_and_report_deterministic()
+	_test_scope_documents_observation_caps()
+	print("")
+	if _failures == 0:
+		print("ALL SOLVER CYCLE TESTS PASSED")
+		quit(0)
+	else:
+		print(str(_failures) + " TEST(S) FAILED")
+		quit(1)
+
+
+# --- 状态去重键（CombatSession.settlement_state 口径）---
+
+
+func _test_settlement_state_excludes_frame_counters() -> void:
+	# 纯调试帧号不入去重键：两份会话在相差 5 个物理帧的时点到达同一相对状态
+	# （5A 前摇第 3 帧），settlement_state 必须相等——否则逐圈快照因帧号递增
+	# 永不重现，循环证明不可能成立。
+	var early := CombatSession.new()
+	early.dummy_position = early.player_position + Vector2(ComboSolver.PIN_DX, 0)
+	early.step(FrameInput.make(0, false, "A"))
+	early.step(FrameInput.new())
+	early.step(FrameInput.new())
+	var late := CombatSession.new()
+	late.dummy_position = late.player_position + Vector2(ComboSolver.PIN_DX, 0)
+	for i in range(5):
+		late.step(FrameInput.new())
+	late.step(FrameInput.make(0, false, "A"))
+	late.step(FrameInput.new())
+	late.step(FrameInput.new())
+	_check(early.debug_snapshot()["frame"] == 3 and late.debug_snapshot()["frame"] == 8,
+		"snapshots really sit at different physical frames (3 vs 8)")
+	_check(early.settlement_state() == late.settlement_state(),
+		"settlement state normalizes absolute frame counters into relative ages (equal at matching phases)")
+
+
+func _test_settlement_state_covers_player_side_fields() -> void:
+	# 去重键必须包含影响未来结算的玩家侧字段：面向、jump 槽年龄与方向历史年龄
+	# 各自只在其中一份会话出现差异时，键必须不等——旧木桩时序键看不见这些。
+	var base := _session_in_5A_startup([])
+	var flipped := _session_in_5A_startup([])
+	flipped.player_facing = -1
+	_check(base.settlement_state() != flipped.settlement_state(),
+		"settlement state distinguishes player facing")
+	var early_jump := _session_in_5A_startup([2])
+	var late_jump := _session_in_5A_startup([4])
+	_check(early_jump.settlement_state() != late_jump.settlement_state(),
+		"settlement state distinguishes jump-slot age (jump flag participates in the key)")
+	# 方向历史年龄：两份会话都在 5A 前摇中（木桩钉远避免命中干扰），下方向分别
+	# 在第 2 / 第 3 帧进入方向历史，同一观测帧上年龄不同。
+	var early_down := _whiffing_5a_with_down_at(2)
+	var late_down := _whiffing_5a_with_down_at(3)
+	_check(early_down.settlement_state() != late_down.settlement_state(),
+		"settlement state distinguishes direction-history ages (candidates derive from them)")
+
+
+## 推进 5 帧得到一份处于 5A 前摇中的会话（木桩钉在命中距离内、未到判定帧）；
+## jump_at 非空表示在该物理帧补按一次 Space（5A 尚未命中确认，跳跃槽保持记录
+## 并逐帧变龄）。
+func _session_in_5A_startup(jump_at: Array) -> CombatSession:
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(ComboSolver.PIN_DX, 0)
+	for frame in range(1, 6):
+		var jump: bool = not jump_at.is_empty() and frame == jump_at[0]
+		session.step(FrameInput.make(0, jump, "A" if frame == 1 else ""))
+	return session
+
+
+## 5A 起手后木桩钉远（挥空、无命中停顿），下方向在 down_frame 帧进入方向历史；
+## 观测第 5 帧末。
+func _whiffing_5a_with_down_at(down_frame: int) -> CombatSession:
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(2000, 0)
+	for frame in range(1, 6):
+		var down := frame == down_frame
+		session.step(FrameInput.make(0, false, "A" if frame == 1 else "", down))
+	return session
+
+
+# --- 循环证明：逐圈状态快照重现后才报告为循环 ---
+
+
+func _test_valid_back_edge_proven_with_replay_materials() -> void:
+	# 真实可重复的回边（5A ↔ 5B，每圈由真实命中重建木桩受击资源）以逐圈状态
+	# 快照重现证明并上报；循环条目携带起始状态说明与截到重现帧为止的逐帧回放
+	# 输入——回放到该帧恰好复现全部预期命中。
+	var table := MoveData.default_table()
+	(table["5B"] as MoveData).cancel_targets = ["5D", "5A"]
+	var report := ComboSolver.solve(_options(table))
+	_check(not report.safe and report.cycles.size() == 1,
+		"the valid back edge is still proven and reported as a cycle")
+	if report.cycles.size() != 1:
+		return
+	var cycle := report.cycles[0]
+	_check(cycle.route == ["5A", "5B"] and cycle.proven,
+		"the cycle is 5A -> 5B -> back to 5A, proven by per-lap state recurrence")
+	_check(cycle.period_frames > 0 and cycle.laps_observed >= 2,
+		"the proof carries a period and at least the recurrence lap count")
+	_check(cycle.start_text != "" and "5A" in cycle.start_text and "U" in cycle.start_text,
+		"the cycle documents its start state and the real entry key")
+	_check(not cycle.inputs.is_empty(), "the cycle carries frame-by-frame replay inputs up to the recurrence")
+	var presses := 0
+	for spec in cycle.inputs:
+		if spec.key != "":
+			presses += 1
+	## 12 帧额外观测 = 覆盖最后一次按键的前摇 + 组合等待（最后一击晚于最后一个
+	## 输入帧），使回放命中数恰好等于按键数。
+	var replay := _replay_inputs(table, cycle.inputs, 12)
+	_check(replay["hit_frames"].size() == presses and replay["combo_hits"] == presses,
+		"replaying the proof inputs reproduces every expected hit exactly once")
+	var starter := table[cycle.route[0]] as MoveData
+	var starter_presses := 0
+	for spec in cycle.inputs:
+		if spec.key == starter.action_key:
+			starter_presses += 1
+	_check(starter_presses == cycle.laps_observed,
+		"the proof inputs contain exactly one starter press per observed lap (entry + recurrence laps)")
+
+
+func _test_proof_distinguishes_entry_lap_player_state() -> void:
+	# 落地回边循环（236C -> jA -> jB -> 5A -> 落地 -> 236C）的入口圈与稳态圈在
+	# 玩家侧状态上不同：入口圈没有中段 Space/jump 标记与上一圈的空中招式标记。
+	# 全量状态键必须把这些差异计入——重现对拍只能发生在稳态圈之间，而不是拿
+	# 入口圈冒充（旧木桩时序键在入口圈就提前“证明”）。
+	var table := MoveData.default_table()
+	(table["jB"] as MoveData).landing_cancel_targets = ["5D", "5A"]
+	var report := ComboSolver.solve(_options(table))
+	_check(report.cycles.size() == 1 and report.cycles[0].proven,
+		"the landing back edge is proven via per-lap state recurrence")
+	if report.cycles.size() != 1:
+		return
+	var cycle := report.cycles[0]
+	_check(cycle.route == ["236C", "jA", "jB", "5A"],
+		"the canonical landing cycle rotation is unchanged")
+	_check(cycle.laps_observed >= 3,
+		"the recurrence is observed between steady laps, not against the entry lap (player-side state differs)")
+
+
+# --- 观测上限：截断 / 未完成观测，不宣称完整证明 ---
+
+
+func _test_frame_cap_reports_truncation_not_cycle() -> void:
+	# 周期过长的自回边（前摇 2300 帧）：2400 帧观测上限在第二圈中途到达，链条
+	# 仍成立但远未完成 8 圈状态重现对拍——按观测截断上报，不报告为循环，
+	# 也不宣称完整证明。
+	var table := MoveData.default_table()
+	table["5Z"] = _slow_self_loop()
+	var report := ComboSolver.solve(_options(table))
+	_check(report.cycles.is_empty() and report.safe,
+		"a loop truncated by the frame cap is never reported as a cycle")
+	var note := ""
+	for entry in report.notes:
+		if "5Z" in entry:
+			note = entry
+	_check(note != "" and "观测截断" in note and str(ComboSolver.MAX_CYCLE_FRAMES) in note,
+		"the truncated loop is reported as an observation truncation naming the cap")
+	_check("不宣称完整证明" in note and "断开" not in note,
+		"the truncation note does not claim a complete proof and does not misreport a chain break")
+	_check("检测到" not in report.summary and "截断" in report.summary,
+		"the summary counts the truncated structural loop without claiming a detected cycle")
+
+
+## 周期极长的自回边：前摇 2300 帧使一圈远超 2400 帧观测上限（第二圈中途截断）；
+## 硬直 2350 保证上限内木桩始终可追击（链条不断）。
+func _slow_self_loop() -> MoveData:
+	var slow := _injected_move("5Z", "Z")
+	slow.startup_frames = 2300
+	slow.active_frames = 2
+	slow.recovery_frames = 5
+	slow.hitstun_frames = 2350
+	slow.knockback = 0.0
+	slow.knockback_up = 0.0
+	slow.cancel_targets = ["5Z"]
+	return slow
+
+
+func _test_laps_exhausted_reports_incomplete_observation() -> void:
+	# 持续上浮的自回边（LAUNCH 每圈无条件重起跳，knockback_up 1170 使每圈净
+	# 位移是一个非零浮点——木桩逐圈停留在略不同的高度，8 圈内既不飞出命中框的
+	# 竖直范围（链条不断），也永不完全重现）：每次预期命中都成立，但逐圈状态
+	# 快照永不重现——按未完成观测上报，不报告为循环。滞空/浮空资源没有被自动
+	# 续期：每圈上浮来自该圈真实命中（ku 再大即飞出竖直范围断链，再小则 8 圈内
+	# 状态精确重现被证明——1170 落在两者之间的漂移区）。
+	var table := MoveData.default_table()
+	var riser := _injected_move("5Y", "Y")
+	riser.startup_frames = 100
+	riser.active_frames = 2
+	riser.recovery_frames = 5
+	riser.hitstun_frames = 250
+	riser.knockback = 0.0
+	riser.knockback_up = 1170.0
+	riser.hit_result = MoveData.HitResult.LAUNCH
+	riser.cancel_targets = ["5Y"]
+	table["5Y"] = riser
+	var report := ComboSolver.solve(_options(table))
+	_check(report.cycles.is_empty() and report.safe,
+		"a never-recurring loop is never reported as a cycle even though the chain holds")
+	var note := ""
+	for entry in report.notes:
+		if "5Y" in entry:
+			note = entry
+	_check(note != "" and "未完成观测" in note and "不宣称完整证明" in note,
+		"the laps-exhausted loop is reported as an incomplete observation, not a proof")
+	_check("断开" not in note, "the incomplete-observation note does not misreport a chain break")
+	var self_edge := _find_edge(report, "5Y", "5Y")
+	_check(self_edge != null and self_edge.valid,
+		"the self edge itself is timing-valid (the cap limits the loop proof, not the edge)")
+
+
+func _test_recovery_horizon_truncation_annotated() -> void:
+	# 240 帧恢复观测上限：木桩地面硬直 250 帧在上限内不会自然受身，边的恢复
+	# 年龄是截断值而非实测恢复——如实标注，不把观测上限伪装成恢复证明。
+	var table := MoveData.default_table()
+	var stunner := _injected_move("5Y", "Y")
+	stunner.hitstun_frames = 250
+	stunner.knockback = 0.0
+	stunner.knockback_up = 0.0
+	stunner.cancel_targets = ["5A"]
+	table["5Y"] = stunner
+	var report := ComboSolver.solve(_options(table))
+	var edge := _find_edge(report, "5Y", "5A")
+	_check(edge != null and edge.valid, "the 5Y -> 5A cancel edge is timing-valid under the pinned geometry")
+	if edge != null:
+		_check(str(ComboSolver.RECOVER_HORIZON) in edge.reason and "截断" in edge.reason,
+			"the edge reason marks the recovery age as a truncated observation, not a measured recovery")
+		var plain := _find_edge(ComboSolver.solve(), "5A", "5B")
+		_check(plain != null and "截断" not in plain.reason,
+			"a normally observed recovery carries no truncation mark")
+
+
+# --- 报告内容与确定性排序 ---
+
+
+func _test_cycle_report_carries_start_and_replay() -> void:
+	var table := MoveData.default_table()
+	(table["5B"] as MoveData).cancel_targets = ["5D", "5A"]
+	var report := ComboSolver.solve(_options(table))
+	var text := "\n".join(report.to_lines())
+	_check("5A → 5B → 回到 5A" in text, "the cycle path appears in the report")
+	_check("起始状态" in text and "地面中立" in text and "入口 5A" in text,
+		"the cycle section documents its start state and entry move")
+	_check("逐帧回放" in text and "F1 按 U" in text,
+		"the cycle section carries a frame-by-frame replay guide with real keys")
+
+
+func _test_cycles_sorted_and_report_deterministic() -> void:
+	# 两个已证明循环同时存在时按标签稳定排序；整份报告跨运行逐行一致。
+	var table := MoveData.default_table()
+	(table["5B"] as MoveData).cancel_targets = ["5D", "5A"]
+	(table["jB"] as MoveData).landing_cancel_targets = ["5D", "5A"]
+	var report := ComboSolver.solve(_options(table))
+	_check(report.cycles.size() == 2, "both back edges are proven as cycles")
+	var labels: Array[String] = []
+	for cycle in report.cycles:
+		labels.append(cycle.label())
+	var sorted_labels := labels.duplicate()
+	sorted_labels.sort()
+	_check(labels == sorted_labels, "cycles are stably sorted by their labels")
+	_check(ComboSolver.solve(_options(table)).to_lines() == report.to_lines(),
+		"solving the same table twice yields identical reports, cycle section included")
+
+
+func _test_scope_documents_observation_caps() -> void:
+	# 证明范围声明四个安全上限及其语义：达到上限以截断/未完成观测上报，
+	# 不作为完整证明；空中延迟上限与规格冻结值一致（40 帧）。
+	var report := ComboSolver.solve()
+	_check(str(ComboSolver.MAX_CYCLE_LAPS) in report.scope and str(ComboSolver.MAX_CYCLE_FRAMES) in report.scope,
+		"the scope names the lap and frame caps")
+	_check(str(ComboSolver.RECOVER_HORIZON) in report.scope and "40 帧" in report.scope,
+		"the scope names the recovery-horizon and air-delay caps (40 frames per the frozen spec)")
+	_check("截断" in report.scope and "不宣称完整证明" in report.scope,
+		"the scope states that reaching a cap is reported as truncation, never a complete proof")
+
+
+# --- 辅助 ---
+
+
+func _options(table: Dictionary) -> ComboSolver.SolverOptions:
+	var opts := ComboSolver.SolverOptions.new()
+	opts.move_table = table
+	return opts
+
+
+func _find_edge(report: ComboSolver.SolverReport, from_id: String, to_id: String, kind: int = -1) -> ComboSolver.SolverEdge:
+	for edge in report.edges:
+		if edge.from_id == from_id and edge.to_id == to_id and (kind < 0 or edge.kind == kind):
+			return edge
+	return null
+
+
+## 把输入表回放到使用同一份招式表的全新 CombatSession（木桩按探针几何钉在玩家
+## 面前），统计命中帧；until 为最后一个输入帧之后的额外观测帧数。
+func _replay_inputs(table: Dictionary, inputs: Array, until := 0) -> Dictionary:
+	var by_frame := {}
+	var last := 0
+	for spec in inputs:
+		by_frame[spec.frame] = spec
+		last = maxi(last, spec.frame)
+	last += until
+	var session := CombatSession.new(table)
+	session.dummy_position = session.player_position + Vector2(ComboSolver.PIN_DX, 0)
+	var hit_frames: Array[int] = []
+	var frame := 0
+	while frame < last:
+		frame += 1
+		while session.hitstop_active():
+			session.step(FrameInput.new())
+			session.dummy_position.x = session.player_position.x + session.player_facing * ComboSolver.PIN_DX
+		var input := FrameInput.new()
+		if by_frame.has(frame):
+			input = by_frame[frame].to_frame_input()
+		var events := session.step(input)
+		session.dummy_position.x = session.player_position.x + session.player_facing * ComboSolver.PIN_DX
+		for event in events:
+			if event.type == CombatEvent.Type.HIT:
+				hit_frames.append(frame)
+	return { "hit_frames": hit_frames, "combo_hits": session.combo_hits }
+
+
+## 测试注入招式：字段齐全的合法打击招式（注入表只喂给 Solver 探针，不经过
+## MoveTable 校验，键名可超出 A–D）。
+func _injected_move(id: String, key: String) -> MoveData:
+	var move := MoveData.new()
+	move.move_id = id
+	move.move_kind = MoveData.MoveKind.STRIKE
+	move.stance = MoveData.Stance.GROUND
+	move.action_key = key
+	move.startup_frames = 5
+	move.active_frames = 7
+	move.recovery_frames = 13
+	move.cancel_window_frames = GameParams.CANCEL_WINDOW_FRAMES
+	move.priority = 1
+	move.base_damage = 10
+	move.attack_attribute = MoveData.AttackAttribute.HIGH
+	move.hitbox_size = GameParams.ATTACK_HITBOX_SIZE
+	move.hitbox_gap = GameParams.ATTACK_HITBOX_GAP
+	move.hit_result = MoveData.HitResult.GROUND_HITSTUN
+	move.hitstun_frames = GameParams.HITSTUN_FRAMES
+	move.knockback = GameParams.MOVE_5A_KNOCKBACK
+	move.knockback_up = GameParams.ATTACK_KNOCKBACK_UP
+	return move
+
+
+func _check(condition: bool, label: String) -> void:
+	if condition:
+		print("PASS  " + label)
+	else:
+		print("FAIL  " + label)
+		_failures += 1

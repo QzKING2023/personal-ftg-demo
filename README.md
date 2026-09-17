@@ -26,6 +26,12 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/te
 # Combo Solver 测试（112 项：开头会打印默认招式表的可读验证报告）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_combo_solver.gd
 
+# Combo Solver 入口/路线/循环证明测试（issue 19–21：solve 入口与操作说明、配置缺口
+# 与方向 variant、循环状态去重键与截断/未完成观测上报）
+Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_solver_entry.gd
+Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_solver_route.gd
+Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_solver_cycles.gd
+
 # 共享招式表测试（issue 11：manifest 加载、整表校验、双端共享与拒绝）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_move_table.gd
 
@@ -142,5 +148,8 @@ tests/test_move_table.gd      共享招式表 seam 测试（加载/校验/双端
 tests/test_combat_session.gd  战斗会话 seam 测试（逐帧输入驱动）
 tests/test_smoke.gd           训练场集成测试（SceneTree 脚本）
 tests/test_combo_solver.gd    Combo Solver 测试（含可读报告打印）
+tests/test_solver_entry.gd    Solver 正式入口 solve() 与操作说明测试（issue 19）
+tests/test_solver_route.gd    Solver 配置缺口与方向 variant 测试（issue 20）
+tests/test_solver_cycles.gd   Solver 循环证明与观测上限测试（issue 21）
 tests/diagnose_inputs.gd      搓招与空中运动诊断回路（逐帧诊断记录与症状判定）
 ```

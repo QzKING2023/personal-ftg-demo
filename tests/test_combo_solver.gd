@@ -101,9 +101,9 @@ func _test_injected_valid_back_edge_reports_cycle() -> void:
 	if report.cycles.size() == 1:
 		var cycle := report.cycles[0]
 		_check(cycle.route == ["5A", "5B"], "cycle route is 5A -> 5B -> back to 5A")
-		_check(cycle.sustained and cycle.proven, "cycle is proven by lap simulation with dummy-state recurrence")
-		_check(cycle.period_frames == 30, "cycle period is 30 frames (4th starter hit recurs the 1st exactly, B pairing wait included)")
-		_check(cycle.laps_observed == 4, "state recurrence is observed at the start of lap 4")
+		_check(cycle.proven, "cycle is proven by lap simulation with settlement-state recurrence")
+		_check(cycle.period_frames == 30, "cycle period is 30 frames (B pairing wait included)")
+		_check(cycle.laps_observed == 5, "state recurrence is observed at the start of lap 5: the full settlement-state key (issue 21) needs the steady-state laps — the 5th starter hit recurs the 2nd exactly, one lap later than the dummy-only timing key did")
 	var ba := _find_edge(report, "5B", "5A")
 	_check(ba != null and ba.valid and ba.hit_age == 5 and ba.recover_age == 21, "back edge 5B -> 5A is valid: earliest hit age 5 <= recover age 21")
 	_check("有效循环" in report.summary, "summary reports the effective cycle")
@@ -370,9 +370,9 @@ func _test_injected_landing_back_edge_reports_cycle() -> void:
 	if report.cycles.size() == 1:
 		var cycle := report.cycles[0]
 		_check(cycle.route == ["236C", "jA", "jB", "5A"], "cycle route is 236C -> jA -> jB -> 5A -> back to 236C (canonical rotation)")
-		_check(cycle.sustained and cycle.proven, "the cycle is proven by dummy-state recurrence across laps")
+		_check(cycle.proven, "the cycle is proven by settlement-state recurrence across laps")
 		_check(cycle.period_frames == 54, "cycle period is 54 frames per lap (jump cancel spends 4 pre-jump normal frames; the B pairing wait re-aligns the landing seam)")
-		_check(cycle.laps_observed == 2, "recurrence is observed at the start of lap 2: the 236C relaunch normalizes the dummy state at the cycle-start hit every lap")
+		_check(cycle.laps_observed == 3, "recurrence is observed at the start of lap 3: the entry lap differs from steady laps in player-side state (no mid-chain Space slot yet, no previous-lap air-move marks), so the full settlement-state key (issue 21) only matches steady laps against each other")
 	var finite := _find_route(report, ["5A", "236C", "jA", "jB", "jD"])
 	_check(finite != null and finite.combo_hits == 5, "the finite jD-finisher air route is still reported as a plain route, distinct from the cycle")
 	_check("有效循环" in report.summary, "summary reports the effective cycle")

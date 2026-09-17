@@ -390,6 +390,107 @@ func debug_snapshot() -> Dictionary:
 	}
 
 
+## 影响未来结算的会话状态快照（只读，issue 21）。Combo Solver 用它做循环的逐圈
+## 状态去重与重现证明：两次快照相等 ⇔ 从该时刻起喂入相同输入必然产生完全相同
+## 的未来结算。口径：
+## - 绝对帧号（物理帧、正常帧、各记录时间戳）一律换算为相对年龄，纯调试帧号
+##   不入快照——否则逐圈快照因帧号递增永不相等；年龄本身参与结算（缓存/窗口/
+##   历史的过期），故以年龄形式入快照。
+## - 纯报告量（连段命中数、累计伤害、HP、最近伤害倍率）不影响任何结算分支，
+##   不入快照；连段存续标记 combo_active 是取消与命中的资格门，入快照。
+## - 动作键原始按下记录只在与新按下配对（≤3 物理帧）时影响结算，等待中的候选
+##   与投意图经缓存/投字段入快照；按住集合是输入历史的确定函数，入快照。
+## - 方向候选（指令锁定）由方向历史 + 姿态 + 招式表在识别时确定派生，历史
+##   （年龄化）与姿态入快照即覆盖，不重复入快照。
+## - 横向位置不入快照：Solver 探针把木桩钉在玩家面向侧固定间距，横向几何是
+##   探针假设（见 ComboSolver 证明范围）；纵向位置与速度是真实结算量，入快照。
+func settlement_state() -> Dictionary:
+	var buffer_age := -1
+	if _buffered_key != "":
+		buffer_age = _normal_frame_index - _buffered_at
+	var buffer_physics_age := -1
+	if _buffered_key != "":
+		buffer_physics_age = _frame_index - _buffered_physics
+	var buffered_endpoint_age := -1
+	if _buffered_endpoint >= 0:
+		buffered_endpoint_age = _normal_frame_index - _buffered_endpoint
+	var cancel_age := -1
+	if _current_move != null and _move_hit_confirmed:
+		cancel_age = _normal_frame_index - _hit_confirm_frame
+	var jump_slot := {"active": false, "age": -1, "axis": 0, "physics_age": -1}
+	if _jump_slot_active:
+		jump_slot = {
+			"active": true,
+			"age": _normal_frame_index - _jump_slot_at,
+			"axis": _jump_slot_axis,
+			"physics_age": _frame_index - _jump_slot_physics,
+		}
+	var pending_throw_age := -1
+	if _pending_throw_physics > 0:
+		pending_throw_age = _frame_index - _pending_throw_physics
+	var direction_history: Array = []
+	for entry in _direction_history:
+		direction_history.append(Vector2i(entry.x, _normal_frame_index - entry.y))
+	return {
+		# 玩家姿态/阶段
+		"phase": player_phase,
+		"on_ground": player_on_ground,
+		"crouching": player_crouching,
+		"guard": player_guard,
+		"hitstun_left": player_hitstun_left,
+		"guard_stun_left": player_guard_stun_left,
+		"dash_left": player_dash_left,
+		"dash_direction": _dash_direction,
+		# 当前招式及招式帧
+		"move_id": player_move_id,
+		"move_frame": _move_frame,
+		"hit_once": _hit_once_this_move,
+		"hit_confirmed": _move_hit_confirmed,
+		"cancel_age": cancel_age,
+		"move_is_followup": _move_is_followup,
+		# 面向与速度
+		"facing": player_facing,
+		"velocity": player_velocity,
+		"position_y": player_position.y,
+		# 落地和 jump 标记
+		"prejump_left": player_prejump_left,
+		"landing_recovery_left": player_landing_recovery_left,
+		"just_landed": _player_just_landed,
+		"air_move_started": _air_move_started,
+		"air_extra_recovery": _air_extra_recovery,
+		"jump_direction": _jump_direction,
+		"jump_slot": jump_slot,
+		"jump_cancel_followups": _jump_cancel_followups.duplicate(),
+		# 动作缓存与投意图
+		"buffered_key": _buffered_key,
+		"buffered_move_id": _buffered_move_id,
+		"buffer_age": buffer_age,
+		"buffer_physics_age": buffer_physics_age,
+		"buffer_waiting": _buffer_waiting,
+		"buffered_endpoint_age": buffered_endpoint_age,
+		"pending_throw_age": pending_throw_age,
+		"held_action_keys": _key_held.duplicate(),
+		# 方向候选与历史（年龄化条目）
+		"direction_history": direction_history,
+		"last_direction_digit": _last_direction_digit,
+		# 连段资源（结算资格门；伤害等纯报告量见上文口径）
+		"combo_active": combo_active,
+		# 木桩姿态/阶段、受击计时与速度
+		"dummy_state": dummy_state,
+		"dummy_on_ground": dummy_on_ground,
+		"dummy_hitstun_left": dummy_hitstun_left,
+		"dummy_velocity": dummy_velocity,
+		"dummy_position_y": dummy_position.y,
+		"dummy_move_id": dummy_move_id,
+		"dummy_phase": dummy_phase,
+		"dummy_move_frame": _dummy_move_frame,
+		"dummy_hit_once": _dummy_hit_once,
+		# Hitstop 冻结
+		"hitstop_left": _hitstop_left,
+		"hitstop_resume_pending": _hitstop_resume_pending,
+	}
+
+
 # --- 结算管线（顺序不可调换）---
 
 func _phase_input(events: Array[CombatEvent]) -> void:
