@@ -20,8 +20,14 @@ const PIN_DX := 70.0
 ## 动作键 → 物理键（操作说明用）：与训练场 main.gd 的 ACTION_PHYSICAL_KEYS 及
 ## project.godot 输入映射保持一致（tests/test_solver_entry.gd 断言两处不漂移）。
 const ACTION_PHYSICAL_KEYS := {"A": "U", "B": "I", "C": "K", "D": "J"}
-## 镜像对拍失败时报告的差异节名（issue 19）。
-const _SECTION_LABELS := {"edges": "接续边", "routes": "路线", "cycles": "循环"}
+## 镜像对拍失败时报告的差异节名（issue 19；配置缺口随接续边一并对拍）。
+const _SECTION_LABELS := {"edges": "接续边", "gaps": "配置缺口", "routes": "路线", "cycles": "循环"}
+## 接续种类 → 缺口涉及的配置字段与接缝名（探针注入与缺口文案共用，防两处漂移）。
+const _GAP_CONFIG_FIELDS := {
+	EdgeKind.CANCEL: {"field": "cancel_targets", "seam": "命中确认取消"},
+	EdgeKind.JUMP_CANCEL: {"field": "jump_cancel_targets", "seam": "jump cancel"},
+	EdgeKind.LANDING_CANCEL: {"field": "landing_cancel_targets", "seam": "落地接续"},
+}
 ## 逐圈模拟的观测上限（圈数/帧数）。仅用于防止死循环，不是连段语义的一部分；
 ## 达到上限仍未断链的回边保守上报为循环（宁可误报，不可掩盖）。
 const MAX_CYCLE_LAPS := 8
@@ -31,7 +37,7 @@ const RECOVER_HORIZON := 240
 ## 空中段首按延迟（相对起跳后第 1 帧）的扫描上限；超过玩家滞空的延迟必然失效。
 const MAX_AIR_DELAY := GameParams.PLAYER_JUMP_AIRTIME_FRAMES
 
-const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性命中确认接续——前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生、jump cancel 与落地接缝都在真实 CombatSession 结算中检验；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（普通命中不刷新木桩滞空、空中无二段跳），不会被当作可自动续期；循环判定不设全局命中数或总时长上限，以逐圈模拟加木桩时序状态重现证明。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。"
+const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性命中确认接续——前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生、jump cancel 与落地接缝都在真实 CombatSession 结算中检验；cancel_targets、jump_cancel_targets 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（普通命中不刷新木桩滞空、空中无二段跳），不会被当作可自动续期；循环判定不设全局命中数或总时长上限，以逐圈模拟加木桩时序状态重现证明。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。"
 
 ## 接续边类型：普通命中确认取消 / jump cancel / 显式落地接续。
 enum EdgeKind {
@@ -67,6 +73,21 @@ class ChainLink extends RefCounted:
 	var wait := 0
 	var press_space := false
 	var feed := ""
+
+
+## 落地接缝搜索定位：来源空中招式在接续链中的进入位置与命中序号
+## （正式边的全网格搜索与缺口模式的对齐搜索共用）。
+class LandingSeam extends RefCounted:
+	## 来源招式的接续链上下文（到达该招的完整输入链）。
+	var context: Array[ChainLink] = []
+	## 首个空中起手链（JUMP_FRAME）的下标——空中段从这里开始。
+	var followup_idx := 0
+	## 来源招式进入链的下标：经空中取消进入（PREV_HIT），或经 jump cancel 直接
+	## 进入（JUMP_FRAME——与空中起手链同一条，对齐只调起手延迟一维）。
+	var from_link_idx := 0
+	var from_is_jump_entry := false
+	## 来源招式命中在预期命中表中的序号（Space 链接不产生命中，按有招式的链接计数）。
+	var from_hit_idx := 0
 
 
 ## 一条候选接续边：from 招式命中确认后接续进 to 招式。
@@ -166,6 +187,9 @@ class SolverReport extends RefCounted:
 	var summary := ""
 	var scope := ""
 	var edges: Array[SolverEdge] = []
+	## 配置缺口（issue 20）：时序经一次性探针表验证成立、但对应配置数组未声明
+	## 的候选接续。缺口不是合法边——不进入路线、循环与操作说明。
+	var gaps: Array[SolverEdge] = []
 	var routes: Array[SolverRoute] = []
 	var cycles: Array[SolverCycle] = []
 	var notes: Array[String] = []
@@ -179,6 +203,9 @@ class SolverReport extends RefCounted:
 	var start_lines: Array[String] = []
 	## 首招候选：起始状态下当前可执行的单键招式（稳定 id 序；投与空中派生见注）。
 	var first_candidates: Array[String] = []
+	## 输入绑定与方向 variant（issue 20）：每个可起手招式的全部声明记法
+	## （方向派生 + 显式替代串）及逐条探针验证结果。
+	var binding_lines: Array[String] = []
 	## 操作说明：逐路线的真实键位回放指引（方向键/Space/动作键 + 等待帧），按验证面向分节。
 	var guide_lines: Array[String] = []
 	## 本次报告验证过的面向（+1 右 / -1 左）。
@@ -204,6 +231,11 @@ class SolverReport extends RefCounted:
 			lines.append("（起始状态没有可单键起手的招式）")
 		for line in first_candidates:
 			lines.append(line)
+		lines.append("--- 输入绑定与方向 variant ---")
+		if binding_lines.is_empty():
+			lines.append("（起始状态没有可单键起手的招式，无可枚举的输入绑定）")
+		for line in binding_lines:
+			lines.append(line)
 		lines.append("--- 共享招式表 ---")
 		if table_lines.is_empty():
 			lines.append("（招式表为程序注入，无共享资源摘要）")
@@ -214,6 +246,11 @@ class SolverReport extends RefCounted:
 			lines.append("（招式表中没有可分析的接续边）")
 		for edge in edges:
 			lines.append("%s（%s）：%s｜%s" % [edge.label(), edge.kind_text(), "有效" if edge.valid else "排除", edge.reason])
+		lines.append("--- 配置缺口 ---")
+		if gaps.is_empty():
+			lines.append("（未发现时序成立但缺少配置的候选接续）")
+		for gap in gaps:
+			lines.append("%s（%s）：时序成立但缺配置｜%s" % [gap.label(), gap.kind_text(), gap.reason])
 		lines.append("--- 可读路线 ---")
 		if routes.is_empty():
 			lines.append("（无可读路线）")
@@ -304,11 +341,11 @@ static func solve(options: SolverOptions = null) -> SolverReport:
 		primary.verified_facings.append(facings[i])
 		var sections := _signature_sections(run, facings[i])
 		var diff: Array[String] = []
-		for section in ["edges", "routes", "cycles"]:
+		for section in ["edges", "gaps", "routes", "cycles"]:
 			if sections[section] != primary_sections[section]:
 				diff.append(_SECTION_LABELS[section])
 		if diff.is_empty():
-			primary.notes.append("面向 %s 镜像验证一致：接续边/路线/循环与相对输入在两侧完全对称" % _facing_text(facings[i]))
+			primary.notes.append("面向 %s 镜像验证一致：接续边/配置缺口/路线/循环与相对输入在两侧完全对称" % _facing_text(facings[i]))
 		else:
 			primary.mirror_consistent = false
 			primary.notes.append("面向 %s 与面向 %s 的%s结果不一致——镜像对称被打破，请回报该差异" % [
@@ -330,16 +367,10 @@ static func _facing_text(facing: int) -> String:
 static func _signature_sections(report: SolverReport, facing: int) -> Dictionary:
 	var edge_parts: Array[String] = []
 	for edge in report.edges:
-		var align_parts: Array[String] = []
-		for spec in edge.align_inputs:
-			align_parts.append("%d/%s/%s/%d" % [
-				spec.frame, spec.key, str(spec.jump), _relative_digit(spec.axis, spec.down, facing),
-			])
-		edge_parts.append("%s>%s:%d:%s:%d:%d:%d:%d:%d:%d:%s:%s" % [
-			edge.from_id, edge.to_id, edge.kind, str(edge.valid),
-			edge.wait_from, edge.wait_to, edge.hit_age, edge.recover_age,
-			edge.align_from, edge.align_to, edge.reason, ";".join(align_parts),
-		])
+		edge_parts.append(_edge_signature(edge, facing))
+	var gap_parts: Array[String] = []
+	for gap in report.gaps:
+		gap_parts.append(_edge_signature(gap, facing))
 	var route_parts: Array[String] = []
 	for route in report.routes:
 		var input_parts: Array[String] = []
@@ -356,7 +387,31 @@ static func _signature_sections(report: SolverReport, facing: int) -> Dictionary
 		cycle_parts.append("%s#%d#%s#%s#%s" % [
 			cycle.label(), cycle.period_frames, str(cycle.proven), str(cycle.sustained), cycle.reason,
 		])
-	return {"edges": "|".join(edge_parts), "routes": "|".join(route_parts), "cycles": "|".join(cycle_parts)}
+	return {
+		"edges": "|".join(edge_parts),
+		"gaps": "|".join(gap_parts),
+		"routes": "|".join(route_parts),
+		"cycles": "|".join(cycle_parts),
+	}
+
+
+## 单条接续边/缺口的相对签名（边与缺口共用同一口径，防两处格式漂移）。
+static func _edge_signature(edge: SolverEdge, facing: int) -> String:
+	var align_parts: Array[String] = []
+	for spec in edge.align_inputs:
+		align_parts.append("%d/%s/%s/%d" % [
+			spec.frame, spec.key, str(spec.jump), _relative_digit(spec.axis, spec.down, facing),
+		])
+	return "%s>%s:%d:%s:%d:%d:%d:%d:%d:%d:%s:%s" % [
+		edge.from_id, edge.to_id, edge.kind, str(edge.valid),
+		edge.wait_from, edge.wait_to, edge.hit_age, edge.recover_age,
+		edge.align_from, edge.align_to, edge.reason, ";".join(align_parts),
+	]
+
+
+## 边/缺口稳定排序键（from → to → kind；边与缺口共用）。
+static func _edge_sort_key(edge: SolverEdge) -> String:
+	return "%s|%s|%d" % [edge.from_id, edge.to_id, edge.kind]
 
 
 ## 世界轴输入按面向折算的小键盘相对方向（前 6 / 后 4 / 下 2 / 斜 1、3 / 中立 5）。
@@ -407,6 +462,7 @@ func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false
 	report.table_lines = _table_summary_lines()
 	report.start_lines = _start_state_lines()
 	report.first_candidates = _first_candidates()
+	report.binding_lines = _binding_variant_lines()
 	if _table_has_throw:
 		report.notes.append("普通投是 B+C 组合输入，无单键起手，不在首招候选（组合输入调度不在本入口范围）")
 	var contexts := _build_contexts()
@@ -439,6 +495,7 @@ func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false
 					var key := "%s|%s" % [from_id, to_id]
 					if not edge_kinds.has(key):
 						edge_kinds[key] = kind
+	_enumerate_gaps(contexts, timing_cache, report)
 	## 图的路线起点：起始姿态下单键可起手、无方向派生的打击招式（按表内顺序，确定性枚举）。
 	var sources: Array[String] = []
 	for move_id in _table:
@@ -459,7 +516,9 @@ func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false
 		## 稳定排序（issue 19）：排序键含全部并列维度（from/to/kind 唯一、路线标签唯一），
 		## 与枚举顺序无关的确定输出，供跨运行/跨面向对拍。
 		report.edges.sort_custom(func(a: SolverEdge, b: SolverEdge) -> bool:
-			return "%s|%s|%d" % [a.from_id, a.to_id, a.kind] < "%s|%s|%d" % [b.from_id, b.to_id, b.kind])
+			return _edge_sort_key(a) < _edge_sort_key(b))
+		report.gaps.sort_custom(func(a: SolverEdge, b: SolverEdge) -> bool:
+			return _edge_sort_key(a) < _edge_sort_key(b))
 		report.routes.sort_custom(func(a: SolverRoute, b: SolverRoute) -> bool:
 			return a.label() < b.label())
 	report.summary = _build_summary(report)
@@ -493,8 +552,8 @@ func _build_summary(report: SolverReport) -> String:
 		if edge.valid:
 			valid_count += 1
 	if report.safe:
-		return "未发现可无限重复的有效循环：接续边 %d 条（有效 %d、排除 %d），可读路线 %d 条。" % [
-			report.edges.size(), valid_count, report.edges.size() - valid_count, report.routes.size(),
+		return "未发现可无限重复的有效循环：接续边 %d 条（有效 %d、排除 %d），配置缺口 %d 条，可读路线 %d 条。" % [
+			report.edges.size(), valid_count, report.edges.size() - valid_count, report.gaps.size(), report.routes.size(),
 		]
 	var parts: Array[String] = []
 	for cycle in report.cycles:
@@ -534,12 +593,8 @@ func _start_state_lines() -> Array[String]:
 func _first_candidates() -> Array[String]:
 	var ids: Array[String] = []
 	for move_id in _table:
-		var move := _table[move_id] as MoveData
-		if move == null or move.stance != _start_stance() or not move.is_strike():
-			continue
-		if _start_key_for(move_id) == "":
-			continue
-		ids.append(move_id)
+		if _is_startable_start_stance_strike(move_id):
+			ids.append(move_id)
 	ids.sort()
 	var lines: Array[String] = []
 	for move_id in ids:
@@ -551,6 +606,164 @@ func _first_candidates() -> Array[String]:
 			var digits := move.direction_derivation.left(move.direction_derivation.length() - 1)
 			lines.append("%s｜方向 %s + %s 键（%s）" % [move_id, digits, physical, move.action_key])
 	return lines
+
+
+# --- 配置缺口（issue 20：时序成立但缺配置的候选只报告缺口）---
+
+
+## 枚举未配置的 (from, to, kind) 候选并用一次性探针表验证时序：cancel_targets、
+## jump_cancel_targets 与 landing_cancel_targets 是运行时硬约束，探针把候选临时
+## 注入对应数组后走与正式边完全相同的逐帧验证——时序成立只报告为配置缺口，
+## 不进入合法边/路线/循环；时序或结构不成立（姿态不符、收尾来源、投技、等待
+## 超时、接缝对不齐）的候选保持沉默：补上配置也不会使其合法。
+func _enumerate_gaps(contexts: Dictionary, timing_cache: Dictionary, report: SolverReport) -> void:
+	for from_id in _table:
+		var from_move := _table[from_id] as MoveData
+		if from_move == null or from_move.is_throw() or from_move.is_finisher:
+			continue
+		if not contexts.has(from_id):
+			continue
+		for to_id in _table:
+			var to_move := _table[to_id] as MoveData
+			if to_move == null or to_move.is_throw() or _start_key_for(to_id) == "":
+				continue
+			var kinds: Array[EdgeKind] = []
+			if to_move.stance == from_move.stance \
+					and not (from_move.cancel_targets as Array[String]).has(to_id):
+				kinds.append(EdgeKind.CANCEL)
+			if from_move.stance == MoveData.Stance.GROUND and to_move.stance == MoveData.Stance.AIR \
+					and not (from_move.jump_cancel_targets as Array[String]).has(to_id):
+				kinds.append(EdgeKind.JUMP_CANCEL)
+			if from_move.stance == MoveData.Stance.AIR and to_move.stance == MoveData.Stance.GROUND \
+					and not (from_move.landing_cancel_targets as Array[String]).has(to_id):
+				kinds.append(EdgeKind.LANDING_CANCEL)
+			for kind in kinds:
+				var gap := _probe_gap(from_id, to_id, kind, contexts, timing_cache)
+				if gap != null:
+					report.gaps.append(gap)
+
+
+## 单个缺口候选的验证：临时换成注入了候选配置的一次性探针表，复用正式边的
+## 逐帧验证；时序成立才返回缺口条目（valid 恒为 false——缺口不是合法边）。
+func _probe_gap(from_id: String, to_id: String, kind: EdgeKind, contexts: Dictionary, timing_cache: Dictionary) -> SolverEdge:
+	var base_table := _table
+	_table = _gap_probe_table(from_id, to_id, kind)
+	var edge := _build_edge(from_id, to_id, kind, contexts, timing_cache, true)
+	_table = base_table
+	if not edge.valid:
+		return null
+	edge.valid = false
+	edge.reason = _gap_reason(edge)
+	return edge
+
+
+## 缺口探针表：from 的深拷贝（配置数组重建）向对应配置数组追加候选目标——
+## 探针的任何写入都不触及共享表或调用方注入表里的 MoveData；其余表项与原表
+## 共享只读引用。
+func _gap_probe_table(from_id: String, to_id: String, kind: EdgeKind) -> Dictionary:
+	var probe := _table.duplicate()
+	var mutated := MoveTable._fresh_copy(_table[from_id] as MoveData)
+	(mutated.get(_GAP_CONFIG_FIELDS[kind]["field"]) as Array).append(to_id)
+	probe[from_id] = mutated
+	return probe
+
+
+func _gap_reason(edge: SolverEdge) -> String:
+	var config: Dictionary = _GAP_CONFIG_FIELDS[edge.kind]
+	var timing := "最早命中在命中确认后第 %d 帧，不晚于木桩恢复（第 %d 帧），有效等待 0–%d 帧" % [
+		edge.hit_age, edge.recover_age, edge.wait_to,
+	]
+	match edge.kind:
+		EdgeKind.JUMP_CANCEL:
+			timing = "Space 取消起跳后空中起手最早在命中确认后第 %d 帧命中" % edge.hit_age
+		EdgeKind.LANDING_CANCEL:
+			timing = "空中命中可落在落地帧前 %d 帧（0＝恰在落地帧，临界规则）接地面起手" % edge.align_from
+	return "%s——经一次性探针验证成立；缺配置：%s 不在 %s.%s，%s 是运行时硬约束，补配后才成为合法接续边，不因此宣布为合法连段" % [
+		timing, edge.to_id, edge.from_id, config["field"], config["seam"],
+	]
+
+
+# --- 输入绑定与方向 variant（issue 20）---
+
+
+## 招式的全部声明指令记法：基础方向派生 + 显式输入替代串（与运行时同一口径，
+## 每个替代串是独立 variant，输入窗口按其实际步数计）。
+func _solver_notations(move: MoveData) -> Array[String]:
+	var notations: Array[String] = []
+	if move.direction_derivation != "":
+		notations.append(move.direction_derivation)
+	notations.append_array(move.input_alternatives)
+	return notations
+
+
+## 起手前需要喂入的方向序列（记法去掉末位动作键）。
+func _notation_digits(notation: String) -> String:
+	return notation.left(maxi(notation.length() - 1, 0))
+
+
+## 记法能否由地面方向喂入表达：方向历史只产生 1/2/3/4/6。严格记法每个方向段
+## 都必须是可喂数字；宽松记法的谓词集合与可喂数字有交集即可（宽松 9 的集合
+## {3,6,9} 含 3/6，宽松 8 的上集合 {7,8,9} 无交集）。
+func _notation_expressible(move: MoveData, notation: String) -> bool:
+	for digit in _notation_digits(notation):
+		if ["1", "2", "3", "4", "6"].has(digit):
+			continue
+		if move.lenient_command and digit != "8" and digit != "5" and digit != "0":
+			continue
+		return false
+	return true
+
+
+## 输入绑定与方向 variant：起始姿态下可执行招式的全部声明记法逐一在一次性
+## CombatSession 中验证（喂方向序列 → 按键 → 前摇 → 命中）；不可表达的记法
+## （含上方向段）如实报告，不静默跳过。稳定 id 序输出。
+## 起始姿态下可枚举的打击招式（首招候选与绑定 variant 共用口径）：姿态与起始
+## 状态一致、可由动作键起手的打击招式——投技与带方向派生的空中招式不可单键起手。
+func _is_startable_start_stance_strike(move_id: String) -> bool:
+	var move := _table.get(move_id) as MoveData
+	return move != null and move.stance == _start_stance() and move.is_strike() \
+		and _start_key_for(move_id) != ""
+
+
+func _binding_variant_lines() -> Array[String]:
+	var lines: Array[String] = []
+	var ids := _table.keys()
+	ids.sort()
+	for move_id in ids:
+		if not _is_startable_start_stance_strike(move_id):
+			continue
+		var move := _table[move_id] as MoveData
+		var physical: String = ACTION_PHYSICAL_KEYS.get(move.action_key, move.action_key)
+		var notations := _solver_notations(move)
+		if notations.is_empty():
+			lines.append("%s｜%s 键（%s）｜无方向指令" % [move_id, physical, move.action_key])
+			continue
+		for notation in notations:
+			lines.append(_variant_line(move_id, move, notation, physical))
+	return lines
+
+
+func _variant_line(move_id: String, move: MoveData, notation: String, physical: String) -> String:
+	var digits := _notation_digits(notation)
+	var header := "%s｜%s 键（%s）｜variant %s（%s，%d 步，窗口 %d 帧）" % [
+		move_id, physical, move.action_key, digits,
+		"宽松" if move.lenient_command else "严格",
+		digits.length(), digits.length() * GameParams.DIRECTION_STEP_FRAMES,
+	]
+	if not _notation_expressible(move, notation):
+		return header + "：不可表达——方向段含上方向（7/8/9），不在地面方向喂入的可达范围"
+	var link := ChainLink.new()
+	link.move_id = move_id
+	link.key = move.action_key
+	link.feed = digits
+	link.trigger = ChainLink.Trigger.START
+	var compiled := _compile_chain([link])
+	var run := _run_schedule(compiled, {})
+	if run["ok"]:
+		return header + "：验证成立——第 %d 帧按键、第 %d 帧命中" % [
+			compiled["inputs"][compiled["inputs"].size() - 1].frame, run["hit_frames"][0],
+		]
+	return header + "：验证失败——%s" % run["reason"]
 
 
 # --- 操作说明（issue 19：真实键位回放指引）---
@@ -796,7 +1009,7 @@ func _links_for_edge(from_id: String, to_id: String, kind: EdgeKind) -> Array[Ch
 	return links
 
 
-func _build_edge(from_id: String, to_id: String, kind: EdgeKind, contexts: Dictionary, timing_cache: Dictionary) -> SolverEdge:
+func _build_edge(from_id: String, to_id: String, kind: EdgeKind, contexts: Dictionary, timing_cache: Dictionary, gap_mode := false) -> SolverEdge:
 	var edge := SolverEdge.new()
 	edge.from_id = from_id
 	edge.to_id = to_id
@@ -842,7 +1055,7 @@ func _build_edge(from_id: String, to_id: String, kind: EdgeKind, contexts: Dicti
 		EdgeKind.JUMP_CANCEL:
 			_fill_jump_edge(edge, context)
 		EdgeKind.LANDING_CANCEL:
-			_fill_landing_edge(edge, context)
+			_fill_landing_edge(edge, context, gap_mode)
 		_:
 			_fill_cancel_edge(edge, context, timing_cache)
 	return edge
@@ -892,9 +1105,15 @@ func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache
 	var next_move := _table.get(run.get("next_expected_move", "")) as MoveData
 	if run["break_kind"] == "ended" and next_move != null and next_move.stance == MoveData.Stance.AIR \
 			and run["session"] != null and run["session"].player_on_ground:
-		edge.reason = "取消追击未成立：空中目标在落地帧作废，未能在玩家滞空内命中（滞空资源有限，落地不授予普通取消资格）"
+		edge.reason = "取消追击未成立：空中目标已起手但在落地帧作废（挥空——剩余判定被落地恢复截断），未能在玩家滞空内命中（滞空资源有限，落地不授予普通取消资格）"
 		return
-	edge.reason = "取消未成立：目标未在取消窗口内起手或命中（未观测到第二次命中）"
+	match run["break_kind"]:
+		"whiff":
+			edge.reason = "取消未成立：目标招式已起手但判定未在预期帧连接（挥空）"
+		"no_start":
+			edge.reason = "取消未成立：目标未能在取消窗口内起手（窗口关闭或缓存过期）"
+		_:
+			edge.reason = "取消未成立：目标未在取消窗口内起手或命中（未观测到第二次命中）"
 
 
 func _fill_jump_edge(edge: SolverEdge, context: Array[ChainLink]) -> void:
@@ -929,8 +1148,7 @@ func _fill_jump_edge(edge: SolverEdge, context: Array[ChainLink]) -> void:
 	]
 
 
-func _fill_landing_edge(edge: SolverEdge, context: Array[ChainLink]) -> void:
-	var to_move := _table[edge.to_id] as MoveData
+func _fill_landing_edge(edge: SolverEdge, context: Array[ChainLink], gap_mode := false) -> void:
 	var followup_idx := -1
 	for i in range(context.size()):
 		if context[i].trigger == ChainLink.Trigger.JUMP_FRAME:
@@ -942,30 +1160,44 @@ func _fill_landing_edge(edge: SolverEdge, context: Array[ChainLink]) -> void:
 		else:
 			edge.reason = "落地接续上下文不包含 jump cancel 空中段（探针构造失败）"
 		return
-	## 来源空中招式（如 jB）在上下文中的取消链位置：issue 15 起临界帧对齐
-	## （命中恰在落地帧当帧）需要同时延迟空中起手与取消等待——起跳准备占用
-	## 4 个正常帧后，单靠起手延迟不足以把命中压回落地帧（木桩浮空硬直先耗尽）。
+	## 来源空中招式在上下文中的进入链：经空中取消进入（PREV_HIT，如 jA → jB 的
+	## jB）或经 jump cancel 直接进入（JUMP_FRAME，如首个空中起手 jA）——后者的
+	## 进入链就是空中起手链本身，对齐只调起手延迟一维。
 	var from_link_idx := -1
+	var from_is_jump_entry := false
 	for i in range(context.size()):
 		if context[i].move_id == edge.from_id and context[i].trigger == ChainLink.Trigger.PREV_HIT:
 			from_link_idx = i
 	if from_link_idx < 0:
-		edge.reason = "落地接续上下文不包含来源空中招式的取消链（探针构造失败）"
+		for i in range(context.size()):
+			if context[i].move_id == edge.from_id and context[i].trigger == ChainLink.Trigger.JUMP_FRAME:
+				from_link_idx = i
+				from_is_jump_entry = true
+	if from_link_idx < 0:
+		edge.reason = "落地接续上下文不包含来源空中招式的进入链（探针构造失败）"
 		return
-	# 来源空中招式的命中序号：Space 链接不产生命中，按有招式的链接计数。
+	## 来源空中招式的命中序号：Space 链接不产生命中，按有招式的链接计数。
 	var from_hit_idx := -1
 	for i in range(context.size()):
 		if context[i].move_id != "":
 			from_hit_idx += 1
+	var seam := LandingSeam.new()
+	seam.context = context
+	seam.followup_idx = followup_idx
+	seam.from_link_idx = from_link_idx
+	seam.from_is_jump_entry = from_is_jump_entry
+	seam.from_hit_idx = from_hit_idx
+	if gap_mode:
+		_fill_landing_gap(edge, seam)
+		return
+	## issue 15 起临界帧对齐（命中恰在落地帧当帧）需要同时延迟空中起手与取消
+	## 等待——起跳准备占用 4 个正常帧后，单靠起手延迟不足以把命中压回落地帧
+	## （木桩浮空硬直先耗尽）；jump cancel 直接进入的来源只有起手延迟一维。
 	var valid_trials := []
 	var latest_hit_trial := {}
 	for d in range(0, MAX_AIR_DELAY + 1):
-		for v in range(0, GameParams.CANCEL_WINDOW_FRAMES + 1):
-			var links: Array[ChainLink] = context.duplicate()
-			links[followup_idx] = _clone_link_with_wait(context[followup_idx], 1 + d)
-			links[from_link_idx] = _clone_link_with_wait(context[from_link_idx], v)
-			links.append_array(_links_for_edge(edge.from_id, edge.to_id, EdgeKind.LANDING_CANCEL))
-			var compiled := _compile_chain(links)
+		for v in _landing_delay_waits(seam):
+			var compiled := _compile_chain(_landing_trial_links(seam, d, v, edge.from_id, edge.to_id))
 			if compiled.is_empty():
 				continue
 			var run := _run_schedule(compiled, {})
@@ -1017,6 +1249,71 @@ func _fill_landing_edge(edge: SolverEdge, context: Array[ChainLink]) -> void:
 	edge.reason = "有效对齐：空中命中落在落地帧前 %d–%d 帧（0 即命中恰在落地帧当帧——同帧顺序为命中刷新硬直 → 落地 → 取消 → 消费，临界帧规则成立）；落地帧把缓存键按地面姿态重解析为 %s 并按合法接续起手" % [
 		edge.align_from, edge.align_to, edge.to_id,
 	]
+
+
+## 落地对齐搜索的取消等待维度：经空中取消进入的来源有两维（空中起手延迟 d、
+## 取消等待 v）；jump cancel 直接进入的来源只有起手延迟一维（v 恒 0）。
+func _landing_delay_waits(seam: LandingSeam) -> Array[int]:
+	var v_values: Array[int] = []
+	if seam.from_is_jump_entry:
+		v_values.append(0)
+		return v_values
+	for v in range(GameParams.CANCEL_WINDOW_FRAMES + 1):
+		v_values.append(v)
+	return v_values
+
+
+## 一次落地对齐试验的完整输入链：上下文副本 + 指定的起手延迟 d 与（经空中取消
+## 进入时的）取消等待 v + 落地接续键（落地前一帧按下，落地帧消费）。
+func _landing_trial_links(seam: LandingSeam, d: int, v: int, from_id: String, to_id: String) -> Array[ChainLink]:
+	var context := seam.context
+	var links: Array[ChainLink] = context.duplicate()
+	links[seam.followup_idx] = _clone_link_with_wait(context[seam.followup_idx], 1 + d)
+	if not seam.from_is_jump_entry:
+		links[seam.from_link_idx] = _clone_link_with_wait(context[seam.from_link_idx], v)
+	links.append_array(_links_for_edge(from_id, to_id, EdgeKind.LANDING_CANCEL))
+	return links
+
+
+## 缺口模式的落地接缝验证（issue 20）：按「预测对齐 lead＝落地帧 − 来源命中帧」
+## 把 (d, v) 候选分桶（只有 0..取消窗口内的 lead 可能在落地帧开放接续），lead
+## 升序、档内按取消等待 v 升序（v 越小取消窗口余量越大）逐一完整模拟——首个
+## 成立的档位即证明「若配置则时序成立」。同档候选的行为等价性没有先验保证，
+## 因此不做代表抽样（漏报一个真实缺口违背缺口枚举的目的）；唯一剪枝是算术
+## 必败的取消等待（v 超过 取消窗口 − 组合等待，与正式边 wait_to 同式）。不搜索
+## 完整对齐范围（align 范围是正式边的报告内容）。
+func _fill_landing_gap(edge: SolverEdge, seam: LandingSeam) -> void:
+	var from_move := _table[edge.from_id] as MoveData
+	## 来源取消等待的算术上界：消费年龄 = v + 组合等待 须落在取消窗口内。
+	var max_wait: int = from_move.cancel_window_frames - _single_key_wait(from_move.action_key)
+	var buckets := {}
+	for d in range(0, MAX_AIR_DELAY + 1):
+		for v in _landing_delay_waits(seam):
+			if v > max_wait:
+				continue
+			var compiled := _compile_chain(_landing_trial_links(seam, d, v, edge.from_id, edge.to_id))
+			if compiled.is_empty():
+				continue
+			var lead: int = compiled["land_frame"] - compiled["hit_frames"][seam.from_hit_idx]
+			if lead < 0 or lead > from_move.cancel_window_frames:
+				continue
+			if not buckets.has(lead):
+				buckets[lead] = []
+			(buckets[lead] as Array).append([d, v])
+	var leads := buckets.keys()
+	leads.sort()
+	for lead in leads:
+		var candidates: Array = buckets[lead]
+		candidates.sort_custom(func(a: Array, b: Array) -> bool: return a[1] < b[1])
+		for pair in candidates:
+			var run := _run_schedule(_compile_chain(_landing_trial_links(seam, pair[0], pair[1], edge.from_id, edge.to_id)), {})
+			if run["ok"]:
+				edge.valid = true
+				edge.hit_age = run["hit_frames"][run["hit_frames"].size() - 1] - run["hit_frames"][seam.from_hit_idx]
+				edge.align_from = lead
+				edge.align_to = lead
+				edge.align_inputs = run["compiled"]["inputs"]
+				return
 
 
 func _clone_link_with_wait(link: ChainLink, wait: int) -> ChainLink:
@@ -1233,15 +1530,28 @@ func _run_schedule(compiled: Dictionary, opts: Dictionary) -> Dictionary:
 		var ended_now := _ended_count(events) > 0
 		if verified < total and frame == hit_frames[verified]:
 			if not hit_now:
-				break_reason = "第 %d 次命中未在预期帧（第 %d 帧）发生" % [verified + 1, frame]
-				break_kind = "miss"
+				## 失败断点分类（issue 20）：目标招式已起手但判定未连接＝挥空；
+				## 目标从未起手＝取消窗口关闭或缓存过期，与挥空区分。
+				var expected_move: String = hit_moves[verified]
+				if session.player_move_id == expected_move:
+					break_reason = "第 %d 招（%s）已起手但未在预期帧（第 %d 帧）命中——挥空" % [
+						verified + 1, expected_move, frame,
+					]
+					break_kind = "whiff"
+				else:
+					break_reason = "第 %d 招（%s）未能在第 %d 帧前起手——取消窗口关闭或缓存过期" % [
+						verified + 1, expected_move, frame,
+					]
+					break_kind = "no_start"
 				break
 			var event_hits := 0
 			for event in events:
 				if event.type == CombatEvent.Type.HIT:
 					event_hits = event.combo_hits
 			if event_hits != verified + 1:
-				break_reason = "第 %d 次命中的连段计数为 %d（预期 %d），链条已断" % [verified + 1, event_hits, verified + 1]
+				break_reason = "第 %d 次命中的连段计数为 %d（预期 %d）——木桩已自然受身、连段被重新计数，链条已断" % [
+					verified + 1, event_hits, verified + 1,
+				]
 				break_kind = "count"
 				break
 			verified += 1
