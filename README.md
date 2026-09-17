@@ -33,6 +33,11 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/te
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_solver_cycles.gd
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_solver_spatial.gd
 
+# 最终路线回放与联合验收（issue 23：Solver 输出在全新会话/训练场真实键盘中回放
+# 地面、派生、jump cancel 与落地路线，打印逐条回放记录——面向/站位/逐帧输入/
+# 命中帧/连段数/总伤害与 timing/spatial 分层标签）
+Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_replay_acceptance.gd
+
 # 共享招式表测试（issue 11：manifest 加载、整表校验、双端共享与拒绝）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_move_table.gd
 
@@ -156,5 +161,6 @@ tests/test_solver_entry.gd    Solver 正式入口 solve() 与操作说明测试�
 tests/test_solver_route.gd    Solver 配置缺口与方向 variant 测试（issue 20）
 tests/test_solver_cycles.gd   Solver 循环证明与观测上限测试（issue 21）
 tests/test_solver_spatial.gd  Solver 时序/空间证明分层测试（issue 22）
+tests/test_replay_acceptance.gd  最终路线回放联合验收（issue 23：会话重现 + 训练场键盘对拍）
 tests/diagnose_inputs.gd      搓招与空中运动诊断回路（逐帧诊断记录与症状判定）
 ```
