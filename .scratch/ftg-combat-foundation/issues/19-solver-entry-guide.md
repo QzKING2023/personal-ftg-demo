@@ -4,7 +4,7 @@
 
 **Blocked by:** 11: 共享本地招式资源与非法表拒绝
 
-**Status:** ready-for-human
+**Status:** ready-for-agent
 
 - [x] 入口接受共享资源表、可选起始战斗状态和搜索选项；缺省状态为地面中立、空缓存/方向历史、地面中立木桩和固定接触位。
 - [x] 默认分别验证左右面向；首招只枚举当前可执行的地面招式，空中招式不能直接起手；中间状态须显式提供。
@@ -25,3 +25,12 @@
 - 一次性探针与共享资源一致：所有验证仍走私有 CombatSession（测试对活动会话做全字段快照对拍）；非法表经 solve() 拒绝且 `refusal_reason` 与 MoveTable 首条错误（即训练场显示的同一原因）完全一致；修改注入表 startup 后 solve 的时序报告同步变化（issue 11 双端一致在正式入口上的回归）。
 - 范围说明：显式空中起始的落地接缝不宣称有效（排除原因注明临界对齐搜索依赖 jump cancel 进入的空中段，属 issue 20）；timing-valid/spatial-valid 分层是 issue 22、循环状态去重证明是 issue 21、回放联合验收是 issue 23，均未提前实现。空中起始复用既有 06/07 上下文机制、仅参数化起始姿态（含新增 `_context_via_landing` 上下文增长使配置了落地接续链的地面招式可达），未新增枚举维度。
 - 验证：新增 tests/test_solver_entry.gd（入口契约、双面向镜像、首招候选、真实键位操作说明、稳定排序、确定性、探针隔离、非法表同因拒绝、资源变化同步、键位映射一致、显式空中起始路线验证与越界拒绝）；test_combat_session、test_combo_solver（112）、test_move_table、test_smoke、diagnose_inputs 全绿；主场景无头 300 帧无错误。
+
+
+**2026-09-17 阶段6联合验收（本记录优先于上述历史实现结论）**
+
+新增 tools/solver_report.gd 独立入口及 docs/solver-guide.md，实际生成双面向报告。规格要求的 version=1 JSON 导出仍缺；当前仅可读文本，不能据入口测试绿灯宣称该导出已交付。
+
+自动化明细、失败分类、帧序证据与真人待验收条件见 [本轮报告](../acceptance-2026-09-17/report.md)。保持未完成的人类验收，不宣布整票关闭。
+
+状态说明：本轮核对发现上述未交付的明确规格能力，重新标记 ready-for-agent；已有通过记录保留，真人部分另行验收。

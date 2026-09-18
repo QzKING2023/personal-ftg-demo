@@ -31,7 +31,8 @@ func _run_tests() -> void:
 	await _test_jump_cancel_air_pursuit(main, session)
 	await _test_full_air_route_keyboard(main, session)
 	await _test_backward_qcb_keyboard(main, session)
-	await _test_air_derivation_keyboard()
+	for facing in [1, -1]:
+		await _test_air_derivation_keyboard(facing)
 	await _test_session_runs_shared_manifest(main)
 	await _test_main_refuses_invalid_manifest()
 	await _test_reset(main)
@@ -132,12 +133,23 @@ func _test_crouch_and_guard_presentation(main: Node2D, player: Player, session: 
 	_check(session.player_guard == CombatSession.GuardPosture.STANDING, "holding the back direction enters the standing guard")
 	_check(player.is_showing_guard(), "guarding tints the player visuals")
 	_check(debug.text.contains("站防"), "the debug line shows the standing guard posture")
+	var crouch_x := session.player_position.x
 	Input.action_press("move_down")
 	await physics_frame
 	_check(session.player_crouching and session.player_guard == CombatSession.GuardPosture.CROUCH, "S plus back enters the crouch guard")
 	_check(debug.text.contains("蹲防"), "the debug line shows the crouch guard posture")
+	_check(is_equal_approx(session.player_position.x, crouch_x) and is_zero_approx(session.player_velocity.x), "S stops an existing backward walk on the first crouch frame")
+	for frame in 10:
+		await physics_frame
+	_check(is_equal_approx(session.player_position.x, crouch_x), "holding S plus back stays in place")
 	Input.action_release("move_left")
+	Input.action_press("move_right")
+	await physics_frame
+	_check(session.player_crouching and session.player_guard == CombatSession.GuardPosture.NONE and is_equal_approx(session.player_position.x, crouch_x), "switching to S plus forward stays crouched in place without guarding")
 	Input.action_release("move_down")
+	await physics_frame
+	_check(not session.player_crouching and session.player_position.x > crouch_x, "releasing S while holding forward resumes movement immediately")
+	Input.action_release("move_right")
 	await physics_frame
 	_check(not session.player_crouching and session.player_guard == CombatSession.GuardPosture.NONE, "releasing everything returns to plain standing")
 	_check(not player.is_showing_guard() and not player.is_showing_crouch(), "visuals return to normal after the posture clears")
@@ -646,7 +658,7 @@ func _test_backward_qcb_keyboard(main: Node2D, session: CombatSession) -> void:
 	_check(hit, "the keyboard 214D connects on the nearby dummy")
 
 
-func _test_air_derivation_keyboard() -> void:
+func _test_air_derivation_keyboard(facing: int) -> void:
 	# 配置的空中方向派生走真实训练场输入路径（issue 12）：临时合法 manifest =
 	# 共享 9 招 + 空中派生 j214D（AIR + 214 + D）。前跳后 S → S+A → A → J 在空中
 	# 识别并起手 j214D；木桩在射程外——成功出招但未命中可区分。
@@ -672,15 +684,19 @@ func _test_air_derivation_keyboard() -> void:
 		await process_frame
 		return
 	_check((session.move_table() as Dictionary).has("j214D"), "session table contains the configured j214D")
-	session.dummy_position = Vector2(900.0, GameParams.ground_stand_y())
+	session.player_position = Vector2(240.0 if facing == 1 else 720.0, GameParams.ground_stand_y())
+	session.player_facing = facing
+	session.dummy_position = Vector2(900.0 if facing == 1 else 60.0, GameParams.ground_stand_y())
+	var forward_action := "move_right" if facing == 1 else "move_left"
+	var back_action := "move_left" if facing == 1 else "move_right"
 	await physics_frame
 	var hp_before := session.dummy_hp
 	# 前跳（面向 +1，木桩在远处）：Space 请求先经 4f 起跳准备，轮询等待离地。
 	Input.action_press("jump")
-	Input.action_press("move_right")
+	Input.action_press(forward_action)
 	await physics_frame
 	Input.action_release("jump")
-	Input.action_release("move_right")
+	Input.action_release(forward_action)
 	var airborne := false
 	for i in 10:
 		await physics_frame
@@ -688,16 +704,19 @@ func _test_air_derivation_keyboard() -> void:
 			airborne = true
 			break
 	_check(airborne, "forward jump lifts the player before the air input")
+	var takeoff_velocity := session.player_velocity.x
 	# 空中 S → S+A → A → J：按锁定面向折算为 2→1→4 + D。
 	Input.action_press("move_down")
 	await physics_frame
-	Input.action_press("move_left")
+	Input.action_press(back_action)
 	await physics_frame
+	_check(is_equal_approx(session.player_velocity.x, takeoff_velocity) and session.player_facing == facing,
+		"air direction release/reversal keeps takeoff momentum and facing %+d" % facing)
 	Input.action_release("move_down")
 	Input.action_press("attack_d")
 	await physics_frame
 	Input.action_release("attack_d")
-	Input.action_release("move_left")
+	Input.action_release(back_action)
 	var locked := false
 	for i in 6:
 		await physics_frame

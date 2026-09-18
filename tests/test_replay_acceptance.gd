@@ -44,6 +44,7 @@ func _run_tests() -> void:
 	print("")
 	var plain := ComboSolver.solve()
 	_test_pinned_replay_reproduces_solver_results(plain)
+	_test_rejected_landing_replay(plain)
 	_test_replay_boundary_variants(plain)
 	_test_timing_spatial_layering_and_whiff_replay(plain)
 	await _test_keyboard_replay_matches_session_probe(plain)
@@ -65,7 +66,7 @@ func _run_tests() -> void:
 func _test_pinned_replay_reproduces_solver_results(report: ComboSolver.SolverReport) -> void:
 	_check(report.mirror_consistent, "the replayed table passes the solver's facing-mirror verification")
 	var table := _shared_table()
-	for route_ids in [GROUND_ROUTE, DERIVATIVE_ROUTE, AIR_ROUTE, LANDING_ROUTE]:
+	for route_ids in [GROUND_ROUTE, DERIVATIVE_ROUTE, AIR_ROUTE]:
 		var route := _find_route(report, route_ids)
 		if route == null:
 			_check(false, "the solver reports the representative route %s" % " → ".join(route_ids))
@@ -95,9 +96,6 @@ func _test_pinned_replay_reproduces_solver_results(report: ComboSolver.SolverRep
 			_check(directions_ok, "%s: every hit's direction matches the facing" % tag)
 			if route_ids == AIR_ROUTE or route_ids == LANDING_ROUTE:
 				_check((run["landing_ticks"] as Array).size() > 0, "%s: the air segment observes a landing" % tag)
-			if route_ids == LANDING_ROUTE:
-				_check((run["landing_move_ids"] as Array).has("5D"),
-					"%s: the landing-cancel 5D starts on its landing frame" % tag)
 			if route_ids == AIR_ROUTE:
 				var saw_float := false
 				for state in run["dummy_states_at_hits"]:
@@ -114,6 +112,44 @@ func _test_pinned_replay_reproduces_solver_results(report: ComboSolver.SolverRep
 		_check(first["event_log"] == second["event_log"] and first["state_log"] == second["state_log"]
 				and first["landing_ticks"] == second["landing_ticks"],
 			"the same inputs produce identical event payloads, per-hit settlement states and landing timelines in two fresh sessions")
+		for facing in [1, -1]:
+			var free := _replay_route(air, facing, 70.0, _shared_table(), false)
+			_check(int(free["combo_hits"]) < air.combo_hits,
+				"70 px real-knockback air replay does not inherit the pinned spatial proof")
+			_records.append(_record_line(air, facing, "站位：真实击退 70 px", free,
+				"命中帧", "timing-valid（该站位真实击退复验失败，不宣称全路线可命中）"))
+
+
+## 保留旧 Solver 的真实帧表作负例，不能把它混回当前合法路线。
+func _legacy_landing_fixture() -> ComboSolver.SolverRoute:
+	var route := ComboSolver.SolverRoute.new()
+	route.move_ids.assign(LANDING_ROUTE)
+	route.hit_frames.assign([6, 13, 43, 55])
+	route.combo_hits = 4
+	route.total_damage = 41.0
+	route.timing_valid = false
+	for row in [[1,0,false,false,"A"], [3,0,true,false,""], [4,1,true,false,""],
+		[5,1,false,false,""], [6,0,false,false,"C"], [13,0,false,true,""],
+		[39,0,false,false,"A"], [48,0,false,false,"B"], [54,0,false,false,"D"]]:
+		var input := ComboSolver.ScheduledInput.new()
+		input.frame = row[0]
+		input.axis = row[1]
+		input.down = row[2]
+		input.jump = row[3]
+		input.key = row[4]
+		route.inputs.append(input)
+	return route
+
+func _test_rejected_landing_replay(report: ComboSolver.SolverReport) -> void:
+	_check(_find_route(report, LANDING_ROUTE) == null, "latest Solver excludes the forbidden landing route")
+	var route := _legacy_landing_fixture()
+	for facing in [1, -1]:
+		var run := _replay_route(route, facing, 70.0, _shared_table(), true)
+		_check(run["hit_frames"] == route.hit_frames and int(run["combo_hits"]) == 4,
+			"legacy landing replay stops at four hits despite fixed contact")
+		_check(not (run["landing_move_ids"] as Array).has("5D"), "legacy schedule cannot start 5D on landing")
+		_records.append(_record_line(route, facing, "站位：旧样本钉位 70 px", run,
+			"命中帧", "timing-invalid（恢复锁拒绝旧样本第5击；不作空间证明）"))
 
 
 # --- Part 2: follow-up boundaries replayed end to end (checkbox 5, joint layer) ---
@@ -236,10 +272,11 @@ func _test_keyboard_replay_matches_session_probe(plain: ComboSolver.SolverReport
 	for combo in [
 		["ground", GROUND_ROUTE, 1], ["derivative", DERIVATIVE_ROUTE, 1],
 		["air", AIR_ROUTE, 1], ["landing", LANDING_ROUTE, 1],
-		["ground", GROUND_ROUTE, -1],
+		["ground", GROUND_ROUTE, -1], ["derivative", DERIVATIVE_ROUTE, -1],
+		["air", AIR_ROUTE, -1], ["landing", LANDING_ROUTE, -1],
 	]:
 		var kind: String = combo[0]
-		var route := _find_route(plain, combo[1])
+		var route := _legacy_landing_fixture() if kind == "landing" else _find_route(plain, combo[1])
 		var facing: int = combo[2]
 		if route == null:
 			_check(false, "the keyboard replay finds route %s" % " → ".join(PackedStringArray(combo[1])))
@@ -260,14 +297,17 @@ func _test_keyboard_replay_matches_session_probe(plain: ComboSolver.SolverReport
 			_check(keyboard["landing_ticks"] == probe["landing_ticks"],
 				"%s: the player lands on the same tick (%s)" % [tag, str(keyboard["landing_ticks"])])
 		var layer := "timing-valid（键盘回放证实真实击退下完整接通）"
-		if int(keyboard["combo_hits"]) < route.combo_hits:
+		if kind == "landing":
+			_check(int(keyboard["combo_hits"]) == 4, "legacy landing schedule stops at four hits on the real keyboard path")
+			layer = "timing-invalid（旧落地样本负例：恢复锁拒绝第5击）"
+		elif int(keyboard["combo_hits"]) < route.combo_hits:
 			layer = "timing-valid（键盘回放 %.0f px 真实击退下第 %d 击后漂出命中距离——钉位层结论见钉位回放记录）" % [
 				dx, int(keyboard["combo_hits"])]
 		_records.append(_record_line(route, facing, "站位：训练场真实键盘 %.0f px" % dx, keyboard,
 			"命中tick（物理，含前导空帧）", layer))
 	# 测试者可按说明执行：每条回放路线在对应面向分节里有真实键位行。
 	var guide_text := "\n".join(plain.guide_lines)
-	for route_ids in [GROUND_ROUTE, DERIVATIVE_ROUTE, AIR_ROUTE, LANDING_ROUTE]:
+	for route_ids in [GROUND_ROUTE, DERIVATIVE_ROUTE, AIR_ROUTE]:
 		var route := _find_route(plain, route_ids)
 		if route == null:
 			continue
@@ -373,9 +413,11 @@ func _settle(session: CombatSession) -> void:
 
 func _test_replay_records_complete() -> void:
 	_check(_records.size() >= 10, "the replay records cover the representative routes (pinned both facings + keyboard + spatial)")
+	_check(_records.any(func(line: String) -> bool: return line.contains("5B → 214D｜面向 -1") and line.contains("F6 1[S+D] F7 4[D]")),
+		"left-facing replay records mirror physical keys while retaining relative 214")
 	for line in _records:
 		var complete := true
-		for token in ["回放记录｜", "面向", "站位：", "输入 ", "｜伤害 ", "timing-valid"]:
+		for token in ["回放记录｜", "面向", "站位：", "输入 ", "｜伤害 ", "timing-"]:
 			complete = complete and token in line
 		_check(complete, "each replay record line carries every required field (%s)" % line)
 
@@ -641,7 +683,7 @@ func _record_line(route: ComboSolver.SolverRoute, facing: int, standing: String,
 		elif spec.jump:
 			token += " Space"
 		else:
-			token += " %s[%s]" % [_digit_text(spec.axis, spec.down, facing), _digit_keys(spec.axis, spec.down, facing)]
+			token += " %s[%s]" % [_digit_text(spec.axis * facing, spec.down, facing), _digit_keys(spec.axis * facing, spec.down, facing)]
 		ops.append(token)
 	var hit_frames: Array = run.get("hit_frames", run.get("hit_ticks", []))
 	return "回放记录｜%s｜面向 %+d｜%s｜输入 %s｜%s %s｜%d hit｜伤害 %.1f｜%s" % [

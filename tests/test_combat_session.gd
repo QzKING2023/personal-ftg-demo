@@ -84,7 +84,7 @@ func _initialize() -> void:
 	_test_hitstop_does_not_consume_direction_window()
 	_test_cancel_age_counts_normal_frames()
 	_test_cancel_diagnostics_and_consumption_record()
-	_test_crouch_entry_and_horizontal_component()
+	_test_crouch_entry_and_stationary_movement()
 	_test_guard_postures_ground_air_prejump()
 	_test_dummy_attack_lifecycle_observable()
 	_test_guard_attribute_matrix()
@@ -2032,13 +2032,6 @@ func _test_full_air_route_5A_236C_jA_jB_jD() -> void:
 
 
 func _test_same_frame_hit_landing_and_landing_followup() -> void:
-	# 临界落地帧：jB 命中、玩家落地与缓存消费发生在同一物理帧。结算顺序固定为
-	# 命中刷新木桩硬直 → 落地 → 取消判定 → 消费缓存；jB 配置的落地接续把缓存的 D
-	# 按地面姿态重解析为 5D，并作为合法接续在落地当帧起手。
-	# 停顿几何：F32 Space 进入准备；F36 离地；jA F63 起手、F67 命中（恰在浮空
-	# 受身边界）→停顿 F68–F75 内按 B（缓存年龄暂停）→ F78 消费起手 jB →
-	# F82 命中；起跳 38 正常帧滞空 + jA 命中的 8 帧停顿使落地也恰为 F82。
-	# 木桩初始距 52px：236C 击退漂移后仍留在 jB 命中框内。
 	var session := CombatSession.new()
 	session.dummy_position = session.player_position + Vector2(52, 0)
 	var hit_frames: Array[int] = []
@@ -2079,21 +2072,22 @@ func _test_same_frame_hit_landing_and_landing_followup() -> void:
 			jB_in_progress_before_landing = session.player_move_id == "jB" and not session.player_on_ground
 		if frame == 82:
 			critical_events = events
-			critical_state_ok = session.player_move_id == "5D" and session.player_on_ground \
-				and session.combo_hits == 4 and session.combo_active \
+			critical_state_ok = session.player_move_id == "" and session.player_on_ground \
+				and session.combo_hits == 4 and not session.combo_active \
 				and session.dummy_state == CombatSession.DummyState.GROUND_HITSTUN \
 				and session.dummy_hitstun_left == GameParams.HITSTUN_FRAMES
 	_check(jB_in_progress_before_landing, "route reaches the critical frame with jB airborne and one frame from landing")
-	_check(hit_frames == [9, 23, 67, 82, 95], "jB hits exactly on the landing frame, then the landing followup 5D connects")
-	_check(critical_events.size() == 2 and critical_events[0].type == CombatEvent.Type.HIT \
+	_check(hit_frames == [9, 23, 67, 82], "jB hits exactly on the landing frame, then recovery blocks the landing followup")
+	_check(critical_events.size() == 3 and critical_events[0].type == CombatEvent.Type.HIT \
 		and critical_events[1].type == CombatEvent.Type.HITSTOP_STARTED,
 		"the critical frame emits the hit then the hitstop-start boundary: hit refreshed hitstun before landing ticked it")
-	_check(critical_state_ok, "same-frame order is hit refresh -> landing -> cancel -> consume: buffered D starts 5D as a legal followup")
+	_check(critical_state_ok, "same-frame order is hit refresh -> landing -> cancel -> consume: recovery blocks buffered D")
 	_check(not "jD" in move_ids, "the buffered D is never consumed as the air finisher on the landing frame")
-	_check(end_frames == [95] and end_reasons == [CombatEvent.ComboEndReason.FINISHER], "landing followup 5D ends the route as the ground finisher")
-	_check(_approx(session.combo_total_damage, 51.8), "route damage totals 51.8 through the landing followup")
-	_check(recovered_frames == [124] and session.dummy_state == CombatSession.DummyState.NEUTRAL, "dummy completes its knockdown handling after the finisher")
-	_check(session.combo_hits == 5, "combo counts all five hits and stops there")
+	_check(end_frames == [82] and end_reasons == [CombatEvent.ComboEndReason.MOVE_RECOVERED], "landing truncates jB and ends the route")
+	_check(_approx(session.combo_total_damage, 41.0), "route damage stops at 41.0 without the forbidden followup")
+	print("LANDING_RECOVERY recovered_frames=", recovered_frames)
+	_check(recovered_frames == [105] and session.dummy_state == CombatSession.DummyState.NEUTRAL, "dummy completes its knockdown handling after the final air hit")
+	_check(session.combo_hits == 4, "combo counts all four hits and stops there")
 
 
 func _test_landing_seam_only_opens_on_the_landing_frame() -> void:
@@ -2456,9 +2450,9 @@ func _run_neutral(session: CombatSession, frames: int) -> int:
 		hits += _count_events(events, CombatEvent.Type.HIT)
 	return hits
 
-func _test_crouch_entry_and_horizontal_component() -> void:
-	# 蹲下（issue 16）：地面自由行动时 1/2/3 当帧进入蹲下；水平分量分别保留后退、
-	# 中立、前进（蹲下行走照常）；离开下方向当帧站起；4 为站防且保留后退行走。
+func _test_crouch_entry_and_stationary_movement() -> void:
+	# 2026-09-18 真人反馈：1/2/3 当帧蹲下并停止行走；离开下方向当帧站起；
+	# 4 为站防且保留后退行走，原始方向仍用于蹲防和搓招。
 	var crouch3 := CombatSession.new()
 	var crouched_on_press := false
 	var x_after := 0.0
@@ -2469,21 +2463,21 @@ func _test_crouch_entry_and_horizontal_component() -> void:
 		x_after = crouch3.player_position.x
 	_check(crouched_on_press, "holding 3 enters crouch on the same frame")
 	_check(crouch3.player_crouching, "holding 3 keeps crouching")
-	_check(x_after > GameParams.PLAYER_SPAWN_X + 25.0, "crouch walking keeps the forward component of 3")
+	_check(is_equal_approx(x_after, GameParams.PLAYER_SPAWN_X), "holding 3 crouches without moving forward")
 	_check(crouch3.player_guard == CombatSession.GuardPosture.NONE, "3 is not a guard direction")
 
 	var crouch2 := CombatSession.new()
 	for frame in range(1, 6):
 		crouch2.step(_relative_input(crouch2, 2))
 	_check(crouch2.player_crouching, "holding 2 crouches in place")
-	_check(absf(crouch2.player_position.x - GameParams.PLAYER_SPAWN_X) < 0.5, "2 keeps its neutral horizontal component")
+	_check(is_equal_approx(crouch2.player_position.x, GameParams.PLAYER_SPAWN_X), "holding 2 crouches without moving")
 
 	var crouch1 := CombatSession.new()
 	for frame in range(1, 16):
 		crouch1.step(_relative_input(crouch1, 1))
 	_check(crouch1.player_crouching and crouch1.player_guard == CombatSession.GuardPosture.CROUCH,
 		"1 enters the crouch-guard posture")
-	_check(crouch1.player_position.x < GameParams.PLAYER_SPAWN_X - 25.0, "crouch walking keeps the backward component of 1")
+	_check(is_equal_approx(crouch1.player_position.x, GameParams.PLAYER_SPAWN_X), "holding 1 crouch-guards without moving backward")
 
 	var stand := CombatSession.new()
 	stand.step(_relative_input(stand, 2))

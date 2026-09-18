@@ -24,3 +24,10 @@
 - 性能：默认表 plain solve ~1.9s，spatial solve（双面向 × 三档 × 9 条路线复验）~5.9s；test_solver_spatial 全文件约 3 分钟内（含多次完整 solve）。
 - 范围说明：空间分层只覆盖可读路线（边与循环保持 timing 层，报告已言明）；`_route_layer_tag` 对 timing 未成立路线的标签「timing 未成立；空间不作验证」在当前走法下实际不可达（路线只走逐边验证过的合法边，默认表无断链路线），作为语义完备性保留；issue 23 的回放联合验收未提前实现。
 - 验证：新增 tests/test_solver_spatial.gd（无数据仅 timing-valid、网格三档双面向 spatial-valid、短 reach 注入的空间失败点名 80 px 与碰撞条件且不改判 timing、缺口与时序排除不作空间失败、身体矩形不一致拒绝、空中起始拒绝、不搜索范围声明、确定性与运行时隔离）；test_combat_session（632）、test_move_table（134）、test_smoke（111）、test_combo_solver（111）、test_solver_entry（49）、test_solver_route（95）、test_solver_cycles（35）、diagnose_inputs 全绿；主场景无头 300 帧无错误。
+
+
+**2026-09-17 阶段6联合验收（本记录优先于上述历史实现结论）**
+
+静态网格48/64/80px只证明每帧钉位，已在报告追加明确说明。70px空中不钉位实测两侧仅3击/32.6，48px真实输入两侧5击/53；不外推墙角、走位或其他站位。
+
+自动化明细、失败分类、帧序证据与真人待验收条件见 [本轮报告](../acceptance-2026-09-17/report.md)。保持未完成的人类验收，不宣布整票关闭。

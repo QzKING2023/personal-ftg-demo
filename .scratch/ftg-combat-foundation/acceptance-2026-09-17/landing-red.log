@@ -1,0 +1,35 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2548)
+LANDING facing=1 physical=82 move=5D recovery=4 hits=[9, 23, 67, 82]
+PASS  real input route hits jB before landing
+FAIL  landing recovery rejects configured cancel facing=1 F82
+FAIL  landing recovery rejects configured cancel facing=1 F83
+FAIL  landing recovery rejects configured cancel facing=1 F84
+FAIL  landing recovery rejects configured cancel facing=1 F85
+FAIL  landing recovery rejects configured cancel facing=1 F86
+FAIL  landing recovery rejects configured cancel facing=1 F87
+FAIL  landing recovery rejects configured cancel facing=1 F88
+FAIL  landing recovery rejects configured cancel facing=1 F89
+FAIL  landing recovery rejects configured cancel facing=1 F90
+FAIL  landing recovery rejects configured cancel facing=1 F91
+FAIL  landing recovery rejects configured cancel facing=1 F92
+FAIL  landing recovery rejects configured cancel facing=1 F93
+FAIL  forbidden landing followup never becomes a fifth hit
+LANDING facing=-1 physical=82 move=5D recovery=4 hits=[9, 23, 67, 82]
+PASS  real input route hits jB before landing
+FAIL  landing recovery rejects configured cancel facing=-1 F82
+FAIL  landing recovery rejects configured cancel facing=-1 F83
+FAIL  landing recovery rejects configured cancel facing=-1 F84
+FAIL  landing recovery rejects configured cancel facing=-1 F85
+FAIL  landing recovery rejects configured cancel facing=-1 F86
+FAIL  landing recovery rejects configured cancel facing=-1 F87
+FAIL  landing recovery rejects configured cancel facing=-1 F88
+FAIL  landing recovery rejects configured cancel facing=-1 F89
+FAIL  landing recovery rejects configured cancel facing=-1 F90
+FAIL  landing recovery rejects configured cancel facing=-1 F91
+FAIL  landing recovery rejects configured cancel facing=-1 F92
+FAIL  landing recovery rejects configured cancel facing=-1 F93
+FAIL  forbidden landing followup never becomes a fifth hit
+26 TEST(S) FAILED

@@ -1,0 +1,10 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2548)
+PASS  training ground U input observes edited startup
+PASS  training ground observes edited damage
+PASS  Solver observes same first-hit frame
+PASS  Solver observes same damage change
+FILE_SYNC startup=8 damage=25.0 training_start=2 training_hit=10 solver_hits=[9, 14, 19] solver_damage=50.2
+PASS  representative ground route remains available

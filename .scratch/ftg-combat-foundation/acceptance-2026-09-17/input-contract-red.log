@@ -1,0 +1,8 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2548)
+FAIL F1 Space axis=0 down=false direction= expected=8
+FAIL F1 Space axis=1 down=false direction=6 expected=9
+FAIL F1 Space axis=-1 down=false direction=4 expected=7
+FAIL F1 Space axis=0 down=true direction=2 expected=

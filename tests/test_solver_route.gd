@@ -48,11 +48,8 @@ func _test_default_table_reports_config_gaps() -> void:
 	if jump_gap != null:
 		_check("缺配置" in jump_gap.reason and "jump_cancel_targets" in jump_gap.reason,
 			"the jump-cancel gap names the missing configuration field")
-	var landing_gap := _find_gap(report, "jB", "5A", ComboSolver.EdgeKind.LANDING_CANCEL)
-	_check(landing_gap != null, "jB → 5A is reported as a landing config gap (it proves a cycle once configured)")
-	if landing_gap != null:
-		_check("缺配置" in landing_gap.reason and "landing_cancel_targets" in landing_gap.reason,
-			"the landing gap names the missing configuration field")
+	_check(_find_gap(report, "jB", "5A", ComboSolver.EdgeKind.LANDING_CANCEL) == null,
+		"illegal landing back edge is not reported as a configuration gap")
 	_check(_find_gap(report, "5A", "5B", ComboSolver.EdgeKind.CANCEL) == null,
 		"configured pairs never appear as gaps")
 	_check(_find_gap(report, "5C", "jA", ComboSolver.EdgeKind.JUMP_CANCEL) == null,
@@ -130,27 +127,15 @@ func _test_gap_becomes_valid_edge_once_configured() -> void:
 
 
 func _test_landing_gap_from_direct_jump_entry() -> void:
-	# jA 由 jump cancel 直接进入（上下文不含空中取消链）：落地接缝枚举同样覆盖
-	# 这种来源；对齐受 5C 浮空硬直约束（36f 自然受身先于滞空耗尽），有效档为
-	# 落地帧前 6–8 帧；补配置后接缝成为合法边并验证同一范围。
 	var report := ComboSolver.solve()
-	var gap := _find_gap(report, "jA", "5D", ComboSolver.EdgeKind.LANDING_CANCEL)
-	_check(gap != null, "jA → 5D is reported as a landing config gap (jA entered directly via jump cancel)")
-	if gap != null:
-		_check(gap.align_from == 6,
-			"the gap reports the earliest workable alignment (lead 6 — the 5C float stun expires before later air hits)")
+	_check(_find_gap(report, "jA", "5D", ComboSolver.EdgeKind.LANDING_CANCEL) == null,
+		"landing recovery is a rule restriction, not a missing configuration")
 	var table := MoveData.default_table()
 	(table["jA"] as MoveData).landing_cancel_targets = ["5D"]
 	var configured := ComboSolver.solve(_options(table))
 	var edge := _find_edge(configured, "jA", "5D", ComboSolver.EdgeKind.LANDING_CANCEL)
-	_check(edge != null and edge.valid, "configuring the direct-entry landing seam makes it a valid edge")
-	if edge != null:
-		_check(edge.align_from == 6 and edge.align_to == 8,
-			"the direct-entry seam verifies alignments 6–8 frames before the landing frame")
-		_check(not edge.align_inputs.is_empty(), "the seam carries a replayable alignment schedule")
-		var replay := _replay_landing(edge, table)
-		_check(replay.hits == 3 and replay.landing_move_5d,
-			"replaying the schedule lands 3 hits and the buffered D starts 5D on the landing frame")
+	_check(edge != null and not edge.valid and edge.align_inputs.is_empty(),
+		"adding a direct-entry landing target still cannot bypass recovery")
 
 
 func _test_pairing_wait_landing_target_not_a_gap() -> void:

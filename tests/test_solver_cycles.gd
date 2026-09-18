@@ -139,25 +139,12 @@ func _test_valid_back_edge_proven_with_replay_materials() -> void:
 
 
 func _test_proof_distinguishes_entry_lap_player_state() -> void:
-	# 落地回边循环（236C -> jA -> jB -> 5A -> 落地 -> 236C）的入口圈与稳态圈在
-	# 玩家侧状态上不同：入口圈没有中段 Space/jump 标记与上一圈的空中招式标记。
-	# 全量状态键必须把这些差异计入——重现对拍只能发生在稳态圈之间，而不是拿
-	# 入口圈冒充（旧木桩时序键在入口圈就提前“证明”）。
 	var table := MoveData.default_table()
 	(table["jB"] as MoveData).landing_cancel_targets = ["5D", "5A"]
 	var report := ComboSolver.solve(_options(table))
-	_check(report.cycles.size() == 1 and report.cycles[0].proven,
-		"the landing back edge is proven via per-lap state recurrence")
-	if report.cycles.size() != 1:
-		return
-	var cycle := report.cycles[0]
-	_check(cycle.route == ["236C", "jA", "jB", "5A"],
-		"the canonical landing cycle rotation is unchanged")
-	_check(cycle.laps_observed >= 3,
-		"the recurrence is observed between steady laps, not against the entry lap (player-side state differs)")
-
-
-# --- 观测上限：截断 / 未完成观测，不宣称完整证明 ---
+	_check(report.cycles.is_empty(), "an illegal landing seam never produces a recurrence proof")
+	_check(report.edges.any(func(edge): return edge.from_id == "jB" and edge.to_id == "5A" and not edge.valid),
+		"landing back edge is rejected before cycle search; ground recurrence proofs remain independently tested")
 
 
 func _test_frame_cap_reports_truncation_not_cycle() -> void:
@@ -270,7 +257,7 @@ func _test_cycles_sorted_and_report_deterministic() -> void:
 	(table["5B"] as MoveData).cancel_targets = ["5D", "5A"]
 	(table["jB"] as MoveData).landing_cancel_targets = ["5D", "5A"]
 	var report := ComboSolver.solve(_options(table))
-	_check(report.cycles.size() == 2, "both back edges are proven as cycles")
+	_check(report.cycles.size() == 1, "only the legal ground back edge is proven; the landing back edge is excluded")
 	var labels: Array[String] = []
 	for cycle in report.cycles:
 		labels.append(cycle.label())

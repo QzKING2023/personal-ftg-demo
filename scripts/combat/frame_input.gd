@@ -7,6 +7,8 @@ extends RefCounted
 var move_axis := 0
 ## 本帧是否按住下方方向（S/↓）。方向输入只进方向历史，不进入动作键缓存。
 var down_held := false
+## 上方向持有（Space/↑），与下方向中和；按下边沿仍由 jump_pressed 独立承载。
+var up_held := false
 ## 本帧是否刚按下跳跃（Space 独立输入，不进入动作键缓存）。
 var jump_pressed := false
 ## 本帧新按下的动作键集合（可能同帧多键，如 B+C 组合；顺序无关）。
@@ -46,6 +48,7 @@ static func make(move_axis: int = 0, jump_pressed: bool = false, action_key: Str
 	var input := FrameInput.new()
 	input.move_axis = move_axis
 	input.jump_pressed = jump_pressed
+	input.up_held = jump_pressed
 	input.action_key = action_key
 	input.down_held = down_held
 	input.dummy_move_request = dummy_move_request

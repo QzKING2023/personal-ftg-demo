@@ -64,6 +64,7 @@ func _read_frame_input() -> FrameInput:
 	var input := FrameInput.new()
 	input.move_axis = roundi(Input.get_axis("move_left", "move_right"))
 	input.down_held = Input.is_action_pressed("move_down")
+	input.up_held = Input.is_action_pressed("jump")
 	input.jump_pressed = Input.is_action_just_pressed("jump")
 	# 全部新按下与按住的动作键都进入会话（B+C 组合按配对容差与持键判定，
 	# 同帧单键选择由会话按 D>C>B>A 折算，issue 17）。

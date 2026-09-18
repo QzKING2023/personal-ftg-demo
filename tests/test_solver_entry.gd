@@ -187,8 +187,8 @@ func _test_explicit_air_start_landing_seam_not_claimed() -> void:
 	_check(edge != null and not edge.valid,
 		"the landing seam is not claimed as valid from an explicit air start")
 	if edge != null:
-		_check("显式空中起始" in edge.reason,
-			"the exclusion reason names the explicit air start instead of a generic probe failure")
+		_check("落地恢复" in edge.reason,
+			"the exclusion reason names the recovery lock regardless of starting stance")
 
 
 # --- 稳定排序与确定性 ---

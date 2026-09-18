@@ -219,9 +219,9 @@ func _test_default_table_air_edges() -> void:
 	var air_finisher := _find_edge(report, "jB", "jD", ComboSolver.EdgeKind.CANCEL)
 	_check(air_finisher != null and air_finisher.valid and air_finisher.hit_age == 4, "jB -> jD is a valid air cancel into the finisher")
 	var landing := _find_edge(report, "jB", "5D", ComboSolver.EdgeKind.LANDING_CANCEL)
-	_check(landing != null and landing.valid, "jB -> 5D is a valid explicit landing continuation")
+	_check(landing != null and not landing.valid, "jB -> 5D is excluded by the landing recovery lock")
 	if landing != null:
-		_check(landing.valid and landing.align_from == 0 and landing.align_to == 0, "landing seam accepts the jB hit exactly on the landing frame (critical-frame rule); earlier leads are unreachable because the followup key must be pressed before jB's confirm (a press inside jB's open window consumes as the configured jD air cancel) and buffer ages cap at 5")
+		_check(landing.align_inputs.is_empty(), "excluded landing edge has no successful alignment input")
 
 
 func _test_full_air_route_matches_runtime() -> void:
@@ -242,59 +242,13 @@ func _test_full_air_route_matches_runtime() -> void:
 
 
 func _test_landing_route_and_critical_frame() -> void:
-	# 验收 2/3：显式落地接续路线，以及 jB 命中优先于落地的临界帧规则。
 	var report := ComboSolver.analyze()
-	var route := _find_route(report, ["5A", "236C", "jA", "jB", "5D"])
-	_check(route != null, "the landing-continuation route 5A -> 236C -> jA -> jB -> 5D is reported")
-	if route != null:
-		_check(route.hit_frames == [6, 13, 43, 55, 60], "landing route delays the air cancel so jB hits exactly on the landing frame (critical alignment, with the B pairing wait)")
-		_check(route.combo_hits == 5 and _approx(route.total_damage, 51.8), "landing route totals 51.8, matching the runtime same-frame landing test")
-		var route_replay := _replay_inputs(route.inputs, route.hit_frames[route.hit_frames.size() - 1])
-		_check(route_replay.hit_frames == route.hit_frames and route_replay.combo_hits == 5, "the landing route's own schedule replays identically on a fresh session")
-	# 临界帧回放：落地接续边的最晚对齐档——jB 命中恰在落地帧当帧，同帧产生命中
-	# 与停顿开始两个事件，落地随后开放接续，缓存的 D 在当帧消费为 5D（与运行时
-	# 临界测试同序）。输入表按正常战斗帧编排，回放跳过冻结帧。
+	_check(_find_route(report, ["5A", "236C", "jA", "jB", "5D"]) == null,
+		"forbidden landing-frame route is absent from legal routes")
 	var edge := _find_edge(report, "jB", "5D", ComboSolver.EdgeKind.LANDING_CANCEL)
-	_check(edge != null and edge.valid and not edge.align_inputs.is_empty(), "landing edge carries the latest-alignment schedule for replay")
-	if edge == null or edge.align_inputs.is_empty():
-		return
-	var by_frame := {}
-	for spec in edge.align_inputs:
-		by_frame[spec.frame] = spec
-	var session := CombatSession.new()
-	var last := 0
-	for spec in edge.align_inputs:
-		last = maxi(last, spec.frame)
-	# 最后一次按键在落地前一帧（issue 15 首帧锁定），5D 于落地帧起手、命中在
-	# 前摇之后——观测窗覆盖到该帧。
-	last += 1 + GameParams.MOVE_5D_STARTUP_FRAMES
-	var landing_frame := -1
-	var hit_frames: Array[int] = []
-	var critical_state_ok := false
-	var frame := 0
-	while frame < last:
-		frame += 1
-		var input := FrameInput.new()
-		if by_frame.has(frame):
-			input = by_frame[frame].to_frame_input()
-		var was_airborne := not session.player_on_ground
-		var events := _step_logical(session, input)
-		session.dummy_position.x = session.player_position.x + session.player_facing * ComboSolver.PIN_DX
-		var hit_now := false
-		var stop_started := false
-		for event in events:
-			if event.type == CombatEvent.Type.HIT:
-				hit_now = true
-			elif event.type == CombatEvent.Type.HITSTOP_STARTED:
-				stop_started = true
-		if hit_now:
-			hit_frames.append(frame)
-		if was_airborne and session.player_on_ground:
-			landing_frame = frame
-			critical_state_ok = hit_now and stop_started and events.size() == 2 and session.player_move_id == "5D"
-	_check(landing_frame > 0 and hit_frames.has(landing_frame), "the latest alignment lands the jB hit exactly on the landing frame")
-	_check(critical_state_ok, "critical frame order holds: hit then hitstop-start are the only events; landing then lets the buffered D start 5D on that same frame")
-	_check(hit_frames.size() == 4, "critical replay verifies the four hits 5C -> jA -> jB -> 5D")
+	_check(edge != null and not edge.valid and edge.align_inputs.is_empty(),
+		"landing edge is excluded and carries no successful replay")
+	_check(edge != null and "落地恢复" in edge.reason, "landing exclusion names the recovery lock")
 
 
 func _test_jump_cancel_config_gates() -> void:
@@ -360,22 +314,14 @@ func _test_finite_air_resources_not_renewed() -> void:
 
 
 func _test_injected_landing_back_edge_reports_cycle() -> void:
-	# 验收 4：注入显式落地接续回边 jB -> 5A 后，5A -> 236C -> jA -> jB -> 落地 -> 5A
-	# 每圈由 236C 重建木桩浮空、由 jump cancel 重建玩家滞空——真实可重复的循环被证明并上报；
-	# 默认表的有限空中路线（jD 收尾）仍以普通路线报告，两者明确区分。
 	var table := MoveData.default_table()
 	(table["jB"] as MoveData).landing_cancel_targets = ["5D", "5A"]
 	var report := ComboSolver.analyze(table)
-	_check(not report.safe and report.cycles.size() == 1, "exactly one valid cycle after injecting the landing back edge")
-	if report.cycles.size() == 1:
-		var cycle := report.cycles[0]
-		_check(cycle.route == ["236C", "jA", "jB", "5A"], "cycle route is 236C -> jA -> jB -> 5A -> back to 236C (canonical rotation)")
-		_check(cycle.proven, "the cycle is proven by settlement-state recurrence across laps")
-		_check(cycle.period_frames == 54, "cycle period is 54 frames per lap (jump cancel spends 4 pre-jump normal frames; the B pairing wait re-aligns the landing seam)")
-		_check(cycle.laps_observed == 3, "recurrence is observed at the start of lap 3: the entry lap differs from steady laps in player-side state (no mid-chain Space slot yet, no previous-lap air-move marks), so the full settlement-state key (issue 21) only matches steady laps against each other")
+	_check(report.safe and report.cycles.is_empty(), "configured landing back edge cannot bypass recovery or prove a cycle")
+	var edge := _find_edge(report, "jB", "5A", ComboSolver.EdgeKind.LANDING_CANCEL)
+	_check(edge != null and not edge.valid, "landing back edge is excluded")
 	var finite := _find_route(report, ["5A", "236C", "jA", "jB", "jD"])
-	_check(finite != null and finite.combo_hits == 5, "the finite jD-finisher air route is still reported as a plain route, distinct from the cycle")
-	_check("有效循环" in report.summary, "summary reports the effective cycle")
+	_check(finite != null and finite.combo_hits == 5, "finite air route remains available")
 
 
 func _test_solver_claims_only_configured_connections() -> void:

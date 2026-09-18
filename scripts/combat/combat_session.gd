@@ -38,7 +38,7 @@ var player_phase: PlayerPhase = PlayerPhase.NEUTRAL
 var player_on_ground := true
 ## 当前执行的招式 id（空闲时为空串）。
 var player_move_id := ""
-## 是否处于蹲下姿态（地面自由行动时 1/2/3 当帧进入；水平分量照常保留）。
+## 是否处于蹲下姿态（地面自由行动时 1/2/3 当帧进入并停止主动水平移动）。
 var player_crouching := false
 ## 当前防御姿态（站防/蹲防/空防；受限阶段冻结，不因下方向强行切换）。
 var player_guard: GuardPosture = GuardPosture.NONE
@@ -535,7 +535,7 @@ func _phase_input(events: Array[CombatEvent]) -> void:
 		_buffer_waiting = false
 		if _buffered_move_id != "" and _buffered_endpoint >= 0:
 			_consume_direction_history_through(_buffered_endpoint)
-	## 跳跃输入槽独立记录：Space+下不触发跳跃（下方向优先），按下即冻结
+	## 跳跃输入槽独立记录：Space+下中和，不触发跳跃；按下即冻结
 	## 当帧世界水平跳向；最新按下覆盖旧请求，按住不重复。
 	if _frame_input.jump_pressed and not _frame_input.down_held:
 		_jump_slot_active = true
@@ -647,8 +647,8 @@ func _process_dummy_request() -> void:
 
 
 ## 姿态解析（蹲下与防御，issue 16）：先于命中判定，使当帧进入的蹲下/防御
-## 参与同帧的防御判定。地面自由行动时 1/2/3 当帧蹲下（水平分量照常保留）、
-## 4 站防、1 蹲防；真正离地后 4/1 均为空防、下方向只保留运动输入。
+## 参与同帧的防御判定。地面自由行动时 1/2/3 当帧蹲下并停止主动移动、
+## 4 站防、1 蹲防；真正离地后 4/1 均为空防，下方向不形成蹲姿。
 ## 招式阶段、受击/防御硬直、pre-jump 与空技落地恢复中姿态冻结——防御硬直
 ## 冻结即保持原防御姿态（连防），受击硬直冻结即不因下方向强行改姿态。
 ## 空跳落地恢复第 2、3 帧与自由行动同门（可蹲可防）。
@@ -659,7 +659,7 @@ func _update_posture() -> void:
 		player_crouching = false
 		player_guard = GuardPosture.AIR if _holding_back() else GuardPosture.NONE
 		return
-	player_crouching = _frame_input.down_held
+	player_crouching = _direction_digit() in [1, 2, 3]
 	if _holding_back():
 		player_guard = GuardPosture.CROUCH if player_crouching else GuardPosture.STANDING
 	else:
@@ -703,7 +703,7 @@ func _posture_reeval_open() -> bool:
 
 ## 是否按住“后”（相对帧首面向折算；与方向历史同一口径）。
 func _holding_back() -> bool:
-	return _frame_input.move_axis == -player_facing
+	return _direction_digit() in [1, 4]
 
 
 ## 输入记录时间戳（正常帧时钟口径）：正常帧记当前时钟；冻结帧记恢复首个正常帧
@@ -729,13 +729,15 @@ func _record_direction() -> void:
 
 func _direction_digit() -> int:
 	## 面向相对的小键盘方向（输入阶段先于运动，用翻转前的面向折算）：
-	## 前 6 / 后 4 / 下 2 / 斜 1、3；无输入为 5。
+	## 前6/后4/下2/上8及斜向1/3/7/9；上下中和，无输入为5。
 	var horizontal := 0
 	if _frame_input.move_axis == player_facing:
 		horizontal = 1
 	elif _frame_input.move_axis == -player_facing:
 		horizontal = -1
-	return 5 + horizontal - (3 if _frame_input.down_held else 0)
+	var up := _frame_input.up_held or _frame_input.jump_pressed
+	var vertical := int(up) - int(_frame_input.down_held)
+	return 5 + horizontal + 3 * vertical
 
 
 func _phase_hit_detection() -> void:
@@ -876,15 +878,12 @@ func _phase_motion(events: Array[CombatEvent]) -> void:
 func _phase_cancel() -> void:
 	## 5. 取消判定：只有已命中确认、仍在取消窗口内且木桩仍处于可追击的受击状态时，
 	##    才开放本招配置的取消目标；挥空不产生任何取消资格。
-	##    普通取消要求目标与当前招式同姿态（空中招式不会因落地姿态翻转而获得
-	##    地面取消目标）；空中招式在本帧刚落地时，额外开放显式配置的落地接续
-	##    目标——落地接续是空中 → 地面的唯一合法接缝。
+	##    状态锁同时约束独立起手与取消；显式目标不能绕过落地首帧或空技恢复。
+	##    目标必须与当前招式同姿态，落地不把空中缓存重解释为地面技。
 	_cancel_targets.clear()
-	if not _cancel_window_open():
+	if not _independent_start_allowed() or not _cancel_window_open():
 		return
 	_append_stance_matching_targets(_current_move.cancel_targets, _current_move.stance)
-	if _player_just_landed and _current_move.stance == MoveData.Stance.AIR:
-		_append_stance_matching_targets(_current_move.landing_cancel_targets, MoveData.Stance.GROUND)
 
 
 func _append_stance_matching_targets(move_ids: Array[String], stance: MoveData.Stance) -> void:
@@ -901,9 +900,7 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 	## 6. 消费缓存：空闲时按缓存起手独立招式；命中确认取消窗口内按取消资格
 	##    转入下一招。jump cancel 后的空中追击起手按合法接续起手（只有配置的
 	##    起手招式获得资格，普通跳跃后的空中招式仍是独立招式）。
-	##    落地接续只在本帧刚落地、且当前空中招式显式配置了落地接续目标时，
-	##    把缓存的动作键按地面姿态重解析后消费（如 jB 的 D → 5D）；
-	##    落地本身不授予任何普通取消资格。取消资格不足或缓存已过期时输入作废。
+	##    落地恢复锁先于取消资格；旧空中缓存不跨姿态补发地面招式。
 	##    跳跃输入槽独立消费（issue 15）：地面中立普通跳或命中确认 jump cancel
 	##    都转入 4f 起跳准备。显式组合（B+C 投，issue 17）优先级最高：先尝试
 	##    已配齐的投意图、结算拆投与投结果，之后 jump 与动作缓存同时合法时比较
@@ -922,7 +919,7 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 		_consume_action_candidate(action)
 	elif _jump_slot_ready():
 		_consume_jump()
-	## 空中招式落地：本帧没有配置的落地接续发生时，滞留地面姿态的空中招式作废
+	## 空中招式落地：滞留地面姿态的空中招式作废
 	## （空中路线不因落地延续），连段以收招未接续结束。
 	if _current_move != null and _current_move.stance == MoveData.Stance.AIR and player_on_ground:
 		_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
@@ -936,16 +933,12 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 
 func _buffer_action_candidate() -> Dictionary:
 	## 动作缓存的当帧可消费候选（判据唯一来源，仲裁与执行共用）：
-	## {"move_id": 起手招式, "is_followup": 合法接续起手, "relanded": 落地重解析路径}。
+	## {"move_id": 起手招式, "is_followup": 合法接续起手}。
 	## 无候选返回空表。组合等待中的成员单键只是候选，不参与消费（issue 17）。
 	if _buffered_key == "" and _buffered_move_id == "":
 		return {}
 	if _buffer_waiting:
 		return {}
-	if _player_just_landed:
-		var relanded := _select_move_for_key(_buffered_key, _current_stance(), _buffered_at)
-		if _startable_cancel(String(relanded["move_id"])):
-			return {"move_id": relanded["move_id"], "is_followup": true, "relanded": true}
 	if _startable_cancel(_buffered_move_id):
 		return {"move_id": _buffered_move_id, "is_followup": true}
 	if _current_move != null or not _independent_start_allowed():
@@ -958,13 +951,7 @@ func _buffer_action_candidate() -> Dictionary:
 
 func _consume_action_candidate(action: Dictionary) -> void:
 	## 执行 `_buffer_action_candidate` 给出的候选：取消路径按合法接续起手并
-	## 消费缓存；独立起手走空闲起手。落地重解析路径先按锚点消费方向历史。
-	if bool(action.get("relanded", false)):
-		var relanded := _select_move_for_key(_buffered_key, _current_stance(), _buffered_at)
-		if relanded["move_id"] != "" and int(relanded["endpoint"]) >= 0:
-			## 落地重解析识别出方向指令：与输入帧锚点同一消费口径，终点及之前
-			## 的历史一并消费（识别即消费，与是否真正起手无关）。
-			_consume_direction_history_through(int(relanded["endpoint"]))
+	## 消费缓存；独立起手走空闲起手。
 	var move_id := String(action["move_id"])
 	if _try_start_cancel(move_id):
 		return
@@ -979,8 +966,8 @@ func _consume_action_candidate(action: Dictionary) -> void:
 func _independent_start_allowed() -> bool:
 	## 缓存独立起手的状态门：pre-jump 四帧只可取消到显式配置的地面必杀——
 	## 当前数据模型未定义该配置位（spec 可选字段清单不含 pre-jump 取消目标），
-	## 因此准备期间一律只记录不消费。落地恢复首帧完全锁定（配置的落地接续走
-	## 取消路径，不受影响）；空跳恢复第 2、3 帧可取消为合法攻击；启动过空中
+	## 因此准备期间一律只记录不消费。落地恢复首帧完全锁定，取消路径共用此门；
+	## 空跳恢复第 2、3 帧可取消为合法攻击；启动过空中
 	## 招式的落地恢复基础及额外恢复全程不可取消（挥空同样受限）。
 	## 受击硬直与防御硬直期间不可独立起手；冲刺是承诺性位移状态，期间不可
 	## 起手（缓存的输入保留原龄，冲刺结束按新状态重查）；投与蹲下/防御的姿态
@@ -1157,7 +1144,11 @@ func _motion_player(events: Array[CombatEvent]) -> void:
 		player_velocity.x = _dash_direction * GameParams.PLAYER_DASH_SPEED
 	elif player_phase == PlayerPhase.NEUTRAL and not stunned:
 		if player_on_ground:
-			if axis != 0:
+			if player_crouching:
+				# 入蹲当帧清除行走惯性；保留原始方向供蹲防和指令匹配。
+				# 仅约束自由行动，受击硬直中的击退仍走下方摩擦分支。
+				player_velocity.x = 0.0
+			elif axis != 0:
 				player_velocity.x = move_toward(player_velocity.x, axis * GameParams.PLAYER_MOVE_SPEED, GameParams.PLAYER_ACCELERATION * GameParams.PHYSICS_TICK)
 			else:
 				player_velocity.x = move_toward(player_velocity.x, 0.0, GameParams.PLAYER_FRICTION * GameParams.PHYSICS_TICK)

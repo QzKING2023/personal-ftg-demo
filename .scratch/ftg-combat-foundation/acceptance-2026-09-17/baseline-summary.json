@@ -1,0 +1,56 @@
+[
+  {
+    "test": "test_combat_session",
+    "exit": 0,
+    "seconds": 1.25,
+    "pass_lines": 632
+  },
+  {
+    "test": "test_combo_solver",
+    "exit": 0,
+    "seconds": 26.53,
+    "pass_lines": 111
+  },
+  {
+    "test": "test_move_table",
+    "exit": 0,
+    "seconds": 6.2,
+    "pass_lines": 134
+  },
+  {
+    "test": "test_replay_acceptance",
+    "exit": 0,
+    "seconds": 19.05,
+    "pass_lines": 115
+  },
+  {
+    "test": "test_smoke",
+    "exit": 0,
+    "seconds": 17.49,
+    "pass_lines": 111
+  },
+  {
+    "test": "test_solver_cycles",
+    "exit": 0,
+    "seconds": 31.1,
+    "pass_lines": 35
+  },
+  {
+    "test": "test_solver_entry",
+    "exit": 0,
+    "seconds": 24.58,
+    "pass_lines": 49
+  },
+  {
+    "test": "test_solver_route",
+    "exit": 0,
+    "seconds": 32.28,
+    "pass_lines": 95
+  },
+  {
+    "test": "test_solver_spatial",
+    "exit": 0,
+    "seconds": 44.21,
+    "pass_lines": 146
+  }
+]

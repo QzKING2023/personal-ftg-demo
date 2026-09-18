@@ -589,6 +589,7 @@ static func _spatial_report_lines(report: SolverReport, facings: Array[int], pro
 	if not report.cycles.is_empty():
 		lines.append("循环证明保持 timing-valid：循环性证明在固定接触位 %d px 上完成，空间分层只覆盖可读路线的站位网格。" % PIN_DX)
 	lines.append("操作说明的帧表按固定接触位 %d px 编排；空间分层只在 48/64/80 px 三组站位复验，不外推到其余站位。" % PIN_DX)
+	lines.append("此处 spatial-valid 仅指每帧钉回指定间距的静态探针；不包含真实击退累积。训练场完整命中需另行不钉位回放，不能从该标签推断。")
 	return lines
 
 
@@ -1283,6 +1284,10 @@ func _build_edge(from_id: String, to_id: String, kind: EdgeKind, contexts: Dicti
 			if to_move.stance != MoveData.Stance.GROUND:
 				edge.reason = "落地接续目标必须是地面招式（落地帧按地面姿态重解析；%s 是空中招式）" % to_id
 				return edge
+			# 现行规格无落地首帧例外；旧资源字段保留可读，但不是合法接续。
+			# 在缺口探针中同样拒绝，不能宣称补配置就能绕过着地惩罚。
+			edge.reason = "落地恢复首帧及空技恢复全程不可取消；空中招式落地作废，显式 landing_cancel_targets 不能绕过状态锁"
+			return edge
 	if from_move.is_finisher:
 		edge.reason = "收尾招式命中即结束连段，不开放命中确认取消"
 		return edge

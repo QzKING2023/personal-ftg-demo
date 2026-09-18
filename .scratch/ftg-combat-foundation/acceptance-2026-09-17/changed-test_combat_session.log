@@ -1,0 +1,639 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2548)
+PASS  player spawns at start position
+PASS  player starts neutral
+PASS  player starts grounded
+PASS  player starts facing right
+PASS  no move in progress at start
+PASS  dummy spawns at start position
+PASS  dummy starts at full hp
+PASS  dummy starts neutral
+PASS  dummy starts without hitstun
+PASS  combo starts empty and inactive
+PASS  combo damage starts at zero
+PASS  no attack rect while neutral
+PASS  player starts standing
+PASS  player starts unguarded
+PASS  player starts without guard stun or hitstun
+PASS  dummy starts without an attack
+PASS  startup covers frames 1-4 after press
+PASS  active covers frames 5-11 after press
+PASS  recovery covers frames 12-24 after press
+PASS  move ends exactly after startup+active+recovery frames
+PASS  attack rect exists while a move is in progress
+PASS  attack rect gone after returning to neutral
+PASS  hit lands exactly on the first active frame (frame 6 after press)
+PASS  dummy recovers after the freeze plus airborne pause plus hitstun frames
+PASS  hit applies base damage once
+PASS  whole active window produces a single hit
+PASS  damage applied exactly once per swing
+PASS  out-of-range swing produces no events
+PASS  out-of-range swing deals no damage
+PASS  whiff does not start a combo
+PASS  custom move hits on its own first active frame
+PASS  custom move applies its own base damage
+PASS  custom windows drive phase transitions around the freeze
+PASS  custom move ends after its own total frames plus the frozen ones
+PASS  custom hitstun counts down after landing (hit 3, lands 21 with the freeze, hitstun 5)
+PASS  dummy enters ground hitstun on hit
+PASS  ground hit lifts the dummy briefly
+PASS  airborne frames pause the hitstun countdown
+PASS  hitstun reaching zero returns dummy to neutral
+PASS  dummy lands before recovering
+PASS  remaining hitstun counts down exactly hitstun frames from the landing frame
+PASS  recovery emits exactly one event
+PASS  hitstun left is zero after recovery
+PASS  hit sets horizontal knockback velocity (same-frame friction applied)
+PASS  grounded hit adds upward knockback
+PASS  dummy already moves on the hit frame (hit applies before motion)
+PASS  dummy lifts off on the hit frame
+PASS  dummy is airborne on the hit frame
+PASS  backward walk keeps facing the dummy (no flip)
+PASS  backward walk moves the player away but stays left of the dummy
+PASS  forward walk keeps facing the dummy
+PASS  ground neutral re-faces the dummy after it changes sides
+PASS  horizontal overlap keeps the current facing
+PASS  F1 world-right records relative 6 with the frame-start facing
+PASS  facing flips to the dummy after the frame's motion
+PASS  F2 same physical key records 4 only from the next frame
+PASS  mirror F1 world-left records relative 6
+PASS  mirror facing flips to the dummy after the frame's motion
+PASS  mirror F2 same physical key records 4 from the next frame
+PASS  facing turned toward the moved dummy before the command ends
+PASS  the recognized 236C consumed the cross-turn history
+PASS  the command completed across the turn still recognizes 236C
+PASS  the cross-turn 236C executes and hits
+PASS  the empty jump lands before the command ends
+PASS  landing re-faces the dummy now on the left
+PASS  the air-recorded 2 and 3 survive the landing turn
+PASS  the post-landing 6 completes 236C from the kept history
+PASS  ground-neutral 214 starts 214D while facing right
+PASS  the backward quarter circle connects as a single hit while facing right
+PASS  mirror 236 starts 236C while facing left
+PASS  the mirror quarter circle connects as a single hit while facing left
+PASS  mirror 214 starts 214D while facing left
+PASS  the mirror backward quarter circle connects while facing left
+PASS  236 toward the dummy works right after walking back
+PASS  the after-walkback 236C connects
+PASS  mirror 236 toward the dummy works right after walking back
+PASS  the mirror after-walkback 236C connects
+PASS  air 214 folded by the locked facing starts the configured j214D
+PASS  j214D starts while still airborne
+PASS  started-but-whiffed is observable: no hit, no damage
+PASS  mirror air 214 with the locked facing starts j214D
+PASS  air 236 falls back to the plain air move for the key (derivation not matched)
+PASS  jA is in progress when the air 214 finishes
+PASS  the air derivation is recognized and buffered (observable via diagnostics)
+PASS  recognized-but-uncontinuable never starts the buffered j214D
+PASS  the uncontinuable buffer produces no hit
+PASS  air derivations do not resolve from the ground stance
+PASS  facing stays locked for the whole ground move while the dummy changes sides
+PASS  free action re-faces the dummy after the move recovers
+PASS  the player sails past the dummy's horizontal position mid-air
+PASS  crossing the dummy mid-air never flips the takeoff facing
+PASS  after landing the player re-faces the dummy left behind
+PASS  player moves right with input held
+PASS  player clamps at the right stage wall
+PASS  player clamps at the left stage wall
+PASS  player stays grounded while moving
+PASS  player stays on the floor while moving
+PASS  player stops adjacent to the dummy body
+PASS  player and dummy bodies do not overlap
+PASS  dummy is not pushed by the player
+PASS  player stays grounded through all four pre-jump frames
+PASS  player leaves the ground on the first frame after pre-jump
+PASS  player rises on the first airborne frame
+PASS  jump rises well above the ground
+PASS  player lands back on the ground
+PASS  player returns to the floor height
+PASS  vertical velocity resets after landing
+PASS  jump input during startup is ignored
+PASS  jump input during the whole move is ignored
+PASS  backward walk faces the dummy on the left before takeoff
+PASS  backward jump takes off at walking speed
+PASS  player is still airborne while holding reverse
+PASS  holding reverse in the air keeps the takeoff horizontal velocity
+PASS  holding reverse in the air never flips the takeoff facing
+PASS  player still lands normally after holding reverse mid-air
+PASS  player is still airborne after releasing horizontal input
+PASS  releasing horizontal input mid-air keeps the takeoff velocity (no air friction decay)
+PASS  facing stays unchanged after releasing mid-air
+PASS  the jump reaches the air phase right after pre-jump
+PASS  air action without a configured air move never starts
+PASS  air action without a configured air move never starts
+PASS  air action without a configured air move never starts
+PASS  air action without a configured air move never starts
+PASS  air action without a configured air move never starts
+PASS  air action without a configured air move never starts
+PASS  air action without a configured air move never starts
+PASS  air action without a configured air move never starts
+PASS  air action without a configured air move never starts
+PASS  air action without a configured air move never starts
+PASS  air action without a configured air move never starts
+PASS  air action without a configured air move never starts
+PASS  no attack rect from an ignored air action
+PASS  player lands after the jump
+PASS  expired air input does not start a move after landing
+PASS  second attack after full recovery hits again
+PASS  repeat attacks keep reducing hp
+PASS  hp clamps at zero instead of going negative
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing never cancels the swing mid-move
+PASS  mashing during the swing yields a single hit
+PASS  buffered mash chains a fresh swing right after recovery
+PASS  chained swing hits the recovered dummy exactly once more
+PASS  5A confirms its hit on frame 9
+PASS  buffer at age 5 is consumed on the hit-confirm frame
+PASS  cancel into 5B keeps the combo active
+PASS  5B follow-up lands after the cancel
+PASS  5A still hits on frame 9
+PASS  buffer at age 6 expires before the hit and is never consumed
+PASS  expired input cannot extend the combo
+PASS  older buffered D is overwritten and never starts
+PASS  latest buffered B is consumed after the hit confirm
+PASS  whiff produces no hit events
+PASS  whiff deals no damage
+PASS  whiff never starts a combo
+PASS  buffered whiff input expires without starting a second move
+PASS  ground route lands all three hits
+PASS  route follows 5A -> 5B -> 5D via hit-confirm cancels
+PASS  hit events count combo hits in order
+PASS  first hit deals full base damage
+PASS  second hit deals 90% of 5B base damage
+PASS  third hit deals 80% of 5D base damage
+PASS  combo total damage accumulates decayed values
+PASS  dummy hp reflects the decayed route damage
+PASS  last hit scale is 80%
+PASS  finisher ends the combo exactly once
+PASS  combo ends at three hits after the finisher
+PASS  finisher keeps the dummy in its knockdown hitstun handling
+PASS  dummy recovers naturally after the finisher
+PASS  dummy is neutral again after natural recovery
+PASS  combo hit count is preserved after the combo ended
+PASS  5A hits on frame 6
+PASS  input during the freeze is consumed as a cancel on the first normal frame
+PASS  the canceled 5B still lands after the freeze-extended startup
+PASS  combo ends exactly when the cancel window closes (frame 23 = hit 6 + 8 frozen + 9 normal)
+PASS  input after the window cannot cancel the move
+PASS  combo stops at one hit
+PASS  window closing does not clear the dummy hitstun
+PASS  second independent swing cannot hit the stunned dummy
+PASS  hp only drops once before recovery
+PASS  combo ends without extending through an independent move
+PASS  a fresh swing hits after the dummy naturally recovers
+PASS  new combo restarts counting at one hit and full scale
+PASS  looped cancels land a hit on every cycle with no hit cap
+PASS  session counts every combo hit
+PASS  damage decays 10% per hit
+PASS  damage stays at the 10% floor past ten hits
+PASS  combo total matches per-hit decay plus floor
+PASS  combo keeps going while the dummy never recovers
+PASS  three-step command at age 29 (F30) is the last valid boundary
+PASS  age 30 (F31) expires before the key press and falls back to the plain move
+PASS  left-facing mirror keeps the same success frame (F31, age 29)
+PASS  left-facing mirror keeps the same failure frame (F32, age 30)
+PASS  236 followed by C locks the derivative at the pairing-window end with the press-frame anchor
+PASS  derivative move finishes its full recovery
+PASS  second C without fresh directions resolves the plain move, not another derivative
+PASS  direction input alone never starts a move
+PASS  action buffer stays untouched by direction input and still starts 5A
+PASS  direction spread over 19 frames still triggers the derivative
+PASS  lenient 623A accepts input 323 (extra direction segments allowed)
+PASS  lenient 623A accepts input 313 (extra direction segments allowed)
+PASS  lenient 623A accepts input 63236 (extra direction segments allowed)
+PASS  lenient 623A accepts input 623 (extra direction segments allowed)
+PASS  holding 3 keeps a single segment and cannot satisfy three predicates
+PASS  left-facing mirror 323 recognizes the same lenient command
+PASS  inserting 4 between 236 breaks the strict match
+PASS  post-endpoint 4 breaks the strict 236C candidate
+PASS  23626 is not auto-derived from plain 236C
+PASS  leading back segments do not break the strict tail match
+PASS  the lenient candidate locks its first legal endpoint at F3 (visible in diagnostics)
+PASS  the lock alone consumes nothing and starts no move
+PASS  the extra 6 at F4 does not rewrite the locked endpoint
+PASS  the action key at F5 recognizes the locked lenient match
+PASS  consumption covers the endpoint and everything before it; the post-endpoint 6 survives
+PASS  A@F28 selects the most recently completed candidate
+PASS  the consumed old string cannot serve a second A press
+PASS  the expired first candidate (age 30 at F31) does not block the newer valid one in the same action event
+PASS  endpoint tie picks the nearer start whose window is still valid at F31
+PASS  both starts are expired at F32 and the plain move resolves
+PASS  five-step alternative still valid at F50 (window 50f incl. the first segment)
+PASS  five-step alternative expires at F51
+PASS  six-step variant still valid at F60 (window 60f)
+PASS  six-step variant expires at F61
+PASS  the 26236 five-step alternative shares the same F50 boundary
+PASS  the 26236 five-step alternative expires at F51 like 23626
+PASS  the super tier outranks specials regardless of configured priority
+PASS  the matched special outranks the plain normal on the same key
+PASS  without direction matches the plain normal resolves
+PASS  within one tier the higher declared priority wins (623D p9 over 63D p5)
+PASS  swapping priorities flips the same-layer winner
+PASS  lenient match across extra segments recognizes at the action key
+PASS  consumption removes the endpoint and every earlier segment (skipped extras included)
+PASS  the leftover tail cannot reassemble 214D from consumed history (plain fallback buffered)
+PASS  recognition at F4 while still holding 3
+PASS  holding 3 after consumption does not open a new segment
+PASS  only the fresh 2/3 segments remain and cannot re-recognize 623A (plain fallback buffered)
+PASS  neutral gaps split the hold into three independent segments satisfying three predicates
+PASS  5C hits on its first active frame
+PASS  launcher hit puts the dummy into float hitstun
+PASS  dummy lifts off on the launcher hit
+PASS  float hitstun starts at its configured length
+PASS  5C applies its own base damage
+PASS  combo ends when the cancel window closes while the dummy still floats (frozen frames do not age it)
+PASS  float hitstun runs out exactly FLOAT_HITSTUN normal frames after the hit (the freeze pauses it)
+PASS  float airtime lasts the configured normal frames from the hit (frozen mid-air)
+PASS  dummy only returns to neutral on landing after the air tech
+PASS  recovery event fires exactly once at landing, not at the tech
+PASS  no second combo-end is emitted at the tech after the window already closed
+PASS  probe launcher hits on frame 3 into float hitstun
+PASS  air tech on the frame float hitstun runs out ends the combo immediately
+PASS  dummy is air-recovered right after the tech
+PASS  dummy is still airborne and not neutral after the tech
+PASS  combo stops counting at the tech
+PASS  no recovery event at the tech itself
+PASS  air-recovered dummy cannot be hit even inside the attack rect
+PASS  hp is unchanged by the post-tech probe
+PASS  air-recovered dummy lands and returns to neutral
+PASS  single recovery event fires at landing
+PASS  float lasts the configured normal airtime while hitstun remains (the freeze pauses the arc)
+PASS  landing converts leftover float hitstun into ground hitstun and ticks it on the landing frame
+PASS  converted hitstun counts down on the ground until natural recovery
+PASS  natural recovery emits exactly one event
+PASS  dummy is still in float hitstun through the independent probe
+PASS  first hit launches on frame 10 and the floating dummy survives the probe
+PASS  fresh swing only hits again after natural recovery
+PASS  only the launcher and the post-recovery swing deal damage
+PASS  post-recovery hit starts a fresh combo count
+PASS  buffered 236C is consumed on 5A's hit-confirm frame
+PASS  relaunch refreshes the full float hitstun
+PASS  5A hits on frame 9 and the canceled 236C connects 8 frozen frames later
+PASS  relaunch counts as the second combo hit
+PASS  mid-hop dummy is relaunched into full float hitstun
+PASS  route damage is 5A full plus decayed 236C
+PASS  second hit scale is 90%
+PASS  buffered 214D is consumed on 5B's hit-confirm frame
+PASS  5B hits on frame 8 and the canceled 214D connects after the freeze
+PASS  route damage is 5B full plus decayed 214D
+PASS  direction finisher keeps the dummy's knockdown hitstun handling
+PASS  dummy recovers naturally after the direction finisher
+PASS  dummy is neutral again after recovery
+PASS  whiffed launcher ignores space during the move
+PASS  space works again as a normal jump after the whiffed move recovers
+PASS  hit move without jump cancel config ignores space
+PASS  space on an unconfigured move leaves the combo state untouched
+PASS  space after the cancel window cannot jump cancel
+PASS  combo ends from the closed cancel window (normal age 9 = physics 30), not from the space press
+PASS  space on the first normal frame after the freeze enters the four pre-jump frames
+PASS  jump cancel clears the launcher into neutral ground prep
+PASS  jump cancel keeps the combo alive for air pursuit
+PASS  the jump cancel leaves the ground four prep frames after the request
+PASS  air action after jump cancel starts the jA pursuit move
+PASS  jA starts while airborne
+PASS  jA pursuit keeps the dummy airborne in normal hitstun
+PASS  pursuit hit does not refresh the float arc
+PASS  236C hits on frame 13 and the pursued jA connects on frame 31
+PASS  route counts two hits and ends when jA's cancel window closes
+PASS  combo ends nine normal frames after the jA hit (frozen frames excluded)
+PASS  dummy lands one float airtime of normal frames after the launcher (both freezes pause the arc), unrefreshed by the pursuit
+PASS  route damage is 236C full plus decayed jA
+PASS  5C hits on frame 10 and the jump-canceled jA connects on frame 28
+PASS  jA pursuit after 5C counts as the second combo hit
+PASS  space inside the freeze neither jumps nor disturbs the ongoing move
+PASS  action buffer survives the space press and still cancels 5A into 5B on recovery
+PASS  the buffered cancel still extends the combo
+PASS  the jump cancel request enters the normal four pre-jump frames
+PASS  air space presses never grant a second upward impulse
+PASS  airtime after jump cancel stays exactly the configured frames with no double jump
+PASS  takeoff happens exactly pre-jump frames after the request
+PASS  neutral jump lasts pre-jump plus exactly the configured airtime frames
+PASS  default jump params are 4f pre-jump, 38-frame airtime and 48-frame float
+PASS  pre-jump frames 1-4 stay grounded and neutral
+PASS  pre-jump counts down 4/3/2/1 across the four prep frames
+PASS  the first airborne frame is the normal frame right after pre-jump
+PASS  landing happens exactly pre-jump plus airtime frames after the accepted request
+PASS  empty-jump landing recovery counts down 3/2/1 and reaches 0 on the fourth frame
+PASS  the whole jump cycle spans 45 frames (request frame 1 through recovery frame 45)
+PASS  an action key pressed on the first airborne frame resolves by air stance and starts jA that frame
+PASS  an action key pressed on the last pre-jump frame never starts a move
+PASS  the jump proceeds into the air after the locked pre-jump
+PASS  the prep-frame press keeps its ground resolution (5A) while airborne
+PASS  the unstarted press expires at its original age 6, never reinterpreted as an air move
+PASS  a ground special buffered during pre-jump cannot start (no configured pre-jump cancel exists)
+PASS  repeated space presses during pre-jump neither reset nor extend the preparation
+PASS  the jump keeps the original schedule despite extra space presses
+PASS  the empty jump lands on frame 43 (request 1 + prep 4 + airtime 38)
+PASS  an attack pressed exactly on the landing frame is raw-only: it never enters the executable buffer
+PASS  no move ever starts from the first-frame press through the whole recovery
+PASS  an attack pressed on empty-jump recovery frame 2 starts the same frame
+PASS  the air action during the jump starts jA (precondition)
+PASS  after an air move the landing recovery stays locked: the frame-2 press does not start immediately
+PASS  the buffered attack eventually starts once the landing recovery ends
+PASS  a whiffed jA still adds the default +1f penalty to the base landing recovery
+PASS  the penalty lengthens recovery without changing the air phase: landing stays on frame 43
+PASS  an empty jump and a jA jump land on the same frame (airtime is untouched)
+PASS  explicit extra recovery stacks onto the base 3 and the default +1f penalty
+PASS  the resume frame consumes the frozen jump press at age 0: pre-jump starts
+PASS  the jump cancel clears the launcher while the combo stays alive
+PASS  the jump slot age stays 0 through the freeze (aging counts normal frames only)
+PASS  four prep frames after the resume: the jump cancel leaves the ground exactly on frame 36
+PASS  age 5 is still consumable: the blocked slot fires when the move ends (prep F34-F37, takeoff F38)
+PASS  age 6 expires before consumption: the frozen press never fires; a fresh press at F42 takes off at F46 after its own prep
+PASS  newer attack wins: only the 5A cancel starts on the resume frame
+PASS  the jump slot survives the lost arbitration with its original age
+PASS  the surviving slot rechecks on later frames: it fires at age 5 when the move recovers (prep F34-F37)
+PASS  newer jump wins: F29 enters pre-jump instead of starting the attack
+PASS  the retained A slot cannot cancel the preparation and expires at age 6
+PASS  the buffered normal attack never starts after losing the arbitration
+PASS  the winning jump leaves the ground on frame 33 (prep F29-F32)
+PASS  same physics frame: the attack wins and only the 5A cancel starts
+PASS  the jump slot kept at its original age fires after the move recovers (one new action per frame)
+PASS  the frozen diagonal request is consumed on the resume frame (pre-jump starts)
+PASS  the slot keeps the world-horizontal direction pressed inside the freeze
+PASS  holding reverse after the freeze never rewrites the request: the takeoff still moves rightward
+PASS  an original vertical request can still turn diagonal inside pre-jump (takeoff stays on frame 33, prep timer untouched)
+PASS  left-facing mirror: world-left + Space is the forward 9; holding world right at resume still takes off leftward
+PASS  combo ends exactly when the player lands without air pursuit
+PASS  landing without pursuit ends the combo as an unrecovered cancel
+PASS  combo stops counting at the launcher hit
+PASS  landing without pursuit leaves the dummy's float handling untouched
+PASS  air action during a plain jump still starts jA
+PASS  dummy is still in float hitstun inside the attack rect
+PASS  neutral-jump jA cannot pursue the floating dummy
+PASS  combo count stays at the launcher hit
+PASS  air route lands 5A/236C on 9/23, then jA/jB/jD on 42/55/67
+PASS  route chains 236C -> jA -> jB -> jD via hit-confirm cancels
+PASS  every air-route hit lands while the player is airborne
+PASS  air finisher ends the route at five hits
+PASS  jD hit is the only combo end, as the air finisher
+PASS  fifth hit lands at 60 percent scale
+PASS  route damage decays to a 53.0 total
+PASS  dummy hp reflects the full air route
+PASS  air pursuit keeps the dummy airborne in normal hitstun until it lands
+PASS  dummy completes its knockdown handling with one natural recovery after the finisher
+PASS  combo count stops growing after the route ends
+PASS  route reaches the critical frame with jB airborne and one frame from landing
+PASS  jB hits exactly on the landing frame, then recovery blocks the landing followup
+PASS  the critical frame emits the hit then the hitstop-start boundary: hit refreshed hitstun before landing ticked it
+PASS  same-frame order is hit refresh -> landing -> cancel -> consume: recovery blocks buffered D
+PASS  the buffered D is never consumed as the air finisher on the landing frame
+PASS  landing truncates jB and ends the route
+PASS  route damage stops at 41.0 without the forbidden followup
+LANDING_RECOVERY recovered_frames=[105]
+FAIL  dummy completes its knockdown handling after the final air hit
+PASS  combo counts all four hits and stops there
+PASS  jB lands on the landing frame but no fifth hit ever connects
+PASS  D pressed during the air-move landing recovery only starts 5D after the recovery ends
+PASS  the landed jB is invalidated on its landing frame and ends the combo there
+PASS  the independent 5D cannot extend the combo against the stunned dummy
+PASS  dummy finishes its own knockdown handling after the whiffed probe
+PASS  5C launches and the late jA pursuit connects on the tech-boundary frame
+PASS  jA hit refreshes the hitstun before natural recovery takes it
+PASS  combo ends on the landing frame as an unrecovered air move
+PASS  the landed air move is cleared and the player is neutral again
+PASS  buffered D is never consumed: landing grants no cancel to an unconfigured move
+PASS  combo stops at two hits
+PASS  dummy finishes its own knockdown handling regardless of the combo end
+PASS  only the launcher route lands before the air tech
+PASS  air tech ends the combo exactly when float hitstun runs out, with no second end at landing
+PASS  late jA overlaps the air-recovered dummy inside its attack rect but cannot hit it
+PASS  the landed pursuit move is cleared on landing
+PASS  combo count freezes at the tech
+PASS  air-recovered dummy lands back to neutral with a single recovery event
+PASS  5A still hits on frame 6; the freeze starts only after the hit frame settles
+PASS  hitstop boundaries are events: started on the hit frame, ended on the first normal frame (6 + 8 frozen = 15)
+PASS  physics frame numbers keep incrementing through the freeze
+PASS  hitstop countdown is observable frame by frame (8 frozen frames after the hit; 0 again on the recovery frame)
+PASS  the hit left the dummy with knockback velocity (precondition)
+PASS  dummy position, velocity, hitstun and airborne state are frozen through frames 7-14
+PASS  player position, move and phase stay frozen (still mid-active at frame 14 instead of reaching recovery)
+PASS  the first normal frame after recovery resumes physics (friction moves the knocked-back dummy again)
+PASS  the freeze neither starts nor consumes buffered moves (5A stays in progress through F14)
+PASS  buffer age stays 0 through the freeze (aging counts normal frames only)
+PASS  the freeze keeps recording action events: latest B overwrites the older D buffer
+PASS  direction input pressed during the freeze is recorded into the history
+PASS  the first normal frame after recovery consumes the paused-age buffer as a cancel
+PASS  a press recorded during the freeze keeps the full 0-5 window from recovery (age 5 at physics 20)
+PASS  the freeze-recorded press expires at age 6 (physics 21), same as a normal-frame press
+PASS  D at normal age 29 (physics 39 with 8 frozen frames inside) still recognizes 214D
+PASS  D at normal age 30 (physics 40) expires: the freeze never extended the window
+PASS  input at cancel age 8 (physics 22 = hit 6 + 8 frozen + 8 normal) still cancels
+PASS  cancel window closes at normal age 9 (physics 23), not with the freeze
+PASS  input at age 9 cannot cancel and never starts the target
+PASS  cancel age counts normal frames only (0 through the freeze, resuming at 1 on recovery)
+PASS  cancel eligibility stays open while the window ages in normal frames (frozen frames pause it)
+PASS  the consumed buffer records what started and on which physics frame
+PASS  the newly canceled-into move has no confirmed hit yet, so its cancel age is unset
+PASS  eligibility stays closed until the new move actually hits
+PASS  a whiffed move never gains hit-confirm cancel eligibility in diagnostics
+PASS  holding 3 enters crouch on the same frame
+PASS  holding 3 keeps crouching
+PASS  crouch walking keeps the forward component of 3
+PASS  3 is not a guard direction
+PASS  holding 2 crouches in place
+PASS  2 keeps its neutral horizontal component
+PASS  1 enters the crouch-guard posture
+PASS  crouch walking keeps the backward component of 1
+PASS  leaving the down direction stands up on the same frame
+PASS  4 guards standing without crouching
+PASS  standing guard keeps the backward walk of 4
+PASS  ground 4 is the standing guard
+PASS  ground 1 is the crouch guard
+PASS  ground digit 5 does not guard
+PASS  ground digit 2 does not guard
+PASS  ground digit 3 does not guard
+PASS  ground digit 6 does not guard
+PASS  ground digit 8 does not guard
+PASS  pre-jump frames and the takeoff frame never newly enter guard
+PASS  4 becomes the air guard once truly airborne
+PASS  air 1 is the air guard and the down component forms no crouch
+PASS  the request starts the dummy move on the same frame (first startup frame)
+PASS  dummy active window follows its own data (frames 2-5)
+PASS  dummy recovery window follows its own data
+PASS  dummy returns to neutral after its total frames
+PASS  dummy attack rect exists only while active
+PASS  an out-of-range dummy attack produces no events
+PASS  the dummy attack is cleared the frame the player's hit lands
+PASS  the player's attack lands once on the attacking dummy
+PASS  the interrupted dummy attack never connects with the player
+PASS  standing guard blocks high
+PASS  standing guard blocks mid
+PASS  standing guard blocks overhead
+PASS  standing guard is hit by low
+PASS  crouch guard blocks high
+PASS  crouch guard blocks mid
+PASS  crouch guard blocks low
+PASS  crouch guard is hit by overhead
+PASS  no posture is hit by high
+PASS  air guard blocks an air-flagged strike by default
+PASS  air guard is hit by a pure ground attribute
+PASS  the same blocking scenario replays identically (repeatable observability)
+PASS  exactly one BLOCKED event lands on the connect frame (F3)
+PASS  a blocked strike deals no hitstun and no dummy-side damage
+PASS  guard stun starts at the strike's own hitstun frames (10)
+PASS  guard stun freezes through the eight hitstop frames (F4-F11)
+PASS  guard stun counts down one per normal frame after the freeze
+PASS  the dummy's move stays frozen through the hitstop and finishes only after it (F12)
+PASS  no move or jump can start during guard stun (frame-5 attack and frame-7 space stay buffered-only)
+PASS  guard stun reaches zero and stays there
+PASS  the unguarded strike connects on the dummy's first active frame (F3)
+PASS  player hitstun starts at the strike's own hitstun frames (10)
+PASS  player hitstun freezes through the hitstop
+PASS  player hitstun counts down after the freeze
+PASS  the hit applies horizontal knockback away from the dummy
+PASS  hitstun locks posture: no crouch from 2, no guard, and the frame-6 attack never starts
+PASS  the dummy attack does not change the dummy's own hp
+PASS  hitstun has fully counted down by the end of the script
+PASS  after hitstun ends the frame-24 attack starts normally
+PASS  holding 2 during a move never crouches
+PASS  holding 2 through pre-jump never crouches
+PASS  holding 2 airborne never forms a crouch
+PASS  the landing frame itself does not crouch (first-frame clamp)
+PASS  empty-jump recovery frames 2-3 crouch on demand
+PASS  an air-move jump stays uncrouched through its whole landing recovery
+PASS  crouch returns the frame after the air-move landing recovery ends
+PASS  4 stays the air guard while still airborne before landing
+PASS  the landing frame itself cannot guard (first-frame clamp)
+PASS  empty-jump recovery frames 2-3 can guard
+PASS  guarding resumes normally after the recovery
+PASS  an air-move jump cannot guard through its whole landing recovery
+PASS  standing guard returns the frame after the recovery ends
+PASS  the frame-3 block and the frame-15 block-in-stun both land exactly once
+PASS  guard stun freezes the posture: holding 2 mid-stun neither crouches nor flips the standing guard
+PASS  the held standing guard survives the whole block string
+PASS  the low breaks the standing guard at F3 and the high connects again at F20
+PASS  nothing is blocked once the guard is broken: hitstun leaves the player defenseless
+PASS  the posture observable stays frozen at standing through the hitstun (no posture switch, just no protection)
+PASS  B alone never starts 5B during the pairing window (F10-F12)
+PASS  B@F10 held plus C@F13 completes the combination and starts the throw on F13
+PASS  the completed combination suppresses the member single keys
+PASS  the raw hold records of both member keys stay observable on the completion frame
+PASS  the over-tolerance control processes B as a single key at the window end (F13, 5B starts)
+PASS  C one frame too late never forms the combination or a throw
+PASS  the single-key fallback at the window end is not a throw failure
+PASS  same-frame B+C+D is covered by the explicit combination (throw starts)
+PASS  the same-frame combination out of throw range fails with an observable RANGE reason
+PASS  the failed combination falls back to no single key at all (B, C and D alike)
+PASS  the waiting C stays a candidate through F30-F32 (no early start)
+PASS  the waiting single key keeps its press-frame direction match (236C locked at F30, observable as a buffer candidate)
+PASS  C@F30 is processed as a single key at the window end (F33) with its original anchor
+PASS  the non-member D starts 5D on its own input frame (F11, no combination wait)
+PASS  the later B+C combination is recognized but rejected for state on the completion frame (F13)
+PASS  the running 5D is never undone by the failed throw attempt
+PASS  no throw starts and the consumed B press never re-emits as 5B
+PASS  releasing B before the C press breaks the combination (no throw; B's overwritten candidacy never re-emits)
+PASS  the later C press owns the single slot and processes as a single key at its own window end (F15)
+PASS  no throw attempt happens without the held overlap
+PASS  a long-held B press outside the tolerance cannot complete the combination (5B starts at its own window end)
+PASS  both member keys newly pressed on the same frame complete the combination immediately
+PASS  the throw startup window covers F13-F16 (startup fixed at 5 frames, F17 is the grab frame)
+PASS  the active window F17-F27 is the grab plus the ten tech-window continuation frames
+PASS  the throw recovers F28-F37 and returns to neutral on F38
+PASS  the un-teched throw result lands exactly when the tech window closes (F27 = F13 + 14)
+PASS  facing right throws the dummy to the right (direction decided by facing)
+PASS  the throw result deals no HP damage and never counts as a combo hit
+PASS  the thrown dummy recovers naturally after its hitstun
+PASS  exactly one natural recovery follows the throw hitstun
+PASS  the mirrored timeline is identical while the throw direction flips with facing
+PASS  both facings share the exact throw phase timeline
+PASS  a tech on the throw's first startup frame (F13) breaks it immediately: no result, player back to neutral on the same frame
+PASS  the first-frame tech leaves the dummy completely untouched
+PASS  a mid-window tech (F20, inside the post-grab continuation) still prevents the throw result
+PASS  the last valid tech frame is F27 (grab F17 plus ten continuation frames): it still prevents the result
+PASS  a tech one frame later (F28) is outside the window: the result already landed on F27 and the request is ignored
+PASS  the late tech cannot undo the applied throw hitstun
+PASS  the completed combination in state 'crouch' is rejected exactly once with the STATE reason
+PASS  state 'crouch' never executes the throw
+PASS  the crouch case actually held the crouch posture
+PASS  the completed combination in state 'prejump' is rejected exactly once with the STATE reason
+PASS  state 'prejump' never executes the throw
+PASS  the completed combination in state 'air' is rejected exactly once with the STATE reason
+PASS  state 'air' never executes the throw
+PASS  the completed combination in state 'move' is rejected exactly once with the STATE reason
+PASS  state 'move' never executes the throw
+PASS  the move-phase case actually had 5A running
+PASS  the completed combination in state 'hitstun' is rejected exactly once with the STATE reason
+PASS  state 'hitstun' never executes the throw
+PASS  the hitstun case actually stunned the player (hitstun still counting at the script end)
+PASS  the completed combination in state 'landing' is rejected exactly once with the STATE reason
+PASS  state 'landing' never executes the throw
+PASS  the landing cases (landing) attempted the throw inside the landing recovery, on the ground
+PASS  the completed combination in state 'landing2' is rejected exactly once with the STATE reason
+PASS  state 'landing2' never executes the throw
+PASS  the landing cases (landing2) attempted the throw inside the landing recovery, on the ground
+PASS  the throw range boundary is inclusive: 64px body-center distance still throws
+PASS  beyond the throw range the combination is rejected on the completion frame
+PASS  the range failure never falls back to the member strikes
+PASS  the failed throw leaves the dummy untouched
+PASS  bodies that do not overlap vertically are outside the throw range even within 64px horizontally
+PASS  the mirrored out-of-range rejection fails on the same frame with the same RANGE reason
+PASS  the combination completed inside the hitstop is recorded as pending intent (observable)
+PASS  the pending throw is attempted exactly once, on the first normal frame after the freeze (F29)
+PASS  the state-rejected throw neither starts nor disturbs the running 5A
+PASS  after the single failed attempt the B press is gone: no retry, no throw result, no fallback to 5B
+PASS  C one frame later (F27) exceeds the 3-frame tolerance even though both presses sit inside the freeze
+PASS  a newer action input (A on F27) overrides the pending throw intent: no attempt happens on resume
+PASS  the second forward segment starts the dash on its own frame (F3), world direction +1
+PASS  dash_left counts down 12 through 1 across exactly twelve dash frames (F3-F14)
+PASS  dash_left reaches 0 on the first frame after the dash (F15)
+PASS  the forward dash covers exactly twelve frames of dash-speed movement (96px at the default param)
+PASS  44 taps start the backdash on the second segment's own frame, world direction -1
+PASS  both dashes share the exact countdown timeline
+PASS  the backdash covers the same distance in the opposite direction
+PASS  the facing stays locked toward the dummy during the backdash (no flip while moving away)
+PASS  the dash clears the standing guard the first back tap held
+PASS  an action key pressed mid-dash (F6) never starts while the dash runs
+PASS  the frame after the dash ends (F15) accepts a fresh attack start
+PASS  holding the forward direction never forms a second segment and never dashes
+PASS  6-3-6 keeps a non-neutral direction between the forward segments: no dash without a logical neutral frame
+PASS  6-2-6 without any neutral frame between the forward segments never dashes
+PASS  a diagonal segment between the neutral gap and the new tap (6-5-3-5-6) breaks the pattern
+PASS  holding through the dash triggers exactly once; only a fresh in-retention double tap dashes again
+PASS  the second segment inside the running 5A never starts a dash; the first free-frame segment pairs with the in-move first segment and dashes (F26)
+PASS  the dummy strike actually connects with the player on F6 (setup sanity)
+PASS  the second segment inside the hitstop/hitstun never starts a dash; the first free-frame segment pairs with the frozen first segment and dashes (F27)
+PASS  double taps during pre-jump, airtime and landing recovery never start a dash; the first free tap pair (F45/F47) does
+PASS  facing right: the digit script dashes toward the dummy (world +1)
+PASS  facing left: the same digit script dashes toward the dummy (world -1)
+PASS  both facings share the exact twelve-frame countdown
+PASS  facing right covers the full dash displacement
+PASS  facing left covers the mirrored displacement of equal magnitude
+PASS  the facing locked at dash start stays constant for the whole dash on both sides
+PASS  the dash itself starts on F3 and never re-triggers
+PASS  Space pressed mid-dash never enters pre-jump preparation
+PASS  the B+C combination completed inside the dash's hitstop is state-rejected once on the resume frame (F17)
+PASS  the dummy strike landing mid-dash (F8) interrupts it on the same frame: dash cleared, hitstun applied, knockback away from the dummy
+
+1 TEST(S) FAILED

@@ -3,6 +3,17 @@
 用 Godot 4.5 原生形状绘制的横向格斗手感验证 Demo：单训练场、一名玩家、一个木桩。
 启动即进入训练场，可移动、冲刺、跳跃、出招、防御、投与命中木桩观察受击反馈，随时重置。
 
+## 本轮联合验收（2026-09-17）
+
+自动化与确定性训练场结果见 [联合验收报告](.scratch/ftg-combat-foundation/acceptance-2026-09-17/report.md)。2026-09-18 用户反馈真人手感可接受、测试条目通过，另发现蹲姿移动问题；现已修复并通过 12 套件、1504 条自动化断言，见 [修复记录](.scratch/ftg-combat-foundation/crouch-2026-09-18/diagnosis.md)。修复后真人复玩及报告中的其他实现/规则缺口仍分别跟踪。
+
+- [操作与真人试玩记录单](docs/training-guide.md)
+- [招式与行为数据](docs/move-data.md)
+- [Solver 独立入口、帧表与空间范围](docs/solver-guide.md)
+- 全量检查：项目目录运行 `./tools/run_acceptance.ps1`（包含脚本错误检查和项目内临时用户目录）。
+
+旧 jB→5D 落地首帧接续已按最新规格移除；历史输入保留作负例。`spatial-valid` 仅为固定间距钉位网格证明，真实击退需独立回放。空中路线48px两侧五击通过，70px两侧仅三击。
+
 ## 运行
 
 1. 用 Godot 4.5 打开本目录的 `project.godot`（首次打开会自动导入）。
@@ -17,13 +28,13 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . --editor --quit
 # 主场景无头运行若干帧（冒烟）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . --quit-after 300
 
-# 战斗会话 seam 测试（632 项：逐帧输入 → 可观察状态与事件）
+# 战斗会话 seam 测试（逐帧输入 → 可观察状态与事件）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_combat_session.gd
 
-# 训练场集成测试（111 项：注入输入 + 真实物理帧）
+# 训练场集成测试（注入输入 + 真实物理帧）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_smoke.gd
 
-# Combo Solver 测试（112 项：开头会打印默认招式表的可读验证报告）
+# Combo Solver 测试（开头会打印默认招式表的可读验证报告）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_combo_solver.gd
 
 # Combo Solver 入口/路线/循环/空间分层测试（issue 19–22：solve 入口与操作说明、
@@ -34,7 +45,7 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/te
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_solver_spatial.gd
 
 # 最终路线回放与联合验收（issue 23：Solver 输出在全新会话/训练场真实键盘中回放
-# 地面、派生、jump cancel 与落地路线，打印逐条回放记录——面向/站位/逐帧输入/
+# 地面、派生、jump cancel 与旧落地负例，打印逐条回放记录——面向/站位/逐帧输入/
 # 命中帧/连段数/总伤害与 timing/spatial 分层标签）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_replay_acceptance.gd
 
@@ -42,8 +53,7 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/te
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/test_move_table.gd
 
 # 搓招与空中运动诊断回路（逐帧打印物理键/相对方向/面向/识别招式/缓存/取消/命中；
-# 退出码非 0 = 仍有未修复症状，当前红色项全部为待定的地面面向规则，见
-# .scratch/ftg-combat-foundation/diagnosis.md）
+# 退出码非 0 = 仍有未修复症状；本轮全部通过，历史红项见 diagnosis.md）
 Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/diagnose_inputs.gd
 ```
 
@@ -53,7 +63,7 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/di
 | --- | --- |
 | 左右移动 | A / D 或 ← / → |
 | 下方向（蹲下/搓招用） | S / ↓ |
-| 跳跃 | Space |
+| 跳跃 | Space / ↑（与下方向同时按中和） |
 | 动作 A / B / C / D | U / I / K / J |
 | 方向派生 236+C / 214+D | 依次输入方向序列（数字按面向折算）后按动作键 C（K）/ D（J） |
 | 前冲 / 后撤（66/44） | 双击 →/←（两次同向之间松开至少一帧） |
@@ -112,7 +122,7 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/di
 直接编辑对应 `.tres`，训练场与 Solver 同步生效；改完需重新运行项目（资源缓存
 按路径驻留）。角色共用同一套形状结构（`native_shapes.gd`），只换颜色。
 
-攻击期间（地面）水平输入失效、不能跳跃、不能取消；active 阶段会在身前显示
+地面出招期间水平输入失效；仅在配置允许、命中确认与窗口有效时可取消或 jump cancel。active 阶段会在身前显示
 半透明命中框，方便核对攻击范围。同一次出招对同一目标最多命中一次。
 
 ## MVP 验收对照

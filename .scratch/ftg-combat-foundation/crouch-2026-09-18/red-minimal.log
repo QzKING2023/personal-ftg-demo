@@ -1,0 +1,42 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2548)
+FAIL  one frame down-forward from rest: dx=0.722 vx=43.333
+FAIL  crouch stationary facing=1 axis=-1 moving=false x=480.000 -> 442.778 vx=-340.000
+PASS  down-back still guards; down/down-forward do not
+FAIL  releasing down restores standing movement immediately
+FAIL  crouch stationary facing=1 axis=-1 moving=true x=495.167 -> 498.778 vx=-173.333
+PASS  down-back still guards; down/down-forward do not
+FAIL  releasing down restores standing movement immediately
+PASS  crouch stationary facing=1 axis=0 moving=false x=480.000 -> 480.000 vx=0.000
+PASS  down-back still guards; down/down-forward do not
+PASS  releasing down restores standing movement immediately
+FAIL  crouch stationary facing=1 axis=0 moving=true x=495.167 -> 504.333 vx=0.000
+PASS  down-back still guards; down/down-forward do not
+PASS  releasing down restores standing movement immediately
+FAIL  crouch stationary facing=1 axis=1 moving=false x=480.000 -> 517.222 vx=340.000
+PASS  down-back still guards; down/down-forward do not
+PASS  releasing down restores standing movement immediately
+FAIL  crouch stationary facing=1 axis=1 moving=true x=495.167 -> 551.222 vx=340.000
+PASS  down-back still guards; down/down-forward do not
+PASS  releasing down restores standing movement immediately
+FAIL  crouch stationary facing=-1 axis=-1 moving=false x=480.000 -> 442.778 vx=-340.000
+PASS  down-back still guards; down/down-forward do not
+PASS  releasing down restores standing movement immediately
+FAIL  crouch stationary facing=-1 axis=-1 moving=true x=464.833 -> 408.778 vx=-340.000
+PASS  down-back still guards; down/down-forward do not
+PASS  releasing down restores standing movement immediately
+PASS  crouch stationary facing=-1 axis=0 moving=false x=480.000 -> 480.000 vx=0.000
+PASS  down-back still guards; down/down-forward do not
+PASS  releasing down restores standing movement immediately
+FAIL  crouch stationary facing=-1 axis=0 moving=true x=464.833 -> 455.667 vx=0.000
+PASS  down-back still guards; down/down-forward do not
+PASS  releasing down restores standing movement immediately
+FAIL  crouch stationary facing=-1 axis=1 moving=false x=480.000 -> 517.222 vx=340.000
+PASS  down-back still guards; down/down-forward do not
+FAIL  releasing down restores standing movement immediately
+FAIL  crouch stationary facing=-1 axis=1 moving=true x=464.833 -> 461.222 vx=173.333
+PASS  down-back still guards; down/down-forward do not
+FAIL  releasing down restores standing movement immediately
+15 TEST(S) FAILED

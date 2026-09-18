@@ -22,3 +22,10 @@
 - 验证：tests/test_move_table.gd（新增，~90 项断言：加载/校验/手改 .tres/文件级类型错误/清单错误/无回退/startup·伤害·属性·取消四组双端同步/Solver 拒绝同因）；test_combat_session（277）全绿（12 处程序内探针构造迁移为字段齐全的 `_probe_move`，断言原样保留）；test_combo_solver（112）全绿（注入招式同法迁移 `_injected_move`）；test_smoke 全绿（新增共享 manifest 接入 + 训练场拒绝状态两用例，后者断言训练场/MoveTable/Solver 三处同一原因）；diagnose_inputs 维持既有 5 个红色项（地面面向规则，属 issue 12，后续已随其转绿）；主场景无头运行 300 帧无错误。
 - 范围说明：投技仅有 schema+校验（投距、startup 5f 领域规则），投技执行/拆投是 issue 17；`input_alternatives` 仅声明与记法校验，指令分层与替代串匹配是 issue 13；默认表攻击属性全部取 high、空中招式 air=true（规格未冻结逐招属性，防御矩阵在 issue 16）。
 - 已知限制：资源缓存按路径驻留——运行中修复 .tres 后需重新运行项目（拒绝文案已注明，R 仅重载场景）；`GameParams` 的 `MOVE_*` 常量保留为测试断言基线，运行时不读取。
+
+
+**2026-09-17 阶段6联合验收（本记录优先于上述历史实现结论）**
+
+真实改写 data/moves/5A.tres，startup 5→8、damage 10→25；训练场与 Solver 同步变化。负前摇双端同因拒绝；原字节恢复且哈希相同。详见文件同步日志与 docs/move-data.md。
+
+自动化明细、失败分类、帧序证据与真人待验收条件见 [本轮报告](../acceptance-2026-09-17/report.md)。保持未完成的人类验收，不宣布整票关闭。

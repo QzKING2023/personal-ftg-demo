@@ -1,0 +1,176 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2548)
+PASS  default manifest loads and validates
+PASS  default manifest reports no errors
+PASS  table preserves manifest order and ids (stable enumeration)
+PASS  5A carries its own stable id, not the file name
+PASS  5B carries its own stable id, not the file name
+PASS  5C carries its own stable id, not the file name
+PASS  236C carries its own stable id, not the file name
+PASS  jA carries its own stable id, not the file name
+PASS  jB carries its own stable id, not the file name
+PASS  jD carries its own stable id, not the file name
+PASS  5D carries its own stable id, not the file name
+PASS  214D carries its own stable id, not the file name
+PASS  BC carries its own stable id, not the file name
+PASS  5A carries the frozen first-edition windows and damage
+PASS  5B carries the frozen first-edition windows and damage
+PASS  5C carries the frozen first-edition windows and damage
+PASS  236C carries the frozen first-edition windows and damage
+PASS  5D carries the frozen first-edition windows and damage
+PASS  214D carries the frozen first-edition windows and damage
+PASS  jA carries the frozen first-edition windows and damage
+PASS  jB carries the frozen first-edition windows and damage
+PASS  jD carries the frozen first-edition windows and damage
+PASS  BC carries the frozen first-edition windows and damage
+PASS  236C declares its direction derivation and launch result
+PASS  236C declares its jump cancel target
+PASS  jD is an air finisher
+PASS  5A declares move kind strike
+PASS  5A declares input binding and priority
+PASS  5A declares an attack attribute
+PASS  5B declares move kind strike
+PASS  5B declares input binding and priority
+PASS  5B declares an attack attribute
+PASS  5C declares move kind strike
+PASS  5C declares input binding and priority
+PASS  5C declares an attack attribute
+PASS  236C declares move kind strike
+PASS  236C declares input binding and priority
+PASS  236C declares an attack attribute
+PASS  jA declares move kind strike
+PASS  jA declares input binding and priority
+PASS  jA declares an attack attribute
+PASS  jB declares move kind strike
+PASS  jB declares input binding and priority
+PASS  jB declares an attack attribute
+PASS  jD declares move kind strike
+PASS  jD declares input binding and priority
+PASS  jD declares an attack attribute
+PASS  5D declares move kind strike
+PASS  5D declares input binding and priority
+PASS  5D declares an attack attribute
+PASS  214D declares move kind strike
+PASS  214D declares input binding and priority
+PASS  214D declares an attack attribute
+PASS  BC stays the B+C combination throw with its range (no single-key binding)
+PASS  two loads return distinct move instances
+PASS  mutating one copy does not leak into other loads
+PASS  strike missing base_damage rejects the table
+PASS  rejection for base_damage names the move id and field
+PASS  strike missing attack_attribute rejects the table
+PASS  rejection for attack_attribute names the move id and field
+PASS  strike missing hitbox_size rejects the table
+PASS  rejection for hitbox_size names the move id and field
+PASS  strike missing hit_result rejects the table
+PASS  rejection for hit_result names the move id and field
+PASS  strike missing hitstun_frames rejects the table
+PASS  rejection for hitstun_frames names the move id and field
+PASS  strike missing knockback rejects the table
+PASS  rejection for knockback names the move id and field
+PASS  strike missing knockback_up rejects the table
+PASS  rejection for knockback_up names the move id and field
+PASS  strike missing action_key rejects the table
+PASS  rejection for action_key names the move id and field
+PASS  rejected table exposes no partial move table
+PASS  throw with throw_range and startup 5 is legal
+PASS  throw without throw_range is rejected on the throw_range field
+PASS  throw startup must stay the fixed 5f domain rule, not resource-overridable
+PASS  throw active must stay the grab frame plus the ten tech-window frames (about-15f domain rule)
+PASS  two throws in one table are an illegal tie for the single B+C combination
+PASS  negative startup_frames is rejected naming the field
+PASS  negative active_frames is rejected naming the field
+PASS  negative recovery_frames is rejected naming the field
+PASS  negative cancel_window_frames is rejected naming the field
+PASS  negative hitstun_frames is rejected naming the field
+PASS  unknown attack attribute enum value is rejected
+PASS  unknown enum error names the field and the offending value
+PASS  unknown hit result enum value is rejected
+PASS  illegal direction predicate 25C is rejected on the derivation field
+PASS  illegal direction predicate 056C is rejected on the derivation field
+PASS  illegal direction predicate 236 is rejected on the derivation field
+PASS  illegal direction predicate 236CC is rejected on the derivation field
+PASS  illegal direction predicate 235 is rejected on the derivation field
+PASS  derivation key mismatching the declared action key is rejected
+PASS  finisher with cancel targets is a contradictory field combination
+PASS  air move declaring jump cancel targets is contradictory
+PASS  ground move declaring landing continuation is contradictory
+PASS  strike declaring throw_range is contradictory
+PASS  throw declaring a single action key is contradictory (B+C combo is the domain rule)
+PASS  dangling cancel target is rejected naming the missing move id
+PASS  duplicate stable ids across resources are rejected
+PASS  two moves sharing stance+binding+priority are an illegal tie
+PASS  tie error names both conflicting moves
+PASS  same binding with distinct priorities is a legal, resolvable table
+PASS  runtime resolves the same binding by declared priority
+PASS  same binding and priority across different tiers is resolvable and legal
+PASS  same stance+binding+tier+priority with different notations is still an illegal tie
+PASS  tier tie error names both conflicting moves
+PASS  unknown command tier enum value is rejected naming the field
+PASS  lenient command without any direction notation is a contradictory field
+PASS  hand-edited tres missing a core field rejects the whole table
+PASS  rejection reports resource source, move id and field for the hand edit
+PASS  tres with a type error in a frame field rejects the table
+PASS  type-error rejection names the resource source
+ERROR: Cannot open file 'user://mt_missing_manifest.tres'.
+   at: load (scene/resources/resource_format_text.cpp:1387)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:35)
+       [1] _test_manifest_errors_rejected (res://tests/test_move_table.gd:338)
+       [2] _initialize (res://tests/test_move_table.gd:26)
+ERROR: Failed loading resource: user://mt_missing_manifest.tres.
+   at: _load (core/io/resource_loader.cpp:343)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:35)
+       [1] _test_manifest_errors_rejected (res://tests/test_move_table.gd:338)
+       [2] _initialize (res://tests/test_move_table.gd:26)
+ERROR: Error loading resource: 'user://mt_missing_manifest.tres'.
+   at: load (core/core_bind.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:35)
+       [1] _test_manifest_errors_rejected (res://tests/test_move_table.gd:338)
+       [2] _initialize (res://tests/test_move_table.gd:26)
+PASS  missing manifest path is rejected naming the manifest source
+ERROR: Cannot open file 'user://mt_no_such_move.tres'.
+   at: load (scene/resources/resource_format_text.cpp:1387)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:47)
+       [1] _test_manifest_errors_rejected (res://tests/test_move_table.gd:346)
+       [2] _initialize (res://tests/test_move_table.gd:26)
+ERROR: Failed loading resource: user://mt_no_such_move.tres.
+   at: _load (core/io/resource_loader.cpp:343)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:47)
+       [1] _test_manifest_errors_rejected (res://tests/test_move_table.gd:346)
+       [2] _initialize (res://tests/test_move_table.gd:26)
+ERROR: Error loading resource: 'user://mt_no_such_move.tres'.
+   at: load (core/core_bind.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:47)
+       [1] _test_manifest_errors_rejected (res://tests/test_move_table.gd:346)
+       [2] _initialize (res://tests/test_move_table.gd:26)
+PASS  manifest referencing a missing move file is rejected
+PASS  missing-move rejection names manifest source and the missing path
+PASS  manifest without any move reference is rejected
+PASS  wrong manifest resource type is rejected naming the expected type
+PASS  rejected table never yields a runnable move table
+PASS  rejection does not silently substitute GameParams values
+PASS  session hit frame follows the edited startup (6 -> 9)
+PASS  solver report follows the same edited startup (route hit frames 9/14/19; the B cancel lands one normal frame after the confirm)
+PASS  unmodified shared table keeps the baseline route (6/11/16 with the B pairing wait)
+PASS  session damage follows the edited base damage
+PASS  solver route total damage follows the same edit (25 + decayed 5B/5D = 50.2)
+PASS  session diagnostics expose the edited attack attribute of the active move
+PASS  solver move-table summary reflects the edited attribute
+PASS  removing the configured cancel drops the solver edge
+PASS  the remaining configured cancel is still analyzed
+PASS  session no longer cancels 5A into 5B without the configured target
+PASS  invalid table is rejected by the loader
+PASS  solver refuses to analyze the invalid manifest
+PASS  solver refusal carries the same observable reason as the loader
+PASS  refused solver report claims no analysis results
+PASS  refused report lines expose the refusal and the offending field
+
+ALL MOVE TABLE TESTS PASSED

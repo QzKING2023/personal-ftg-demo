@@ -1,0 +1,7 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2548)
+PASS  invalid local file rejected by training ground and Solver
+PASS  same resource, id, field and rejection reason
+REFUSAL [res://data/moves/5A.tres] 5A: startup_frames — 帧窗口为负、未设置或为 0（当前 -1，须至少 1 帧）
