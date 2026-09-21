@@ -1,0 +1,107 @@
+[
+  {
+    "test": "import",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 0,
+    "seconds": 5.83
+  },
+  {
+    "test": "test_combat_session",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 632,
+    "seconds": 1.13
+  },
+  {
+    "test": "test_combo_solver",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 102,
+    "seconds": 2.26
+  },
+  {
+    "test": "test_crouch_stationary",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 45,
+    "seconds": 0.66
+  },
+  {
+    "test": "test_input_normalization",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 22,
+    "seconds": 0.77
+  },
+  {
+    "test": "test_joint_acceptance",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 28,
+    "seconds": 0.6
+  },
+  {
+    "test": "test_move_table",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 134,
+    "seconds": 0.96
+  },
+  {
+    "test": "test_replay_acceptance",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 123,
+    "seconds": 12.6
+  },
+  {
+    "test": "test_smoke",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 123,
+    "seconds": 18.66
+  },
+  {
+    "test": "test_solver_cycles",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 34,
+    "seconds": 3.15
+  },
+  {
+    "test": "test_solver_entry",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 49,
+    "seconds": 1.78
+  },
+  {
+    "test": "test_solver_route",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 85,
+    "seconds": 2.13
+  },
+  {
+    "test": "test_solver_spatial",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 127,
+    "seconds": 2.06
+  },
+  {
+    "test": "diagnose_inputs",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 0,
+    "seconds": 0.96
+  },
+  {
+    "test": "main-smoke",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 0,
+    "seconds": 2.74
+  }
+]

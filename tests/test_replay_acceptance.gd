@@ -124,9 +124,9 @@ func _test_pinned_replay_reproduces_solver_results(report: ComboSolver.SolverRep
 func _legacy_landing_fixture() -> ComboSolver.SolverRoute:
 	var route := ComboSolver.SolverRoute.new()
 	route.move_ids.assign(LANDING_ROUTE)
-	route.hit_frames.assign([6, 13, 43, 55])
-	route.combo_hits = 4
-	route.total_damage = 41.0
+	route.hit_frames.assign([6, 13, 43])
+	route.combo_hits = 3
+	route.total_damage = 32.6
 	route.timing_valid = false
 	for row in [[1,0,false,false,"A"], [3,0,true,false,""], [4,1,true,false,""],
 		[5,1,false,false,""], [6,0,false,false,"C"], [13,0,false,true,""],
@@ -145,8 +145,8 @@ func _test_rejected_landing_replay(report: ComboSolver.SolverReport) -> void:
 	var route := _legacy_landing_fixture()
 	for facing in [1, -1]:
 		var run := _replay_route(route, facing, 70.0, _shared_table(), true)
-		_check(run["hit_frames"] == route.hit_frames and int(run["combo_hits"]) == 4,
-			"legacy landing replay stops at four hits despite fixed contact")
+		_check(run["hit_frames"] == route.hit_frames and int(run["combo_hits"]) == 3,
+			"legacy landing replay stops at three hits despite fixed contact (the contextual profiles no longer carry the old jB seam)")
 		_check(not (run["landing_move_ids"] as Array).has("5D"), "legacy schedule cannot start 5D on landing")
 		_records.append(_record_line(route, facing, "站位：旧样本钉位 70 px", run,
 			"命中帧", "timing-invalid（恢复锁拒绝旧样本第5击；不作空间证明）"))
@@ -298,7 +298,7 @@ func _test_keyboard_replay_matches_session_probe(plain: ComboSolver.SolverReport
 				"%s: the player lands on the same tick (%s)" % [tag, str(keyboard["landing_ticks"])])
 		var layer := "timing-valid（键盘回放证实真实击退下完整接通）"
 		if kind == "landing":
-			_check(int(keyboard["combo_hits"]) == 4, "legacy landing schedule stops at four hits on the real keyboard path")
+			_check(int(keyboard["combo_hits"]) == 3, "legacy landing schedule stops at three hits on the real keyboard path")
 			layer = "timing-invalid（旧落地样本负例：恢复锁拒绝第5击）"
 		elif int(keyboard["combo_hits"]) < route.combo_hits:
 			layer = "timing-valid（键盘回放 %.0f px 真实击退下第 %d 击后漂出命中距离——钉位层结论见钉位回放记录）" % [
@@ -358,9 +358,11 @@ func _keyboard_replay(session: CombatSession, driver: KeyboardDriver, route: Com
 			last_combo = session.combo_hits
 			last_damage = session.combo_total_damage
 		if session.dummy_state == CombatSession.DummyState.GROUND_HITSTUN \
-				or session.dummy_state == CombatSession.DummyState.AIR_HITSTUN:
+				or session.dummy_state == CombatSession.DummyState.AIR_HITSTUN \
+				or session.dummy_state == CombatSession.DummyState.KNOCKED_DOWN:
 			saw_hitstun = true
-		elif saw_hitstun and int(result.recover_tick) < 0:
+		elif saw_hitstun and int(result.recover_tick) < 0 \
+				and session.dummy_state == CombatSession.DummyState.NEUTRAL:
 			result.recover_tick = tick
 		if not session.player_on_ground:
 			was_airborne = true
@@ -537,9 +539,12 @@ func _replay_core(table: Dictionary, schedule: Dictionary, facing: int, dx: floa
 			else:
 				result.move_after_recovery = session.player_move_id
 				tail_stage = 3
-		# 收尾：预期命中核对完毕且观测到自然受身（再走 12 tick 余量）；或探测完成。
+		# 收尾：预期命中核对完毕、观测到自然受身且（空中段）观测到落地（再走
+		# 12 tick 余量）；或探测完成。自然受身可能早于玩家落地（浮空受身计时
+		# 独立消耗），先停会漏记落地 tick。
 		var plan_done := hit_expect.is_empty() or frame >= last_frame
-		if (plan_done and result.recovered and physics > last_hit_physics + 12) \
+		var landed_done: bool = not was_airborne or not (result["landing_ticks"] as Array).is_empty()
+		if (plan_done and result.recovered and landed_done and physics > last_hit_physics + 12 and not landing_probe) \
 				or (landing_probe and tail_stage == 3):
 			break
 	result.combo_hits = result.hits.size()
@@ -732,15 +737,61 @@ func _injected_move(id: String, key: String) -> MoveData:
 	move.attack_attribute = MoveData.AttackAttribute.HIGH
 	move.hitbox_size = GameParams.ATTACK_HITBOX_SIZE
 	move.hitbox_gap = GameParams.ATTACK_HITBOX_GAP
-	move.hit_result = MoveData.HitResult.GROUND_HITSTUN
-	move.hitstun_frames = GameParams.HITSTUN_FRAMES
-	move.knockback = GameParams.MOVE_5A_KNOCKBACK
-	move.knockback_up = GameParams.ATTACK_KNOCKBACK_UP
+	move.hit_profiles = _probe_profiles(GameParams.HITSTUN_FRAMES, GameParams.MOVE_5A_KNOCKBACK)
 	return move
 
 
 func _approx(value: float, expected: float, tolerance := 0.05) -> bool:
 	return absf(value - expected) < tolerance
+
+
+## 探针命中资料（上下文命中资料迁移）：grounded normal/counter 同值——既有回归
+## 不区分 counter 变体，只要求上下文匹配不落空。
+func _probe_profiles(stun: int, horizontal: float) -> Array[HitProfile]:
+	var normal := HitProfile.new()
+	normal.target_state = HitProfile.TargetState.GROUNDED
+	normal.hit_context = HitProfile.HitContext.NORMAL
+	normal.reaction = HitProfile.Reaction.GROUND_HITSTUN
+	normal.ground_stun_frames = stun
+	normal.horizontal_speed_px_s = horizontal
+	normal.upward_speed_px_s = 0.0
+	var counter := normal.duplicate() as HitProfile
+	counter.hit_context = HitProfile.HitContext.COUNTER
+	return [normal, counter]
+
+
+func _set_probe_stun(move: MoveData, frames: int) -> void:
+	for profile in move.hit_profiles:
+		profile.ground_stun_frames = frames
+
+
+func _set_probe_horizontal(move: MoveData, speed: float) -> void:
+	for profile in move.hit_profiles:
+		profile.horizontal_speed_px_s = speed
+
+
+## 把探针的全部 profile 改写为 LAUNCH（旧 hit_result=LAUNCH + hitstun + 击退
+## 三件套的等价迁移：受身计时、水平幅值与垂直初速度进入每个 profile）。
+func _set_probe_launch(move: MoveData, untech: int, horizontal: float, upward: float) -> void:
+	for profile in move.hit_profiles:
+		profile.reaction = HitProfile.Reaction.LAUNCH
+		profile.ground_stun_frames = -1
+		profile.air_untech_frames = untech
+		profile.horizontal_speed_px_s = horizontal
+		profile.upward_speed_px_s = upward
+
+
+## 给探针追加 airborne normal LAUNCH profile（旧 hit_result 语义下空中命中无
+## 目标状态维度；迁移后空中命中需要显式 airborne 资料，缺失即 MISS_NO_PROFILE）。
+func _add_probe_airborne(move: MoveData, untech: int, horizontal: float, upward: float) -> void:
+	var airborne := HitProfile.new()
+	airborne.target_state = HitProfile.TargetState.AIRBORNE
+	airborne.hit_context = HitProfile.HitContext.NORMAL
+	airborne.reaction = HitProfile.Reaction.LAUNCH
+	airborne.air_untech_frames = untech
+	airborne.horizontal_speed_px_s = horizontal
+	airborne.upward_speed_px_s = upward
+	move.hit_profiles.append(airborne)
 
 
 func _check(condition: bool, label: String) -> void:

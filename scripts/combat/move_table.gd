@@ -179,8 +179,8 @@ static func _validate_strike_fields(move: MoveData, source: String, id_label: St
 		errors.append("[%s] %s: action_key — 打击招式缺少输入绑定（须为 A/B/C/D，当前 \"%s\"）" % [
 			source, id_label, move.action_key,
 		])
-	if move.base_damage <= 0:
-		errors.append("[%s] %s: base_damage — 打击招式缺少基础伤害或数值非法（当前 %d，须为正）" % [
+	if move.base_damage < 0:
+		errors.append("[%s] %s: base_damage — 打击招式缺少基础伤害或数值为负（当前 %d，须为非负）" % [
 			source, id_label, move.base_damage,
 		])
 	if not _enum_in_range(move.attack_attribute, 1, 4):
@@ -198,34 +198,25 @@ static func _validate_strike_fields(move: MoveData, source: String, id_label: St
 		errors.append("[%s] %s: hitbox_gap — 命中框间隙为负或未设置（当前 %s）" % [
 			source, id_label, str(move.hitbox_gap),
 		])
-	if move.hit_result == MoveData.HitResult.UNSET:
-		errors.append("[%s] %s: hit_result — 打击招式缺少命中结果（枚举值 0）" % [source, id_label])
-	elif not _enum_in_range(move.hit_result, 1, 2):
-		errors.append("[%s] %s: hit_result — 未知枚举值 %d（合法范围 1–2）" % [
-			source, id_label, move.hit_result,
-		])
-	if move.hitstun_frames < 1:
-		errors.append("[%s] %s: hitstun_frames — 打击招式缺少受击硬直或数值非法（当前 %d）" % [
-			source, id_label, move.hitstun_frames,
-		])
-	if move.knockback < 0.0:
-		errors.append("[%s] %s: knockback — 打击招式缺少击退或数值为负（当前 %s）" % [
-			source, id_label, str(move.knockback),
-		])
-	if move.knockback_up < 0.0:
-		errors.append("[%s] %s: knockback_up — 击飞为负或未设置（当前 %s）" % [
-			source, id_label, str(move.knockback_up),
+	if move.hit_profiles.is_empty():
+		errors.append("[%s] %s: hit_profiles — 打击招式缺少命中资料（至少一个合法 HitProfile）" % [
+			source, id_label,
 		])
 	if move.throw_range > 0.0:
 		errors.append("[%s] %s: throw_range — 矛盾：打击招式不声明投距（当前 %s）" % [
 			source, id_label, str(move.throw_range),
 		])
+	_validate_hit_profiles(move, source, id_label, errors)
 
 
 static func _validate_throw_fields(move: MoveData, source: String, id_label: String, errors: Array[String]) -> void:
 	if move.throw_range <= 0.0:
 		errors.append("[%s] %s: throw_range — 投技缺少投距或数值非法（当前 %s，须为正）" % [
 			source, id_label, str(move.throw_range),
+		])
+	if not move.hit_profiles.is_empty():
+		errors.append("[%s] %s: hit_profiles — 矛盾：投技结果参数是 GameParams 领域规则，不声明命中资料（当前 %d 个）" % [
+			source, id_label, move.hit_profiles.size(),
 		])
 	if move.startup_frames != 5:
 		errors.append("[%s] %s: startup_frames — 普通投 startup 固定 5 帧（领域规则，不由资源覆盖，当前 %d）" % [
@@ -244,6 +235,127 @@ static func _validate_throw_fields(move: MoveData, source: String, id_label: Str
 		errors.append("[%s] %s: direction_derivation — 矛盾：普通投不支持方向派生记法（当前 \"%s\"）" % [
 			source, id_label, move.direction_derivation,
 		])
+
+
+## 命中资料校验（规格 §3）：枚举范围、(target_state, hit_context) 唯一键、
+## reaction 与目标/计时/速度的组合规则、Counter 依赖同状态 NORMAL。数组顺序
+## 不是选择依据，只用于错误定位。
+static func _validate_hit_profiles(move: MoveData, source: String, id_label: String, errors: Array[String]) -> void:
+	var seen_keys := {}
+	for i in move.hit_profiles.size():
+		var profile := move.hit_profiles[i]
+		var label := "hit_profiles[%d]" % i
+		if not (profile is HitProfile):
+			errors.append("[%s] %s: %s — 条目类型错误：期望 HitProfile，实际 %s" % [
+				source, id_label, label, profile.get_class() if profile != null else "null",
+			])
+			continue
+		if not _enum_in_range(profile.target_state, 1, 2):
+			errors.append("[%s] %s: %s: target_state — 未知或未声明枚举值 %d（合法范围 1–2：grounded/airborne）" % [
+				source, id_label, label, profile.target_state,
+			])
+			continue
+		if not _enum_in_range(profile.hit_context, 1, 2):
+			errors.append("[%s] %s: %s: hit_context — 未知或未声明枚举值 %d（合法范围 1–2：normal/counter）" % [
+				source, id_label, label, profile.hit_context,
+			])
+			continue
+		var key := "%d|%d" % [profile.target_state, profile.hit_context]
+		if seen_keys.has(key):
+			errors.append("[%s] %s: %s — 重复键 %s（与 hit_profiles[%d] 冲突；profile 顺序不是选择依据）" % [
+				source, id_label, label, profile.label(), seen_keys[key],
+			])
+		else:
+			seen_keys[key] = i
+		if not _enum_in_range(profile.reaction, 1, 3):
+			errors.append("[%s] %s: %s: reaction — 未知或未声明枚举值 %d（合法范围 1–3：ground_hitstun/launch/ground_knockdown）" % [
+				source, id_label, label, profile.reaction,
+			])
+			continue
+		if profile.damage_override < -1:
+			errors.append("[%s] %s: %s: damage_override — 非法覆盖伤害 %d（-1 表示沿用 base_damage，否则须为非负）" % [
+				source, id_label, label, profile.damage_override,
+			])
+		if profile.horizontal_speed_px_s < 0.0:
+			errors.append("[%s] %s: %s: horizontal_speed_px_s — 水平速度为负或未声明（当前 %s，所有合法 reaction 都必须声明非负幅值）" % [
+				source, id_label, label, str(profile.horizontal_speed_px_s),
+			])
+		match profile.reaction:
+			HitProfile.Reaction.GROUND_HITSTUN:
+				if profile.target_state != HitProfile.TargetState.GROUNDED:
+					errors.append("[%s] %s: %s — 矛盾：地面硬直只允许 grounded 目标（当前 %s）" % [
+						source, id_label, label, profile.label(),
+					])
+				if profile.ground_stun_frames < 1:
+					errors.append("[%s] %s: %s: ground_stun_frames — 地面硬直为负、未设置或为 0（当前 %d，须至少 1 帧）" % [
+						source, id_label, label, profile.ground_stun_frames,
+					])
+				if not is_equal_approx(profile.upward_speed_px_s, 0.0):
+					errors.append("[%s] %s: %s: upward_speed_px_s — 矛盾：普通地面命中必须显式写 0、保持接地（当前 %s；旧 knockback_up 的非零值不能迁移成垂直速度）" % [
+						source, id_label, label, str(profile.upward_speed_px_s),
+					])
+				_reject_foreign_timer(source, id_label, label, profile, "air_untech_frames", profile.air_untech_frames, errors)
+				_reject_foreign_timer(source, id_label, label, profile, "knockdown_frames", profile.knockdown_frames, errors)
+			HitProfile.Reaction.LAUNCH:
+				if profile.air_untech_frames < 1:
+					errors.append("[%s] %s: %s: air_untech_frames — 空中受身为负、未设置或为 0（当前 %d，须至少 1 帧）" % [
+						source, id_label, label, profile.air_untech_frames,
+					])
+				if profile.upward_speed_px_s <= 0.0:
+					errors.append("[%s] %s: %s: upward_speed_px_s — 矛盾：浮空必须声明大于 0 的垂直初速度（当前 %s）" % [
+						source, id_label, label, str(profile.upward_speed_px_s),
+					])
+				_reject_foreign_timer(source, id_label, label, profile, "ground_stun_frames", profile.ground_stun_frames, errors)
+				_reject_foreign_timer(source, id_label, label, profile, "knockdown_frames", profile.knockdown_frames, errors)
+			HitProfile.Reaction.GROUND_KNOCKDOWN:
+				if profile.target_state != HitProfile.TargetState.GROUNDED:
+					errors.append("[%s] %s: %s — 矛盾：普通倒地只允许 grounded 目标（当前 %s）" % [
+						source, id_label, label, profile.label(),
+					])
+				if profile.knockdown_frames < 1:
+					errors.append("[%s] %s: %s: knockdown_frames — 倒地计时为负、未设置或为 0（当前 %d，须至少 1 帧）" % [
+						source, id_label, label, profile.knockdown_frames,
+					])
+				if not is_equal_approx(profile.upward_speed_px_s, 0.0):
+					errors.append("[%s] %s: %s: upward_speed_px_s — 矛盾：普通倒地必须显式写 0、不离地（当前 %s）" % [
+						source, id_label, label, str(profile.upward_speed_px_s),
+					])
+				_reject_foreign_timer(source, id_label, label, profile, "ground_stun_frames", profile.ground_stun_frames, errors)
+				_reject_foreign_timer(source, id_label, label, profile, "air_untech_frames", profile.air_untech_frames, errors)
+		if profile.hit_context == HitProfile.HitContext.COUNTER \
+				and not move.has_normal_profile(profile.target_state):
+			errors.append("[%s] %s: %s — 矛盾：声明 %s 的 counter 却缺少同状态 normal profile（不得只提供 counter）" % [
+				source, id_label, label, _target_state_name(profile.target_state),
+			])
+
+
+## reaction 不适用的计时字段必须保持未声明（-1）：计时与 reaction 不一致属于非法。
+static func _reject_foreign_timer(source: String, id_label: String, label: String, profile: HitProfile, field: String, value: int, errors: Array[String]) -> void:
+	if value != -1:
+		errors.append("[%s] %s: %s: %s — 矛盾：%s 不适用当前 reaction %s，须保持未声明 -1（当前 %d）" % [
+			source, id_label, label, field, field, _reaction_name(profile.reaction), value,
+		])
+
+
+static func _target_state_name(target_state: int) -> String:
+	match target_state:
+		HitProfile.TargetState.GROUNDED:
+			return "grounded"
+		HitProfile.TargetState.AIRBORNE:
+			return "airborne"
+	return "未知目标状态 %d" % target_state
+
+
+static func _reaction_name(reaction: int) -> String:
+	match reaction:
+		HitProfile.Reaction.GROUND_HITSTUN:
+			return "GROUND_HITSTUN"
+		HitProfile.Reaction.LAUNCH:
+			return "LAUNCH"
+		HitProfile.Reaction.GROUND_KNOCKDOWN:
+			return "GROUND_KNOCKDOWN"
+	return "未知反应 %d" % reaction
+
 
 
 ## 方向谓词记法校验：形如 "236C" = 方向序列 + 动作键。方向段只能是
@@ -346,4 +458,10 @@ static func _fresh_copy(move: MoveData) -> MoveData:
 	copy.jump_cancel_targets = move.jump_cancel_targets.duplicate()
 	copy.landing_cancel_targets = move.landing_cancel_targets.duplicate()
 	copy.input_alternatives = move.input_alternatives.duplicate()
+	var profiles: Array[HitProfile] = []
+	for profile in move.hit_profiles:
+		var profile_copy := profile.duplicate() as HitProfile
+		profile_copy.resource_path = ""
+		profiles.append(profile_copy)
+	copy.hit_profiles = profiles
 	return copy

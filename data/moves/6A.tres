@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="MoveData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/move_data.gd" id="1_sixay"]
+[ext_resource type="Script" path="res://scripts/combat/hit_profile.gd" id="2_hitprofile"]
+
+[sub_resource type="Resource" id="HitProfile_6a_normal"]
+script = ExtResource("2_hitprofile")
+target_state = 1
+hit_context = 1
+reaction = 2
+air_untech_frames = 36
+horizontal_speed_px_s = 150.0
+upward_speed_px_s = 560.0
+
+[sub_resource type="Resource" id="HitProfile_6a_counter"]
+script = ExtResource("2_hitprofile")
+target_state = 1
+hit_context = 2
+reaction = 2
+air_untech_frames = 42
+horizontal_speed_px_s = 150.0
+upward_speed_px_s = 560.0
+
+[resource]
+script = ExtResource("1_sixay")
+move_id = "6A"
+move_kind = 1
+stance = 1
+action_key = "A"
+startup_frames = 8
+active_frames = 6
+recovery_frames = 20
+base_damage = 16
+attack_attribute = 1
+air_attack = false
+hitbox_size = Vector2(64, 60)
+hitbox_gap = 4.0
+hit_profiles = Array[Resource]([SubResource("HitProfile_6a_normal"), SubResource("HitProfile_6a_counter")])
+throw_range = -1.0
+extra_landing_recovery_frames = 0
+cancel_targets = Array[String]([])
+cancel_window_frames = 8
+is_finisher = false
+jump_cancel_targets = Array[String](["jA"])
+landing_cancel_targets = Array[String]([])
+direction_derivation = "6A"
+input_alternatives = Array[String]([])
+priority = 2

@@ -5,6 +5,7 @@ extends RefCounted
 
 enum Type {
 	HIT,               ## 招式命中木桩
+	HIT_MISS,          ## 命中框已连接但 (target_state, hit_context) 无匹配 HitProfile：不造成伤害、不改变受击状态、不取得命中确认
 	BLOCKED,           ## 玩家以防御姿态挡下一次木桩打击（方向见 direction）
 	PLAYER_HIT,        ## 玩家被木桩打击命中（未防御或姿态漏防；方向见 direction）
 	HITSTOP_STARTED,   ## 命中帧结算完毕，后续 HITSTOP_FRAMES 个物理帧冻结（Hitstop 开始边界）
@@ -17,12 +18,14 @@ enum Type {
 	DASH_STARTED,      ## 66 前冲 / 44 后撤启动（世界方向见 direction；issue 18）
 }
 
-## 连段结束原因：收尾、取消窗口关闭、招式收招未接续、木桩自然受身/恢复。
+## 连段结束原因：收尾、取消窗口关闭、招式收招未接续、木桩自然受身/恢复、
+## 普通倒地反应（进入倒地即结束当前连段）。
 enum ComboEndReason {
 	FINISHER,
 	CANCEL_WINDOW_CLOSED,
 	MOVE_RECOVERED,
 	DUMMY_RECOVERED,
+	KNOCKDOWN,
 }
 
 ## 普通投尝试被拒绝的原因：状态禁用（蹲下/pre-jump/空中/招式阶段/受击硬直/
@@ -33,24 +36,36 @@ enum ThrowFailReason {
 }
 
 var type: Type = Type.HIT
-## 命中方向（攻击方朝向，1 向右 / -1 向左），仅 HIT 使用。
+## 命中方向（攻击方朝向，1 向右 / -1 向左），仅 HIT/HIT_MISS 使用。
 var direction := 1
 ## 实际造成的伤害（已按连段命中数递减），仅 HIT 使用。
 var damage := 0.0
 ## 本次命中是当前连段的第几击（从 1 开始），仅 HIT 使用。
 var combo_hits := 0
+## 本次命中选择的命中上下文是否为 Counter Hit（事件/回放区分所选 profile），仅 HIT 使用。
+var is_counter := false
 ## 连段结束原因，仅 COMBO_ENDED 使用。
 var combo_end_reason: ComboEndReason = ComboEndReason.FINISHER
 ## 普通投失败原因，仅 THROW_FAILED 使用。
 var throw_fail_reason: ThrowFailReason = ThrowFailReason.STATE
 
 
-static func hit(damage: float, direction: int, combo_hits: int) -> CombatEvent:
+static func hit(damage: float, direction: int, combo_hits: int, is_counter := false) -> CombatEvent:
 	var event := CombatEvent.new()
 	event.type = Type.HIT
 	event.damage = damage
 	event.direction = direction
 	event.combo_hits = combo_hits
+	event.is_counter = is_counter
+	return event
+
+
+## 命中框已连接但目标状态 × 命中上下文无匹配 profile（MISS_NO_PROFILE）：
+## 不造成伤害、不改变受击状态、不取得任何命中确认或取消资格。
+static func hit_miss(direction: int) -> CombatEvent:
+	var event := CombatEvent.new()
+	event.type = Type.HIT_MISS
+	event.direction = direction
 	return event
 
 

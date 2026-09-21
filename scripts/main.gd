@@ -250,6 +250,8 @@ func _update_dummy_status() -> void:
 		state_text = "浮空受击（%d）" % session.dummy_hitstun_left
 	elif session.dummy_state == CombatSession.DummyState.AIR_RECOVERED:
 		state_text = "空中已受身"
+	elif session.dummy_state == CombatSession.DummyState.KNOCKED_DOWN:
+		state_text = "普通倒地（%d）" % session.dummy_knockdown_left
 	var posture := "空中" if not session.player_on_ground else "地面"
 	# 两行布局：第一行姿态与血量，第二行受击状态与连段；避免与左侧键位提示重叠。
 	_dummy_status.text = "玩家 %s  木桩 HP %d/%d\n状态 %s  连段 %d hit · %.1f" % [

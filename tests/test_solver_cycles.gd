@@ -175,9 +175,8 @@ func _slow_self_loop() -> MoveData:
 	slow.startup_frames = 2300
 	slow.active_frames = 2
 	slow.recovery_frames = 5
-	slow.hitstun_frames = 2350
-	slow.knockback = 0.0
-	slow.knockback_up = 0.0
+	_set_probe_stun(slow, 2350)
+	_set_probe_horizontal(slow, 0.0)
 	slow.cancel_targets = ["5Z"]
 	return slow
 
@@ -194,10 +193,8 @@ func _test_laps_exhausted_reports_incomplete_observation() -> void:
 	riser.startup_frames = 100
 	riser.active_frames = 2
 	riser.recovery_frames = 5
-	riser.hitstun_frames = 250
-	riser.knockback = 0.0
-	riser.knockback_up = 1170.0
-	riser.hit_result = MoveData.HitResult.LAUNCH
+	_set_probe_launch(riser, 250, 0.0, 1170.0)
+	_add_probe_airborne(riser, 250, 0.0, 1170.0)
 	riser.cancel_targets = ["5Y"]
 	table["5Y"] = riser
 	var report := ComboSolver.solve(_options(table))
@@ -220,9 +217,8 @@ func _test_recovery_horizon_truncation_annotated() -> void:
 	# 年龄是截断值而非实测恢复——如实标注，不把观测上限伪装成恢复证明。
 	var table := MoveData.default_table()
 	var stunner := _injected_move("5Y", "Y")
-	stunner.hitstun_frames = 250
-	stunner.knockback = 0.0
-	stunner.knockback_up = 0.0
+	_set_probe_stun(stunner, 250)
+	_set_probe_horizontal(stunner, 0.0)
 	stunner.cancel_targets = ["5A"]
 	table["5Y"] = stunner
 	var report := ComboSolver.solve(_options(table))
@@ -342,11 +338,57 @@ func _injected_move(id: String, key: String) -> MoveData:
 	move.attack_attribute = MoveData.AttackAttribute.HIGH
 	move.hitbox_size = GameParams.ATTACK_HITBOX_SIZE
 	move.hitbox_gap = GameParams.ATTACK_HITBOX_GAP
-	move.hit_result = MoveData.HitResult.GROUND_HITSTUN
-	move.hitstun_frames = GameParams.HITSTUN_FRAMES
-	move.knockback = GameParams.MOVE_5A_KNOCKBACK
-	move.knockback_up = GameParams.ATTACK_KNOCKBACK_UP
+	move.hit_profiles = _probe_profiles(GameParams.HITSTUN_FRAMES, GameParams.MOVE_5A_KNOCKBACK)
 	return move
+
+
+## 探针命中资料（上下文命中资料迁移）：grounded normal/counter 同值——既有回归
+## 不区分 counter 变体，只要求上下文匹配不落空。
+func _probe_profiles(stun: int, horizontal: float) -> Array[HitProfile]:
+	var normal := HitProfile.new()
+	normal.target_state = HitProfile.TargetState.GROUNDED
+	normal.hit_context = HitProfile.HitContext.NORMAL
+	normal.reaction = HitProfile.Reaction.GROUND_HITSTUN
+	normal.ground_stun_frames = stun
+	normal.horizontal_speed_px_s = horizontal
+	normal.upward_speed_px_s = 0.0
+	var counter := normal.duplicate() as HitProfile
+	counter.hit_context = HitProfile.HitContext.COUNTER
+	return [normal, counter]
+
+
+func _set_probe_stun(move: MoveData, frames: int) -> void:
+	for profile in move.hit_profiles:
+		profile.ground_stun_frames = frames
+
+
+func _set_probe_horizontal(move: MoveData, speed: float) -> void:
+	for profile in move.hit_profiles:
+		profile.horizontal_speed_px_s = speed
+
+
+## 把探针的全部 profile 改写为 LAUNCH（旧 hit_result=LAUNCH + hitstun + 击退
+## 三件套的等价迁移：受身计时、水平幅值与垂直初速度进入每个 profile）。
+func _set_probe_launch(move: MoveData, untech: int, horizontal: float, upward: float) -> void:
+	for profile in move.hit_profiles:
+		profile.reaction = HitProfile.Reaction.LAUNCH
+		profile.ground_stun_frames = -1
+		profile.air_untech_frames = untech
+		profile.horizontal_speed_px_s = horizontal
+		profile.upward_speed_px_s = upward
+
+
+## 给探针追加 airborne normal LAUNCH profile（旧 hit_result 语义下空中命中无
+## 目标状态维度；迁移后空中命中需要显式 airborne 资料，缺失即 MISS_NO_PROFILE）。
+func _add_probe_airborne(move: MoveData, untech: int, horizontal: float, upward: float) -> void:
+	var airborne := HitProfile.new()
+	airborne.target_state = HitProfile.TargetState.AIRBORNE
+	airborne.hit_context = HitProfile.HitContext.NORMAL
+	airborne.reaction = HitProfile.Reaction.LAUNCH
+	airborne.air_untech_frames = untech
+	airborne.horizontal_speed_px_s = horizontal
+	airborne.upward_speed_px_s = upward
+	move.hit_profiles.append(airborne)
 
 
 func _check(condition: bool, label: String) -> void:

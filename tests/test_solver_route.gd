@@ -41,8 +41,8 @@ func _test_default_table_reports_config_gaps() -> void:
 	if cancel_gap != null:
 		_check("缺配置" in cancel_gap.reason and "cancel_targets" in cancel_gap.reason,
 			"the cancel gap names the missing configuration field")
-		_check(cancel_gap.hit_age == 5 and cancel_gap.recover_age == 21,
-			"the gap carries the verified timing (earliest hit age 5 <= dummy recover age 21)")
+		_check(cancel_gap.hit_age == 5 and cancel_gap.recover_age == 12,
+			"the gap carries the verified timing (earliest hit age 5 <= dummy recover age 12)")
 	var jump_gap := _find_gap(report, "5A", "jA", ComboSolver.EdgeKind.JUMP_CANCEL)
 	_check(jump_gap != null, "5A → jA is reported as a jump-cancel config gap")
 	if jump_gap != null:
@@ -60,7 +60,7 @@ func _test_default_table_reports_config_gaps() -> void:
 
 func _test_gaps_are_never_claimed_as_legal() -> void:
 	var report := ComboSolver.solve()
-	_check(report.edges.size() == 9, "gap enumeration leaves the configured edge set untouched (still 9 edges)")
+	_check(report.edges.size() == 11, "gap enumeration leaves the configured edge set untouched (still 11 edges)")
 	for edge in report.edges:
 		_check(not (edge.from_id == "5A" and edge.to_id == "5D"),
 			"no 5A → 5D edge is invented for the timing-valid unconfigured pair")
@@ -88,9 +88,8 @@ func _test_timing_invalid_or_structural_pairs_not_gaps() -> void:
 	quick.startup_frames = 2
 	quick.active_frames = 2
 	quick.recovery_frames = 3
-	quick.hitstun_frames = 4
-	quick.knockback = 0.0
-	quick.knockback_up = 0.0
+	_set_probe_stun(quick, 4)
+	_set_probe_horizontal(quick, 0.0)
 	table["5F"] = quick
 	var slow := _injected_move("5H", "H")
 	slow.startup_frames = 25
@@ -368,11 +367,57 @@ func _injected_move(id: String, key: String) -> MoveData:
 	move.attack_attribute = MoveData.AttackAttribute.HIGH
 	move.hitbox_size = GameParams.ATTACK_HITBOX_SIZE
 	move.hitbox_gap = GameParams.ATTACK_HITBOX_GAP
-	move.hit_result = MoveData.HitResult.GROUND_HITSTUN
-	move.hitstun_frames = GameParams.HITSTUN_FRAMES
-	move.knockback = GameParams.MOVE_5A_KNOCKBACK
-	move.knockback_up = GameParams.ATTACK_KNOCKBACK_UP
+	move.hit_profiles = _probe_profiles(GameParams.HITSTUN_FRAMES, GameParams.MOVE_5A_KNOCKBACK)
 	return move
+
+
+## 探针命中资料（上下文命中资料迁移）：grounded normal/counter 同值——既有回归
+## 不区分 counter 变体，只要求上下文匹配不落空。
+func _probe_profiles(stun: int, horizontal: float) -> Array[HitProfile]:
+	var normal := HitProfile.new()
+	normal.target_state = HitProfile.TargetState.GROUNDED
+	normal.hit_context = HitProfile.HitContext.NORMAL
+	normal.reaction = HitProfile.Reaction.GROUND_HITSTUN
+	normal.ground_stun_frames = stun
+	normal.horizontal_speed_px_s = horizontal
+	normal.upward_speed_px_s = 0.0
+	var counter := normal.duplicate() as HitProfile
+	counter.hit_context = HitProfile.HitContext.COUNTER
+	return [normal, counter]
+
+
+func _set_probe_stun(move: MoveData, frames: int) -> void:
+	for profile in move.hit_profiles:
+		profile.ground_stun_frames = frames
+
+
+func _set_probe_horizontal(move: MoveData, speed: float) -> void:
+	for profile in move.hit_profiles:
+		profile.horizontal_speed_px_s = speed
+
+
+## 把探针的全部 profile 改写为 LAUNCH（旧 hit_result=LAUNCH + hitstun + 击退
+## 三件套的等价迁移：受身计时、水平幅值与垂直初速度进入每个 profile）。
+func _set_probe_launch(move: MoveData, untech: int, horizontal: float, upward: float) -> void:
+	for profile in move.hit_profiles:
+		profile.reaction = HitProfile.Reaction.LAUNCH
+		profile.ground_stun_frames = -1
+		profile.air_untech_frames = untech
+		profile.horizontal_speed_px_s = horizontal
+		profile.upward_speed_px_s = upward
+
+
+## 给探针追加 airborne normal LAUNCH profile（旧 hit_result 语义下空中命中无
+## 目标状态维度；迁移后空中命中需要显式 airborne 资料，缺失即 MISS_NO_PROFILE）。
+func _add_probe_airborne(move: MoveData, untech: int, horizontal: float, upward: float) -> void:
+	var airborne := HitProfile.new()
+	airborne.target_state = HitProfile.TargetState.AIRBORNE
+	airborne.hit_context = HitProfile.HitContext.NORMAL
+	airborne.reaction = HitProfile.Reaction.LAUNCH
+	airborne.air_untech_frames = untech
+	airborne.horizontal_speed_px_s = horizontal
+	airborne.upward_speed_px_s = upward
+	move.hit_profiles.append(airborne)
 
 
 func _check(condition: bool, label: String) -> void:

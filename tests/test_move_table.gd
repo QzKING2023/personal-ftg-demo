@@ -45,7 +45,7 @@ func _test_default_manifest_loads_shared_table() -> void:
 	var result := MoveTable.load_default()
 	_check(result.ok, "default manifest loads and validates")
 	_check(result.errors.is_empty(), "default manifest reports no errors")
-	var expected_ids := ["5A", "5B", "5C", "236C", "jA", "jB", "jD", "5D", "214D", "BC"]
+	var expected_ids := ["5A", "5B", "5C", "6A", "236C", "jA", "jB", "jD", "5D", "214D", "BC"]
 	_check(result.moves.keys() == expected_ids, "table preserves manifest order and ids (stable enumeration)")
 	for move_id in expected_ids:
 		var move := result.moves[move_id] as MoveData
@@ -67,8 +67,10 @@ func _test_default_table_entries_match_manifest() -> void:
 		_check([move.startup_frames, move.active_frames, move.recovery_frames, move.base_damage] == values,
 			"%s carries the frozen first-edition windows and damage" % move_id)
 	var launcher := result.moves["236C"] as MoveData
-	_check(launcher.direction_derivation == "236C" and launcher.hit_result == MoveData.HitResult.LAUNCH,
-		"236C declares its direction derivation and launch result")
+	var launch_profile := MoveData.profile_for(launcher, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)
+	_check(launcher.direction_derivation == "236C" and launch_profile != null
+		and launch_profile.reaction == HitProfile.Reaction.LAUNCH and launch_profile.upward_speed_px_s > 0.0,
+		"236C declares its direction derivation and a grounded launch profile")
 	_check(launcher.jump_cancel_targets == ["jA"], "236C declares its jump cancel target")
 	var air := result.moves["jD"] as MoveData
 	_check(air.stance == MoveData.Stance.AIR and air.is_finisher, "jD is an air finisher")
@@ -94,21 +96,19 @@ func _test_loads_return_fresh_copies() -> void:
 # --- 整表校验：打击/投技必填字段 ---
 
 func _test_missing_strike_fields_reject_whole_table() -> void:
-	for field in ["base_damage", "attack_attribute", "hitbox_size", "hit_result", "hitstun_frames", "knockback", "knockback_up", "action_key"]:
+	for field in ["base_damage", "attack_attribute", "hitbox_size", "hit_profiles", "action_key"]:
 		var moves := _valid_strike_list()
 		var move: MoveData = moves[0]
 		if field == "attack_attribute":
 			move.set("attack_attribute", MoveData.AttackAttribute.UNSET)
-		elif field == "hit_result":
-			move.set("hit_result", MoveData.HitResult.UNSET)
 		elif field == "hitbox_size":
 			move.hitbox_size = Vector2.ZERO
 		elif field == "action_key":
 			move.action_key = ""
+		elif field == "hit_profiles":
+			move.hit_profiles = []
 		elif field == "base_damage":
-			move.base_damage = 0
-		elif field == "hitstun_frames":
-			move.hitstun_frames = 0
+			move.base_damage = -1
 		else:
 			move.set(field, -1)
 		var errors := MoveTable.validate(moves)
@@ -118,7 +118,7 @@ func _test_missing_strike_fields_reject_whole_table() -> void:
 				"rejection for %s names the move id and field" % field)
 	# 同表的合法招式不因另一招非法而被跳过修正——整表拒绝、不返回部分表。
 	var broken := _valid_strike_list()
-	(broken[0] as MoveData).base_damage = 0
+	(broken[0] as MoveData).base_damage = -1
 	var result := _validate_to_result(broken)
 	_check(not result.ok and result.moves.is_empty(), "rejected table exposes no partial move table")
 
@@ -152,7 +152,7 @@ func _test_throw_requires_range_and_fixed_startup() -> void:
 # --- 类型/帧数/枚举/方向谓词/矛盾字段 ---
 
 func _test_negative_frames_rejected() -> void:
-	for field in ["startup_frames", "active_frames", "recovery_frames", "cancel_window_frames", "hitstun_frames"]:
+	for field in ["startup_frames", "active_frames", "recovery_frames", "cancel_window_frames"]:
 		var moves := _valid_strike_list()
 		(moves[0] as MoveData).set(field, -3)
 		var errors := MoveTable.validate(moves)
@@ -168,10 +168,10 @@ func _test_unknown_enum_rejected() -> void:
 	if not errors.is_empty():
 		_check(errors[0].contains("attack_attribute") and errors[0].contains("99"),
 			"unknown enum error names the field and the offending value")
-	var bad_result := _valid_strike_list()
-	(bad_result[0] as MoveData).set("hit_result", 42)
-	errors = MoveTable.validate(bad_result)
-	_check(not errors.is_empty() and errors[0].contains("hit_result"), "unknown hit result enum value is rejected")
+	var bad_profile := _valid_strike_list()
+	(bad_profile[0] as MoveData).hit_profiles[0].set("target_state", 42)
+	errors = MoveTable.validate(bad_profile)
+	_check(not errors.is_empty() and errors[0].contains("target_state"), "unknown profile target_state enum value is rejected")
 
 
 func _test_illegal_direction_predicate_rejected() -> void:
@@ -449,7 +449,7 @@ func _test_cancel_edit_syncs_session_and_solver() -> void:
 func _test_solver_refuses_invalid_manifest_with_same_reason() -> void:
 	var paths := _write_valid_table("mt_solver_refuse", 1)
 	var move_path: String = paths["moves"][0]
-	_remove_property_line(move_path, "hit_result")
+	_remove_property_line(move_path, "hit_profiles")
 	var load_result := MoveTable.load_manifest(paths["manifest"])
 	_check(not load_result.ok, "invalid table is rejected by the loader")
 	var report := ComboSolver.analyze_manifest(paths["manifest"])
@@ -459,7 +459,7 @@ func _test_solver_refuses_invalid_manifest_with_same_reason() -> void:
 	_check(report.edges.is_empty() and report.cycles.is_empty(),
 		"refused solver report claims no analysis results")
 	var lines := report.to_lines()
-	_check(lines.any(func(line: String) -> bool: return line.contains("拒绝") and line.contains("hit_result")),
+	_check(lines.any(func(line: String) -> bool: return line.contains("拒绝") and line.contains("hit_profiles")),
 		"refused report lines expose the refusal and the offending field")
 
 
@@ -481,10 +481,14 @@ func _valid_strike(id: String, key: String) -> MoveData:
 	move.attack_attribute = MoveData.AttackAttribute.HIGH
 	move.hitbox_size = Vector2(64, 60)
 	move.hitbox_gap = 4.0
-	move.hit_result = MoveData.HitResult.GROUND_HITSTUN
-	move.hitstun_frames = 12
-	move.knockback = 160.0
-	move.knockback_up = 110.0
+	var normal := HitProfile.new()
+	normal.target_state = HitProfile.TargetState.GROUNDED
+	normal.hit_context = HitProfile.HitContext.NORMAL
+	normal.reaction = HitProfile.Reaction.GROUND_HITSTUN
+	normal.ground_stun_frames = 12
+	normal.horizontal_speed_px_s = 160.0
+	normal.upward_speed_px_s = 0.0
+	move.hit_profiles = [normal]
 	return move
 
 
@@ -493,6 +497,7 @@ func _valid_throw() -> MoveData:
 	var move := _valid_strike("throw", "B")
 	move.move_kind = MoveData.MoveKind.THROW
 	move.action_key = ""
+	move.hit_profiles = []
 	move.startup_frames = 5
 	move.active_frames = GameParams.THROW_TECH_WINDOW_AFTER_GRAB + 1
 	move.throw_range = 64.0

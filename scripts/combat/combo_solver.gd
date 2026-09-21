@@ -53,7 +53,7 @@ const RECOVER_HORIZON := 240
 ## 上限不会截掉任何可行延迟，枚举是完备的。
 const MAX_AIR_DELAY := 40
 
-const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性命中确认接续——前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生、jump cancel 与落地接缝都在真实 CombatSession 结算中检验；cancel_targets、jump_cancel_targets 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（普通命中不刷新木桩滞空、空中无二段跳），不会被当作可自动续期；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。空间分层：无空间数据时全部路线仅 timing-valid，固定接触位不构成空间证明；提供空间数据（SolverOptions.spatial）后另附 spatial-valid，且只在地面、左右镜像的 48/64/80 px 三组身体中心水平距离上复验，不搜索走位、中立、墙角、推挤、跨身或屏幕边界，配置缺口与时序失败不作空间失败上报。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。"
+const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性命中确认接续——前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生、jump cancel 与落地接缝都在真实 CombatSession 结算中检验；命中资料与运行时共享同一 (target_state, hit_context) 精确选择：探针木桩不自攻，命中的上下文恒为 normal，缺失目标状态资料的连接按 MISS_NO_PROFILE 断链上报（不回退 grounded/normal 资料），普通倒地期间不可追击；cancel_targets、jump_cancel_targets 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（空中无二段跳；木桩浮空只由真实命中按所选 profile 的受身计时与速度重建，空中追击的每次命中都应用其 airborne profile），无命中的时间不会自动续期；OTG、地弹、墙反弹与招式无敌不在本轮支持范围，表达这些能力的字段或标签由 MoveTable 整表拒绝；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。空间分层：无空间数据时全部路线仅 timing-valid，固定接触位不构成空间证明；提供空间数据（SolverOptions.spatial）后另附 spatial-valid，且只在地面、左右镜像的 48/64/80 px 三组身体中心水平距离上复验，不搜索走位、中立、墙角、推挤、跨身或屏幕边界，配置缺口与时序失败不作空间失败上报。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。"
 
 ## 接续边类型：普通命中确认取消 / jump cancel / 显式落地接续。
 enum EdgeKind {
@@ -1361,6 +1361,8 @@ func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache
 			edge.reason = "取消未成立：目标招式已起手但判定未在预期帧连接（挥空）"
 		"no_start":
 			edge.reason = "取消未成立：目标未能在取消窗口内起手（窗口关闭或缓存过期）"
+		"miss_profile":
+			edge.reason = "取消未成立：" + run["reason"]
 		_:
 			edge.reason = "取消未成立：目标未在取消窗口内起手或命中（未观测到第二次命中）"
 
@@ -1787,17 +1789,31 @@ func _run_schedule(compiled: Dictionary, opts: Dictionary) -> Dictionary:
 			if not hit_now:
 				## 失败断点分类（issue 20）：目标招式已起手但判定未连接＝挥空；
 				## 目标从未起手＝取消窗口关闭或缓存过期，与挥空区分。
+				## 命中资料（上下文命中资料规格）：命中框已连接但目标状态 × 命中
+				## 上下文无匹配 profile＝MISS_NO_PROFILE，与挥空/窗口关闭三分；
+				## 木桩普通倒地期间的打击一律不命中。
 				var expected_move: String = hit_moves[verified]
-				if session.player_move_id == expected_move:
+				var miss_profile := false
+				for event in events:
+					if event.type == CombatEvent.Type.HIT_MISS:
+						miss_profile = true
+				if miss_profile:
+					break_kind = "miss_profile"
+					break_reason = "第 %d 招（%s）命中框已连接但目标状态 × 命中上下文无匹配 HitProfile（MISS_NO_PROFILE）——缺失不回退，不借用其他状态的资料" % [
+						verified + 1, expected_move,
+					]
+				elif session.player_move_id == expected_move:
+					break_kind = "whiff"
 					break_reason = "第 %d 招（%s）已起手但未在预期帧（第 %d 帧）命中——挥空" % [
 						verified + 1, expected_move, frame,
 					]
-					break_kind = "whiff"
 				else:
+					break_kind = "no_start"
 					break_reason = "第 %d 招（%s）未能在第 %d 帧前起手——取消窗口关闭或缓存过期" % [
 						verified + 1, expected_move, frame,
 					]
-					break_kind = "no_start"
+				if session.dummy_state == CombatSession.DummyState.KNOCKED_DOWN:
+					break_reason += "——木桩处于普通倒地，倒地期间任何打击都不命中"
 				break
 			var event_hits := 0
 			for event in events:
@@ -2024,9 +2040,12 @@ func _simulate_route(route_ids: Array[String], contexts: Dictionary, edge_kinds:
 		route.inputs = run["compiled"]["inputs"]
 		route.combo_hits = run["session"].combo_hits
 		route.total_damage = run["session"].combo_total_damage
-		if not run["ended_reasons"].is_empty() \
-				and run["ended_reasons"][run["ended_reasons"].size() - 1] == CombatEvent.ComboEndReason.FINISHER:
-			route.note = "收尾结束路线，保留木桩倒地处理"
+		if not run["ended_reasons"].is_empty():
+			var last_end: int = run["ended_reasons"][run["ended_reasons"].size() - 1]
+			if last_end == CombatEvent.ComboEndReason.FINISHER:
+				route.note = "收尾结束路线，保留木桩受击/倒地处理"
+			elif last_end == CombatEvent.ComboEndReason.KNOCKDOWN:
+				route.note = "普通倒地结束路线，倒地期间不可追击，计时结束自然恢复"
 	else:
 		route.timing_valid = false
 		var verified: int = run["verified"]
@@ -2296,4 +2315,6 @@ func _end_reason_text(events: Array[CombatEvent]) -> String:
 				return "招式收招未接续"
 			CombatEvent.ComboEndReason.DUMMY_RECOVERED:
 				return "木桩自然受身"
+			CombatEvent.ComboEndReason.KNOCKDOWN:
+				return "普通倒地结束连段"
 	return ""

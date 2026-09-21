@@ -19,6 +19,7 @@ enum DummyState {
 	GROUND_HITSTUN,   ## 地面受击硬直
 	AIR_HITSTUN,      ## 浮空受击硬直（滞空期间逐帧消耗，归零即浮空受身）
 	AIR_RECOVERED,    ## 空中已受身（连段已结束，落地后才恢复中立）
+	KNOCKED_DOWN,     ## 普通倒地（独立倒地计时；期间不可命中，计时结束自然恢复）
 }
 
 ## 防御姿态：地面 4 为站防、1 为蹲防；真正离地后 4/1 均为空防。
@@ -55,6 +56,8 @@ var dummy_state: DummyState = DummyState.NEUTRAL
 var dummy_on_ground := true
 ## 剩余地面受击硬直帧数（含当前帧；归零即自然受身）。
 var dummy_hitstun_left := 0
+## 剩余普通倒地帧数（含当前帧；独立于受击硬直计时，归零自然恢复回中立）。
+var dummy_knockdown_left := 0
 
 # --- 木桩确定性攻击（issue 16：属性矩阵与防御观察用）---
 ## 木桩当前执行的招式 id（空闲时为空串）。木桩无自主决策，招式经 FrameInput
@@ -235,6 +238,7 @@ func reset_to_initial_state() -> void:
 	dummy_state = DummyState.NEUTRAL
 	dummy_on_ground = true
 	dummy_hitstun_left = 0
+	dummy_knockdown_left = 0
 	combo_hits = 0
 	combo_active = false
 	combo_total_damage = 0.0
@@ -479,6 +483,7 @@ func settlement_state() -> Dictionary:
 		"dummy_state": dummy_state,
 		"dummy_on_ground": dummy_on_ground,
 		"dummy_hitstun_left": dummy_hitstun_left,
+		"dummy_knockdown_left": dummy_knockdown_left,
 		"dummy_velocity": dummy_velocity,
 		"dummy_position_y": dummy_position.y,
 		"dummy_move_id": dummy_move_id,
@@ -769,8 +774,18 @@ func _phase_apply_hits(events: Array[CombatEvent]) -> void:
 
 
 func _apply_player_hit(events: Array[CombatEvent]) -> void:
-	## 玩家命中木桩的结算：连段伤害递减、受击状态、硬直与击退。
+	## 玩家命中木桩的结算：先按命中判定前的目标状态与 Counter 窗口精确选择
+	## HitProfile（无匹配 = MISS_NO_PROFILE，不造成任何受击效果），再连段伤害
+	## 递减、按 reaction 应用受击状态、计时与速度。
 	var move := _pending_hit
+	var context := _dummy_hit_context()
+	var profile := MoveData.profile_for(move, _dummy_target_state(), context)
+	if profile == null:
+		## 缺失不回退：不借用 grounded/normal 资料，不造成伤害、不改变受击状态、
+		## 不刷新倒地计时，也不取得命中确认或取消资格。
+		events.append(CombatEvent.hit_miss(player_facing))
+		_pending_hit = null
+		return
 	if not combo_active or dummy_state == DummyState.NEUTRAL:
 		combo_hits = 0
 		combo_total_damage = 0.0
@@ -780,52 +795,90 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 		maxf(GameParams.COMBO_DAMAGE_FLOOR, 1.0 - (combo_hits - 1) * GameParams.COMBO_DAMAGE_DECAY),
 		0.000001
 	)
-	combo_last_damage = snappedf(move.base_damage * combo_last_scale, 0.1)
+	var damage_base := move.base_damage if profile.damage_override < 0 else profile.damage_override
+	combo_last_damage = snappedf(damage_base * combo_last_scale, 0.1)
 	combo_total_damage = snappedf(combo_total_damage + combo_last_damage, 0.1)
 	dummy_hp = maxf(dummy_hp - combo_last_damage, 0.0)
-	match move.hit_result:
-		MoveData.HitResult.GROUND_HITSTUN:
+	match profile.reaction:
+		HitProfile.Reaction.GROUND_HITSTUN:
 			dummy_state = DummyState.GROUND_HITSTUN
-			dummy_hitstun_left = move.hitstun_frames
-		MoveData.HitResult.LAUNCH:
+			dummy_hitstun_left = profile.ground_stun_frames
+		HitProfile.Reaction.LAUNCH:
 			dummy_state = DummyState.AIR_HITSTUN
-			dummy_hitstun_left = move.hitstun_frames
-		_:
-			push_error("未支持的命中结果类型: %d" % move.hit_result)
+			dummy_hitstun_left = profile.air_untech_frames
+		HitProfile.Reaction.GROUND_KNOCKDOWN:
+			dummy_state = DummyState.KNOCKED_DOWN
+			dummy_knockdown_left = profile.knockdown_frames
 	_dummy_fresh_hitstun = true
 	## 木桩受击打断其进行中的攻击（本帧已捕获的连接仍按互换命中结算）。
 	_clear_dummy_move()
-	dummy_velocity.x = player_facing * move.knockback
-	if move.hit_result == MoveData.HitResult.LAUNCH:
-		## 浮空命中必定重起跳：即使木桩仍在上一击的微浮中也给予完整滞空；
-		## 普通命中只在地面附带击飞，追击不会刷新滞空。
-		dummy_velocity.y = -move.knockback_up
-	elif dummy_on_ground:
-		dummy_velocity.y = -move.knockback_up
+	dummy_velocity.x = player_facing * profile.horizontal_speed_px_s
+	if profile.reaction == HitProfile.Reaction.LAUNCH:
+		## 浮空命中必定重起跳：即使木桩仍在上一击的微浮中也按 profile 的垂直
+		## 初速度重置滞空；普通地面命中保持接地，垂直速度不动。
+		dummy_velocity.y = -profile.upward_speed_px_s
 	_move_hit_confirmed = true
 	_hit_confirm_frame = _normal_frame_index
-	events.append(CombatEvent.hit(combo_last_damage, player_facing, combo_hits))
+	events.append(CombatEvent.hit(combo_last_damage, player_facing, combo_hits,
+		context == HitProfile.HitContext.COUNTER))
 	## 命中帧完成命中与受击应用后开始 Hitstop：冻结后续 8 个物理帧（双方动作、
 	## 位置、速度、受击、落地与受身计时暂停；物理帧号照常递增，输入仍被采样记录）。
 	_hitstop_left = GameParams.HITSTOP_FRAMES
 	events.append(CombatEvent.hitstop_started())
+	if profile.reaction == HitProfile.Reaction.GROUND_KNOCKDOWN:
+		## 普通倒地进入即结束当前连段；倒地处理本身继续独立计时。
+		_end_combo(CombatEvent.ComboEndReason.KNOCKDOWN, events)
 	if move.is_finisher:
 		## 收尾结束连段路线，但不主动清除木桩的受击/倒地处理。
 		_end_combo(CombatEvent.ComboEndReason.FINISHER, events)
 	_pending_hit = null
 
 
-## 木桩打击对玩家的结算（issue 16）：防御姿态按显式属性矩阵判定。挡下 →
-## 防御硬直（= 打击 hitstun）+ BLOCKED 事件 + Hitstop；漏防或无姿态 → 玩家
-## 受击硬直 + 水平击退 + PLAYER_HIT 事件 + Hitstop（进行中的招式被打断，连段
-## 以收招未接续结束）。玩家无生命值系统，打击数据对玩家只作用硬直与位移。
+## 命中判定前的木桩目标状态：接地且非倒地为 GROUNDED，真正离地为 AIRBORNE。
+## 倒地不可命中（_can_hit_dummy 已排除），不会进入本分类。
+func _dummy_target_state() -> HitProfile.TargetState:
+	return HitProfile.TargetState.GROUNDED if dummy_on_ground else HitProfile.TargetState.AIRBORNE
+
+
+## 木桩侧 Counter Hit 上下文：木桩自身招式处于 startup 或 recovery 的显式
+## 易受击窗口时为 COUNTER；active 不在窗口内。窗口随目标状态派生——命中被
+## 应用（打断招式）或目标离开窗口后，下一次命中自然回到 NORMAL。
+func _dummy_hit_context() -> HitProfile.HitContext:
+	if _dummy_move != null and (dummy_phase == PlayerPhase.STARTUP or dummy_phase == PlayerPhase.RECOVERY):
+		return HitProfile.HitContext.COUNTER
+	return HitProfile.HitContext.NORMAL
+
+
+## 玩家侧目标状态与 Counter 上下文（木桩攻击命中玩家时与木桩侧同构）。
+func _player_target_state() -> HitProfile.TargetState:
+	return HitProfile.TargetState.GROUNDED if player_on_ground else HitProfile.TargetState.AIRBORNE
+
+
+func _player_hit_context() -> HitProfile.HitContext:
+	if _current_move != null and (player_phase == PlayerPhase.STARTUP or player_phase == PlayerPhase.RECOVERY):
+		return HitProfile.HitContext.COUNTER
+	return HitProfile.HitContext.NORMAL
+
+
+## 木桩打击对玩家的结算（issue 16 + 命中资料）：与木桩侧同一套 profile 精确
+## 选择——目标状态按玩家接地/离地，Counter 窗口按玩家自身招式阶段。防御姿态
+## 按显式属性矩阵判定。挡下 → 防御硬直（= 所选 profile 的反应计时）+ BLOCKED
+## 事件 + Hitstop；漏防或无姿态 → 玩家受击硬直 + 水平击退 + PLAYER_HIT 事件 +
+## Hitstop（进行中的招式被打断，连段以收招未接续结束）。无匹配 profile 时与
+## 木桩侧同口径：HIT_MISS，不造成硬直或位移。玩家无生命值系统，打击数据对
+## 玩家只作用硬直与水平位移（玩家的浮空/倒地受击不在本切片范围）。
 func _phase_apply_dummy_hit(events: Array[CombatEvent]) -> void:
 	if _pending_dummy_hit == null:
 		return
 	var move := _pending_dummy_hit
 	var direction := _dummy_attack_direction()
+	var profile := MoveData.profile_for(move, _player_target_state(), _player_hit_context())
+	if profile == null:
+		events.append(CombatEvent.hit_miss(direction))
+		_pending_dummy_hit = null
+		return
 	if _blocks_attack(move):
-		player_guard_stun_left = move.hitstun_frames
+		player_guard_stun_left = profile.reaction_timer_frames()
 		events.append(CombatEvent.blocked(direction))
 	else:
 		if _current_move != null:
@@ -834,8 +887,8 @@ func _phase_apply_dummy_hit(events: Array[CombatEvent]) -> void:
 		## 受击打断进行中的冲刺（issue 18）：硬直与击退接管运动，冲刺计数清零。
 		player_dash_left = 0
 		_dash_direction = 0
-		player_hitstun_left = move.hitstun_frames
-		player_velocity.x = direction * move.knockback
+		player_hitstun_left = profile.reaction_timer_frames()
+		player_velocity.x = direction * profile.horizontal_speed_px_s
 		events.append(CombatEvent.player_hit(direction))
 	_player_fresh_stun = true
 	if _hitstop_left == 0:
@@ -1024,6 +1077,10 @@ func _consume_jump() -> void:
 func _throw_start_gate() -> int:
 	if _current_move != null or _player_stunned() or not player_on_ground \
 			or player_prejump_left > 0 or player_landing_recovery_left > 0 or player_dash_left > 0 or player_crouching:
+		return CombatEvent.ThrowFailReason.STATE
+	if dummy_state == DummyState.KNOCKED_DOWN:
+		## 倒地处理期间不可被抓：投结果会改写独立倒地计时，普通倒地的恢复
+		## 语义（计时结束才自然恢复）优先（OTG 不在本切片范围）。
 		return CombatEvent.ThrowFailReason.STATE
 	if absf(player_position.x - dummy_position.x) > _throw_move.throw_range:
 		return CombatEvent.ThrowFailReason.RANGE
@@ -1234,7 +1291,8 @@ func _tick_ground_hitstun(events: Array[CombatEvent]) -> void:
 
 func _motion_dummy(events: Array[CombatEvent]) -> void:
 	var friction := GameParams.DUMMY_FRICTION
-	if dummy_state == DummyState.GROUND_HITSTUN or dummy_state == DummyState.AIR_HITSTUN:
+	if dummy_state == DummyState.GROUND_HITSTUN or dummy_state == DummyState.AIR_HITSTUN \
+			or dummy_state == DummyState.KNOCKED_DOWN:
 		friction = GameParams.DUMMY_HITSTUN_FRICTION
 	dummy_velocity.x = move_toward(dummy_velocity.x, 0.0, friction * GameParams.PHYSICS_TICK)
 	if not dummy_on_ground:
@@ -1271,6 +1329,14 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 			if dummy_on_ground:
 				dummy_state = DummyState.NEUTRAL
 				events.append(CombatEvent.dummy_recovered())
+		DummyState.KNOCKED_DOWN:
+			## 普通倒地：独立倒地计时逐帧消耗（命中当帧不消耗，停顿帧不推进）；
+			## 倒地期间不接受主动受身，计时结束自然恢复回中立并开启新连段的资格。
+			if not _dummy_fresh_hitstun:
+				dummy_knockdown_left = maxi(dummy_knockdown_left - 1, 0)
+				if dummy_knockdown_left == 0:
+					dummy_state = DummyState.NEUTRAL
+					events.append(CombatEvent.dummy_recovered())
 		_:
 			pass
 	_dummy_fresh_hitstun = false
@@ -1567,7 +1633,8 @@ func _collapsed_direction_sequence() -> String:
 
 func _can_hit_dummy() -> bool:
 	## 木桩中立时可被任何招式命中；受击中只有连段内的合法接续招式可以继续命中；
-	## 空中已受身不可追击，落地恢复中立后才能开启新一段连段。
+	## 空中已受身与普通倒地不可追击（倒地期间任何打击都不命中、不刷新计时），
+	## 恢复中立后才能开启新一段连段。
 	if dummy_state == DummyState.NEUTRAL:
 		return true
 	if not _dummy_pursuable():
@@ -1577,6 +1644,7 @@ func _can_hit_dummy() -> bool:
 
 func _dummy_pursuable() -> bool:
 	## 可追击的受击状态：地面硬直或浮空硬直（连段仍活跃时合法接续可继续命中）。
+	## 普通倒地与空中已受身不在可追击域内。
 	return dummy_state == DummyState.GROUND_HITSTUN or dummy_state == DummyState.AIR_HITSTUN
 
 

@@ -10,7 +10,7 @@ extends Resource
 ## 投结果参数（硬直/击退）是 GameParams 领域规则，不由资源表达。
 enum MoveKind {
 	UNSET = 0,   ## 未声明（非法）
-	STRIKE = 1,  ## 打击招式：必须声明伤害/属性/命中框/命中结果/受击硬直/击退
+	STRIKE = 1,  ## 打击招式：必须声明伤害/属性/命中框/至少一个合法 HitProfile
 	THROW = 2,   ## 普通投：必须声明投距；startup 固定 5f 领域规则，不由资源覆盖
 }
 
@@ -21,12 +21,9 @@ enum Stance {
 	AIR = 2,     ## 空中招式
 }
 
-## 命中结果类型：决定木桩被命中后进入哪种受击状态。
-enum HitResult {
-	UNSET = 0,          ## 未声明（打击招式非法）
-	GROUND_HITSTUN = 1, ## 地面受击硬直
-	LAUNCH = 2,         ## 浮空受击：木桩被打入浮空硬直，滞空期间硬直逐帧消耗
-}
+## 命中结果不再由招式级单一字段表达（ADR-0003）：reaction、计时与击退全部
+## 内嵌在 hit_profiles 的每个 HitProfile 中，按 (target_state, hit_context)
+## 精确选择；不存在旧 hit_result/hitstun_frames/knockback 字段或回退。
 
 ## 攻击属性（防御姿态判定用；air 是与之正交的独立标记，见 air_attack）。
 enum AttackAttribute {
@@ -69,14 +66,9 @@ enum CommandTier {
 @export var hitbox_size := Vector2.ZERO
 ## 命中框与身体前缘的间隙。
 @export var hitbox_gap := -1.0
-## 命中后的水平击退速度（px/s，沿攻击方向）。
-@export var knockback := -1.0
-## 命中木桩在地面时附加的向上击飞速度（px/s）。
-@export var knockback_up := -1.0
-## 命中给予的受击硬直帧数。
-@export var hitstun_frames := -1
-## 命中结果类型。
-@export var hit_result: HitResult = HitResult.UNSET
+## 内嵌上下文命中资料：唯一键 (target_state, hit_context)，打击招式至少一个
+## 合法 profile；投技不得声明。命中结果、计时与速度全部从这里读取。
+@export var hit_profiles: Array[HitProfile] = []
 ## 投距：投技必填（身体中心水平距离上限；垂直方向须身体矩形重叠）。
 @export var throw_range := -1.0
 ## 空中招式显式额外落地恢复帧数（落地恢复基础规则在跳跃 issue 实装；默认 0）。
@@ -124,6 +116,24 @@ static func is_throw_combination_member(key: String) -> bool:
 
 func total_frames() -> int:
 	return startup_frames + active_frames + recovery_frames
+
+
+## 按 (target_state, hit_context) 精确查找命中资料（运行时与 Combo Solver 共用的
+## 唯一选择口径）：任一维度没有完全相等的 profile 即返回 null——不回退 NORMAL、
+## 不回退 GROUNDED、不按数组顺序猜测。
+static func profile_for(move: MoveData, target_state: HitProfile.TargetState, hit_context: HitProfile.HitContext) -> HitProfile:
+	if move == null:
+		return null
+	for profile in move.hit_profiles:
+		if profile.target_state == target_state and profile.hit_context == hit_context:
+			return profile
+	return null
+
+
+## 本招是否声明了某个目标状态的 NORMAL profile（Counter 无 normal 属于非法数据，
+## MoveTable 校验用）。
+func has_normal_profile(target_state: HitProfile.TargetState) -> bool:
+	return profile_for(self, target_state, HitProfile.HitContext.NORMAL) != null
 
 
 ## 是否打击招式（校验、单键选择与取消链解析都以此排除投技——投技由

@@ -44,14 +44,14 @@ func _initialize() -> void:
 func _test_default_table_reports_ground_route() -> void:
 	var report := ComboSolver.analyze()
 	_check(report.safe and report.cycles.is_empty(), "default table reports no valid cycle")
-	_check(report.edges.size() == 9, "default table enumerates 9 edges (4 ground cancels incl. 2 derivatives, 2 jump cancels, 2 air cancels, 1 landing continuation)")
+	_check(report.edges.size() == 11, "default table enumerates 11 edges (5 ground cancels incl. 6A, 3 jump cancels incl. 6A, 2 air cancels, 1 landing continuation)")
 	var ab := _find_edge(report, "5A", "5B")
 	_check(ab != null and ab.valid, "5A -> 5B is a valid continuation")
 	if ab != null:
-		_check(ab.valid and ab.hit_age == 5 and ab.recover_age == 21, "5A -> 5B timing: earliest hit at age 5 (B pairing wait 1 + startup 4), dummy recoverable through age 21 (airtime 10 + hitstun 12 - 1)")
+		_check(ab.valid and ab.hit_age == 5 and ab.recover_age == 12, "5A -> 5B timing: earliest hit at age 5 (B pairing wait 1 + startup 4), dummy recoverable through age 12 (ground hitstun keeps the dummy grounded)")
 		_check(ab.valid and ab.wait_from == 0 and ab.wait_to == GameParams.CANCEL_WINDOW_FRAMES - GameParams.THROW_COMBINATION_TOLERANCE, "5A -> 5B valid wait range 0-5 (cancel window minus the B pairing wait binds; stun would allow 16)")
 	var bd := _find_edge(report, "5B", "5D")
-	_check(bd != null and bd.valid and bd.hit_age == 5 and bd.recover_age == 21, "5B -> 5D valid: earliest hit at age 5, recover age 21")
+	_check(bd != null and bd.valid and bd.hit_age == 5 and bd.recover_age == 12, "5B -> 5D valid: earliest hit at age 5, recover age 12")
 	var derivative := _find_edge(report, "5A", "236C")
 	_check(derivative != null and derivative.valid, "derivative edge 5A -> 236C is validated by feeding 236 before the cancel frame")
 	if derivative != null:
@@ -86,8 +86,8 @@ func _test_numbers_match_runtime_session() -> void:
 				recover_frame = frame
 	var report := ComboSolver.analyze()
 	var ab := _find_edge(report, "5A", "5B")
-	_check(hit_frame == 6 and recover_frame == 6 + 10 + GameParams.HITSTOP_FRAMES + GameParams.HITSTUN_FRAMES - 1, "runtime 5A hits on frame 6 and naturally recovers after the freeze-extended knockdown")
-	_check(ab != null and ab.valid and ab.recover_age == recover_frame - hit_frame - GameParams.HITSTOP_FRAMES, "solver recover age (21 normal frames) matches the runtime session minus the frozen frames")
+	_check(hit_frame == 6 and recover_frame == 6 + GameParams.HITSTOP_FRAMES + GameParams.HITSTUN_FRAMES, "runtime 5A hits on frame 6 and naturally recovers after the freeze plus grounded hitstun")
+	_check(ab != null and ab.valid and ab.recover_age == recover_frame - hit_frame - GameParams.HITSTOP_FRAMES, "solver recover age (12 normal frames) matches the runtime session minus the frozen frames")
 	var route := _find_route(report, ["5A", "5B", "5D"])
 	_check(route != null and route.hit_frames == [6, 11, 16], "solver route hit frames follow the new B pairing-wait timing (w=0 cancels resume on the first normal frame)")
 
@@ -102,10 +102,10 @@ func _test_injected_valid_back_edge_reports_cycle() -> void:
 		var cycle := report.cycles[0]
 		_check(cycle.route == ["5A", "5B"], "cycle route is 5A -> 5B -> back to 5A")
 		_check(cycle.proven, "cycle is proven by lap simulation with settlement-state recurrence")
-		_check(cycle.period_frames == 30, "cycle period is 30 frames (B pairing wait included)")
-		_check(cycle.laps_observed == 5, "state recurrence is observed at the start of lap 5: the full settlement-state key (issue 21) needs the steady-state laps — the 5th starter hit recurs the 2nd exactly, one lap later than the dummy-only timing key did")
+		_check(cycle.period_frames == 10, "cycle period is 10 normal frames (5 per hit; the ground-stunned dummy no longer hops, so the settlement state recurs every lap)")
+		_check(cycle.laps_observed == 3, "state recurrence is observed at the start of lap 3: the full settlement-state key (issue 21) needs one steady-state lap before the starter hit recurs exactly")
 	var ba := _find_edge(report, "5B", "5A")
-	_check(ba != null and ba.valid and ba.hit_age == 5 and ba.recover_age == 21, "back edge 5B -> 5A is valid: earliest hit age 5 <= recover age 21")
+	_check(ba != null and ba.valid and ba.hit_age == 5 and ba.recover_age == 12, "back edge 5B -> 5A is valid: earliest hit age 5 <= recover age 12")
 	_check("有效循环" in report.summary, "summary reports the effective cycle")
 
 
@@ -118,9 +118,8 @@ func _test_injected_slow_back_edge_not_misreported() -> void:
 	slow.active_frames = 2
 	slow.recovery_frames = 8
 	slow.base_damage = 10
-	slow.hitstun_frames = GameParams.HITSTUN_FRAMES
-	slow.knockback = 0.0
-	slow.knockback_up = GameParams.ATTACK_KNOCKBACK_UP
+	_set_probe_stun(slow, GameParams.HITSTUN_FRAMES)
+	_set_probe_horizontal(slow, 0.0)
 	slow.cancel_targets = ["5A"]
 	table["5E"] = slow
 	(table["5B"] as MoveData).cancel_targets = ["5D", "5E"]
@@ -129,7 +128,7 @@ func _test_injected_slow_back_edge_not_misreported() -> void:
 	_check(be != null and not be.valid, "timeout back edge 5B -> 5E is excluded")
 	if be != null:
 		_check("等待超时" in be.reason and "恢复" in be.reason, "exclusion reason says the hit lands after dummy recovery")
-		_check(be.hit_age == 25 and be.recover_age == 21, "timing: earliest hit age 25 > recover age 21")
+		_check(be.hit_age == 25 and be.recover_age == 12, "timing: earliest hit age 25 > recover age 12")
 	var ea := _find_edge(report, "5E", "5A")
 	_check(ea != null and ea.valid, "the structural edge 5E -> 5A is itself still valid")
 	_check(report.safe and report.cycles.is_empty(), "a timing-insufficient back edge is never misreported as a cycle")
@@ -170,9 +169,8 @@ func _test_wait_window_clamped_by_window_and_hitstun() -> void:
 	quick.active_frames = 2
 	quick.recovery_frames = 3
 	quick.base_damage = 10
-	quick.hitstun_frames = 4
-	quick.knockback = 0.0
-	quick.knockback_up = 0.0
+	_set_probe_stun(quick, 4)
+	_set_probe_horizontal(quick, 0.0)
 	quick.cancel_targets = ["5A", "5B"]
 	table["5F"] = quick
 	var wide := _injected_move("5G", "G")
@@ -180,9 +178,8 @@ func _test_wait_window_clamped_by_window_and_hitstun() -> void:
 	wide.active_frames = 2
 	wide.recovery_frames = 3
 	wide.base_damage = 10
-	wide.hitstun_frames = 12
-	wide.knockback = 0.0
-	wide.knockback_up = 0.0
+	_set_probe_stun(wide, 12)
+	_set_probe_horizontal(wide, 0.0)
 	wide.cancel_window_frames = 2
 	wide.cancel_targets = ["5B"]
 	table["5G"] = wide
@@ -279,12 +276,13 @@ func _test_landing_seam_requires_alignment() -> void:
 	late.active_frames = 2
 	late.recovery_frames = 6
 	late.base_damage = 10
-	late.knockback = 0.0
-	late.knockback_up = 0.0
-	late.hitstun_frames = GameParams.HITSTUN_FRAMES
+	_set_probe_stun(late, GameParams.HITSTUN_FRAMES)
+	_set_probe_horizontal(late, 0.0)
+	_add_probe_airborne(late, GameParams.HITSTUN_FRAMES, 0.0, 40.0)
 	late.landing_cancel_targets = ["5D"]
 	table["jE"] = late
 	(table["jB"] as MoveData).cancel_targets = ["jD", "jE"]
+	MoveData.profile_for(table["jB"], HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL).air_untech_frames = 40
 	var report := ComboSolver.analyze(table)
 	var seam := _find_edge(report, "jE", "5D", ComboSolver.EdgeKind.LANDING_CANCEL)
 	_check(seam != null and not seam.valid, "jE -> 5D is excluded: the air move cannot even hit before landing")
@@ -329,8 +327,8 @@ func _test_solver_claims_only_configured_connections() -> void:
 	# 空中段只能经配置的 jump cancel 进入，路线只从地面普通动作键起手。
 	var report := ComboSolver.analyze()
 	var pairs := [
-		["5A", "5B"], ["5A", "236C"], ["5B", "5D"], ["5B", "214D"],
-		["5C", "jA"], ["236C", "jA"], ["jA", "jB"], ["jB", "jD"], ["jB", "5D"],
+		["5A", "5B"], ["5A", "236C"], ["5A", "6A"], ["5B", "5D"], ["5B", "214D"],
+		["5C", "jA"], ["236C", "jA"], ["6A", "jA"], ["jA", "jB"], ["jB", "jD"], ["jB", "5D"],
 	]
 	_check(report.edges.size() == pairs.size(), "the default report enumerates exactly the configured continuation relations")
 	var reported := {}
@@ -347,7 +345,7 @@ func _test_solver_claims_only_configured_connections() -> void:
 	for edge in report.edges:
 		if edge.to_id == "jA":
 			into_ja.append(edge.from_id)
-	_check(into_ja == ["5C", "236C"], "jA is reached only through the configured jump-cancel launchers — no neutral-jump or spatial claim")
+	_check(into_ja == ["5C", "6A", "236C"], "jA is reached only through the configured jump-cancel launchers — no neutral-jump or spatial claim")
 	var starts_plain := true
 	for route in report.routes:
 		var first: String = route.move_ids[0]
@@ -504,11 +502,57 @@ func _injected_move(id: String, key: String) -> MoveData:
 	move.attack_attribute = MoveData.AttackAttribute.HIGH
 	move.hitbox_size = GameParams.ATTACK_HITBOX_SIZE
 	move.hitbox_gap = GameParams.ATTACK_HITBOX_GAP
-	move.hit_result = MoveData.HitResult.GROUND_HITSTUN
-	move.hitstun_frames = GameParams.HITSTUN_FRAMES
-	move.knockback = GameParams.MOVE_5A_KNOCKBACK
-	move.knockback_up = GameParams.ATTACK_KNOCKBACK_UP
+	move.hit_profiles = _probe_profiles(GameParams.HITSTUN_FRAMES, GameParams.MOVE_5A_KNOCKBACK)
 	return move
+
+
+## 探针命中资料（上下文命中资料迁移）：grounded normal/counter 同值——既有回归
+## 不区分 counter 变体，只要求上下文匹配不落空。
+func _probe_profiles(stun: int, horizontal: float) -> Array[HitProfile]:
+	var normal := HitProfile.new()
+	normal.target_state = HitProfile.TargetState.GROUNDED
+	normal.hit_context = HitProfile.HitContext.NORMAL
+	normal.reaction = HitProfile.Reaction.GROUND_HITSTUN
+	normal.ground_stun_frames = stun
+	normal.horizontal_speed_px_s = horizontal
+	normal.upward_speed_px_s = 0.0
+	var counter := normal.duplicate() as HitProfile
+	counter.hit_context = HitProfile.HitContext.COUNTER
+	return [normal, counter]
+
+
+func _set_probe_stun(move: MoveData, frames: int) -> void:
+	for profile in move.hit_profiles:
+		profile.ground_stun_frames = frames
+
+
+func _set_probe_horizontal(move: MoveData, speed: float) -> void:
+	for profile in move.hit_profiles:
+		profile.horizontal_speed_px_s = speed
+
+
+## 把探针的全部 profile 改写为 LAUNCH（旧 hit_result=LAUNCH + hitstun + 击退
+## 三件套的等价迁移：受身计时、水平幅值与垂直初速度进入每个 profile）。
+func _set_probe_launch(move: MoveData, untech: int, horizontal: float, upward: float) -> void:
+	for profile in move.hit_profiles:
+		profile.reaction = HitProfile.Reaction.LAUNCH
+		profile.ground_stun_frames = -1
+		profile.air_untech_frames = untech
+		profile.horizontal_speed_px_s = horizontal
+		profile.upward_speed_px_s = upward
+
+
+## 给探针追加 airborne normal LAUNCH profile（旧 hit_result 语义下空中命中无
+## 目标状态维度；迁移后空中命中需要显式 airborne 资料，缺失即 MISS_NO_PROFILE）。
+func _add_probe_airborne(move: MoveData, untech: int, horizontal: float, upward: float) -> void:
+	var airborne := HitProfile.new()
+	airborne.target_state = HitProfile.TargetState.AIRBORNE
+	airborne.hit_context = HitProfile.HitContext.NORMAL
+	airborne.reaction = HitProfile.Reaction.LAUNCH
+	airborne.air_untech_frames = untech
+	airborne.horizontal_speed_px_s = horizontal
+	airborne.upward_speed_px_s = upward
+	move.hit_profiles.append(airborne)
 
 
 func _check(condition: bool, label: String) -> void:
