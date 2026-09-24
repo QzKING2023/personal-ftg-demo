@@ -84,6 +84,14 @@ var combo_total_damage := 0.0
 ## 最近一次命中的伤害倍率与实际伤害。
 var combo_last_scale := 1.0
 var combo_last_damage := 0.0
+## 起手等级（C-01）：首次实际 HIT 锁定首击招式声明的 starter grade；被防、挥空
+## 与状态转换不锁定、不提升、不重置；连段结束清除回 UNSET。
+var combo_starter_grade: MoveData.StarterGrade = MoveData.StarterGrade.UNSET
+## 三层累计修正（C-02）：首击乘 starter 倍率初始化，后续每击乘普通命中倍率；
+## 每层独立舍入输出（伤害 0.1、时间整数帧、轨迹 1px/s），互不反推；跨状态保留。
+var combo_damage_scale := 1.0
+var combo_time_scale := 1.0
+var combo_trajectory_scale := 1.0
 
 var _moves: Dictionary = {}
 var _current_move: MoveData = null
@@ -192,6 +200,15 @@ var _jump_cancel_followups: Array[String] = []
 ## 本帧玩家刚从空中落地（运动阶段置位；取消与消费阶段据此开放落地接续）。
 var _player_just_landed := false
 
+# --- 普通连接（目押，I-06）---
+## 本帧运动阶段自然收招的招式（同帧消费阶段评估普通连接缓存）。
+var _finished_move: MoveData = null
+## 收招当帧存在可消费的声明普通连接候选：连段不在运动阶段结束，消费阶段
+## 按合法接续起手或报告失败原因。
+var _pending_link_check := false
+## 当前招式是否经普通连接起手（判定窗口结束无接触时报 DISTANCE_INSUFFICIENT）。
+var _move_via_link := false
+
 
 func _init(move_table: Dictionary = {}) -> void:
 	## 空表默认加载共享 manifest（训练场与 Solver 同一份已校验数据）；
@@ -244,6 +261,10 @@ func reset_to_initial_state() -> void:
 	combo_total_damage = 0.0
 	combo_last_scale = 1.0
 	combo_last_damage = 0.0
+	combo_starter_grade = MoveData.StarterGrade.UNSET
+	combo_damage_scale = 1.0
+	combo_time_scale = 1.0
+	combo_trajectory_scale = 1.0
 	_current_move = null
 	_move_frame = 0
 	_hit_once_this_move = false
@@ -282,6 +303,9 @@ func reset_to_initial_state() -> void:
 	_last_direction_digit = 5
 	_cancel_targets.clear()
 	_jump_cancel_followups.clear()
+	_finished_move = null
+	_pending_link_check = false
+	_move_via_link = false
 
 
 ## 结算一个物理帧，返回该帧产生的战斗事件（按结算发生顺序排列）。
@@ -390,6 +414,10 @@ func debug_snapshot() -> Dictionary:
 		"cancel_targets": _cancel_targets.duplicate(),
 		"cancel_age": cancel_age,
 		"cancel_open": _cancel_window_open(),
+		"starter_grade": combo_starter_grade,
+		"damage_scale": combo_damage_scale,
+		"time_scale": combo_time_scale,
+		"trajectory_scale": combo_trajectory_scale,
 		"velocity": player_velocity,
 	}
 
@@ -477,8 +505,13 @@ func settlement_state() -> Dictionary:
 		# 方向候选与历史（年龄化条目）
 		"direction_history": direction_history,
 		"last_direction_digit": _last_direction_digit,
-		# 连段资源（结算资格门；伤害等纯报告量见上文口径）
+		# 连段资源（结算资格门；伤害等纯报告量见上文口径）。起手等级与三层累计
+		# 修正影响后续命中的伤害/计时/轨迹，是真实结算量，入快照。
 		"combo_active": combo_active,
+		"starter_grade": combo_starter_grade,
+		"damage_scale": combo_damage_scale,
+		"time_scale": combo_time_scale,
+		"trajectory_scale": combo_trajectory_scale,
 		# 木桩姿态/阶段、受击计时与速度
 		"dummy_state": dummy_state,
 		"dummy_on_ground": dummy_on_ground,
@@ -791,10 +824,18 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 		combo_total_damage = 0.0
 	combo_active = true
 	combo_hits += 1
-	combo_last_scale = snappedf(
-		maxf(GameParams.COMBO_DAMAGE_FLOOR, 1.0 - (combo_hits - 1) * GameParams.COMBO_DAMAGE_DECAY),
-		0.000001
-	)
+	## 起手修正（C-01/C-02）：首击锁定 starter grade 并以 starter 倍率初始化三层；
+	## 后续每击把普通命中倍率乘入各层。三层独立舍入输出，互不反推。
+	if combo_hits == 1:
+		combo_starter_grade = move.starter_grade
+		combo_damage_scale = float(GameParams.STARTER_DAMAGE_SCALE[move.starter_grade])
+		combo_time_scale = float(GameParams.STARTER_TIME_SCALE[move.starter_grade])
+		combo_trajectory_scale = float(GameParams.STARTER_TRAJECTORY_SCALE[move.starter_grade])
+	else:
+		combo_damage_scale *= GameParams.NORMAL_HIT_DAMAGE_SCALE
+		combo_time_scale *= GameParams.NORMAL_HIT_TIME_SCALE
+		combo_trajectory_scale *= GameParams.NORMAL_HIT_TRAJECTORY_SCALE
+	combo_last_scale = maxf(GameParams.COMBO_DAMAGE_FLOOR, combo_damage_scale)
 	var damage_base := move.base_damage if profile.damage_override < 0 else profile.damage_override
 	combo_last_damage = snappedf(damage_base * combo_last_scale, 0.1)
 	combo_total_damage = snappedf(combo_total_damage + combo_last_damage, 0.1)
@@ -802,21 +843,22 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 	match profile.reaction:
 		HitProfile.Reaction.GROUND_HITSTUN:
 			dummy_state = DummyState.GROUND_HITSTUN
-			dummy_hitstun_left = profile.ground_stun_frames
+			dummy_hitstun_left = _scaled_timer_frames(profile.ground_stun_frames)
 		HitProfile.Reaction.LAUNCH:
 			dummy_state = DummyState.AIR_HITSTUN
-			dummy_hitstun_left = profile.air_untech_frames
+			dummy_hitstun_left = _scaled_timer_frames(profile.air_untech_frames)
 		HitProfile.Reaction.GROUND_KNOCKDOWN:
 			dummy_state = DummyState.KNOCKED_DOWN
-			dummy_knockdown_left = profile.knockdown_frames
+			dummy_knockdown_left = _scaled_timer_frames(profile.knockdown_frames)
 	_dummy_fresh_hitstun = true
 	## 木桩受击打断其进行中的攻击（本帧已捕获的连接仍按互换命中结算）。
 	_clear_dummy_move()
-	dummy_velocity.x = player_facing * profile.horizontal_speed_px_s
+	dummy_velocity.x = player_facing * roundf(profile.horizontal_speed_px_s * combo_trajectory_scale)
 	if profile.reaction == HitProfile.Reaction.LAUNCH:
 		## 浮空命中必定重起跳：即使木桩仍在上一击的微浮中也按 profile 的垂直
 		## 初速度重置滞空；普通地面命中保持接地，垂直速度不动。
-		dummy_velocity.y = -profile.upward_speed_px_s
+		dummy_velocity.y = -roundf(profile.upward_speed_px_s * combo_trajectory_scale)
+
 	_move_hit_confirmed = true
 	_hit_confirm_frame = _normal_frame_index
 	events.append(CombatEvent.hit(combo_last_damage, player_facing, combo_hits,
@@ -832,6 +874,13 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 		## 收尾结束连段路线，但不主动清除木桩的受击/倒地处理。
 		_end_combo(CombatEvent.ComboEndReason.FINISHER, events)
 	_pending_hit = null
+
+
+
+## 时间层修正输出（C-02）：floor(声明计时 × time_scale)，夹到最小合法计时 1；
+## 不使用伤害值或命中数反推。适用于受击/受身/倒地三种计时。
+func _scaled_timer_frames(declared_frames: int) -> int:
+	return maxi(1, int(floor(declared_frames * combo_time_scale)))
 
 
 ## 命中判定前的木桩目标状态：接地且非倒地为 GROUNDED，真正离地为 AIRBORNE。
@@ -929,14 +978,25 @@ func _phase_motion(events: Array[CombatEvent]) -> void:
 
 
 func _phase_cancel() -> void:
-	## 5. 取消判定：只有已命中确认、仍在取消窗口内且木桩仍处于可追击的受击状态时，
-	##    才开放本招配置的取消目标；挥空不产生任何取消资格。
+	## 5. 取消判定：链式取消、必杀取消、命中确认取消是三种独立窗口（B7）。
+	##    链式/必杀按接触结果开放（命中或被防；被防路径属后续票据），命中确认、
+	##    jump cancel 只在实际 HIT 成立；挥空不产生接触、取消年龄或连段延续。
 	##    状态锁同时约束独立起手与取消；显式目标不能绕过落地首帧或空技恢复。
 	##    目标必须与当前招式同姿态，落地不把空中缓存重解释为地面技。
 	_cancel_targets.clear()
-	if not _independent_start_allowed() or not _cancel_window_open():
+	if _current_move == null or not _move_hit_confirmed or not combo_active or not _dummy_pursuable():
 		return
-	_append_stance_matching_targets(_current_move.cancel_targets, _current_move.stance)
+	if not _independent_start_allowed():
+		return
+	var age := _normal_frame_index - _hit_confirm_frame
+	if age < 0:
+		return
+	for pair in [
+			[_current_move.cancel_targets, _current_move.cancel_window_frames],
+			[_current_move.chain_cancel_targets, _current_move.chain_cancel_window_frames],
+			[_current_move.special_cancel_targets, _current_move.special_cancel_window_frames]]:
+		if age <= pair[1]:
+			_append_stance_matching_targets(pair[0], _current_move.stance)
 
 
 func _append_stance_matching_targets(move_ids: Array[String], stance: MoveData.Stance) -> void:
@@ -962,6 +1022,7 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 	_attempt_pending_throw(events)
 	_evaluate_throw_tech(events)
 	_apply_throw_result(events)
+	_resolve_pending_link(events)
 	var action := _buffer_action_candidate()
 	if not action.is_empty() and _jump_slot_ready():
 		if _jump_slot_physics > _buffered_physics:
@@ -978,10 +1039,34 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 		_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
 		_clear_current_move()
 	## 命中确认取消窗口关闭且没有接续时连段结束；木桩受击处理不受影响。
-	## 窗口年龄按正常战斗帧计：Hitstop 之后关闭帧相应后移。
+	## 窗口年龄按正常战斗帧计：Hitstop 之后关闭帧相应后移。声明了普通连接边的
+	## 招式不在此结束——连接评估保留到完全恢复后的首个合法帧（I-06）。
 	if _current_move != null and _move_hit_confirmed and combo_active \
+			and _current_move.link_targets.is_empty() \
 			and _normal_frame_index - _hit_confirm_frame > _current_move.cancel_window_frames:
+		_report_undeclared_link_gap(_current_move, events)
 		_end_combo(CombatEvent.ComboEndReason.CANCEL_WINDOW_CLOSED, events)
+
+
+## 收招当帧的普通连接消费（I-06）：前招完全恢复后的首个合法帧按合法接续起手
+## 缓存目标（连段延续，产生接触前不中断、不产生取消年龄）；门不满足时报告
+## 可读失败原因并结束连段。缓存由此消费失败作废，不转为独立起手。
+func _resolve_pending_link(events: Array[CombatEvent]) -> void:
+	if not _pending_link_check:
+		return
+	_pending_link_check = false
+	if _link_candidate_available(_finished_move):
+		var target := _moves.get(_buffered_move_id) as MoveData
+		_start_move(_buffered_move_id, target, true)
+		_move_via_link = true
+		_note_buffer_consumed(_buffered_move_id)
+		_clear_buffer()
+		_finished_move = null
+		return
+	events.append(CombatEvent.link_failed(_link_fail_reason(_moves.get(_buffered_move_id) as MoveData), _buffered_move_id))
+	_clear_buffer()
+	_finished_move = null
+	_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
 
 
 func _buffer_action_candidate() -> Dictionary:
@@ -1378,6 +1463,7 @@ func _advance_move(events: Array[CombatEvent]) -> void:
 	## 招式帧计数在运动阶段末尾推进。招式在消费阶段起手，起手帧即第 1 帧。
 	if _current_move == null:
 		return
+	var was_active := player_phase == PlayerPhase.ACTIVE
 	_move_frame += 1
 	if _move_frame < _current_move.active_from():
 		player_phase = PlayerPhase.STARTUP
@@ -1385,10 +1471,84 @@ func _advance_move(events: Array[CombatEvent]) -> void:
 		player_phase = PlayerPhase.ACTIVE
 	elif _move_frame < _current_move.total_frames():
 		player_phase = PlayerPhase.RECOVERY
+		if was_active and not _hit_once_this_move and _move_via_link:
+			## 普通连接起手的招式判定窗口结束仍无接触：按目标当下状态区分
+			## 已恢复与距离不足的可读原因（连段按原规则到收招/恢复时结束）。
+			events.append(CombatEvent.link_failed(
+				CombatEvent.LinkFailReason.TARGET_RECOVERED if not _dummy_pursuable() \
+					else CombatEvent.LinkFailReason.DISTANCE_INSUFFICIENT,
+				_current_move.move_id))
 	else:
-		## 招式收招：没有通过命中确认取消接续时连段结束。
-		_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
+		_finish_move(events)
+
+
+func _finish_move(events: Array[CombatEvent]) -> void:
+	## 自然收招：缓存持有可消费的声明普通连接候选时，连段不在运动阶段结束——
+	## 消费阶段按合法接续起手（连段延续）或报告失败原因后结束；否则收招未接续
+	## 结束连段。声明了普通连接边的招式不因取消窗口关闭提前结束连段（连接评估
+	## 推迟到完全恢复后的首个合法帧）。
+	_finished_move = _current_move
+	_pending_link_check = _link_candidate_available(_current_move)
+	if _pending_link_check:
 		_clear_current_move()
+		return
+	if _link_declared_but_gated(_current_move):
+		## 声明了普通连接边但消费门不满足：按 I-06 缓存消费失败，记录原因并作废。
+		events.append(CombatEvent.link_failed(_link_fail_reason(_moves.get(_buffered_move_id) as MoveData), _buffered_move_id))
+		_clear_buffer()
+	## 配置缺口诊断读取连段结束前的可追击状态，须先于结束结算。
+	_report_undeclared_link_gap(_finished_move, events)
+	_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
+	_clear_current_move()
+
+
+## 普通连接候选是否可消费（收招当帧评估）：缓存目标在前招声明的 link_targets
+## 内、未处于组合等待、连段仍活跃、目标仍可追击且玩家可独立起手。
+func _link_candidate_available(finished: MoveData) -> bool:
+	if finished == null or finished.link_targets.is_empty():
+		return false
+	if _buffered_move_id == "" or _buffer_waiting:
+		return false
+	if not finished.link_targets.has(_buffered_move_id):
+		return false
+	var target := _moves.get(_buffered_move_id) as MoveData
+	if target == null or not _stance_matches(target):
+		return false
+	return combo_active and _dummy_pursuable() and _independent_start_allowed()
+
+
+## 缓存是否持有前招声明的普通连接目标（无论消费门是否满足）。
+func _link_declared_but_gated(finished: MoveData) -> bool:
+	if finished == null or finished.link_targets.is_empty():
+		return false
+	if _buffered_move_id == "" or _buffer_waiting:
+		return false
+	return finished.link_targets.has(_buffered_move_id)
+
+
+## 普通连接失败原因：目标已自然恢复（连段资格消失）为已恢复；不可追击的
+## 受击状态、姿态不符或玩家侧起手锁为状态不兼容。
+func _link_fail_reason(target: MoveData) -> CombatEvent.LinkFailReason:
+	if dummy_state == DummyState.KNOCKED_DOWN or dummy_state == DummyState.AIR_RECOVERED:
+		return CombatEvent.LinkFailReason.STATE_INCOMPATIBLE
+	if target == null or not _stance_matches(target) or not _independent_start_allowed():
+		return CombatEvent.LinkFailReason.STATE_INCOMPATIBLE
+	return CombatEvent.LinkFailReason.TARGET_RECOVERED
+
+
+## 配置缺口诊断：连段结束时缓存仍持有姿态匹配的地面打击、目标仍可追击，但
+## 前招未声明到该招的普通连接边——报告后输入按独立招式继续（不作废缓存）。
+func _report_undeclared_link_gap(source: MoveData, events: Array[CombatEvent]) -> void:
+	if _buffered_move_id == "" or _buffer_waiting:
+		return
+	if not combo_active or not _dummy_pursuable():
+		return
+	var buffered := _moves.get(_buffered_move_id) as MoveData
+	if buffered == null or buffered.stance != MoveData.Stance.GROUND:
+		return
+	if source != null and source.link_targets.has(_buffered_move_id):
+		return
+	events.append(CombatEvent.link_failed(CombatEvent.LinkFailReason.CONFIGURATION_GAP, _buffered_move_id))
 
 
 ## 木桩招式帧计数在运动阶段末尾推进（与玩家同一口径；停顿帧不推进）。
@@ -1422,6 +1582,7 @@ func _start_move(move_id: String, move: MoveData, is_followup: bool) -> void:
 	_move_hit_confirmed = false
 	_hit_confirm_frame = 0
 	_move_is_followup = is_followup
+	_move_via_link = false
 	player_phase = PlayerPhase.STARTUP
 	## 招式阶段替换姿态：出招期间不蹲不防，收招后按输入重解析。
 	_clear_posture()
@@ -1438,6 +1599,7 @@ func _clear_current_move() -> void:
 	_move_hit_confirmed = false
 	_hit_confirm_frame = 0
 	_move_is_followup = false
+	_move_via_link = false
 	player_move_id = ""
 	player_phase = PlayerPhase.NEUTRAL
 
@@ -1657,6 +1819,12 @@ func _end_combo(reason: CombatEvent.ComboEndReason, events: Array[CombatEvent]) 
 	if not combo_active:
 		return
 	combo_active = false
+	## 连段结束清除起手等级与三层累计修正（自然恢复/普通倒地/收尾同口径）；
+	## 下一段连段首击重新锁定。
+	combo_starter_grade = MoveData.StarterGrade.UNSET
+	combo_damage_scale = 1.0
+	combo_time_scale = 1.0
+	combo_trajectory_scale = 1.0
 	events.append(CombatEvent.combo_ended(reason))
 
 

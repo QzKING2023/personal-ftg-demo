@@ -75,7 +75,7 @@ func _test_shared_table_samples_declared() -> void:
 	var normal := MoveData.profile_for(five_a, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)
 	var counter := MoveData.profile_for(five_a, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.COUNTER)
 	_check(normal != null and normal.reaction == HitProfile.Reaction.GROUND_HITSTUN
-		and normal.ground_stun_frames == 12 and is_equal_approx(normal.upward_speed_px_s, 0.0),
+		and normal.ground_stun_frames == 14 and is_equal_approx(normal.upward_speed_px_s, 0.0),
 		"5A grounded normal is GROUND_HITSTUN with declared timers and explicit 0 upward speed")
 	_check(counter != null and counter.reaction == HitProfile.Reaction.GROUND_HITSTUN
 		and counter.ground_stun_frames != normal.ground_stun_frames,
@@ -96,7 +96,7 @@ func _test_shared_table_samples_declared() -> void:
 	_check(MoveData.profile_for(six_a, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL) == null,
 		"6A leaves the airborne profile undeclared (unmatched when targeted airborne)")
 	_check(six_a.jump_cancel_targets == ["jA"], "6A declares its jump cancel target jA")
-	_check((table["5A"] as MoveData).cancel_targets.has("6A"), "5A confirms into 6A (ground confirm into the launcher)")
+	_check((table["5A"] as MoveData).chain_cancel_targets.has("5B"), "5A chains into 5B (ground chain confirm)")
 	var d := table["214D"] as MoveData
 	var d_normal := MoveData.profile_for(d, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)
 	var d_counter := MoveData.profile_for(d, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.COUNTER)
@@ -125,7 +125,7 @@ func _test_profile_copies_are_isolated() -> void:
 	profile.ground_stun_frames = 99
 	var again := MoveData.profile_for(second.moves["5A"] as MoveData,
 		HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)
-	_check(again.ground_stun_frames == 12, "mutating one table copy's profile does not leak into other loads")
+	_check(again.ground_stun_frames == 14, "mutating one table copy's profile does not leak into other loads")
 
 
 # --- MoveTable 组合校验（spec §3）---
@@ -314,14 +314,14 @@ func _test_sample_5a_ground_normal() -> void:
 		_capture_hit(session, events, capture, frame)
 	_check(int(capture.get("frame", -1)) == 6, "5A connects on its first active frame (F6)")
 	var hit_event: CombatEvent = capture.get("event")
-	_check(hit_event != null and not hit_event.is_counter and is_equal_approx(hit_event.damage, 10.0),
-		"the grounded normal hit deals base damage and reports the normal context")
+	_check(hit_event != null and not hit_event.is_counter and is_equal_approx(hit_event.damage, 5.8),
+		"the grounded normal hit deals the A-starter scaled damage (round0.1(8×0.72)) and reports the normal context")
 	_check(capture.get("state") == CombatSession.DummyState.GROUND_HITSTUN and bool(capture.get("on_ground")),
 		"the normal ground hit keeps the dummy grounded in ground hitstun")
-	_check(int(capture.get("stun", -1)) == 12, "ground stun comes from the selected profile (12)")
+	_check(int(capture.get("stun", -1)) == 9, "ground stun comes from the selected profile at the A-starter time layer (floor(14×0.70))")
 	var velocity: Vector2 = capture.get("velocity", Vector2.INF)
-	_check(velocity.x > 150.0 and is_equal_approx(velocity.y, 0.0),
-		"knockback speed comes from the profile with no vertical component (friction only decays it)")
+	_check(velocity.x > 100.0 and is_equal_approx(velocity.y, 0.0),
+		"knockback speed comes from the profile at the A-starter trajectory layer (120px/s) with no vertical component")
 	_check(not capture.has("miss_frame"), "no miss is reported against the grounded dummy")
 
 
@@ -393,14 +393,14 @@ func _test_sample_6a_launch_entry_and_jump_cancel_boundary() -> void:
 		_capture_hit(session, events, capture, frame)
 	_check(int(capture.get("frame", -1)) == 10, "6A connects on its first active frame (F10)")
 	var hit_event: CombatEvent = capture.get("event")
-	_check(hit_event != null and not hit_event.is_counter and is_equal_approx(hit_event.damage, 16.0),
-		"6A's grounded normal connects for its base damage in the normal context")
+	_check(hit_event != null and not hit_event.is_counter and is_equal_approx(hit_event.damage, 14.9),
+		"6A's grounded normal connects for the C-starter scaled damage (round0.1(16×0.93)) in the normal context")
 	_check(capture.get("state") == CombatSession.DummyState.AIR_HITSTUN,
 		"6A puts the grounded dummy into air hitstun")
-	_check(int(capture.get("stun", -1)) == 36, "air untech timer comes from the 6A normal profile")
+	_check(int(capture.get("stun", -1)) == 32, "air untech timer comes from the 6A normal profile at the C-starter time layer (floor(36×0.90))")
 	var velocity: Vector2 = capture.get("velocity", Vector2.INF)
-	_check(velocity.x > 140.0 and velocity.y < -500.0,
-		"6A applies its profile horizontal speed and a strong upward launch (friction only decays it)")
+	_check(velocity.x > 125.0 and velocity.y < -500.0,
+		"6A applies the trajectory-scaled horizontal speed (138px/s minus same-frame friction) and a strong upward launch (515px/s)")
 
 	var pursue := CombatSession.new()
 	pursue.dummy_position = pursue.player_position + Vector2(70, 0)
@@ -470,14 +470,14 @@ func _test_sample_214d_knockdown_lifecycle() -> void:
 	_check(hits == [11, 57] and misses.is_empty(),
 		"the knockdown hit connects once and the post-recovery 5A starts a fresh combo hit")
 	_check(at_knockdown.get("state") == CombatSession.DummyState.KNOCKED_DOWN
-		and int(at_knockdown.get("knockdown", -1)) == 30,
-		"214D's hit puts the dummy into independent knockdown for the profile's 30 frames")
+		and int(at_knockdown.get("knockdown", -1)) == 28,
+		"214D's hit puts the dummy into independent knockdown for the D-starter time-scaled 28 frames (floor(30×0.96))")
 	_check(int(at_knockdown.get("stun", -1)) == 0, "knockdown is not disguised as ground hitstun")
 	_check(is_equal_approx(at_knockdown.get("hp", 0.0), GameParams.DUMMY_MAX_HP - 22.0),
 		"the knockdown hit deals its base damage once")
 	_check(not combo_ends.is_empty() and combo_ends[0] == CombatEvent.ComboEndReason.KNOCKDOWN,
 		"entering knockdown ends the combo first with the KNOCKDOWN reason")
-	_check(recovers == [49], "the knockdown timer expires naturally at F49 (8 hitstop + 30 normal frames)")
+	_check(recovers == [47, 74], "the knockdown timer expires naturally at F47 (8 hitstop + 28 scaled frames); the fresh 5A stun recovers at F74")
 	_check(session.combo_hits == 1,
 		"the post-recovery hit opened a fresh combo (count restarted at 1)")
 
@@ -499,8 +499,8 @@ func _test_sample_214d_knockdown_lifecycle() -> void:
 	var counter_event: CombatEvent = counter_capture.get("event")
 	_check(counter_event != null and counter_event.is_counter,
 		"214D hitting the dummy's startup selects the counter profile (reported in the event)")
-	_check(int(counter_capture.get("knockdown", -1)) == 40,
-		"the counter knockdown variant uses its own timer (40 frames)")
+	_check(int(counter_capture.get("knockdown", -1)) == 38,
+		"the counter knockdown variant uses its own timer at the D-starter time layer (floor(40×0.96) = 38)")
 
 
 func _test_counter_hit_lifecycle() -> void:
@@ -520,19 +520,19 @@ func _test_counter_hit_lifecycle() -> void:
 	var startup_event: CombatEvent = startup_case.get("event")
 	_check(startup_event != null and startup_event.is_counter,
 		"a hit landing in the dummy's startup window selects the counter profile")
-	_check(int(startup_case.get("stun", -1)) == 18,
-		"the counter hit applies the counter stun (18) rather than the normal stun (12)")
+	_check(int(startup_case.get("stun", -1)) == 12,
+		"the counter hit applies the counter stun at the A-starter time layer (floor(18×0.70) = 12) rather than the normal stun (9)")
 	var recovery_case: Dictionary = run.call(8, true)
 	var recovery_event: CombatEvent = recovery_case.get("event")
 	_check(recovery_event != null and recovery_event.is_counter,
 		"a hit landing in the dummy's recovery window selects the counter profile")
 	var active_case: Dictionary = run.call(6, true)
 	var active_event: CombatEvent = active_case.get("event")
-	_check(active_event != null and not active_event.is_counter and int(active_case.get("stun", -1)) == 12,
+	_check(active_event != null and not active_event.is_counter and int(active_case.get("stun", -1)) == 9,
 		"a hit landing while the dummy's move is active stays normal (active is not a counter window)")
 	var expired_case: Dictionary = run.call(20, true)
 	var expired_event: CombatEvent = expired_case.get("event")
-	_check(expired_event != null and not expired_event.is_counter and int(expired_case.get("stun", -1)) == 12,
+	_check(expired_event != null and not expired_event.is_counter and int(expired_case.get("stun", -1)) == 9,
 		"after the whiffed window expires the next hit is normal again")
 	var neutral_case: Dictionary = run.call(1, false)
 	var neutral_event: CombatEvent = neutral_case.get("event")
@@ -549,15 +549,16 @@ func _test_counter_hit_lifecycle() -> void:
 		var key := ""
 		if frame == 1:
 			key = "A"
-		elif frame == 15:
+		elif frame == 9:
 			key = "B"
 		var events := session.step(_relative_input(session, 5, key, request_id))
 		for event in events:
 			if event.type == CombatEvent.Type.HIT:
 				contexts.append(event.is_counter)
 				stuns.append(session.dummy_hitstun_left)
-	_check(contexts == [true, false] and stuns == [18, 12],
-		"the counter context is consumed on hit: the followup in the same combo selects normal")
+	## B 于停顿内按下（F9）、恢复首帧 F15 以链式取消（年龄 1 ≤ 3）起手 5B。
+	_check(contexts == [true, false] and stuns == [12, 9],
+		"the counter context is consumed on hit: the followup in the same combo selects normal (stun 9 at the second-hit time layer)")
 
 
 func _test_counter_damage_override() -> void:
@@ -573,8 +574,8 @@ func _test_counter_damage_override() -> void:
 		for event in events:
 			if event.type == CombatEvent.Type.HIT:
 				damage = event.damage
-	_check(is_equal_approx(damage, 15.0),
-		"damage_override replaces base damage on the counter hit (first hit, no decay)")
+	_check(is_equal_approx(damage, 10.8),
+		"damage_override replaces base damage and then takes the A-starter layer (round0.1(15×0.72) = 10.8)")
 
 
 func _test_player_side_uses_profile_selection() -> void:
@@ -627,9 +628,9 @@ func _test_player_side_uses_profile_selection() -> void:
 func _test_profile_edits_sync_session_and_solver() -> void:
 	var table := MoveData.default_table()
 	var report := ComboSolver.solve(_options(table))
-	var route := _find_route(report, ["5A", "6A", "jA", "jB", "jD"])
+	var route := _find_route(report, ["5A", "5B", "6A", "jA", "jB", "jD"])
 	_check(route != null and route.timing_valid,
-		"the solver walks the 5A → 6A → jump cancel → jA → jB → jD route on the shared table")
+		"the solver walks the 5A → 5B → 6A (chain cancels) → jump cancel → jA → jB → jD route on the shared table")
 	if route == null:
 		return
 	var replay := _replay_inputs(route.inputs, table)
@@ -641,9 +642,10 @@ func _test_profile_edits_sync_session_and_solver() -> void:
 	six_normal.damage_override = 25
 	six_normal.horizontal_speed_px_s = 90.0
 	var edited_report := ComboSolver.solve(_options(table))
-	var edited_route := _find_route(edited_report, ["5A", "6A", "jA", "jB", "jD"])
-	_check(edited_route != null and _approx(edited_route.total_damage, base_damage + 8.1),
-		"editing the 6A normal profile raises the solver route total by (25-16)*0.9")
+	var edited_route := _find_route(edited_report, ["5A", "5B", "6A", "jA", "jB", "jD"])
+	## 6A 现为路线第三击：伤害层 0.72×0.9²=0.5832 → (25−16)×0.5832 ≈ 5.2。
+	_check(edited_route != null and _approx(edited_route.total_damage, base_damage + 5.3),
+		"editing the 6A normal profile raises the solver route total by (25-16)*0.5832 with per-hit rounding")
 	var edited_replay := _replay_inputs(edited_route.inputs, table)
 	_check(_approx(edited_replay["total_damage"], edited_route.total_damage),
 		"the runtime replay tracks the same edited-profile damage")
@@ -651,7 +653,7 @@ func _test_profile_edits_sync_session_and_solver() -> void:
 		HitProfile.TargetState.GROUNDED, HitProfile.HitContext.COUNTER)
 	six_counter.damage_override = 40
 	var counter_report := ComboSolver.solve(_options(table))
-	var counter_route := _find_route(counter_report, ["5A", "6A", "jA", "jB", "jD"])
+	var counter_route := _find_route(counter_report, ["5A", "5B", "6A", "jA", "jB", "jD"])
 	_check(counter_route != null and _approx(counter_route.total_damage, edited_route.total_damage),
 		"counter-profile edits never leak into the solver's normal-context routes (no fallback)")
 
@@ -661,6 +663,9 @@ func _test_missing_profile_reports_consistently_in_solver() -> void:
 	# 边按 MISS_NO_PROFILE 排除，运行时回放同一接缝得到 HIT_MISS 事件。
 	var table := MoveData.default_table()
 	(table["236C"] as MoveData).cancel_targets = ["5B"]
+	# 测试表把 5B 命中框加高：浮空木桩在判定帧仍与命中框相交，接缝卡在
+	# profile 缺失（MISS_NO_PROFILE）而不是垂直脱靶。
+	(table["5B"] as MoveData).hitbox_size = Vector2(42, 120)
 	var report := ComboSolver.solve(_options(table))
 	var edge := _find_edge(report, "236C", "5B", ComboSolver.EdgeKind.CANCEL)
 	_check(edge != null and not edge.valid and edge.reason.contains("MISS_NO_PROFILE"),
@@ -719,6 +724,7 @@ func _strike_with(profiles: Array) -> MoveData:
 	for profile in profiles:
 		typed.append(profile)
 	move.hit_profiles = typed
+	move.starter_grade = MoveData.StarterGrade.D
 	return move
 
 

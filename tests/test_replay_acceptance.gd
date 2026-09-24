@@ -19,7 +19,8 @@ extends SceneTree
 ## 运行：godot --headless --path . -s res://tests/test_replay_acceptance.gd
 
 const GROUND_ROUTE := ["5A", "5B", "5D"]
-const DERIVATIVE_ROUTE := ["5B", "214D"]
+## 旧派生代表 5B→214D 已废弃；新基线派生代表为 5B 必杀取消 236C 的空中路线。
+const DERIVATIVE_ROUTE := ["5B", "236C", "jA", "jB", "jD"]
 const AIR_ROUTE := ["5A", "236C", "jA", "jB", "jD"]
 const LANDING_ROUTE := ["5A", "236C", "jA", "jB", "5D"]
 ## 训练场键盘回放的站位（真实击退物理）：地面/派生用固定接触位 70 px；
@@ -88,7 +89,7 @@ func _test_pinned_replay_reproduces_solver_results(report: ComboSolver.SolverRep
 			var damage_ok := (run["hit_damages"] as Array).size() == route.combo_hits
 			if damage_ok:
 				for i in range((run["hit_damages"] as Array).size()):
-					damage_ok = damage_ok and _approx(float(run["hit_damages"][i]), _decayed_damage(table, route.move_ids[i], i + 1))
+					damage_ok = damage_ok and _approx(float(run["hit_damages"][i]), _decayed_damage(table, route.move_ids[i], i + 1, route.move_ids[0]))
 			_check(damage_ok, "%s: per-hit damage reproduces the combo decay (%s)" % [tag, str(run["hit_damages"])])
 			var directions_ok := true
 			for hit in run["hits"]:
@@ -113,11 +114,13 @@ func _test_pinned_replay_reproduces_solver_results(report: ComboSolver.SolverRep
 				and first["landing_ticks"] == second["landing_ticks"],
 			"the same inputs produce identical event payloads, per-hit settlement states and landing timelines in two fresh sessions")
 		for facing in [1, -1]:
+			## 轨迹层修正缩小击退后，70 px 真实击退回放完整接通全部五击——
+			## 与钉位层结论一致；记录层注明这是单一站位的真实物理结论。
 			var free := _replay_route(air, facing, 70.0, _shared_table(), false)
-			_check(int(free["combo_hits"]) < air.combo_hits,
-				"70 px real-knockback air replay does not inherit the pinned spatial proof")
+			_check(int(free["combo_hits"]) == air.combo_hits,
+				"70 px real-knockback air replay reproduces the full route (trajectory corrections keep the dummy reachable)")
 			_records.append(_record_line(air, facing, "站位：真实击退 70 px", free,
-				"命中帧", "timing-valid（该站位真实击退复验失败，不宣称全路线可命中）"))
+				"命中帧", "timing-valid（70 px 真实击退下完整接通；单一站位结论）"))
 
 
 ## 保留旧 Solver 的真实帧表作负例，不能把它混回当前合法路线。
@@ -145,8 +148,8 @@ func _test_rejected_landing_replay(report: ComboSolver.SolverReport) -> void:
 	var route := _legacy_landing_fixture()
 	for facing in [1, -1]:
 		var run := _replay_route(route, facing, 70.0, _shared_table(), true)
-		_check(run["hit_frames"] == route.hit_frames and int(run["combo_hits"]) == 3,
-			"legacy landing replay stops at three hits despite fixed contact (the contextual profiles no longer carry the old jB seam)")
+		_check(run["hit_frames"] == [6, 13] and int(run["combo_hits"]) == 2,
+			"legacy landing replay stops at two hits despite fixed contact (the time-decayed stun drops the old jA seam before its press)")
 		_check(not (run["landing_move_ids"] as Array).has("5D"), "legacy schedule cannot start 5D on landing")
 		_records.append(_record_line(route, facing, "站位：旧样本钉位 70 px", run,
 			"命中帧", "timing-invalid（恢复锁拒绝旧样本第5击；不作空间证明）"))
@@ -156,7 +159,7 @@ func _test_rejected_landing_replay(report: ComboSolver.SolverReport) -> void:
 
 func _test_replay_boundary_variants(report: ComboSolver.SolverReport) -> void:
 	var table := _shared_table()
-	var edge := _find_edge(report, "5B", "5D", ComboSolver.EdgeKind.CANCEL)
+	var edge := _find_edge(report, "5B", "5D", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	if edge == null or not edge.valid:
 		_check(false, "the 5B → 5D cancel edge is valid (the boundary variants' baseline)")
 		return
@@ -224,10 +227,16 @@ func _test_timing_spatial_layering_and_whiff_replay(plain: ComboSolver.SolverRep
 	if air == null:
 		_check(false, "the spatial run reports the air route")
 		return
+	## 新基线 5A 命中框远缘 56 px 与 80 px 站位相邻不相交：5A 起手的空中路线在
+	## 80 px 钉位回放如实断在第 1 击（空间层的 80 px 失败由回放证实），48/64 复现。
 	for dx in ComboSolver.SPATIAL_PROBE_DISTANCES:
 		var run := _replay_route(air, 1, dx, table, true)
-		_check(run["hit_frames"] == air.hit_frames and _approx(float(run["total_damage"]), air.total_damage),
-			"spatial-valid re-verification: the %d px pinned replay reproduces the air route (hits %s)" % [dx, str(air.hit_frames)])
+		if dx < 80.0:
+			_check(run["hit_frames"] == air.hit_frames and _approx(float(run["total_damage"]), air.total_damage),
+				"spatial re-verification: the %d px pinned replay reproduces the air route (hits %s)" % [dx, str(air.hit_frames)])
+		else:
+			_check(int(run["combo_hits"]) == 0 and (run["started_without_hit"] as Array).has("5A"),
+				"the %d px pinned replay confirms the 5A boundary whiff (touching rects do not intersect; that standing is not claimed)" % dx)
 	var record_run := _replay_route(air, 1, 64.0, table, true)
 	_records.append(_record_line(air, 1, "站位：探针钉位 64 px（空间网格档）", record_run,
 		"命中帧", "timing-valid；spatial-valid（48/64/80 px 钉位复验）"))
@@ -238,11 +247,13 @@ func _test_timing_spatial_layering_and_whiff_replay(plain: ComboSolver.SolverRep
 	short_reach.hitbox_size = Vector2(20, 60)
 	short_reach.hitbox_gap = 4.0
 	short_table["5R"] = short_reach
-	(short_table["5A"] as MoveData).cancel_targets.append("5R")
+	## 5A 在 80 px 自身脱靶（边界相邻）：以 5B（远缘 69 px）为来源，80 px 上
+	## 来源命中、5R（远缘 48 px）挥空——短 reach 空间失败由回放证实。
+	(short_table["5B"] as MoveData).cancel_targets.append("5R")
 	var short_report := ComboSolver.solve(_spatial_options(short_table))
-	var short_route := _find_route(short_report, ["5A", "5R"])
+	var short_route := _find_route(short_report, ["5B", "5R"])
 	if short_route == null:
-		_check(false, "the short-reach injected table reports the 5A → 5R route")
+		_check(false, "the short-reach injected table reports the 5B → 5R route")
 		return
 	_check(short_route.timing_valid and short_route.spatial_state == ComboSolver.SolverRoute.SpatialState.INVALID,
 		"the short-reach route stays timing-valid but spatially invalid")
@@ -298,8 +309,8 @@ func _test_keyboard_replay_matches_session_probe(plain: ComboSolver.SolverReport
 				"%s: the player lands on the same tick (%s)" % [tag, str(keyboard["landing_ticks"])])
 		var layer := "timing-valid（键盘回放证实真实击退下完整接通）"
 		if kind == "landing":
-			_check(int(keyboard["combo_hits"]) == 3, "legacy landing schedule stops at three hits on the real keyboard path")
-			layer = "timing-invalid（旧落地样本负例：恢复锁拒绝第5击）"
+			_check(int(keyboard["combo_hits"]) == 2, "legacy landing schedule stops at two hits on the real keyboard path")
+			layer = "timing-invalid（旧落地样本负例：时间层修正使旧样本后续帧表失效；恢复锁仍拒绝第5击）"
 		elif int(keyboard["combo_hits"]) < route.combo_hits:
 			layer = "timing-valid（键盘回放 %.0f px 真实击退下第 %d 击后漂出命中距离——钉位层结论见钉位回放记录）" % [
 				dx, int(keyboard["combo_hits"])]
@@ -415,8 +426,8 @@ func _settle(session: CombatSession) -> void:
 
 func _test_replay_records_complete() -> void:
 	_check(_records.size() >= 10, "the replay records cover the representative routes (pinned both facings + keyboard + spatial)")
-	_check(_records.any(func(line: String) -> bool: return line.contains("5B → 214D｜面向 -1") and line.contains("F6 1[S+D] F7 4[D]")),
-		"left-facing replay records mirror physical keys while retaining relative 214")
+	_check(_records.any(func(line: String) -> bool: return line.contains("5B → 236C → jA → jB → jD｜面向 -1") and line.contains("3[S+A]") and line.contains("6[A]")),
+		"left-facing replay records mirror physical keys while retaining the relative 236 fold")
 	for line in _records:
 		var complete := true
 		for token in ["回放记录｜", "面向", "站位：", "输入 ", "｜伤害 ", "timing-"]:
@@ -669,11 +680,13 @@ func _find_edge(report: ComboSolver.SolverReport, from_id: String, to_id: String
 	return null
 
 
-## 第 n 击的衰减伤害（表内基础伤害 × max(0.1, 1-(n-1)×0.1)）。
-func _decayed_damage(table: Dictionary, move_id: String, hit_number: int) -> float:
+## 第 n 击的修正伤害（C-01/C-02：首击锁定起手等级，层值 = starter×0.9^(n-1)，
+## 伤害独立舍入到 0.1；起手等级取路线首击招式声明）。
+func _decayed_damage(table: Dictionary, move_id: String, hit_number: int, starter_id: String = "") -> float:
 	var move := table[move_id] as MoveData
-	var scale := maxf(GameParams.COMBO_DAMAGE_FLOOR, 1.0 - (hit_number - 1) * GameParams.COMBO_DAMAGE_DECAY)
-	return move.base_damage * scale
+	var starter := table[starter_id] as MoveData if starter_id != "" else move
+	var scale := float(GameParams.STARTER_DAMAGE_SCALE[starter.starter_grade]) 		* pow(GameParams.NORMAL_HIT_DAMAGE_SCALE, hit_number - 1)
+	return snappedf(move.base_damage * maxf(GameParams.COMBO_DAMAGE_FLOOR, scale), 0.1)
 
 
 ## 回放记录行：起始面向、站位、逐帧输入（真实物理键）、命中帧/命中 tick、
@@ -738,6 +751,7 @@ func _injected_move(id: String, key: String) -> MoveData:
 	move.hitbox_size = GameParams.ATTACK_HITBOX_SIZE
 	move.hitbox_gap = GameParams.ATTACK_HITBOX_GAP
 	move.hit_profiles = _probe_profiles(GameParams.HITSTUN_FRAMES, GameParams.MOVE_5A_KNOCKBACK)
+	move.starter_grade = MoveData.StarterGrade.D
 	return move
 
 

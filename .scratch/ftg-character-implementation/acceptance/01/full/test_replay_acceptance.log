@@ -1,0 +1,148 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+PASS  the replayed table passes the solver's facing-mirror verification
+PASS  route 5A → 5B → 5D is timing-valid and carries frame-by-frame replay inputs
+PASS  5A → 5B → 5D / facing +1: the pinned replay reproduces the reported hit frames ([6, 13, 20])
+PASS  5A → 5B → 5D / facing +1: the replay reproduces 3 combo hits and total damage 24.1
+PASS  5A → 5B → 5D / facing +1: each hit is followed by exactly 8 hitstop frames (paired boundaries)
+PASS  5A → 5B → 5D / facing +1: the replay observes the dummy's natural recovery (normal frame 28)
+PASS  5A → 5B → 5D / facing +1: per-hit damage reproduces the combo decay ([5.8, 7.8, 10.5])
+PASS  5A → 5B → 5D / facing +1: every hit's direction matches the facing
+PASS  5A → 5B → 5D / facing -1: the pinned replay reproduces the reported hit frames ([6, 13, 20])
+PASS  5A → 5B → 5D / facing -1: the replay reproduces 3 combo hits and total damage 24.1
+PASS  5A → 5B → 5D / facing -1: each hit is followed by exactly 8 hitstop frames (paired boundaries)
+PASS  5A → 5B → 5D / facing -1: the replay observes the dummy's natural recovery (normal frame 28)
+PASS  5A → 5B → 5D / facing -1: per-hit damage reproduces the combo decay ([5.8, 7.8, 10.5])
+PASS  5A → 5B → 5D / facing -1: every hit's direction matches the facing
+PASS  route 5B → 236C → jA → jB → jD is timing-valid and carries frame-by-frame replay inputs
+PASS  5B → 236C → jA → jB → jD / facing +1: the pinned replay reproduces the reported hit frames ([10, 17, 26, 31, 35])
+PASS  5B → 236C → jA → jB → jD / facing +1: the replay reproduces 5 combo hits and total damage 47.4
+PASS  5B → 236C → jA → jB → jD / facing +1: each hit is followed by exactly 8 hitstop frames (paired boundaries)
+PASS  5B → 236C → jA → jB → jD / facing +1: the replay observes the dummy's natural recovery (normal frame 51)
+PASS  5B → 236C → jA → jB → jD / facing +1: per-hit damage reproduces the combo decay ([10.1, 13.6, 5.4, 7.3, 11.0])
+PASS  5B → 236C → jA → jB → jD / facing +1: every hit's direction matches the facing
+PASS  5B → 236C → jA → jB → jD / facing -1: the pinned replay reproduces the reported hit frames ([10, 17, 26, 31, 35])
+PASS  5B → 236C → jA → jB → jD / facing -1: the replay reproduces 5 combo hits and total damage 47.4
+PASS  5B → 236C → jA → jB → jD / facing -1: each hit is followed by exactly 8 hitstop frames (paired boundaries)
+PASS  5B → 236C → jA → jB → jD / facing -1: the replay observes the dummy's natural recovery (normal frame 51)
+PASS  5B → 236C → jA → jB → jD / facing -1: per-hit damage reproduces the combo decay ([10.1, 13.6, 5.4, 7.3, 11.0])
+PASS  5B → 236C → jA → jB → jD / facing -1: every hit's direction matches the facing
+PASS  route 5A → 236C → jA → jB → jD is timing-valid and carries frame-by-frame replay inputs
+PASS  5A → 236C → jA → jB → jD / facing +1: the pinned replay reproduces the reported hit frames ([6, 13, 22, 27, 31])
+PASS  5A → 236C → jA → jB → jD / facing +1: the replay reproduces 5 combo hits and total damage 37.9
+PASS  5A → 236C → jA → jB → jD / facing +1: each hit is followed by exactly 8 hitstop frames (paired boundaries)
+PASS  5A → 236C → jA → jB → jD / facing +1: the replay observes the dummy's natural recovery (normal frame 45)
+PASS  5A → 236C → jA → jB → jD / facing +1: per-hit damage reproduces the combo decay ([5.8, 11.7, 4.7, 6.3, 9.4])
+PASS  5A → 236C → jA → jB → jD / facing +1: every hit's direction matches the facing
+PASS  5A → 236C → jA → jB → jD / facing +1: the air segment observes a landing
+PASS  5A → 236C → jA → jB → jD / facing +1: the launcher's hit puts the dummy into float hitstun
+PASS  5A → 236C → jA → jB → jD / facing -1: the pinned replay reproduces the reported hit frames ([6, 13, 22, 27, 31])
+PASS  5A → 236C → jA → jB → jD / facing -1: the replay reproduces 5 combo hits and total damage 37.9
+PASS  5A → 236C → jA → jB → jD / facing -1: each hit is followed by exactly 8 hitstop frames (paired boundaries)
+PASS  5A → 236C → jA → jB → jD / facing -1: the replay observes the dummy's natural recovery (normal frame 45)
+PASS  5A → 236C → jA → jB → jD / facing -1: per-hit damage reproduces the combo decay ([5.8, 11.7, 4.7, 6.3, 9.4])
+PASS  5A → 236C → jA → jB → jD / facing -1: every hit's direction matches the facing
+PASS  5A → 236C → jA → jB → jD / facing -1: the air segment observes a landing
+PASS  5A → 236C → jA → jB → jD / facing -1: the launcher's hit puts the dummy into float hitstun
+PASS  the same inputs produce identical event payloads, per-hit settlement states and landing timelines in two fresh sessions
+PASS  70 px real-knockback air replay reproduces the full route (trajectory corrections keep the dummy reachable)
+PASS  70 px real-knockback air replay reproduces the full route (trajectory corrections keep the dummy reachable)
+PASS  latest Solver excludes the forbidden landing route
+PASS  legacy landing replay stops at two hits despite fixed contact (the time-decayed stun drops the old jA seam before its press)
+PASS  legacy schedule cannot start 5D on landing
+PASS  legacy landing replay stops at two hits despite fixed contact (the time-decayed stun drops the old jA seam before its press)
+PASS  legacy schedule cannot start 5D on landing
+PASS  pressing D at the cancel window's last valid age (3) still lands combo hit 2 (hit frame 20)
+PASS  pressing D one frame later never lands as combo hit 2 — the follow-up boundary is observable in replay (木桩自然受身)
+PASS  the air-move landing observes its recovery frames (4 = base 3 + air-move +1)
+PASS  pressing A during the landing recovery never starts a move (air-move landing lock)
+PASS  the fresh A press on the first free frame starts 5A
+PASS  without spatial data the report declares every route timing-valid only
+PASS  route 5A → 5B → 5D stays spatially unverified without spatial data
+PASS  route 5A → 236C → jA → jB → jD stays spatially unverified without spatial data
+PASS  the guide states its frame tables are laid out at the fixed 70 px contact
+PASS  spatial re-verification: the 48 px pinned replay reproduces the air route (hits [6, 13, 22, 27, 31])
+PASS  spatial re-verification: the 64 px pinned replay reproduces the air route (hits [6, 13, 22, 27, 31])
+PASS  the 80 px pinned replay confirms the 5A boundary whiff (touching rects do not intersect; that standing is not claimed)
+PASS  the short-reach route stays timing-valid but spatially invalid
+PASS  the spatial failure names the 80 px standing
+PASS  the 48 px pinned replay lands both hits (reachability replay-confirmed)
+PASS  the 80 px pinned replay confirms the whiff: 5R started but its hitbox never connected (that standing is not claimed)
+PASS  5A → 5B → 5D / facing +1 / 70 px real knockback: the keyboard replay matches the session probe's hit ticks exactly ([7, 22, 37])
+PASS  5A → 5B → 5D / facing +1 / 70 px real knockback: the keyboard replay reproduces 3 combo hits and total damage 24.1
+PASS  5A → 5B → 5D / facing +1 / 70 px real knockback: the dummy's natural recovery lands on the same tick (53)
+PASS  5B → 236C → jA → jB → jD / facing +1 / 70 px real knockback: the keyboard replay matches the session probe's hit ticks exactly ([11, 26, 43, 56, 68])
+PASS  5B → 236C → jA → jB → jD / facing +1 / 70 px real knockback: the keyboard replay reproduces 5 combo hits and total damage 47.4
+PASS  5B → 236C → jA → jB → jD / facing +1 / 70 px real knockback: the dummy's natural recovery lands on the same tick (92)
+PASS  5A → 236C → jA → jB → jD / facing +1 / 48 px real knockback: the keyboard replay matches the session probe's hit ticks exactly ([7, 22, 39, 52, 64])
+PASS  5A → 236C → jA → jB → jD / facing +1 / 48 px real knockback: the keyboard replay reproduces 5 combo hits and total damage 37.9
+PASS  5A → 236C → jA → jB → jD / facing +1 / 48 px real knockback: the dummy's natural recovery lands on the same tick (86)
+PASS  5A → 236C → jA → jB → jD / facing +1 / 48 px real knockback: the player lands on the same tick ([96])
+PASS  5A → 236C → jA → jB → 5D / facing +1 / 48 px real knockback: the keyboard replay matches the session probe's hit ticks exactly ([7, 22])
+PASS  5A → 236C → jA → jB → 5D / facing +1 / 48 px real knockback: the keyboard replay reproduces 2 combo hits and total damage 17.5
+PASS  5A → 236C → jA → jB → 5D / facing +1 / 48 px real knockback: the dummy's natural recovery lands on the same tick (65)
+PASS  5A → 236C → jA → jB → 5D / facing +1 / 48 px real knockback: the player lands on the same tick ([72])
+PASS  legacy landing schedule stops at two hits on the real keyboard path
+PASS  5A → 5B → 5D / facing -1 / 70 px real knockback: the keyboard replay matches the session probe's hit ticks exactly ([7, 22, 37])
+PASS  5A → 5B → 5D / facing -1 / 70 px real knockback: the keyboard replay reproduces 3 combo hits and total damage 24.1
+PASS  5A → 5B → 5D / facing -1 / 70 px real knockback: the dummy's natural recovery lands on the same tick (53)
+PASS  5B → 236C → jA → jB → jD / facing -1 / 70 px real knockback: the keyboard replay matches the session probe's hit ticks exactly ([11, 26, 43, 56, 68])
+PASS  5B → 236C → jA → jB → jD / facing -1 / 70 px real knockback: the keyboard replay reproduces 5 combo hits and total damage 47.4
+PASS  5B → 236C → jA → jB → jD / facing -1 / 70 px real knockback: the dummy's natural recovery lands on the same tick (92)
+PASS  5A → 236C → jA → jB → jD / facing -1 / 48 px real knockback: the keyboard replay matches the session probe's hit ticks exactly ([7, 22, 39, 52, 64])
+PASS  5A → 236C → jA → jB → jD / facing -1 / 48 px real knockback: the keyboard replay reproduces 5 combo hits and total damage 37.9
+PASS  5A → 236C → jA → jB → jD / facing -1 / 48 px real knockback: the dummy's natural recovery lands on the same tick (86)
+PASS  5A → 236C → jA → jB → jD / facing -1 / 48 px real knockback: the player lands on the same tick ([96])
+PASS  5A → 236C → jA → jB → 5D / facing -1 / 48 px real knockback: the keyboard replay matches the session probe's hit ticks exactly ([7, 22])
+PASS  5A → 236C → jA → jB → 5D / facing -1 / 48 px real knockback: the keyboard replay reproduces 2 combo hits and total damage 17.5
+PASS  5A → 236C → jA → jB → 5D / facing -1 / 48 px real knockback: the dummy's natural recovery lands on the same tick (65)
+PASS  5A → 236C → jA → jB → 5D / facing -1 / 48 px real knockback: the player lands on the same tick ([72])
+PASS  legacy landing schedule stops at two hits on the real keyboard path
+PASS  the guide carries a real-key replay line for 5A → 5B → 5D
+PASS  the guide carries a real-key replay line for 5B → 236C → jA → jB → jD
+PASS  the guide carries a real-key replay line for 5A → 236C → jA → jB → jD
+PASS  the guide expresses the first press with the real physical key (F1 按 U)
+PASS  the replay records cover the representative routes (pinned both facings + keyboard + spatial)
+PASS  left-facing replay records mirror physical keys while retaining the relative 236 fold
+PASS  each replay record line carries every required field (回放记录｜5A → 5B → 5D｜面向 +1｜站位：探针钉位 70 px｜输入 F1 按U F6 按I F13 按J｜命中帧 6, 13, 20｜3 hit｜伤害 24.1｜timing-valid（空间未验证）)
+PASS  each replay record line carries every required field (回放记录｜5A → 5B → 5D｜面向 -1｜站位：探针钉位 70 px｜输入 F1 按U F6 按I F13 按J｜命中帧 6, 13, 20｜3 hit｜伤害 24.1｜timing-valid（空间未验证）)
+PASS  each replay record line carries every required field (回放记录｜5B → 236C → jA → jB → jD｜面向 +1｜站位：探针钉位 70 px｜输入 F1 按I F7 2[S] F8 3[S+D] F9 6[D] F10 按K F17 Space F22 按U F26 按I F31 按J｜命中帧 10, 17, 26, 31, 35｜5 hit｜伤害 47.4｜timing-valid（空间未验证）)
+PASS  each replay record line carries every required field (回放记录｜5B → 236C → jA → jB → jD｜面向 -1｜站位：探针钉位 70 px｜输入 F1 按I F7 2[S] F8 3[S+A] F9 6[A] F10 按K F17 Space F22 按U F26 按I F31 按J｜命中帧 10, 17, 26, 31, 35｜5 hit｜伤害 47.4｜timing-valid（空间未验证）)
+PASS  each replay record line carries every required field (回放记录｜5A → 236C → jA → jB → jD｜面向 +1｜站位：探针钉位 70 px｜输入 F1 按U F3 2[S] F4 3[S+D] F5 6[D] F6 按K F13 Space F18 按U F22 按I F27 按J｜命中帧 6, 13, 22, 27, 31｜5 hit｜伤害 37.9｜timing-valid（空间未验证）)
+PASS  each replay record line carries every required field (回放记录｜5A → 236C → jA → jB → jD｜面向 -1｜站位：探针钉位 70 px｜输入 F1 按U F3 2[S] F4 3[S+A] F5 6[A] F6 按K F13 Space F18 按U F22 按I F27 按J｜命中帧 6, 13, 22, 27, 31｜5 hit｜伤害 37.9｜timing-valid（空间未验证）)
+PASS  each replay record line carries every required field (回放记录｜5A → 236C → jA → jB → jD｜面向 +1｜站位：真实击退 70 px｜输入 F1 按U F3 2[S] F4 3[S+D] F5 6[D] F6 按K F13 Space F18 按U F22 按I F27 按J｜命中帧 6, 13, 22, 27, 31｜5 hit｜伤害 37.9｜timing-valid（70 px 真实击退下完整接通；单一站位结论）)
+PASS  each replay record line carries every required field (回放记录｜5A → 236C → jA → jB → jD｜面向 -1｜站位：真实击退 70 px｜输入 F1 按U F3 2[S] F4 3[S+A] F5 6[A] F6 按K F13 Space F18 按U F22 按I F27 按J｜命中帧 6, 13, 22, 27, 31｜5 hit｜伤害 37.9｜timing-valid（70 px 真实击退下完整接通；单一站位结论）)
+PASS  each replay record line carries every required field (回放记录｜5A → 236C → jA → jB → 5D｜面向 +1｜站位：旧样本钉位 70 px｜输入 F1 按U F3 2[S] F4 3[S+D] F5 6[D] F6 按K F13 Space F39 按U F48 按I F54 按J｜命中帧 6, 13｜2 hit｜伤害 17.5｜timing-invalid（恢复锁拒绝旧样本第5击；不作空间证明）)
+PASS  each replay record line carries every required field (回放记录｜5A → 236C → jA → jB → 5D｜面向 -1｜站位：旧样本钉位 70 px｜输入 F1 按U F3 2[S] F4 3[S+A] F5 6[A] F6 按K F13 Space F39 按U F48 按I F54 按J｜命中帧 6, 13｜2 hit｜伤害 17.5｜timing-invalid（恢复锁拒绝旧样本第5击；不作空间证明）)
+PASS  each replay record line carries every required field (回放记录｜5A → 236C → jA → jB → jD｜面向 +1｜站位：探针钉位 64 px（空间网格档）｜输入 F1 按U F3 2[S] F4 3[S+D] F5 6[D] F6 按K F13 Space F18 按U F22 按I F27 按J｜命中帧 6, 13, 22, 27, 31｜5 hit｜伤害 37.9｜timing-valid；spatial-valid（48/64/80 px 钉位复验）)
+PASS  each replay record line carries every required field (回放记录｜5A → 5B → 5D｜面向 +1｜站位：训练场真实键盘 70 px｜输入 F1 按U F6 按I F13 按J｜命中tick（物理，含前导空帧） 7, 22, 37｜3 hit｜伤害 24.1｜timing-valid（键盘回放证实真实击退下完整接通）)
+PASS  each replay record line carries every required field (回放记录｜5B → 236C → jA → jB → jD｜面向 +1｜站位：训练场真实键盘 70 px｜输入 F1 按I F7 2[S] F8 3[S+D] F9 6[D] F10 按K F17 Space F22 按U F26 按I F31 按J｜命中tick（物理，含前导空帧） 11, 26, 43, 56, 68｜5 hit｜伤害 47.4｜timing-valid（键盘回放证实真实击退下完整接通）)
+PASS  each replay record line carries every required field (回放记录｜5A → 236C → jA → jB → jD｜面向 +1｜站位：训练场真实键盘 48 px｜输入 F1 按U F3 2[S] F4 3[S+D] F5 6[D] F6 按K F13 Space F18 按U F22 按I F27 按J｜命中tick（物理，含前导空帧） 7, 22, 39, 52, 64｜5 hit｜伤害 37.9｜timing-valid（键盘回放证实真实击退下完整接通）)
+PASS  each replay record line carries every required field (回放记录｜5A → 236C → jA → jB → 5D｜面向 +1｜站位：训练场真实键盘 48 px｜输入 F1 按U F3 2[S] F4 3[S+D] F5 6[D] F6 按K F13 Space F39 按U F48 按I F54 按J｜命中tick（物理，含前导空帧） 7, 22｜2 hit｜伤害 17.5｜timing-invalid（旧落地样本负例：时间层修正使旧样本后续帧表失效；恢复锁仍拒绝第5击）)
+PASS  each replay record line carries every required field (回放记录｜5A → 5B → 5D｜面向 -1｜站位：训练场真实键盘 70 px｜输入 F1 按U F6 按I F13 按J｜命中tick（物理，含前导空帧） 7, 22, 37｜3 hit｜伤害 24.1｜timing-valid（键盘回放证实真实击退下完整接通）)
+PASS  each replay record line carries every required field (回放记录｜5B → 236C → jA → jB → jD｜面向 -1｜站位：训练场真实键盘 70 px｜输入 F1 按I F7 2[S] F8 3[S+A] F9 6[A] F10 按K F17 Space F22 按U F26 按I F31 按J｜命中tick（物理，含前导空帧） 11, 26, 43, 56, 68｜5 hit｜伤害 47.4｜timing-valid（键盘回放证实真实击退下完整接通）)
+PASS  each replay record line carries every required field (回放记录｜5A → 236C → jA → jB → jD｜面向 -1｜站位：训练场真实键盘 48 px｜输入 F1 按U F3 2[S] F4 3[S+A] F5 6[A] F6 按K F13 Space F18 按U F22 按I F27 按J｜命中tick（物理，含前导空帧） 7, 22, 39, 52, 64｜5 hit｜伤害 37.9｜timing-valid（键盘回放证实真实击退下完整接通）)
+PASS  each replay record line carries every required field (回放记录｜5A → 236C → jA → jB → 5D｜面向 -1｜站位：训练场真实键盘 48 px｜输入 F1 按U F3 2[S] F4 3[S+A] F5 6[A] F6 按K F13 Space F39 按U F48 按I F54 按J｜命中tick（物理，含前导空帧） 7, 22｜2 hit｜伤害 17.5｜timing-invalid（旧落地样本负例：时间层修正使旧样本后续帧表失效；恢复锁仍拒绝第5击）)
+
+回放记录｜5A → 5B → 5D｜面向 +1｜站位：探针钉位 70 px｜输入 F1 按U F6 按I F13 按J｜命中帧 6, 13, 20｜3 hit｜伤害 24.1｜timing-valid（空间未验证）
+回放记录｜5A → 5B → 5D｜面向 -1｜站位：探针钉位 70 px｜输入 F1 按U F6 按I F13 按J｜命中帧 6, 13, 20｜3 hit｜伤害 24.1｜timing-valid（空间未验证）
+回放记录｜5B → 236C → jA → jB → jD｜面向 +1｜站位：探针钉位 70 px｜输入 F1 按I F7 2[S] F8 3[S+D] F9 6[D] F10 按K F17 Space F22 按U F26 按I F31 按J｜命中帧 10, 17, 26, 31, 35｜5 hit｜伤害 47.4｜timing-valid（空间未验证）
+回放记录｜5B → 236C → jA → jB → jD｜面向 -1｜站位：探针钉位 70 px｜输入 F1 按I F7 2[S] F8 3[S+A] F9 6[A] F10 按K F17 Space F22 按U F26 按I F31 按J｜命中帧 10, 17, 26, 31, 35｜5 hit｜伤害 47.4｜timing-valid（空间未验证）
+回放记录｜5A → 236C → jA → jB → jD｜面向 +1｜站位：探针钉位 70 px｜输入 F1 按U F3 2[S] F4 3[S+D] F5 6[D] F6 按K F13 Space F18 按U F22 按I F27 按J｜命中帧 6, 13, 22, 27, 31｜5 hit｜伤害 37.9｜timing-valid（空间未验证）
+回放记录｜5A → 236C → jA → jB → jD｜面向 -1｜站位：探针钉位 70 px｜输入 F1 按U F3 2[S] F4 3[S+A] F5 6[A] F6 按K F13 Space F18 按U F22 按I F27 按J｜命中帧 6, 13, 22, 27, 31｜5 hit｜伤害 37.9｜timing-valid（空间未验证）
+回放记录｜5A → 236C → jA → jB → jD｜面向 +1｜站位：真实击退 70 px｜输入 F1 按U F3 2[S] F4 3[S+D] F5 6[D] F6 按K F13 Space F18 按U F22 按I F27 按J｜命中帧 6, 13, 22, 27, 31｜5 hit｜伤害 37.9｜timing-valid（70 px 真实击退下完整接通；单一站位结论）
+回放记录｜5A → 236C → jA → jB → jD｜面向 -1｜站位：真实击退 70 px｜输入 F1 按U F3 2[S] F4 3[S+A] F5 6[A] F6 按K F13 Space F18 按U F22 按I F27 按J｜命中帧 6, 13, 22, 27, 31｜5 hit｜伤害 37.9｜timing-valid（70 px 真实击退下完整接通；单一站位结论）
+回放记录｜5A → 236C → jA → jB → 5D｜面向 +1｜站位：旧样本钉位 70 px｜输入 F1 按U F3 2[S] F4 3[S+D] F5 6[D] F6 按K F13 Space F39 按U F48 按I F54 按J｜命中帧 6, 13｜2 hit｜伤害 17.5｜timing-invalid（恢复锁拒绝旧样本第5击；不作空间证明）
+回放记录｜5A → 236C → jA → jB → 5D｜面向 -1｜站位：旧样本钉位 70 px｜输入 F1 按U F3 2[S] F4 3[S+A] F5 6[A] F6 按K F13 Space F39 按U F48 按I F54 按J｜命中帧 6, 13｜2 hit｜伤害 17.5｜timing-invalid（恢复锁拒绝旧样本第5击；不作空间证明）
+回放记录｜5A → 236C → jA → jB → jD｜面向 +1｜站位：探针钉位 64 px（空间网格档）｜输入 F1 按U F3 2[S] F4 3[S+D] F5 6[D] F6 按K F13 Space F18 按U F22 按I F27 按J｜命中帧 6, 13, 22, 27, 31｜5 hit｜伤害 37.9｜timing-valid；spatial-valid（48/64/80 px 钉位复验）
+回放记录｜5A → 5B → 5D｜面向 +1｜站位：训练场真实键盘 70 px｜输入 F1 按U F6 按I F13 按J｜命中tick（物理，含前导空帧） 7, 22, 37｜3 hit｜伤害 24.1｜timing-valid（键盘回放证实真实击退下完整接通）
+回放记录｜5B → 236C → jA → jB → jD｜面向 +1｜站位：训练场真实键盘 70 px｜输入 F1 按I F7 2[S] F8 3[S+D] F9 6[D] F10 按K F17 Space F22 按U F26 按I F31 按J｜命中tick（物理，含前导空帧） 11, 26, 43, 56, 68｜5 hit｜伤害 47.4｜timing-valid（键盘回放证实真实击退下完整接通）
+回放记录｜5A → 236C → jA → jB → jD｜面向 +1｜站位：训练场真实键盘 48 px｜输入 F1 按U F3 2[S] F4 3[S+D] F5 6[D] F6 按K F13 Space F18 按U F22 按I F27 按J｜命中tick（物理，含前导空帧） 7, 22, 39, 52, 64｜5 hit｜伤害 37.9｜timing-valid（键盘回放证实真实击退下完整接通）
+回放记录｜5A → 236C → jA → jB → 5D｜面向 +1｜站位：训练场真实键盘 48 px｜输入 F1 按U F3 2[S] F4 3[S+D] F5 6[D] F6 按K F13 Space F39 按U F48 按I F54 按J｜命中tick（物理，含前导空帧） 7, 22｜2 hit｜伤害 17.5｜timing-invalid（旧落地样本负例：时间层修正使旧样本后续帧表失效；恢复锁仍拒绝第5击）
+回放记录｜5A → 5B → 5D｜面向 -1｜站位：训练场真实键盘 70 px｜输入 F1 按U F6 按I F13 按J｜命中tick（物理，含前导空帧） 7, 22, 37｜3 hit｜伤害 24.1｜timing-valid（键盘回放证实真实击退下完整接通）
+回放记录｜5B → 236C → jA → jB → jD｜面向 -1｜站位：训练场真实键盘 70 px｜输入 F1 按I F7 2[S] F8 3[S+A] F9 6[A] F10 按K F17 Space F22 按U F26 按I F31 按J｜命中tick（物理，含前导空帧） 11, 26, 43, 56, 68｜5 hit｜伤害 47.4｜timing-valid（键盘回放证实真实击退下完整接通）
+回放记录｜5A → 236C → jA → jB → jD｜面向 -1｜站位：训练场真实键盘 48 px｜输入 F1 按U F3 2[S] F4 3[S+A] F5 6[A] F6 按K F13 Space F18 按U F22 按I F27 按J｜命中tick（物理，含前导空帧） 7, 22, 39, 52, 64｜5 hit｜伤害 37.9｜timing-valid（键盘回放证实真实击退下完整接通）
+回放记录｜5A → 236C → jA → jB → 5D｜面向 -1｜站位：训练场真实键盘 48 px｜输入 F1 按U F3 2[S] F4 3[S+A] F5 6[A] F6 按K F13 Space F39 按U F48 按I F54 按J｜命中tick（物理，含前导空帧） 7, 22｜2 hit｜伤害 17.5｜timing-invalid（旧落地样本负例：时间层修正使旧样本后续帧表失效；恢复锁仍拒绝第5击）
+
+ALL REPLAY ACCEPTANCE TESTS PASSED

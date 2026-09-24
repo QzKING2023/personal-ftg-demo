@@ -102,40 +102,22 @@ func _whiffing_5a_with_down_at(down_frame: int) -> CombatSession:
 
 
 func _test_valid_back_edge_proven_with_replay_materials() -> void:
-	# 真实可重复的回边（5A ↔ 5B，每圈由真实命中重建木桩受击资源）以逐圈状态
-	# 快照重现证明并上报；循环条目携带起始状态说明与截到重现帧为止的逐帧回放
-	# 输入——回放到该帧恰好复现全部预期命中。
+	# C-01 起手修正改变了循环证明的可达性：三层累计修正是影响未来结算的会话
+	# 状态（快照键含 starter grade 与三层层值），每次命中都改变层值——逐圈
+	# 快照永不重现，命中循环在受击时间衰减到容不下下一击时自然断链。结构
+	# 回路 5A ↔ 5B 不再被报告为可证明循环，而是以衰减断链上报（无全局上限）。
 	var table := MoveData.default_table()
 	(table["5B"] as MoveData).cancel_targets = ["5D", "5A"]
 	var report := ComboSolver.solve(_options(table))
-	_check(not report.safe and report.cycles.size() == 1,
-		"the valid back edge is still proven and reported as a cycle")
-	if report.cycles.size() != 1:
-		return
-	var cycle := report.cycles[0]
-	_check(cycle.route == ["5A", "5B"] and cycle.proven,
-		"the cycle is 5A -> 5B -> back to 5A, proven by per-lap state recurrence")
-	_check(cycle.period_frames > 0 and cycle.laps_observed >= 2,
-		"the proof carries a period and at least the recurrence lap count")
-	_check(cycle.start_text != "" and "5A" in cycle.start_text and "U" in cycle.start_text,
-		"the cycle documents its start state and the real entry key")
-	_check(not cycle.inputs.is_empty(), "the cycle carries frame-by-frame replay inputs up to the recurrence")
-	var presses := 0
-	for spec in cycle.inputs:
-		if spec.key != "":
-			presses += 1
-	## 12 帧额外观测 = 覆盖最后一次按键的前摇 + 组合等待（最后一击晚于最后一个
-	## 输入帧），使回放命中数恰好等于按键数。
-	var replay := _replay_inputs(table, cycle.inputs, 12)
-	_check(replay["hit_frames"].size() == presses and replay["combo_hits"] == presses,
-		"replaying the proof inputs reproduces every expected hit exactly once")
-	var starter := table[cycle.route[0]] as MoveData
-	var starter_presses := 0
-	for spec in cycle.inputs:
-		if spec.key == starter.action_key:
-			starter_presses += 1
-	_check(starter_presses == cycle.laps_observed,
-		"the proof inputs contain exactly one starter press per observed lap (entry + recurrence laps)")
+	_check(report.safe and report.cycles.is_empty(),
+		"the valid back edge loop breaks by correction decay instead of being proven (state never recurs: the layers change every hit)")
+	var ba := _find_edge(report, "5B", "5A")
+	_check(ba != null and ba.valid, "the back edge itself is still timing-valid")
+	var broken := false
+	for entry in report.notes:
+		if "5A → 5B" in entry and "断开" in entry:
+			broken = true
+	_check(broken, "the structural loop is reported as broken in the lap simulation (hitstun decay, no global hit cap)")
 
 
 func _test_proof_distinguishes_entry_lap_player_state() -> void:
@@ -169,13 +151,15 @@ func _test_frame_cap_reports_truncation_not_cycle() -> void:
 
 
 ## 周期极长的自回边：前摇 2300 帧使一圈远超 2400 帧观测上限（第二圈中途截断）；
-## 硬直 2350 保证上限内木桩始终可追击（链条不断）。
+## 声明硬直 2450（D 起手应用值 2352）保证上限内木桩始终可追击（链条不断）。
 func _slow_self_loop() -> MoveData:
 	var slow := _injected_move("5Z", "Z")
 	slow.startup_frames = 2300
 	slow.active_frames = 2
 	slow.recovery_frames = 5
-	_set_probe_stun(slow, 2350)
+	## D 起手时间层 0.96 使应用受击 = floor(声明×0.96)：2450 → 2352 > 2305 前摇，
+	## 第二圈在第 2400 帧观测上限处截断（链条仍成立）。
+	_set_probe_stun(slow, 2450)
 	_set_probe_horizontal(slow, 0.0)
 	slow.cancel_targets = ["5Z"]
 	return slow
@@ -217,7 +201,9 @@ func _test_recovery_horizon_truncation_annotated() -> void:
 	# 年龄是截断值而非实测恢复——如实标注，不把观测上限伪装成恢复证明。
 	var table := MoveData.default_table()
 	var stunner := _injected_move("5Y", "Y")
-	_set_probe_stun(stunner, 250)
+	## 声明 260 → 应用 floor(260×0.96) = 249 > 240 上限：上限内不恢复（250 会被
+	## 浮点乘法折成 239 而被实测到恢复）。
+	_set_probe_stun(stunner, 260)
 	_set_probe_horizontal(stunner, 0.0)
 	stunner.cancel_targets = ["5A"]
 	table["5Y"] = stunner
@@ -236,15 +222,15 @@ func _test_recovery_horizon_truncation_annotated() -> void:
 
 
 func _test_cycle_report_carries_start_and_replay() -> void:
+	# 修正模型下没有可证明循环：报告的循环节以结构性回路的衰减断链注记呈现，
+	# 不再携带已证明循环的起始状态/逐帧回放块（该路径在命中循环下不可达）。
 	var table := MoveData.default_table()
 	(table["5B"] as MoveData).cancel_targets = ["5D", "5A"]
 	var report := ComboSolver.solve(_options(table))
 	var text := "\n".join(report.to_lines())
-	_check("5A → 5B → 回到 5A" in text, "the cycle path appears in the report")
-	_check("起始状态" in text and "地面中立" in text and "入口 5A" in text,
-		"the cycle section documents its start state and entry move")
-	_check("逐帧回放" in text and "F1 按 U" in text,
-		"the cycle section carries a frame-by-frame replay guide with real keys")
+	_check("5A → 5B → 回到 5A" in text, "the structural loop path appears in the report notes")
+	_check("断开" in text, "the loop is reported as broken by the lap simulation")
+	_check("逐帧回放" not in text, "no replay block is fabricated without a proven cycle")
 
 
 func _test_cycles_sorted_and_report_deterministic() -> void:
@@ -253,7 +239,7 @@ func _test_cycles_sorted_and_report_deterministic() -> void:
 	(table["5B"] as MoveData).cancel_targets = ["5D", "5A"]
 	(table["jB"] as MoveData).landing_cancel_targets = ["5D", "5A"]
 	var report := ComboSolver.solve(_options(table))
-	_check(report.cycles.size() == 1, "only the legal ground back edge is proven; the landing back edge is excluded")
+	_check(report.cycles.is_empty(), "neither back edge is proven: the ground loop decays apart and the landing back edge is excluded")
 	var labels: Array[String] = []
 	for cycle in report.cycles:
 		labels.append(cycle.label())
@@ -339,6 +325,7 @@ func _injected_move(id: String, key: String) -> MoveData:
 	move.hitbox_size = GameParams.ATTACK_HITBOX_SIZE
 	move.hitbox_gap = GameParams.ATTACK_HITBOX_GAP
 	move.hit_profiles = _probe_profiles(GameParams.HITSTUN_FRAMES, GameParams.MOVE_5A_KNOCKBACK)
+	move.starter_grade = MoveData.StarterGrade.D
 	return move
 
 

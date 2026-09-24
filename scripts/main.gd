@@ -25,6 +25,8 @@ var _player: Player
 var _dummy: Dummy
 var _dummy_status: Label
 var _debug_line: Label
+## 最近一次普通连接失败的可读原因（LINK_FAILED 事件驱动；重置清空）。
+var _last_link_fail := ""
 
 
 func _ready() -> void:
@@ -51,6 +53,8 @@ func _physics_process(_delta: float) -> void:
 	for event in events:
 		if event.type == CombatEvent.Type.HIT or event.type == CombatEvent.Type.THROW_HIT:
 			_dummy.flash()
+		if event.type == CombatEvent.Type.LINK_FAILED:
+			_last_link_fail = "%s：%s" % [event.link_move_id, _link_fail_text(event.link_fail_reason)]
 	_update_dummy_status()
 	_update_debug_line()
 
@@ -253,12 +257,50 @@ func _update_dummy_status() -> void:
 	elif session.dummy_state == CombatSession.DummyState.KNOCKED_DOWN:
 		state_text = "普通倒地（%d）" % session.dummy_knockdown_left
 	var posture := "空中" if not session.player_on_ground else "地面"
-	# 两行布局：第一行姿态与血量，第二行受击状态与连段；避免与左侧键位提示重叠。
-	_dummy_status.text = "玩家 %s  木桩 HP %d/%d\n状态 %s  连段 %d hit · %.1f" % [
+	# 起手等级与三层累计修正（C-01/C-02）：连段内的可观察反馈。
+	var combo_text := "无"
+	if session.combo_active:
+		combo_text = "%s起手 修正 伤%.2f/时%.2f/轨%.2f" % [
+			_starter_grade_text(session.combo_starter_grade),
+			session.combo_damage_scale,
+			session.combo_time_scale,
+			session.combo_trajectory_scale,
+		]
+	var link_text := _last_link_fail if _last_link_fail != "" else "—"
+	# 两行布局：第一行姿态与血量，第二行受击状态与连段；连接失败原因第三行。
+	_dummy_status.text = "玩家 %s  木桩 HP %d/%d\n状态 %s  连段 %d hit · %.1f  %s\n连接 %s" % [
 		posture,
 		roundi(session.dummy_hp),
 		GameParams.DUMMY_MAX_HP,
 		state_text,
 		session.combo_hits,
 		session.combo_total_damage,
+		combo_text,
+		link_text,
 	]
+
+
+func _starter_grade_text(grade: MoveData.StarterGrade) -> String:
+	match grade:
+		MoveData.StarterGrade.A:
+			return "A"
+		MoveData.StarterGrade.B:
+			return "B"
+		MoveData.StarterGrade.C:
+			return "C"
+		MoveData.StarterGrade.D:
+			return "D"
+	return "未锁定"
+
+
+func _link_fail_text(reason: CombatEvent.LinkFailReason) -> String:
+	match reason:
+		CombatEvent.LinkFailReason.TARGET_RECOVERED:
+			return "目标已恢复"
+		CombatEvent.LinkFailReason.STATE_INCOMPATIBLE:
+			return "目标状态不接受该招"
+		CombatEvent.LinkFailReason.DISTANCE_INSUFFICIENT:
+			return "距离不足（判定窗口无接触）"
+		CombatEvent.LinkFailReason.CONFIGURATION_GAP:
+			return "未声明该普通连接边"
+	return "未知"

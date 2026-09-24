@@ -47,3 +47,4 @@ direction_derivation = "214D"
 input_alternatives = Array[String]([])
 command_tier = 1
 priority = 1
+starter_grade = 4

@@ -42,6 +42,17 @@ enum CommandTier {
 	SUPER = 2,   ## 超必杀（多段指令 / 显式替代串）
 }
 
+## 起手等级（C-01）：首次实际 HIT 锁定本招声明的等级，决定连段三层修正的
+## starter 倍率与后续有限继续资格；被防、挥空不锁定。未声明属于非法数据，
+## 不按动作键猜测。
+enum StarterGrade {
+	UNSET = 0, ## 未声明（打击招式非法）
+	A = 1,     ## 轻起手：三层修正最差，弹地后不能继续
+	B = 2,
+	C = 3,
+	D = 4,     ## 重起手：修正最好
+}
+
 ## 稳定 id：资源身份，不由文件名推断；manifest 与运行时/Solver 都以它引用招式。
 @export var move_id := ""
 ## 招式类别（打击/普通投）。
@@ -77,6 +88,20 @@ enum CommandTier {
 @export var cancel_targets: Array[String] = []
 ## 命中确认取消窗口：命中后第 0–N 帧（含两端）内允许取消。
 @export var cancel_window_frames := -1
+## 链式取消：命中或被防接触后允许取消进入的普通技 id 列表（独立于命中确认窗口；
+## 挥空无接触不开放）。声明目标时必须同时声明窗口；空列表必须保持窗口未声明。
+@export var chain_cancel_targets: Array[String] = []
+## 链式取消窗口：接触帧起第 0–N 帧（含两端，正常帧计龄，Hitstop 不计）。
+@export var chain_cancel_window_frames := -1
+## 必杀取消：命中或被防接触后允许取消进入的必杀技 id 列表（独立窗口）。
+@export var special_cancel_targets: Array[String] = []
+## 必杀取消窗口：接触帧起第 0–N 帧（含两端）。
+@export var special_cancel_window_frames := -1
+## 普通连接（目押）边：不在取消目标内——前招完全恢复后的首个合法帧按缓存消费、
+## 目标剩余硬直、距离与 active 重叠重新判定（I-06）。每条路线须显式声明。
+@export var link_targets: Array[String] = []
+## 起手等级：首次实际 HIT 锁定；打击招式必须显式声明，未声明整表拒绝。
+@export var starter_grade: StarterGrade = StarterGrade.UNSET
 ## 收尾招式：命中后结束当前连段路线；不主动清除木桩的受击/倒地处理。
 @export var is_finisher := false
 ## jump cancel 配置：命中确认后的取消窗口内允许 Space 取消起跳转入空中追击的

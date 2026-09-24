@@ -127,6 +127,19 @@ static func _validate_move(move: MoveData, errors: Array[String]) -> void:
 		errors.append("[%s] %s: cancel_window_frames — 取消窗口为负或未设置（当前 %d）" % [
 			source, id_label, move.cancel_window_frames,
 		])
+	for pair in [["chain_cancel_targets", move.chain_cancel_targets, "chain_cancel_window_frames", move.chain_cancel_window_frames],
+			["special_cancel_targets", move.special_cancel_targets, "special_cancel_window_frames", move.special_cancel_window_frames]]:
+		var targets: Array[String] = pair[1]
+		var window_field: String = pair[2]
+		var window: int = pair[3]
+		if not targets.is_empty() and window < 0:
+			errors.append("[%s] %s: %s — 矛盾：声明 %d 个目标却未声明窗口（当前 %d）" % [
+				source, id_label, window_field, targets.size(), window,
+			])
+		if targets.is_empty() and window >= 0:
+			errors.append("[%s] %s: %s — 矛盾：没有目标却声明了窗口（当前 %d，空列表须保持未声明 -1）" % [
+				source, id_label, window_field, window,
+			])
 	if move.priority < 0:
 		errors.append("[%s] %s: priority — 优先级为负或未设置（当前 %d）" % [
 			source, id_label, move.priority,
@@ -155,11 +168,14 @@ static func _validate_move(move: MoveData, errors: Array[String]) -> void:
 	# 矛盾字段组合。
 	if move.is_finisher:
 		for pair in [["cancel_targets", move.cancel_targets], ["jump_cancel_targets", move.jump_cancel_targets],
-				["landing_cancel_targets", move.landing_cancel_targets]]:
+				["landing_cancel_targets", move.landing_cancel_targets],
+				["chain_cancel_targets", move.chain_cancel_targets],
+				["special_cancel_targets", move.special_cancel_targets],
+				["link_targets", move.link_targets]]:
 			var field: String = pair[0]
 			var targets: Array[String] = pair[1]
 			if not targets.is_empty():
-				errors.append("[%s] %s: %s — 矛盾：收尾招式不开放命中确认取消" % [source, id_label, field])
+				errors.append("[%s] %s: %s — 矛盾：收尾招式不开放取消或普通连接" % [source, id_label, field])
 	if move.stance == MoveData.Stance.AIR and not move.jump_cancel_targets.is_empty():
 		errors.append("[%s] %s: jump_cancel_targets — 矛盾：jump cancel 只能配置在地面招式上" % [
 			source, id_label,
@@ -200,6 +216,10 @@ static func _validate_strike_fields(move: MoveData, source: String, id_label: St
 		])
 	if move.hit_profiles.is_empty():
 		errors.append("[%s] %s: hit_profiles — 打击招式缺少命中资料（至少一个合法 HitProfile）" % [
+			source, id_label,
+		])
+	if not _enum_in_range(move.starter_grade, 1, 4):
+		errors.append("[%s] %s: starter_grade — 打击招式缺少起手等级（枚举值 0；合法范围 1–4：A/B/C/D，不由动作键推断）" % [
 			source, id_label,
 		])
 	if move.throw_range > 0.0:
@@ -428,7 +448,10 @@ static func _validate_cross_move(move_list: Array, errors: Array[String]) -> voi
 			else:
 				binding_priority[key] = typed.move_id
 		for pair in [["cancel_targets", typed.cancel_targets], ["jump_cancel_targets", typed.jump_cancel_targets],
-				["landing_cancel_targets", typed.landing_cancel_targets]]:
+				["landing_cancel_targets", typed.landing_cancel_targets],
+				["chain_cancel_targets", typed.chain_cancel_targets],
+				["special_cancel_targets", typed.special_cancel_targets],
+				["link_targets", typed.link_targets]]:
 			var field: String = pair[0]
 			var targets: Array[String] = pair[1]
 			for target in targets:
@@ -457,6 +480,9 @@ static func _fresh_copy(move: MoveData) -> MoveData:
 	copy.cancel_targets = move.cancel_targets.duplicate()
 	copy.jump_cancel_targets = move.jump_cancel_targets.duplicate()
 	copy.landing_cancel_targets = move.landing_cancel_targets.duplicate()
+	copy.chain_cancel_targets = move.chain_cancel_targets.duplicate()
+	copy.special_cancel_targets = move.special_cancel_targets.duplicate()
+	copy.link_targets = move.link_targets.duplicate()
 	copy.input_alternatives = move.input_alternatives.duplicate()
 	var profiles: Array[HitProfile] = []
 	for profile in move.hit_profiles:

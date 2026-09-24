@@ -51,30 +51,30 @@ const PHYSICS_TICK := 1.0 / PHYSICS_FPS
 const ATTACK_HITBOX_SIZE := Vector2(64, 60)
 const ATTACK_HITBOX_GAP := 4.0
 
-# 5A 地面起手（issue 11 的基础招式；连段内击退调低以保证 5B 能追上）。
-const MOVE_5A_DAMAGE := 10
+# 5A 地面起手（新基线普通链首招；数值为 frame-data.md v0.2 TUNING_INITIAL）。
+const MOVE_5A_DAMAGE := 8
 const MOVE_5A_STARTUP_FRAMES := 5
-const MOVE_5A_ACTIVE_FRAMES := 7
-const MOVE_5A_RECOVERY_FRAMES := 13
+const MOVE_5A_ACTIVE_FRAMES := 4
+const MOVE_5A_RECOVERY_FRAMES := 10
 const MOVE_5A_KNOCKBACK := 160.0
 
 # 5B 地面连接。
 const MOVE_5B_DAMAGE := 12
-const MOVE_5B_STARTUP_FRAMES := 4
-const MOVE_5B_ACTIVE_FRAMES := 6
-const MOVE_5B_RECOVERY_FRAMES := 13
+const MOVE_5B_STARTUP_FRAMES := 6
+const MOVE_5B_ACTIVE_FRAMES := 5
+const MOVE_5B_RECOVERY_FRAMES := 12
 const MOVE_5B_KNOCKBACK := 160.0
 
-# 5D 地面收尾（收尾不主动清除木桩受击处理，击退放大作为路线终点的视觉反馈）。
+# 5D 地面重攻击（新基线不再是收尾；D 系位移属后续阶段）。
 const MOVE_5D_DAMAGE := 18
-const MOVE_5D_STARTUP_FRAMES := 5
-const MOVE_5D_ACTIVE_FRAMES := 7
-const MOVE_5D_RECOVERY_FRAMES := 15
+const MOVE_5D_STARTUP_FRAMES := 7
+const MOVE_5D_ACTIVE_FRAMES := 4
+const MOVE_5D_RECOVERY_FRAMES := 18
 const MOVE_5D_KNOCKBACK := 320.0
 
-# 5C 地面浮空（C 语义：命中将木桩打入浮空受击）。
-const MOVE_5C_DAMAGE := 14
-const MOVE_5C_STARTUP_FRAMES := 6
+# 5C 地面重攻击（新基线不再是专用 launcher，普通地面命中）。
+const MOVE_5C_DAMAGE := 16
+const MOVE_5C_STARTUP_FRAMES := 8
 const MOVE_5C_ACTIVE_FRAMES := 5
 const MOVE_5C_RECOVERY_FRAMES := 16
 const MOVE_5C_KNOCKBACK := 140.0
@@ -132,8 +132,32 @@ const ACTION_BUFFER_FRAMES := 6
 const DIRECTION_STEP_FRAMES := 10
 # 命中确认取消窗口：命中后第 0–N 帧（含两端）内允许取消。
 const CANCEL_WINDOW_FRAMES := 8
-# 连段伤害递减：第 n 击倍率 = max(下限, 1 - (n-1) × 递减步长)。
-const COMBO_DAMAGE_DECAY := 0.1
+# 起手等级三层倍率（C-01/C-02，frame-data.md 修正初值）：首次实际 HIT 锁定
+# starter grade 并以其倍率初始化三层累计修正；后续每击再乘每击倍率。
+# 伤害层保留 10% 底线；时间/轨迹层不套伤害底线。
+const STARTER_DAMAGE_SCALE := {
+	MoveData.StarterGrade.A: 0.72,
+	MoveData.StarterGrade.B: 0.84,
+	MoveData.StarterGrade.C: 0.93,
+	MoveData.StarterGrade.D: 1.00,
+}
+const STARTER_TIME_SCALE := {
+	MoveData.StarterGrade.A: 0.70,
+	MoveData.StarterGrade.B: 0.82,
+	MoveData.StarterGrade.C: 0.90,
+	MoveData.StarterGrade.D: 0.96,
+}
+const STARTER_TRAJECTORY_SCALE := {
+	MoveData.StarterGrade.A: 0.75,
+	MoveData.StarterGrade.B: 0.85,
+	MoveData.StarterGrade.C: 0.92,
+	MoveData.StarterGrade.D: 0.96,
+}
+# 普通命中每击累计倍率（每次后续命中分别乘入三层；调校初值）。
+const NORMAL_HIT_DAMAGE_SCALE := 0.90
+const NORMAL_HIT_TIME_SCALE := 0.94
+const NORMAL_HIT_TRAJECTORY_SCALE := 0.95
+# 伤害层底线：累计修正不再低于 10%（只作用伤害层）。
 const COMBO_DAMAGE_FLOOR := 0.1
 
 # --- 普通投（issue 17）---

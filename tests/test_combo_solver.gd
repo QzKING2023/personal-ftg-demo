@@ -44,27 +44,29 @@ func _initialize() -> void:
 func _test_default_table_reports_ground_route() -> void:
 	var report := ComboSolver.analyze()
 	_check(report.safe and report.cycles.is_empty(), "default table reports no valid cycle")
-	_check(report.edges.size() == 11, "default table enumerates 11 edges (5 ground cancels incl. 6A, 3 jump cancels incl. 6A, 2 air cancels, 1 landing continuation)")
-	var ab := _find_edge(report, "5A", "5B")
-	_check(ab != null and ab.valid, "5A -> 5B is a valid continuation")
+	_check(report.edges.size() == 18, "default table enumerates 18 edges (6 chain + 3 special + 4 link + 2 jump + 2 air cancels + 1 landing)")
+	var ab := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
+	_check(ab != null and ab.valid, "5A -> 5B is a valid chain continuation")
 	if ab != null:
-		_check(ab.valid and ab.hit_age == 5 and ab.recover_age == 12, "5A -> 5B timing: earliest hit at age 5 (B pairing wait 1 + startup 4), dummy recoverable through age 12 (ground hitstun keeps the dummy grounded)")
-		_check(ab.valid and ab.wait_from == 0 and ab.wait_to == GameParams.CANCEL_WINDOW_FRAMES - GameParams.THROW_COMBINATION_TOLERANCE, "5A -> 5B valid wait range 0-5 (cancel window minus the B pairing wait binds; stun would allow 16)")
-	var bd := _find_edge(report, "5B", "5D")
-	_check(bd != null and bd.valid and bd.hit_age == 5 and bd.recover_age == 12, "5B -> 5D valid: earliest hit at age 5, recover age 12")
-	var derivative := _find_edge(report, "5A", "236C")
-	_check(derivative != null and derivative.valid, "derivative edge 5A -> 236C is validated by feeding 236 before the cancel frame")
+		_check(ab.valid and ab.hit_age == 7 and ab.recover_age == 9, "5A -> 5B chain timing: earliest hit at age 7 (resume age 1 + B startup 6), dummy recoverable through age 9 (A-starter time layer floor(14x0.70))")
+		_check(ab.valid and ab.wait_from == 0 and ab.wait_to == 0, "5A -> 5B valid wait range is 0-0 (chain window 3 admits only the hit-frame press once the B pairing wait resolves)")
+	var bd := _find_edge(report, "5B", "5D", ComboSolver.EdgeKind.CHAIN_CANCEL)
+	_check(bd != null and bd.valid and bd.hit_age == 7 and bd.recover_age == 11, "5B -> 5D chain valid: earliest hit at age 7, recover age 11")
+	var derivative := _find_edge(report, "5A", "236C", ComboSolver.EdgeKind.SPECIAL_CANCEL)
+	_check(derivative != null and derivative.valid, "special-cancel edge 5A -> 236C is validated by feeding 236 before the cancel frame")
 	if derivative != null:
-		_check(derivative.valid and derivative.hit_age == 7, "236C connects 7 frames after 5A's confirm (pairing wait 1 + its own startup 6)")
-	var derivative_two := _find_edge(report, "5B", "214D")
-	_check(derivative_two != null and derivative_two.valid and derivative_two.hit_age == 7, "derivative edge 5B -> 214D is valid (feed 214 during 5B)")
+		_check(derivative.valid and derivative.hit_age == 7, "236C connects 7 frames after 5A's confirm (resume age 1 + its own startup 6)")
+	var derivative_two := _find_edge(report, "5B", "6A", ComboSolver.EdgeKind.CHAIN_CANCEL)
+	_check(derivative_two != null and derivative_two.valid and derivative_two.hit_age == 8, "derivative chain edge 5B -> 6A is valid (feed 6 during 5B)")
+	var link := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.NORMAL_LINK)
+	_check(link != null and not link.valid and "目押超时" in link.reason,
+		"the declared normal-link edge 5A -> 5B is reported as its own type and honestly excluded (dummy recovers at 9 before full recovery at 14)")
 	var route := _find_route(report, ["5A", "5B", "5D"])
 	_check(route != null, "report contains the readable 5A -> 5B -> 5D route")
 	if route != null:
-		_check(route.hit_frames == [6, 11, 16], "route hit frames are 6/11/16 (B cancels land one normal frame after each confirm)")
+		_check(route.hit_frames == [6, 13, 20], "route hit frames are 6/13/20 (B cancels land one normal frame after each confirm)")
 		_check(route.combo_hits == 3, "route counts 3 hits")
-		_check(_approx(route.total_damage, 35.2), "route total damage is 35.2 with decay applied")
-		_check("收尾" in route.note, "route notes the finisher ending while keeping the knockdown handling")
+		_check(_approx(route.total_damage, 24.1), "route total damage is 24.1 with the three-layer corrections applied")
 	_check(report.summary != "" and "未发现" in report.summary, "summary states no cycle was found")
 	_check("不证明" in report.scope, "scope statement disclaims spatial/neutral/collision proofs")
 
@@ -86,27 +88,28 @@ func _test_numbers_match_runtime_session() -> void:
 				recover_frame = frame
 	var report := ComboSolver.analyze()
 	var ab := _find_edge(report, "5A", "5B")
-	_check(hit_frame == 6 and recover_frame == 6 + GameParams.HITSTOP_FRAMES + GameParams.HITSTUN_FRAMES, "runtime 5A hits on frame 6 and naturally recovers after the freeze plus grounded hitstun")
-	_check(ab != null and ab.valid and ab.recover_age == recover_frame - hit_frame - GameParams.HITSTOP_FRAMES, "solver recover age (12 normal frames) matches the runtime session minus the frozen frames")
+	_check(hit_frame == 6 and recover_frame == 6 + GameParams.HITSTOP_FRAMES + 9, "runtime 5A hits on frame 6 and naturally recovers after the freeze plus the A-starter-scaled hitstun (floor(14x0.70) = 9)")
+	_check(ab != null and ab.valid and ab.recover_age == recover_frame - hit_frame - GameParams.HITSTOP_FRAMES, "solver recover age (9 normal frames) matches the runtime session minus the frozen frames")
 	var route := _find_route(report, ["5A", "5B", "5D"])
-	_check(route != null and route.hit_frames == [6, 11, 16], "solver route hit frames follow the new B pairing-wait timing (w=0 cancels resume on the first normal frame)")
+	_check(route != null and route.hit_frames == [6, 13, 20], "solver route hit frames follow the B pairing-wait timing (w=0 cancels resume on the first normal frame)")
 
 
 func _test_injected_valid_back_edge_reports_cycle() -> void:
+	# C-01 起手修正模型下的循环边界：注入有效的 5B -> 5A 命中确认回边后，
+	# 5A ↔ 5B 结构回路存在，但三层修正使每次命中的受击计时逐击缩短
+	# （A 起手 0.70 × 0.94^(n-1)），逐圈模拟在受击时间不足以容纳下一击时
+	# 自然断链——不设全局命中数上限，也不把衰减断链误报为可证明循环。
 	var table := MoveData.default_table()
 	(table["5B"] as MoveData).cancel_targets = ["5D", "5A"]
 	var report := ComboSolver.analyze(table)
-	_check(not report.safe, "report is unsafe after injecting the valid 5B -> 5A back edge")
-	_check(report.cycles.size() == 1, "exactly one valid cycle is detected")
-	if report.cycles.size() == 1:
-		var cycle := report.cycles[0]
-		_check(cycle.route == ["5A", "5B"], "cycle route is 5A -> 5B -> back to 5A")
-		_check(cycle.proven, "cycle is proven by lap simulation with settlement-state recurrence")
-		_check(cycle.period_frames == 10, "cycle period is 10 normal frames (5 per hit; the ground-stunned dummy no longer hops, so the settlement state recurs every lap)")
-		_check(cycle.laps_observed == 3, "state recurrence is observed at the start of lap 3: the full settlement-state key (issue 21) needs one steady-state lap before the starter hit recurs exactly")
+	_check(report.safe and report.cycles.is_empty(), "the decayed-stun loop breaks naturally instead of being proven (corrections change the settlement state every lap)")
 	var ba := _find_edge(report, "5B", "5A")
-	_check(ba != null and ba.valid and ba.hit_age == 5 and ba.recover_age == 12, "back edge 5B -> 5A is valid: earliest hit age 5 <= recover age 12")
-	_check("有效循环" in report.summary, "summary reports the effective cycle")
+	_check(ba != null and ba.valid and ba.hit_age == 5 and ba.recover_age == 11, "back edge 5B -> 5A is itself valid: earliest hit age 5 <= recover age 11")
+	var broken := false
+	for note in report.notes:
+		if "5A → 5B" in note and "断开" in note:
+			broken = true
+	_check(broken, "the structural loop is reported as broken by the lap simulation (hitstun decay)")
 
 
 func _test_injected_slow_back_edge_not_misreported() -> void:
@@ -128,7 +131,7 @@ func _test_injected_slow_back_edge_not_misreported() -> void:
 	_check(be != null and not be.valid, "timeout back edge 5B -> 5E is excluded")
 	if be != null:
 		_check("等待超时" in be.reason and "恢复" in be.reason, "exclusion reason says the hit lands after dummy recovery")
-		_check(be.hit_age == 25 and be.recover_age == 12, "timing: earliest hit age 25 > recover age 12")
+		_check(be.hit_age == 25 and be.recover_age == 11, "timing: earliest hit age 26 > recover age 11 (5B solo B-starter stun floor(14x0.82))")
 	var ea := _find_edge(report, "5E", "5A")
 	_check(ea != null and ea.valid, "the structural edge 5E -> 5A is itself still valid")
 	_check(report.safe and report.cycles.is_empty(), "a timing-insufficient back edge is never misreported as a cycle")
@@ -146,12 +149,13 @@ func _test_injected_stance_back_edge_not_misreported() -> void:
 
 
 func _test_finisher_back_edge_not_misreported() -> void:
-	# 收尾招式命中即结束连段、不开放命中确认取消：5D → 5A 结构回边不可行。
+	# 收尾招式命中即结束连段、不开放命中确认取消：5D 不再是收尾（新基线），
+	# 仍为收尾的 214D 的结构回边不可行。
 	var table := MoveData.default_table()
-	(table["5D"] as MoveData).cancel_targets = ["5A"]
+	(table["214D"] as MoveData).cancel_targets = ["5A"]
 	var report := ComboSolver.analyze(table)
-	var edge := _find_edge(report, "5D", "5A")
-	_check(edge != null and not edge.valid, "finisher back edge 5D -> 5A is excluded")
+	var edge := _find_edge(report, "214D", "5A")
+	_check(edge != null and not edge.valid, "finisher back edge 214D -> 5A is excluded")
 	if edge != null:
 		_check("收尾" in edge.reason, "exclusion reason says the finisher ends the combo and opens no cancel")
 	_check(report.safe and report.cycles.is_empty(), "a finisher back edge is never misreported as a cycle")
@@ -203,16 +207,16 @@ func _test_wait_window_clamped_by_window_and_hitstun() -> void:
 func _test_default_table_air_edges() -> void:
 	# 验收 1：空中姿态取消、jump cancel 配置与显式落地接续都进入接续图，并在真实结算中验证。
 	var report := ComboSolver.analyze()
-	var jump_5c := _find_edge(report, "5C", "jA", ComboSolver.EdgeKind.JUMP_CANCEL)
-	_check(jump_5c != null and jump_5c.valid, "5C -> jA is a valid jump-cancel edge")
-	if jump_5c != null:
-		_check(jump_5c.valid and jump_5c.hit_age == 5 + GameParams.PLAYER_PREJUMP_FRAMES, "jump-canceled jA hits 9 frames after 5C's confirm (Space on the hit frame, prep 4, press at takeoff+1, startup 4)")
+	var jump_6a := _find_edge(report, "6A", "jA", ComboSolver.EdgeKind.JUMP_CANCEL)
+	_check(jump_6a != null and jump_6a.valid, "6A -> jA is a valid jump-cancel edge (5C no longer launches: baseline)")
+	if jump_6a != null:
+		_check(jump_6a.valid and jump_6a.hit_age == 5 + GameParams.PLAYER_PREJUMP_FRAMES, "jump-canceled jA hits 9 frames after 6A's confirm (Space on the hit frame, prep 4, press at takeoff+1, startup 4)")
 	var jump_236c := _find_edge(report, "236C", "jA", ComboSolver.EdgeKind.JUMP_CANCEL)
 	_check(jump_236c != null and jump_236c.valid and jump_236c.hit_age == 5 + GameParams.PLAYER_PREJUMP_FRAMES, "236C -> jA is a valid jump-cancel edge from the derivative launcher")
 	var air_cancel := _find_edge(report, "jA", "jB", ComboSolver.EdgeKind.CANCEL)
 	_check(air_cancel != null and air_cancel.valid, "jA -> jB is a valid air cancel")
 	if air_cancel != null:
-		_check(air_cancel.valid and air_cancel.hit_age == 5 and air_cancel.wait_to == GameParams.CANCEL_WINDOW_FRAMES - GameParams.THROW_COMBINATION_TOLERANCE, "jA -> jB hits at age 5 (B pairing wait 1 + startup 4); the cancel window minus the wait binds, not the dummy recovery")
+		_check(air_cancel.valid and air_cancel.hit_age == 5 and air_cancel.wait_to == 3, "jA -> jB hits at age 5 (resume age 1 + startup 4); the time-decayed dummy recovery binds the wait range to 0-3")
 	var air_finisher := _find_edge(report, "jB", "jD", ComboSolver.EdgeKind.CANCEL)
 	_check(air_finisher != null and air_finisher.valid and air_finisher.hit_age == 4, "jB -> jD is a valid air cancel into the finisher")
 	var landing := _find_edge(report, "jB", "5D", ComboSolver.EdgeKind.LANDING_CANCEL)
@@ -230,7 +234,7 @@ func _test_full_air_route_matches_runtime() -> void:
 	if route == null:
 		return
 	_check(route.hit_frames == [6, 13, 22, 27, 31], "air route hits on frames 6/13/22/27/31 (w=0 cancels with the B pairing wait, earliest air press after pre-jump)")
-	_check(route.combo_hits == 5 and _approx(route.total_damage, 53.0), "air route counts 5 hits for 53.0 total, matching the runtime air-route test")
+	_check(route.combo_hits == 5 and _approx(route.total_damage, 37.9), "air route counts 5 hits for 37.9 total (three-layer corrections), matching the runtime air-route test")
 	var replay := _replay_inputs(route.inputs, route.hit_frames[route.hit_frames.size() - 1])
 	_check(replay.hit_frames == route.hit_frames, "replaying the solver schedule on a fresh CombatSession reproduces every hit frame")
 	_check(replay.combo_hits == 5 and _approx(replay.total_damage, route.total_damage), "replay matches combo count and decayed damage")
@@ -261,8 +265,8 @@ func _test_jump_cancel_config_gates() -> void:
 		_check("二段跳" in air_jump.reason or "滞空" in air_jump.reason, "exclusion reason cites the no-double-jump rule")
 	var ground_target := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.JUMP_CANCEL)
 	_check(ground_target != null and not ground_target.valid, "a jump-cancel target must be an air move")
-	var cancel_still := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.CANCEL)
-	_check(cancel_still != null and cancel_still.valid, "the plain 5A -> 5B cancel is unaffected by jump-cancel misuse")
+	var cancel_still := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
+	_check(cancel_still != null and cancel_still.valid, "the plain 5A -> 5B chain cancel is unaffected by jump-cancel misuse")
 	_check(report.safe and report.cycles.is_empty(), "misconfigured jump cancels never create cycles")
 
 
@@ -326,26 +330,36 @@ func _test_solver_claims_only_configured_connections() -> void:
 	# 验收 5：Solver 只主张招式数据配置过的连接——边集等于配置关系集，
 	# 空中段只能经配置的 jump cancel 进入，路线只从地面普通动作键起手。
 	var report := ComboSolver.analyze()
+	## 配置关系集 = 声明的取消/连接边：6 条链式、3 条必杀、4 条普通连接
+	## （5A→5B、5B→5C、5B→5D、5C→5D）、2 条 jump cancel、2 条空中取消、1 条落地接续。
 	var pairs := [
-		["5A", "5B"], ["5A", "236C"], ["5A", "6A"], ["5B", "5D"], ["5B", "214D"],
-		["5C", "jA"], ["236C", "jA"], ["6A", "jA"], ["jA", "jB"], ["jB", "jD"], ["jB", "5D"],
+		["5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL], ["5B", "5C", ComboSolver.EdgeKind.CHAIN_CANCEL],
+		["5B", "6A", ComboSolver.EdgeKind.CHAIN_CANCEL], ["5B", "5D", ComboSolver.EdgeKind.CHAIN_CANCEL],
+		["5C", "6A", ComboSolver.EdgeKind.CHAIN_CANCEL], ["5C", "5D", ComboSolver.EdgeKind.CHAIN_CANCEL],
+		["5A", "236C", ComboSolver.EdgeKind.SPECIAL_CANCEL], ["5B", "236C", ComboSolver.EdgeKind.SPECIAL_CANCEL],
+		["5C", "236C", ComboSolver.EdgeKind.SPECIAL_CANCEL],
+		["5A", "5B", ComboSolver.EdgeKind.NORMAL_LINK], ["5B", "5C", ComboSolver.EdgeKind.NORMAL_LINK],
+		["5B", "5D", ComboSolver.EdgeKind.NORMAL_LINK], ["5C", "5D", ComboSolver.EdgeKind.NORMAL_LINK],
+		["236C", "jA", ComboSolver.EdgeKind.JUMP_CANCEL], ["6A", "jA", ComboSolver.EdgeKind.JUMP_CANCEL],
+		["jA", "jB", ComboSolver.EdgeKind.CANCEL], ["jB", "jD", ComboSolver.EdgeKind.CANCEL],
+		["jB", "5D", ComboSolver.EdgeKind.LANDING_CANCEL],
 	]
 	_check(report.edges.size() == pairs.size(), "the default report enumerates exactly the configured continuation relations")
 	var reported := {}
 	for edge in report.edges:
-		var key := "%s|%s" % [edge.from_id, edge.to_id]
+		var key := "%s|%s|%d" % [edge.from_id, edge.to_id, edge.kind]
 		_check(not reported.has(key), "no duplicated edge for %s" % key)
 		reported[key] = true
 	var all_configured := true
 	for pair in pairs:
-		if not reported.has("%s|%s" % [pair[0], pair[1]]):
+		if not reported.has("%s|%s|%d" % [pair[0], pair[1], pair[2]]):
 			all_configured = false
-	_check(all_configured, "every configured relation appears exactly once (no 5A -> 5D, no unconfigured jA -> jD, nothing invented)")
+	_check(all_configured, "every configured relation appears exactly once (no 5A -> 6A cancel, no unconfigured jA -> jD, nothing invented)")
 	var into_ja: Array[String] = []
 	for edge in report.edges:
-		if edge.to_id == "jA":
+		if edge.to_id == "jA" and edge.kind == ComboSolver.EdgeKind.JUMP_CANCEL:
 			into_ja.append(edge.from_id)
-	_check(into_ja == ["5C", "6A", "236C"], "jA is reached only through the configured jump-cancel launchers — no neutral-jump or spatial claim")
+	_check(into_ja == ["6A", "236C"], "jA is reached only through the configured jump-cancel launchers — no neutral-jump or spatial claim")
 	var starts_plain := true
 	for route in report.routes:
 		var first: String = route.move_ids[0]
@@ -503,6 +517,7 @@ func _injected_move(id: String, key: String) -> MoveData:
 	move.hitbox_size = GameParams.ATTACK_HITBOX_SIZE
 	move.hitbox_gap = GameParams.ATTACK_HITBOX_GAP
 	move.hit_profiles = _probe_profiles(GameParams.HITSTUN_FRAMES, GameParams.MOVE_5A_KNOCKBACK)
+	move.starter_grade = MoveData.StarterGrade.D
 	return move
 
 

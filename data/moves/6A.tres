@@ -46,3 +46,4 @@ landing_cancel_targets = Array[String]([])
 direction_derivation = "6A"
 input_alternatives = Array[String]([])
 priority = 2
+starter_grade = 3

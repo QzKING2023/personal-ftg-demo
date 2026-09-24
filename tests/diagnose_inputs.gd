@@ -117,9 +117,10 @@ func _s4_qcb_during_move() -> void:
 	# 出招期间的 214D：5A 命中确认 → 取消进 5B → 5B 出招期间搓 214 按 J。
 	# 出招期间运动阶段不改面向，方向序列应稳定录得 214 → 经取消窗口接续 214D。
 	# 该场景与 S3 的对照用于证伪/证实“面向翻转污染”假设。
-	# issue 17 起 B 是投组合成员键：B@F12 在停顿内按下、等待 F15 到期，恢复首帧
-	# F15 即消费取消起手 5B（F19 命中）；214 于 F16–F18 搓入、D@F18 在 5B 命中帧
-	# 同帧取消起手 214D（F26 命中）。
+	# 新基线（2026-09-24）：214D 不再是 5B 的取消目标。B@F12 在停顿内按下、等待
+	# 到期，恢复首帧 F15 以链式取消起手 5B（F21 命中）；214 于 F38–F40 搓入、
+	# D@F40 缓存（6 帧缓存覆盖 5B 完全恢复的 F45），5B 收招后作为独立招式起手
+	# 214D（F52 以新连段命中中立木桩）。
 	var session := CombatSession.new()
 	_place_dummy(session, NEAR_OFFSET)
 	var trace: Array[String] = []
@@ -127,15 +128,15 @@ func _s4_qcb_during_move() -> void:
 		_step("U", 0, false, "A"),
 		_step("—", 0, false, "", false, 10),
 		_step("I", 0, false, "B"),
-		_step("—", 0, false, "", false, 3),
+		_step("—", 0, false, "", false, 25),
 		_step("S", 0, true),
 		_step("S+A", -1, true),
 		_step("A+J", -1, false, "D"),
 		_step("—", 0, false, "", false, 30),
 	], trace)
 	_print_scenario("S4 出招期间 214D（U → I → S → S+A → A+J，命中确认取消）", trace)
-	_expect(run["move_ids"].has("214D"), "S4: 出招期间 214D 被识别并经取消接续（识别+接续阶段）")
-	_expect(int(run["hits"]) == 3, "S4: 5A → 5B → 214D 三击全部命中（命中阶段）")
+	_expect(run["move_ids"].has("214D"), "S4: 出招期间 214D 被识别并起手（识别阶段；已废弃取消路线改为收招后独立起手）")
+	_expect(int(run["hits"]) == 3, "S4: 5A → 5B 两击经链式取消命中，214D 于 5B 完全恢复后独立命中（新连段）")
 
 	# 挥空变体：木桩在射程外，同样的输入。挥空不产生取消资格，缓存按年龄过期——
 	# 这是现行设计（挥空不产生命中确认取消），记录为“识别后未能接续”的预期行为。
@@ -146,16 +147,16 @@ func _s4_qcb_during_move() -> void:
 		_step("U", 0, false, "A"),
 		_step("—", 0, false, "", false, 10),
 		_step("I", 0, false, "B"),
-		_step("—", 0, false, "", false, 3),
+		_step("—", 0, false, "", false, 25),
 		_step("S", 0, true),
 		_step("S+A", -1, true),
 		_step("A+J", -1, false, "D"),
 		_step("—", 0, false, "", false, 30),
 	], whiff_trace)
 	_print_scenario("S4w 挥空时的出招期间 214D（现行设计：无取消资格，缓存过期）", whiff_trace)
-	_expect(not whiff_run["move_ids"].has("214D") and int(whiff_run["hits"]) == 0,
-		"S4w: 挥空时 214D 识别后不接续、不起手（现行设计的预期行为）")
-	_note("S4w 分类：识别后未能接续（挥空无取消资格，动作缓存 6 帧内未消费即作废）")
+	_expect(whiff_run["move_ids"].has("214D") and int(whiff_run["hits"]) == 0,
+		"S4w: 挥空时 214D 识别并独立起手，但木桩在射程外挥空零命中（现行设计的预期行为）")
+	_note("S4w 分类：识别后按独立招式起手，无取消资格、无命中（挥空不产生连段）")
 
 
 func _s5_jump_reverse_input() -> void:

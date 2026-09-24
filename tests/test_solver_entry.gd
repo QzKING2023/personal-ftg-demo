@@ -116,9 +116,9 @@ func _test_guide_uses_real_keys_for_both_facings() -> void:
 			break
 	_check(route_line != "", "the 5A → 5B → 5D route has an operation guide")
 	if route_line != "":
-		_check("F1 按 U" in route_line and "F6 按 I" in route_line and "F11 按 J" in route_line,
+		_check("F1 按 U" in route_line and "F6 按 I" in route_line and "F13 按 J" in route_line,
 			"guide presses use the real action keys U/I/J at the scheduled frames")
-		_check("等 4 帧" in route_line, "the guide states the wait frames between presses")
+		_check("等 4 帧" in route_line and "等 6 帧" in route_line, "the guide states the wait frames between presses")
 	var derivative_line := ""
 	for line in report.guide_lines:
 		if line.begins_with("5A → 236C"):
@@ -169,8 +169,8 @@ func _test_explicit_air_start_reports_air_route() -> void:
 	if route != null:
 		_check(route.hit_frames == [5, 10, 14],
 			"air route hits on frames 5/10/14 measured from the first air frame")
-		_check(route.combo_hits == 3 and _approx(route.total_damage, 34.8),
-			"air route counts 3 hits for 34.8 decayed damage")
+		_check(route.combo_hits == 3 and _approx(route.total_damage, 25.3),
+			"air route counts 3 hits for 25.3 corrected damage (jA is an A starter: 5.8 + 7.8 + 11.7)")
 		_check(not route.inputs.is_empty(), "the explicit-state route still carries frame-by-frame replay inputs")
 
 
@@ -265,17 +265,17 @@ func _test_solve_refuses_invalid_manifest_with_shared_reason() -> void:
 
 func _test_solve_reflects_resource_changes() -> void:
 	var table := MoveData.default_table()
-	(table["5B"] as MoveData).startup_frames = 6
+	(table["5B"] as MoveData).startup_frames = 4
 	var opts := ComboSolver.SolverOptions.new()
 	opts.move_table = table
 	var report := ComboSolver.solve(opts)
-	var ab := _find_edge(report, "5A", "5B")
+	var ab := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	_check(ab != null and ab.valid, "the edited table still yields the 5A → 5B edge")
 	if ab != null:
-		_check(ab.hit_age == 7, "editing the shared move's startup moves the timing report (earliest hit age 5 → 7)")
-		_check("前摇 6 帧" in ab.reason, "the edge reason quotes the edited startup value")
-	var default_ab := _find_edge(ComboSolver.solve(), "5A", "5B")
-	_check(default_ab != null and default_ab.hit_age == 5,
+		_check(ab.hit_age == 5, "editing the shared move's startup moves the timing report (earliest hit age 7 → 5)")
+		_check("前摇 4 帧" in ab.reason, "the edge reason quotes the edited startup value")
+	var default_ab := _find_edge(ComboSolver.solve(), "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
+	_check(default_ab != null and default_ab.hit_age == 7,
 		"the default manifest still reports the untouched baseline")
 
 

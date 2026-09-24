@@ -53,11 +53,11 @@ func _test_default_manifest_loads_shared_table() -> void:
 
 
 func _test_default_table_entries_match_manifest() -> void:
-	# 首版冻结数值（spec：招式数据边界与校验）：startup/active/recovery 与基础伤害。
+	# 新基线调校初值（frame-data.md v0.2 TUNING_INITIAL）：startup/active/recovery 与基础伤害。
 	var result := MoveTable.load_default()
 	var expected := {
-		"5A": [5, 7, 13, 10], "5B": [4, 6, 13, 12], "5C": [6, 5, 16, 14],
-		"236C": [6, 5, 18, 18], "5D": [5, 7, 15, 18], "214D": [7, 5, 20, 22],
+		"5A": [5, 4, 10, 8], "5B": [6, 5, 12, 12], "5C": [8, 5, 16, 16],
+		"236C": [6, 5, 18, 18], "5D": [7, 4, 18, 18], "214D": [7, 5, 20, 22],
 		"jA": [4, 6, 10, 8], "jB": [4, 6, 12, 12], "jD": [4, 7, 14, 20],
 		"BC": [5, 11, 10, -1],
 	}
@@ -65,7 +65,7 @@ func _test_default_table_entries_match_manifest() -> void:
 		var move := result.moves[move_id] as MoveData
 		var values: Array = expected[move_id]
 		_check([move.startup_frames, move.active_frames, move.recovery_frames, move.base_damage] == values,
-			"%s carries the frozen first-edition windows and damage" % move_id)
+			"%s carries the baseline tuning windows and damage" % move_id)
 	var launcher := result.moves["236C"] as MoveData
 	var launch_profile := MoveData.profile_for(launcher, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)
 	_check(launcher.direction_derivation == "236C" and launch_profile != null
@@ -74,6 +74,35 @@ func _test_default_table_entries_match_manifest() -> void:
 	_check(launcher.jump_cancel_targets == ["jA"], "236C declares its jump cancel target")
 	var air := result.moves["jD"] as MoveData
 	_check(air.stance == MoveData.Stance.AIR and air.is_finisher, "jD is an air finisher")
+	# 阶段 3 新职责：5C 是普通地面重攻击（不再是专用 launcher，无 jump cancel），
+	# 5D 不再是收尾；四招显式声明起手等级、链式/必杀取消与普通连接边。
+	var five_c := result.moves["5C"] as MoveData
+	var five_c_profile := MoveData.profile_for(five_c, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)
+	_check(five_c_profile != null and five_c_profile.reaction == HitProfile.Reaction.GROUND_HITSTUN
+		and five_c_profile.ground_stun_frames == 14,
+		"5C grounded hit is a normal ground hitstun profile (no longer a dedicated launcher)")
+	_check(five_c.jump_cancel_targets.is_empty(), "5C no longer declares jump cancel")
+	var five_d := result.moves["5D"] as MoveData
+	_check(not five_d.is_finisher and five_d.link_targets.is_empty() and five_d.cancel_targets.is_empty(),
+		"5D is no longer a finisher and declares no reverse 5B link or cancel edge")
+	var five_a := result.moves["5A"] as MoveData
+	_check(five_a.chain_cancel_targets == ["5B"] and five_a.chain_cancel_window_frames == 3,
+		"5A declares its chain cancel edge to 5B with the 3f window")
+	_check(five_a.special_cancel_targets == ["236C"] and five_a.special_cancel_window_frames == 5,
+		"5A declares its special cancel edge to 236C with the 5f window")
+	_check(five_a.link_targets == ["5B"], "5A declares the normal link edge to 5B")
+	var five_b := result.moves["5B"] as MoveData
+	_check(five_b.chain_cancel_targets == ["5C", "6A", "5D"] and five_b.link_targets == ["5C", "5D"],
+		"5B declares its chain cancel and link edges per the baseline matrix")
+	_check(five_c.chain_cancel_targets == ["6A", "5D"] and five_c.link_targets == ["5D"],
+		"5C declares its chain cancel and link edges per the baseline matrix")
+	var grades := {
+		"5A": MoveData.StarterGrade.A, "5B": MoveData.StarterGrade.B,
+		"5C": MoveData.StarterGrade.C, "5D": MoveData.StarterGrade.D,
+	}
+	for move_id in grades:
+		_check((result.moves[move_id] as MoveData).starter_grade == grades[move_id],
+			"%s explicitly declares its starter grade" % move_id)
 	for move_id in result.moves:
 		var move := result.moves[move_id] as MoveData
 		if move.is_throw():
@@ -82,6 +111,7 @@ func _test_default_table_entries_match_manifest() -> void:
 		_check(move.move_kind == MoveData.MoveKind.STRIKE, "%s declares move kind strike" % move_id)
 		_check(move.action_key != "" and move.priority >= 0, "%s declares input binding and priority" % move_id)
 		_check(move.attack_attribute != MoveData.AttackAttribute.UNSET, "%s declares an attack attribute" % move_id)
+		_check(move.starter_grade != MoveData.StarterGrade.UNSET, "%s declares a starter grade" % move_id)
 
 
 func _test_loads_return_fresh_copies() -> void:
@@ -90,13 +120,13 @@ func _test_loads_return_fresh_copies() -> void:
 	var second := MoveTable.load_default()
 	_check(first.moves["5A"] != second.moves["5A"], "two loads return distinct move instances")
 	(first.moves["5A"] as MoveData).base_damage = 999
-	_check((second.moves["5A"] as MoveData).base_damage == 10, "mutating one copy does not leak into other loads")
+	_check((second.moves["5A"] as MoveData).base_damage == 8, "mutating one copy does not leak into other loads")
 
 
 # --- 整表校验：打击/投技必填字段 ---
 
 func _test_missing_strike_fields_reject_whole_table() -> void:
-	for field in ["base_damage", "attack_attribute", "hitbox_size", "hit_profiles", "action_key"]:
+	for field in ["base_damage", "attack_attribute", "hitbox_size", "hit_profiles", "action_key", "starter_grade"]:
 		var moves := _valid_strike_list()
 		var move: MoveData = moves[0]
 		if field == "attack_attribute":
@@ -390,12 +420,12 @@ func _test_startup_edit_syncs_session_and_solver() -> void:
 	_check(session_hit == 9, "session hit frame follows the edited startup (6 -> 9)")
 	var report := ComboSolver.analyze(moves)
 	var route := _find_route(report, ["5A", "5B", "5D"])
-	_check(route != null and route.hit_frames == [9, 14, 19],
-		"solver report follows the same edited startup (route hit frames 9/14/19; the B cancel lands one normal frame after the confirm)")
+	_check(route != null and route.hit_frames == [9, 16, 23],
+		"solver report follows the same edited startup (route hit frames 9/16/23; the B chain cancel lands one normal frame after the confirm)")
 	var baseline := ComboSolver.analyze()
 	var baseline_route := _find_route(baseline, ["5A", "5B", "5D"])
-	_check(baseline_route != null and baseline_route.hit_frames == [6, 11, 16],
-		"unmodified shared table keeps the baseline route (6/11/16 with the B pairing wait)")
+	_check(baseline_route != null and baseline_route.hit_frames == [6, 13, 20],
+		"unmodified shared table keeps the baseline route (6/13/20 with the B pairing wait)")
 
 
 func _test_damage_edit_syncs_session_and_solver() -> void:
@@ -405,12 +435,14 @@ func _test_damage_edit_syncs_session_and_solver() -> void:
 	session.dummy_position = session.player_position + Vector2(70, 0)
 	for frame in range(1, 12):
 		session.step(FrameInput.make(0, false, "A" if frame == 1 else ""))
-	_check(absf(session.dummy_hp - (GameParams.DUMMY_MAX_HP - 25.0)) < 0.05,
-		"session damage follows the edited base damage")
+	## A 起手首击：round0.1(25 × 0.72) = 18.0。
+	_check(absf(session.dummy_hp - (GameParams.DUMMY_MAX_HP - 18.0)) < 0.05,
+		"session damage follows the edited base damage through the A starter scale")
 	var report := ComboSolver.analyze(moves)
 	var route := _find_route(report, ["5A", "5B", "5D"])
-	_check(route != null and _approx(route.total_damage, 50.2),
-		"solver route total damage follows the same edit (25 + decayed 5B/5D = 50.2)")
+	## 18.0 + round0.1(12 × 0.72×0.90) + round0.1(18 × 0.72×0.90×0.90) = 18.0 + 7.8 + 10.5。
+	_check(route != null and _approx(route.total_damage, 36.3),
+		"solver route total damage follows the same edit (25 scaled by the three-layer corrections: 18.0 + 7.8 + 10.5)")
 
 
 func _test_attribute_edit_syncs_session_and_solver() -> void:
@@ -429,10 +461,12 @@ func _test_attribute_edit_syncs_session_and_solver() -> void:
 
 func _test_cancel_edit_syncs_session_and_solver() -> void:
 	var moves := MoveTable.load_default().moves
-	(moves["5A"] as MoveData).cancel_targets = ["236C"]
+	(moves["5A"] as MoveData).chain_cancel_targets = []
+	(moves["5A"] as MoveData).chain_cancel_window_frames = -1
+	(moves["5A"] as MoveData).link_targets = []
 	var report := ComboSolver.analyze(moves)
-	_check(_find_edge(report, "5A", "5B") == null, "removing the configured cancel drops the solver edge")
-	_check(_find_edge(report, "5A", "236C") != null, "the remaining configured cancel is still analyzed")
+	_check(_find_edge(report, "5A", "5B") == null, "removing the configured chain cancel and link drops the solver edges")
+	_check(_find_edge(report, "5A", "236C") != null, "the remaining configured special cancel is still analyzed")
 	var session := CombatSession.new(moves)
 	session.dummy_position = session.player_position + Vector2(70, 0)
 	var saw_cancel := false
@@ -441,7 +475,7 @@ func _test_cancel_edit_syncs_session_and_solver() -> void:
 		session.step(FrameInput.make(0, false, key))
 		if session.player_move_id == "5B":
 			saw_cancel = true
-	_check(not saw_cancel, "session no longer cancels 5A into 5B without the configured target")
+	_check(not saw_cancel, "session no longer cancels 5A into 5B without the configured chain target")
 
 
 # --- Solver 拒绝 ---
@@ -481,6 +515,7 @@ func _valid_strike(id: String, key: String) -> MoveData:
 	move.attack_attribute = MoveData.AttackAttribute.HIGH
 	move.hitbox_size = Vector2(64, 60)
 	move.hitbox_gap = 4.0
+	move.starter_grade = MoveData.StarterGrade.A
 	var normal := HitProfile.new()
 	normal.target_state = HitProfile.TargetState.GROUNDED
 	normal.hit_context = HitProfile.HitContext.NORMAL

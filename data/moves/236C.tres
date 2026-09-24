@@ -38,3 +38,4 @@ direction_derivation = "236C"
 input_alternatives = Array[String]([])
 command_tier = 1
 priority = 1
+starter_grade = 4

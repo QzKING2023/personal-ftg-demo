@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="MoveData" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="MoveData" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/combat/move_data.gd" id="1_f8ftx"]
 [ext_resource type="Script" path="res://scripts/combat/hit_profile.gd" id="2_hitprofile"]
@@ -8,7 +8,16 @@ script = ExtResource("2_hitprofile")
 target_state = 1
 hit_context = 1
 reaction = 1
-ground_stun_frames = 12
+ground_stun_frames = 14
+horizontal_speed_px_s = 160.0
+upward_speed_px_s = 0.0
+
+[sub_resource type="Resource" id="HitProfile_5b_counter"]
+script = ExtResource("2_hitprofile")
+target_state = 1
+hit_context = 2
+reaction = 1
+ground_stun_frames = 18
 horizontal_speed_px_s = 160.0
 upward_speed_px_s = 0.0
 
@@ -18,19 +27,25 @@ move_id = "5B"
 move_kind = 1
 stance = 1
 action_key = "B"
-startup_frames = 4
-active_frames = 6
-recovery_frames = 13
+startup_frames = 6
+active_frames = 5
+recovery_frames = 12
 base_damage = 12
-attack_attribute = 1
+attack_attribute = 2
 air_attack = false
-hitbox_size = Vector2(64, 60)
-hitbox_gap = 4.0
-hit_profiles = Array[Resource]([SubResource("HitProfile_5b_normal")])
+hitbox_size = Vector2(42, 28)
+hitbox_gap = 3.0
+hit_profiles = Array[Resource]([SubResource("HitProfile_5b_normal"), SubResource("HitProfile_5b_counter")])
 throw_range = -1.0
 extra_landing_recovery_frames = 0
-cancel_targets = Array[String](["5D", "214D"])
+cancel_targets = Array[String]([])
 cancel_window_frames = 8
+chain_cancel_targets = Array[String](["5C", "6A", "5D"])
+chain_cancel_window_frames = 3
+special_cancel_targets = Array[String](["236C"])
+special_cancel_window_frames = 5
+link_targets = Array[String](["5C", "5D"])
+starter_grade = 2
 is_finisher = false
 jump_cancel_targets = Array[String]([])
 landing_cancel_targets = Array[String]([])

@@ -46,3 +46,4 @@ landing_cancel_targets = Array[String](["5D"])
 direction_derivation = ""
 input_alternatives = Array[String]([])
 priority = 1
+starter_grade = 2

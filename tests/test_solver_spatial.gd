@@ -59,12 +59,26 @@ func _test_without_spatial_data_routes_are_timing_valid_only() -> void:
 
 func _test_spatial_data_verifies_distance_grid_both_facings() -> void:
 	var report := ComboSolver.solve(_spatial_options())
+	## 新基线调校命中框更短：5A（30×24、gap 2）的远缘恰为 56 px——80 px 站位
+	## 与身体矩形相邻（Godot 相邻矩形不算相交），5A 起手的路线在 80 px 空间失败、
+	## 其余站位与其余起手（5B/5C/5D/6A/236C…）路线空间成立。失败被诚实上报，
+	## 不隐藏也不升级为时序结论。
 	for route in report.routes:
-		_check(route.timing_valid and route.spatial_state == ComboSolver.SolverRoute.SpatialState.VALID,
-			"with spatial data every default route still connects at 48/64/80 px (default hitbox reach 116 px)")
+		if route.move_ids[0] == "5A":
+			_check(route.timing_valid and route.spatial_state == ComboSolver.SolverRoute.SpatialState.INVALID,
+				"with spatial data a 5A-started route honestly fails the 80 px standing (tuning hitbox reach 56 px, boundary touch does not intersect)")
+			var joined := "；".join(route.spatial_failures)
+			_check("80 px" in joined and not ("48 px" in joined) and not ("64 px" in joined),
+				"the 5A boundary failure names only the 80 px standing")
+		else:
+			_check(route.timing_valid and route.spatial_state == ComboSolver.SolverRoute.SpatialState.VALID,
+				"with spatial data every non-5A default route still connects at 48/64/80 px")
 	var route_lines := _route_lines(report)
 	for line in route_lines:
-		_check("spatial-valid" in line, "each verified route line carries the spatial-valid mark")
+		if line.begins_with("5A "):
+			_check("空间失败" in line or "timing-valid" in line, "5A-started route lines keep the honest spatial-failure mark")
+		else:
+			_check("spatial-valid" in line, "each verified route line carries the spatial-valid mark")
 	var section := "\n".join(report.spatial_lines)
 	for token in ["48", "64", "80", "+1", "-1", "spatial-valid"]:
 		_check(token in section, "the spatial section documents the grid item %s" % token)
@@ -100,8 +114,8 @@ func _test_spatial_failure_names_standing_and_collision() -> void:
 			if line.begins_with("5A → 5R："):
 				_check("timing-valid" in line and "空间失败" in line,
 					"the route line keeps timing-valid while flagging the spatial failure")
-	# 对照：同表的默认距离路线不受短 reach 影响（仍然 spatial-valid）。
-	var full := _find_route(report, ["5A", "5B", "5D"])
+	# 对照：同表的非 5A 起手默认路线不受短 reach 影响（仍然 spatial-valid）。
+	var full := _find_route(report, ["5B", "5D"])
 	_check(full != null and full.spatial_state == ComboSolver.SolverRoute.SpatialState.VALID,
 		"the default-reach route on the same table stays spatial-valid")
 
@@ -272,6 +286,7 @@ func _injected_move(id: String, key: String) -> MoveData:
 	move.hitbox_size = GameParams.ATTACK_HITBOX_SIZE
 	move.hitbox_gap = GameParams.ATTACK_HITBOX_GAP
 	move.hit_profiles = _probe_profiles(GameParams.HITSTUN_FRAMES, GameParams.MOVE_5A_KNOCKBACK)
+	move.starter_grade = MoveData.StarterGrade.D
 	return move
 
 

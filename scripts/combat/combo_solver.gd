@@ -38,8 +38,11 @@ const _SECTION_LABELS := {"edges": "接续边", "gaps": "配置缺口", "routes"
 ## 接续种类 → 缺口涉及的配置字段与接缝名（探针注入与缺口文案共用，防两处漂移）。
 const _GAP_CONFIG_FIELDS := {
 	EdgeKind.CANCEL: {"field": "cancel_targets", "seam": "命中确认取消"},
+	EdgeKind.CHAIN_CANCEL: {"field": "chain_cancel_targets", "seam": "链式取消"},
+	EdgeKind.SPECIAL_CANCEL: {"field": "special_cancel_targets", "seam": "必杀取消"},
 	EdgeKind.JUMP_CANCEL: {"field": "jump_cancel_targets", "seam": "jump cancel"},
 	EdgeKind.LANDING_CANCEL: {"field": "landing_cancel_targets", "seam": "落地接续"},
+	EdgeKind.NORMAL_LINK: {"field": "link_targets", "seam": "普通连接"},
 }
 ## 逐圈模拟的观测上限（圈数/帧数）。达到上限时以截断/未完成观测上报，不把它
 ## 当作完整证明（issue 21）；上限只限制观测，不是连段语义的一部分。
@@ -53,13 +56,19 @@ const RECOVER_HORIZON := 240
 ## 上限不会截掉任何可行延迟，枚举是完备的。
 const MAX_AIR_DELAY := 40
 
-const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性命中确认接续——前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生、jump cancel 与落地接缝都在真实 CombatSession 结算中检验；命中资料与运行时共享同一 (target_state, hit_context) 精确选择：探针木桩不自攻，命中的上下文恒为 normal，缺失目标状态资料的连接按 MISS_NO_PROFILE 断链上报（不回退 grounded/normal 资料），普通倒地期间不可追击；cancel_targets、jump_cancel_targets 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（空中无二段跳；木桩浮空只由真实命中按所选 profile 的受身计时与速度重建，空中追击的每次命中都应用其 airborne profile），无命中的时间不会自动续期；OTG、地弹、墙反弹与招式无敌不在本轮支持范围，表达这些能力的字段或标签由 MoveTable 整表拒绝；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。空间分层：无空间数据时全部路线仅 timing-valid，固定接触位不构成空间证明；提供空间数据（SolverOptions.spatial）后另附 spatial-valid，且只在地面、左右镜像的 48/64/80 px 三组身体中心水平距离上复验，不搜索走位、中立、墙角、推挤、跨身或屏幕边界，配置缺口与时序失败不作空间失败上报。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。"
+const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性接续——命中确认取消、链式/必杀取消（接触开放，命中或被防）、jump cancel、显式落地接缝与恢复后的普通连接（目押）：前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生与落地接缝都在真实 CombatSession 结算中检验；命中资料与运行时共享同一 (target_state, hit_context) 精确选择：探针木桩不自攻，命中的上下文恒为 normal，缺失目标状态资料的连接按 MISS_NO_PROFILE 断链上报（不回退 grounded/normal 资料），普通倒地期间不可追击；cancel_targets、chain/special_cancel_targets、link_targets、jump_cancel_targets 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；普通连接边与取消边以不同类型分别报告，连接成立与否由前招完全恢复当帧的缓存消费、目标剩余硬直与 active 重叠重新判定；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（空中无二段跳；木桩浮空只由真实命中按所选 profile 的受身计时与速度重建，空中追击的每次命中都应用其 airborne profile），无命中的时间不会自动续期；OTG、地弹、墙反弹与招式无敌不在本轮支持范围，表达这些能力的字段或标签由 MoveTable 整表拒绝；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、起手等级与三层累计修正、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。空间分层：无空间数据时全部路线仅 timing-valid，固定接触位不构成空间证明；提供空间数据（SolverOptions.spatial）后另附 spatial-valid，且只在地面、左右镜像的 48/64/80 px 三组身体中心水平距离上复验，不搜索走位、中立、墙角、推挤、跨身或屏幕边界，配置缺口与时序失败不作空间失败上报。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。"
 
-## 接续边类型：普通命中确认取消 / jump cancel / 显式落地接续。
+## 接续边类型：命中确认取消 / 链式取消 / 必杀取消 / jump cancel / 显式落地接续 /
+## 普通连接（目押）。链式与必杀按接触开放（命中或被防），命中确认、jump cancel
+## 与普通连接只在实际 HIT 成立；普通连接与取消是不同类型——前招完全恢复后的
+## 首个合法帧消费缓存，目标剩余硬直、距离与 active 重叠重新判定（I-06）。
 enum EdgeKind {
 	CANCEL,          ## cancel_targets：同姿态命中确认取消（地面→地面、空中→空中）
+	CHAIN_CANCEL,    ## chain_cancel_targets：接触后链式取消进普通技（独立窗口）
+	SPECIAL_CANCEL,  ## special_cancel_targets：接触后必杀取消（独立窗口）
 	JUMP_CANCEL,     ## jump_cancel_targets：地面招式命中确认后 Space 起跳接空中起手
 	LANDING_CANCEL,  ## landing_cancel_targets：空中招式命中确认后，取消窗口内的落地帧接地面招式
+	NORMAL_LINK,     ## link_targets：前招完全恢复后按缓存消费的普通连接（目押）
 }
 
 
@@ -140,6 +149,12 @@ class SolverEdge extends RefCounted:
 				return "jump cancel"
 			EdgeKind.LANDING_CANCEL:
 				return "落地接续"
+			EdgeKind.CHAIN_CANCEL:
+				return "链式取消"
+			EdgeKind.SPECIAL_CANCEL:
+				return "必杀取消"
+			EdgeKind.NORMAL_LINK:
+				return "普通连接"
 		return "取消"
 
 
@@ -668,8 +683,11 @@ func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false
 			continue
 		var kinds_and_targets := [
 			[EdgeKind.CANCEL, from_move.cancel_targets],
+			[EdgeKind.CHAIN_CANCEL, from_move.chain_cancel_targets],
+			[EdgeKind.SPECIAL_CANCEL, from_move.special_cancel_targets],
 			[EdgeKind.JUMP_CANCEL, from_move.jump_cancel_targets],
 			[EdgeKind.LANDING_CANCEL, from_move.landing_cancel_targets],
+			[EdgeKind.NORMAL_LINK, from_move.link_targets],
 		]
 		for pair in kinds_and_targets:
 			var kind: EdgeKind = pair[0]
@@ -683,7 +701,8 @@ func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false
 					if not targets.has(to_id):
 						targets.append(to_id)
 					# 同一 (from, to) 配置了多种接续时，路线/循环按首先验证成立的接缝出链：
-					# 枚举顺序固定为 取消 > jump cancel > 落地接续，确定性且优先普通取消。
+					# 枚举顺序固定为 命中确认取消 > 链式 > 必杀 > jump cancel > 落地接续 >
+					# 普通连接，确定性且优先中断性取消。
 					var key := "%s|%s" % [from_id, to_id]
 					if not edge_kinds.has(key):
 						edge_kinds[key] = kind
@@ -831,9 +850,13 @@ func _enumerate_gaps(contexts: Dictionary, timing_cache: Dictionary, report: Sol
 			if to_move == null or to_move.is_throw() or _start_key_for(to_id) == "":
 				continue
 			var kinds: Array[EdgeKind] = []
-			if to_move.stance == from_move.stance \
-					and not (from_move.cancel_targets as Array[String]).has(to_id):
-				kinds.append(EdgeKind.CANCEL)
+			if to_move.stance == from_move.stance:
+				for same_stance in [_GAP_CONFIG_FIELDS[EdgeKind.CANCEL]["field"],
+						_GAP_CONFIG_FIELDS[EdgeKind.CHAIN_CANCEL]["field"],
+						_GAP_CONFIG_FIELDS[EdgeKind.SPECIAL_CANCEL]["field"],
+						_GAP_CONFIG_FIELDS[EdgeKind.NORMAL_LINK]["field"]]:
+					if not (from_move.get(same_stance) as Array[String]).has(to_id):
+						kinds.append(_field_gap_kind(same_stance))
 			if from_move.stance == MoveData.Stance.GROUND and to_move.stance == MoveData.Stance.AIR \
 					and not (from_move.jump_cancel_targets as Array[String]).has(to_id):
 				kinds.append(EdgeKind.JUMP_CANCEL)
@@ -848,6 +871,14 @@ func _enumerate_gaps(contexts: Dictionary, timing_cache: Dictionary, report: Sol
 
 ## 单个缺口候选的验证：临时换成注入了候选配置的一次性探针表，复用正式边的
 ## 逐帧验证；时序成立才返回缺口条目（valid 恒为 false——缺口不是合法边）。
+## 同姿态缺口接缝的字段 → 接种种类（字段名在 _GAP_CONFIG_FIELDS 中一一对应）。
+func _field_gap_kind(field: String) -> EdgeKind:
+	for kind in _GAP_CONFIG_FIELDS:
+		if _GAP_CONFIG_FIELDS[kind]["field"] == field:
+			return kind
+	return EdgeKind.CANCEL
+
+
 func _probe_gap(from_id: String, to_id: String, kind: EdgeKind, contexts: Dictionary, timing_cache: Dictionary) -> SolverEdge:
 	var base_table := _table
 	_table = _gap_probe_table(from_id, to_id, kind)
@@ -867,6 +898,15 @@ func _gap_probe_table(from_id: String, to_id: String, kind: EdgeKind) -> Diction
 	var probe := _table.duplicate()
 	var mutated := MoveTable._fresh_copy(_table[from_id] as MoveData)
 	(mutated.get(_GAP_CONFIG_FIELDS[kind]["field"]) as Array).append(to_id)
+	## 链式/必杀缺口须同时注入窗口（frame-data.md 调校初值 3/5）：窗口是运行时
+	## 硬约束的一部分，只注入目标会让探针因窗口未声明而永不开放。
+	match kind:
+		EdgeKind.CHAIN_CANCEL:
+			if mutated.chain_cancel_window_frames < 0:
+				mutated.chain_cancel_window_frames = 3
+		EdgeKind.SPECIAL_CANCEL:
+			if mutated.special_cancel_window_frames < 0:
+				mutated.special_cancel_window_frames = 5
 	probe[from_id] = mutated
 	return probe
 
@@ -1242,6 +1282,14 @@ func _links_for_edge(from_id: String, to_id: String, kind: EdgeKind) -> Array[Ch
 			landing.feed = _feed_for(to_id)
 			landing.trigger = ChainLink.Trigger.LAND_FRAME
 			links.append(landing)
+		EdgeKind.NORMAL_LINK:
+			var link_link := ChainLink.new()
+			link_link.move_id = to_id
+			link_link.key = key
+			link_link.feed = _feed_for(to_id)
+			link_link.trigger = ChainLink.Trigger.PREV_HIT
+			link_link.wait = _link_press_wait(_table[from_id] as MoveData, _table[to_id] as MoveData)
+			links.append(link_link)
 		_:
 			var cancel_link := ChainLink.new()
 			cancel_link.move_id = to_id
@@ -1263,12 +1311,16 @@ func _build_edge(from_id: String, to_id: String, kind: EdgeKind, contexts: Dicti
 		edge.reason = "目标招式不在招式表中"
 		return edge
 	match kind:
-		EdgeKind.CANCEL:
+		EdgeKind.CANCEL, EdgeKind.CHAIN_CANCEL, EdgeKind.SPECIAL_CANCEL:
 			if to_move.stance != from_move.stance:
 				if to_move.stance == MoveData.Stance.AIR:
 					edge.reason = "姿态不符：地面招式只能取消进地面目标，地面 → 空中只有配置的 jump cancel"
 				else:
 					edge.reason = "姿态不符：空中招式只能取消进空中目标，空中 → 地面只有显式落地接续"
+				return edge
+		EdgeKind.NORMAL_LINK:
+			if to_move.stance != from_move.stance:
+				edge.reason = "姿态不符：普通连接只连接同姿态目标（空中 → 地面的落地接续不在普通连接范围）"
 				return edge
 		EdgeKind.JUMP_CANCEL:
 			if from_move.stance != MoveData.Stance.GROUND:
@@ -1303,14 +1355,17 @@ func _build_edge(from_id: String, to_id: String, kind: EdgeKind, contexts: Dicti
 			_fill_jump_edge(edge, context)
 		EdgeKind.LANDING_CANCEL:
 			_fill_landing_edge(edge, context, gap_mode)
+		EdgeKind.NORMAL_LINK:
+			_fill_link_edge(edge, context, timing_cache)
 		_:
-			_fill_cancel_edge(edge, context, timing_cache)
+			_fill_cancel_edge(edge, context, timing_cache, kind)
 	return edge
 
 
-func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache: Dictionary) -> void:
+func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache: Dictionary, kind := EdgeKind.CANCEL) -> void:
 	var from_move := _table[edge.from_id] as MoveData
 	var to_move := _table[edge.to_id] as MoveData
+	var window_frames := _cancel_window_for(from_move, kind)
 	var timing := _source_timing(edge.from_id, context, timing_cache)
 	if timing.is_empty():
 		edge.reason = "起手招式未在首个判定帧命中（探针几何假设被打破）"
@@ -1318,7 +1373,7 @@ func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache
 	edge.recover_age = timing["recover_age"]
 	edge.recover_truncated = timing.get("recover_truncated", false)
 	var links: Array[ChainLink] = context.duplicate()
-	links.append_array(_links_for_edge(edge.from_id, edge.to_id, EdgeKind.CANCEL))
+	links.append_array(_links_for_edge(edge.from_id, edge.to_id, kind))
 	var run := _run_schedule(_compile_chain(links), {})
 	if run["ok"]:
 		edge.valid = true
@@ -1330,7 +1385,7 @@ func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache
 		## B/C 的组合等待使有效等待上界收窄（命中当帧按下 w=0 恰好消费，其余
 		## 等待档需窗口容纳 +3 等待）；下限为 0——w=0 总是可用档。
 		var key_wait := _single_key_wait(to_move.action_key)
-		edge.wait_to = maxi(0, mini(from_move.cancel_window_frames - key_wait,
+		edge.wait_to = maxi(0, mini(window_frames - key_wait,
 			edge.recover_age - to_move.startup_frames - key_wait))
 		var prefix := ""
 		if to_move.direction_derivation != "":
@@ -1365,6 +1420,82 @@ func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache
 			edge.reason = "取消未成立：" + run["reason"]
 		_:
 			edge.reason = "取消未成立：目标未在取消窗口内起手或命中（未观测到第二次命中）"
+
+
+## 各取消接缝的窗口长度（帧）：命中确认 / 链式 / 必杀三类窗口独立声明。
+func _cancel_window_for(move: MoveData, kind: EdgeKind) -> int:
+	match kind:
+		EdgeKind.CHAIN_CANCEL:
+			return move.chain_cancel_window_frames
+		EdgeKind.SPECIAL_CANCEL:
+			return move.special_cancel_window_frames
+	return move.cancel_window_frames
+
+
+## 普通连接的确定性按下档：组合等待恰在前招完全恢复当帧解除（B/C 目标），或
+## 恰在恢复当帧按下（A/D 目标）——恢复当帧消费缓存，任何有效档结果一致。
+## 返回 -1 表示结构性不可按下（取消窗口长度吞掉恢复前摇，无合法按下帧）。
+func _link_press_wait(from_move: MoveData, to_move: MoveData) -> int:
+	var recover_gap := from_move.total_frames() - from_move.startup_frames
+	var key_wait := _single_key_wait(to_move.action_key)
+	var press_wait := recover_gap - key_wait
+	var after_cancel := 1
+	if (from_move.cancel_targets as Array[String]).has(to_move.move_id):
+		after_cancel = maxi(after_cancel, from_move.cancel_window_frames + 1)
+	if (from_move.chain_cancel_targets as Array[String]).has(to_move.move_id):
+		after_cancel = maxi(after_cancel, from_move.chain_cancel_window_frames + 1)
+	if (from_move.special_cancel_targets as Array[String]).has(to_move.move_id):
+		after_cancel = maxi(after_cancel, from_move.special_cancel_window_frames + 1)
+	if press_wait < after_cancel or press_wait < 1:
+		return -1
+	return press_wait
+
+
+func _fill_link_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache: Dictionary) -> void:
+	var from_move := _table[edge.from_id] as MoveData
+	var to_move := _table[edge.to_id] as MoveData
+	var timing := _source_timing(edge.from_id, context, timing_cache)
+	if timing.is_empty():
+		edge.reason = "起手招式未在首个判定帧命中（探针几何假设被打破）"
+		return
+	edge.recover_age = timing["recover_age"]
+	edge.recover_truncated = timing.get("recover_truncated", false)
+	var press_wait := _link_press_wait(from_move, to_move)
+	if press_wait < 0:
+		edge.reason = "普通连接不可按下：前招恢复前的窗口被取消接缝占满（取消窗口 %d/%d/%d 帧均须先关闭），没有留给目押的按下帧" % [
+			from_move.cancel_window_frames, from_move.chain_cancel_window_frames,
+			from_move.special_cancel_window_frames,
+		]
+		return
+	var links: Array[ChainLink] = context.duplicate()
+	links.append_array(_links_for_edge(edge.from_id, edge.to_id, EdgeKind.NORMAL_LINK))
+	var run := _run_schedule(_compile_chain(links), {})
+	if run["ok"]:
+		edge.valid = true
+		edge.hit_age = run["hit_frames"][run["hit_frames"].size() - 1] - timing["hit_frame"]
+		edge.wait_from = press_wait
+		edge.wait_to = press_wait
+		edge.reason = "普通连接（目押）：命中确认后第 %d 帧按下（组合等待 %d 帧），前招完全恢复当帧消费缓存，目标于第 %d 帧命中（恢复 + 前摇 %d 帧）；取消接缝不参与，命中以目标剩余硬直与 active 重叠另行判定" % [
+			press_wait, _single_key_wait(to_move.action_key), edge.hit_age, to_move.startup_frames,
+		]
+		return
+	var last_end: int = run["ended_reasons"][run["ended_reasons"].size() - 1] if not run["ended_reasons"].is_empty() else -1
+	if run["break_kind"] == "count" \
+			or (run["break_kind"] == "ended" and last_end == CombatEvent.ComboEndReason.DUMMY_RECOVERED):
+		edge.hit_age = run["hit_frames"][run["hit_frames"].size() - 1] - timing["hit_frame"]
+		edge.reason = "目押超时：前招完全恢复（第 %d 帧）晚于木桩自然受身（第 %d 帧）——目标已恢复，普通连接不成立（运行时报 LINK_FAILED/TARGET_RECOVERED）" % [
+			from_move.total_frames() - from_move.startup_frames, edge.recover_age,
+		]
+		return
+	match run["break_kind"]:
+		"whiff":
+			edge.reason = "普通连接未成立：目标招式已起手但判定未在预期帧连接（挥空，运行时报 LINK_FAILED/DISTANCE_INSUFFICIENT）"
+		"no_start":
+			edge.reason = "普通连接未成立：缓存未能在前招完全恢复当帧消费（组合等待或缓存过期）"
+		"miss_profile":
+			edge.reason = "普通连接未成立：" + run["reason"]
+		_:
+			edge.reason = "普通连接未成立：目标未在恢复后起手或命中（未观测到第二次命中）"
 
 
 func _fill_jump_edge(edge: SolverEdge, context: Array[ChainLink]) -> void:

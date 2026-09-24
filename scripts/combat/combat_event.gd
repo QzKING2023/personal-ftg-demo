@@ -16,6 +16,7 @@ enum Type {
 	THROW_TECHED,      ## 拆投成立：投结果被阻止
 	THROW_FAILED,      ## 已配齐的普通投尝试被拒绝（原因见 ThrowFailReason）
 	DASH_STARTED,      ## 66 前冲 / 44 后撤启动（世界方向见 direction；issue 18）
+	LINK_FAILED,       ## 普通连接（目押）尝试失败或已消费的连接招挥空（原因见 LinkFailReason）
 }
 
 ## 连段结束原因：收尾、取消窗口关闭、招式收招未接续、木桩自然受身/恢复、
@@ -35,6 +36,15 @@ enum ThrowFailReason {
 	RANGE = 2,
 }
 
+## 普通连接失败原因（I-06）：消费时目标已不可追击、目标状态不接受该招、
+## 前招未声明该普通连接边，或已消费的连接招判定窗口结束仍无接触（距离不足）。
+enum LinkFailReason {
+	TARGET_RECOVERED = 1,    ## 目标已自然受身/恢复，连段资格已消失
+	STATE_INCOMPATIBLE = 2,  ## 目标处于不接受该招的状态（普通倒地/空中已受身等）
+	DISTANCE_INSUFFICIENT = 3, ## 连接招已起手但判定窗口结束仍无真实接触
+	CONFIGURATION_GAP = 4,   ## 前招未声明到该招的普通连接边（输入按独立招式处理）
+}
+
 var type: Type = Type.HIT
 ## 命中方向（攻击方朝向，1 向右 / -1 向左），仅 HIT/HIT_MISS 使用。
 var direction := 1
@@ -48,6 +58,10 @@ var is_counter := false
 var combo_end_reason: ComboEndReason = ComboEndReason.FINISHER
 ## 普通投失败原因，仅 THROW_FAILED 使用。
 var throw_fail_reason: ThrowFailReason = ThrowFailReason.STATE
+## 普通连接失败原因，仅 LINK_FAILED 使用。
+var link_fail_reason: LinkFailReason = LinkFailReason.TARGET_RECOVERED
+## 普通连接尝试涉及的招式 id（前招完全恢复后的目标普通技），仅 LINK_FAILED 使用。
+var link_move_id := ""
 
 
 static func hit(damage: float, direction: int, combo_hits: int, is_counter := false) -> CombatEvent:
@@ -132,4 +146,12 @@ static func dash_started(direction: int) -> CombatEvent:
 	var event := CombatEvent.new()
 	event.type = Type.DASH_STARTED
 	event.direction = direction
+	return event
+
+
+static func link_failed(reason: LinkFailReason, move_id: String) -> CombatEvent:
+	var event := CombatEvent.new()
+	event.type = Type.LINK_FAILED
+	event.link_fail_reason = reason
+	event.link_move_id = move_id
 	return event

@@ -41,8 +41,8 @@ func _test_default_table_reports_config_gaps() -> void:
 	if cancel_gap != null:
 		_check("缺配置" in cancel_gap.reason and "cancel_targets" in cancel_gap.reason,
 			"the cancel gap names the missing configuration field")
-		_check(cancel_gap.hit_age == 5 and cancel_gap.recover_age == 12,
-			"the gap carries the verified timing (earliest hit age 5 <= dummy recover age 12)")
+		_check(cancel_gap.hit_age == 7 and cancel_gap.recover_age == 9,
+			"the gap carries the verified timing (earliest hit age 8 <= dummy recover age 9 at the A-starter time layer)")
 	var jump_gap := _find_gap(report, "5A", "jA", ComboSolver.EdgeKind.JUMP_CANCEL)
 	_check(jump_gap != null, "5A → jA is reported as a jump-cancel config gap")
 	if jump_gap != null:
@@ -50,9 +50,13 @@ func _test_default_table_reports_config_gaps() -> void:
 			"the jump-cancel gap names the missing configuration field")
 	_check(_find_gap(report, "jB", "5A", ComboSolver.EdgeKind.LANDING_CANCEL) == null,
 		"illegal landing back edge is not reported as a configuration gap")
-	_check(_find_gap(report, "5A", "5B", ComboSolver.EdgeKind.CANCEL) == null,
-		"configured pairs never appear as gaps")
-	_check(_find_gap(report, "5C", "jA", ComboSolver.EdgeKind.JUMP_CANCEL) == null,
+	## 5B 已配置为 5A 的链式取消与普通连接边：这两个接缝不再出现缺口；
+	## 命中确认取消是另一个接缝，5A 未在该列表声明 5B，仍按 CANCEL 类缺口如实报告。
+	_check(_find_gap(report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL) == null,
+		"configured chain pairs never appear as chain gaps")
+	_check(_find_gap(report, "5A", "5B", ComboSolver.EdgeKind.NORMAL_LINK) == null,
+		"configured link pairs never appear as link gaps")
+	_check(_find_gap(report, "6A", "jA", ComboSolver.EdgeKind.JUMP_CANCEL) == null,
 		"configured jump-cancel pairs never appear as gaps")
 	_check(_find_gap(report, "jB", "5D", ComboSolver.EdgeKind.LANDING_CANCEL) == null,
 		"configured landing pairs never appear as gaps")
@@ -60,7 +64,7 @@ func _test_default_table_reports_config_gaps() -> void:
 
 func _test_gaps_are_never_claimed_as_legal() -> void:
 	var report := ComboSolver.solve()
-	_check(report.edges.size() == 11, "gap enumeration leaves the configured edge set untouched (still 11 edges)")
+	_check(report.edges.size() == 18, "gap enumeration leaves the configured edge set untouched (still 18 edges)")
 	for edge in report.edges:
 		_check(not (edge.from_id == "5A" and edge.to_id == "5D"),
 			"no 5A → 5D edge is invented for the timing-valid unconfigured pair")
@@ -101,8 +105,8 @@ func _test_timing_invalid_or_structural_pairs_not_gaps() -> void:
 		"a pair whose hit lands after dummy recovery is not a gap")
 	_check(_find_gap(report, "5F", "5A", ComboSolver.EdgeKind.CANCEL) == null,
 		"the 4-frame stun admits no cancel-gap followup either")
-	_check(_find_gap(report, "5D", "5A", ComboSolver.EdgeKind.CANCEL) == null,
-		"a finisher source is never a gap (configuring it would not open the cancel)")
+	_check(_find_gap(report, "214D", "5A", ComboSolver.EdgeKind.CANCEL) == null,
+		"a finisher source (214D stays a finisher) is never a gap (configuring it would not open the cancel)")
 	_check(_find_gap(report, "5B", "jA", ComboSolver.EdgeKind.CANCEL) == null,
 		"stance-mismatched cancel pairs are not gaps")
 
@@ -368,6 +372,7 @@ func _injected_move(id: String, key: String) -> MoveData:
 	move.hitbox_size = GameParams.ATTACK_HITBOX_SIZE
 	move.hitbox_gap = GameParams.ATTACK_HITBOX_GAP
 	move.hit_profiles = _probe_profiles(GameParams.HITSTUN_FRAMES, GameParams.MOVE_5A_KNOCKBACK)
+	move.starter_grade = MoveData.StarterGrade.D
 	return move
 
 

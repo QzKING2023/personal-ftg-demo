@@ -319,9 +319,9 @@ func _test_attack_hit_and_feedback(main: Node2D, player: Player, dummy: Dummy, s
 			hit = true
 			break
 	_check(hit, "attack hits once when the dummy is close")
-	_check(session.dummy_hp == GameParams.DUMMY_MAX_HP - GameParams.MOVE_5A_DAMAGE, "damage applied exactly once per swing")
+	_check(_approx_hp(session.dummy_hp, GameParams.DUMMY_MAX_HP - 5.8), "damage applied exactly once per swing (A-starter scaled 5.8)")
 	_check(session.dummy_state == CombatSession.DummyState.GROUND_HITSTUN, "dummy enters hitstun on hit")
-	_check(dummy.position.x > dummy_x_before + 2.0, "dummy view shows the knockback displacement")
+	_check(dummy.position.x > dummy_x_before + 1.5, "dummy view shows the trajectory-scaled knockback displacement (120px/s)")
 	_check(dummy.modulate == GameParams.HIT_FLASH_COLOR, "dummy flashes on the hit event")
 	var status: Label = main.get_node("DummyStatus")
 	_check(status.text.contains("地面受击"), "status display shows the hitstun state")
@@ -340,7 +340,7 @@ func _test_attack_range(session: CombatSession) -> void:
 	Input.action_release("attack_a")
 	for i in 40:
 		await physics_frame
-	_check(session.dummy_hp == GameParams.DUMMY_MAX_HP - GameParams.MOVE_5A_DAMAGE, "attack misses when the dummy is far away")
+	_check(_approx_hp(session.dummy_hp, GameParams.DUMMY_MAX_HP - 5.8), "attack misses when the dummy is far away (hp unchanged from the earlier hit)")
 
 
 func _test_ground_combo_display(main: Node2D, session: CombatSession) -> void:
@@ -372,7 +372,7 @@ func _test_ground_combo_display(main: Node2D, session: CombatSession) -> void:
 			break
 	_check(second_hit, "input right after the hit cancels 5A into 5B via the buffer")
 	_check(session.combo_hits == 2, "session tracks two combo hits")
-	_check(absf(hp_after_first - session.dummy_hp - 10.8) < 0.05, "second hit applies decayed damage")
+	_check(absf(hp_after_first - session.dummy_hp - 7.8) < 0.05, "second hit applies the accumulated-layer damage (12x0.648)")
 	var status: Label = main.get_node("DummyStatus")
 	_check(status.text.contains("连段 2"), "status display shows the combo hit count")
 
@@ -593,7 +593,7 @@ func _test_full_air_route_keyboard(main: Node2D, session: CombatSession) -> void
 	_check(route_hits == 3 and session.combo_hits == 5 and not session.combo_active, "jD finishes the air route at five hits and ends the combo")
 	_check(saw_air_posture, "status display shows the airborne posture during the route")
 	_check(status.text.contains("连段 5"), "status display shows the five-hit combo")
-	_check(_approx_hp(session.dummy_hp, GameParams.DUMMY_MAX_HP - 53.0), "route damage totals 53.0 through the decay")
+	_check(_approx_hp(session.dummy_hp, GameParams.DUMMY_MAX_HP - 37.9), "route damage totals 37.9 through the three-layer corrections")
 	var settled := false
 	for i in 90:
 		await physics_frame
