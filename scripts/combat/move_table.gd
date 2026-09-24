@@ -188,6 +188,10 @@ static func _validate_move(move: MoveData, errors: Array[String]) -> void:
 		errors.append("[%s] %s: extra_landing_recovery_frames — 矛盾：额外落地恢复只属于空中招式（当前 %d）" % [
 			source, id_label, move.extra_landing_recovery_frames,
 		])
+	if move.stance == MoveData.Stance.AIR and move.requires_crouch:
+		errors.append("[%s] %s: requires_crouch — 矛盾：蹲姿限定只属于地面招式（空中按下方向不构成蹲姿）" % [
+			source, id_label,
+		])
 
 
 static func _validate_strike_fields(move: MoveData, source: String, id_label: String, errors: Array[String]) -> void:
@@ -287,8 +291,8 @@ static func _validate_hit_profiles(move: MoveData, source: String, id_label: Str
 			])
 		else:
 			seen_keys[key] = i
-		if not _enum_in_range(profile.reaction, 1, 3):
-			errors.append("[%s] %s: %s: reaction — 未知或未声明枚举值 %d（合法范围 1–3：ground_hitstun/launch/ground_knockdown）" % [
+		if not _enum_in_range(profile.reaction, 1, 4):
+			errors.append("[%s] %s: %s: reaction — 未知或未声明枚举值 %d（合法范围 1–4：ground_hitstun/launch/ground_knockdown/low_float_sweep）" % [
 				source, id_label, label, profile.reaction,
 			])
 			continue
@@ -342,6 +346,24 @@ static func _validate_hit_profiles(move: MoveData, source: String, id_label: Str
 					])
 				_reject_foreign_timer(source, id_label, label, profile, "ground_stun_frames", profile.ground_stun_frames, errors)
 				_reject_foreign_timer(source, id_label, label, profile, "air_untech_frames", profile.air_untech_frames, errors)
+			HitProfile.Reaction.LOW_FLOAT_SWEEP:
+				if profile.target_state != HitProfile.TargetState.GROUNDED:
+					errors.append("[%s] %s: %s — 矛盾：低浮空扫倒只允许 grounded 目标（当前 %s；airborne 键缺失即无命中，不回退）" % [
+						source, id_label, label, profile.label(),
+					])
+				if profile.air_untech_frames < 1:
+					errors.append("[%s] %s: %s: air_untech_frames — 低浮空受击窗口为负、未设置或为 0（当前 %d，须至少 1 帧）" % [
+						source, id_label, label, profile.air_untech_frames,
+					])
+				if profile.upward_speed_px_s <= 0.0:
+					errors.append("[%s] %s: %s: upward_speed_px_s — 矛盾：低浮空必须声明大于 0 的离地速度（当前 %s）" % [
+						source, id_label, label, str(profile.upward_speed_px_s),
+					])
+				if profile.knockdown_frames < 1:
+					errors.append("[%s] %s: %s: knockdown_frames — 触地转换后的倒地计时为负、未设置或为 0（当前 %d，须至少 1 帧）" % [
+						source, id_label, label, profile.knockdown_frames,
+					])
+				_reject_foreign_timer(source, id_label, label, profile, "ground_stun_frames", profile.ground_stun_frames, errors)
 		if profile.hit_context == HitProfile.HitContext.COUNTER \
 				and not move.has_normal_profile(profile.target_state):
 			errors.append("[%s] %s: %s — 矛盾：声明 %s 的 counter 却缺少同状态 normal profile（不得只提供 counter）" % [
@@ -374,6 +396,8 @@ static func _reaction_name(reaction: int) -> String:
 			return "LAUNCH"
 		HitProfile.Reaction.GROUND_KNOCKDOWN:
 			return "GROUND_KNOCKDOWN"
+		HitProfile.Reaction.LOW_FLOAT_SWEEP:
+			return "LOW_FLOAT_SWEEP"
 	return "未知反应 %d" % reaction
 
 

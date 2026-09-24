@@ -26,6 +26,7 @@ func _initialize() -> void:
 	_test_injected_stance_back_edge_not_misreported()
 	_test_finisher_back_edge_not_misreported()
 	_test_wait_window_clamped_by_window_and_hitstun()
+	_test_crouch_moves_and_low_float()
 	_test_solver_claims_only_configured_connections()
 	_test_solver_does_not_modify_runtime_state()
 	_test_report_lines_readable()
@@ -44,7 +45,7 @@ func _initialize() -> void:
 func _test_default_table_reports_ground_route() -> void:
 	var report := ComboSolver.analyze()
 	_check(report.safe and report.cycles.is_empty(), "default table reports no valid cycle")
-	_check(report.edges.size() == 18, "default table enumerates 18 edges (6 chain + 3 special + 4 link + 2 jump + 2 air cancels + 1 landing)")
+	_check(report.edges.size() == 27, "default table enumerates 27 edges (15 chain + 3 special + 4 link + 2 jump + 2 air cancels + 1 landing; ticket 02 adds 5A→2B, 5B→2C and the 2A/2B chain families)")
 	var ab := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	_check(ab != null and ab.valid, "5A -> 5B is a valid chain continuation")
 	if ab != null:
@@ -326,6 +327,55 @@ func _test_injected_landing_back_edge_reports_cycle() -> void:
 	_check(finite != null and finite.combo_hits == 5, "finite air route remains available")
 
 
+# --- 票据 02：蹲姿招式输入表达与低浮空状态 ---
+
+func _test_crouch_moves_and_low_float() -> void:
+	# 蹲姿招式的按下帧必须携带下方向（ScheduledInput.down），否则会话把同一键
+	# 解析为站立变体；2C 命中后进入 LOW_FLOAT_SWEEP，Solver 的可追击观测覆盖
+	# 到触地转普通倒地为止（timing 层结论，空间仍按声明边界）。
+	var report := ComboSolver.analyze()
+	var crouch_chain := _find_edge(report, "2A", "2B", ComboSolver.EdgeKind.CHAIN_CANCEL)
+	_check(crouch_chain != null and crouch_chain.valid,
+		"the 2A -> 2B crouch chain is validated by pressing B with the down state held")
+	if crouch_chain != null and crouch_chain.valid:
+		_check(crouch_chain.hit_age == 8 and crouch_chain.recover_age == 9,
+			"2A -> 2B timing: earliest hit at age 8 (resume 1 + 2B startup 7) inside the A-starter recovery 9")
+	var stand_into_crouch := _find_edge(report, "5A", "2B", ComboSolver.EdgeKind.CHAIN_CANCEL)
+	_check(stand_into_crouch != null and stand_into_crouch.valid,
+		"5A -> 2B requires the solver to synthesize the crouch press during 5A's cancel window")
+	var sweep_edge := _find_edge(report, "2B", "2C", ComboSolver.EdgeKind.CHAIN_CANCEL)
+	_check(sweep_edge != null and sweep_edge.valid,
+		"2B -> 2C is validated and puts the dummy into the low float on hit")
+	var route := _find_route(report, ["2B", "2C"])
+	_check(route != null and route.timing_valid and route.combo_hits == 2,
+		"the readable 2B -> 2C sweep route replays with both crouch presses carrying down")
+	if route != null:
+		var down_presses := 0
+		for spec in route.inputs:
+			if spec.key != "" and spec.down:
+				down_presses += 1
+		_check(down_presses == 2, "both crouch press frames in the route's input table carry the down state")
+	var crouch_route := _find_route(report, ["2A", "2B", "5C", "5D"])
+	_check(crouch_route != null and crouch_route.timing_valid and crouch_route.combo_hits == 4,
+		"the 2A -> 2B -> 5C -> 5D route extends the crouch opener into the standing chain")
+	if crouch_route != null:
+		var down_presses := 0
+		for spec in crouch_route.inputs:
+			if spec.key != "" and spec.down:
+				down_presses += 1
+		_check(down_presses == 2, "only the crouch presses (2A/2B) carry the down state; 5C/5D presses do not")
+	## A 起手时间层衰减的诚实截断：2A > 2B 后接 2C 的第三击因 2B 受击窗口
+	## （floor(14×0.658)=9）短于 2C 前摇到达而不成立——按截断路线如实报告，
+	## 不伪装成时序成立。
+	var truncated := _find_route(report, ["2A", "2B"])
+	if truncated != null:
+		_check(not truncated.timing_valid and "断开" in truncated.note,
+			"the truncated 2A -> 2B entry (2C too slow behind the A-starter-decayed 2B stun) is honestly reported as broken")
+	# 2C 无出边：报告不得发明 2C 之后的接续（配置缺口按缺口类型另行报告）。
+	for edge in report.edges:
+		_check(not (edge.from_id == "2C" and edge.valid), "no valid continuation out of 2C is claimed beyond its declared edges")
+
+
 func _test_solver_claims_only_configured_connections() -> void:
 	# 验收 5：Solver 只主张招式数据配置过的连接——边集等于配置关系集，
 	# 空中段只能经配置的 jump cancel 进入，路线只从地面普通动作键起手。
@@ -333,9 +383,14 @@ func _test_solver_claims_only_configured_connections() -> void:
 	## 配置关系集 = 声明的取消/连接边：6 条链式、3 条必杀、4 条普通连接
 	## （5A→5B、5B→5C、5B→5D、5C→5D）、2 条 jump cancel、2 条空中取消、1 条落地接续。
 	var pairs := [
-		["5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL], ["5B", "5C", ComboSolver.EdgeKind.CHAIN_CANCEL],
+		["5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL], ["5A", "2B", ComboSolver.EdgeKind.CHAIN_CANCEL],
+		["5B", "5C", ComboSolver.EdgeKind.CHAIN_CANCEL], ["5B", "2C", ComboSolver.EdgeKind.CHAIN_CANCEL],
 		["5B", "6A", ComboSolver.EdgeKind.CHAIN_CANCEL], ["5B", "5D", ComboSolver.EdgeKind.CHAIN_CANCEL],
 		["5C", "6A", ComboSolver.EdgeKind.CHAIN_CANCEL], ["5C", "5D", ComboSolver.EdgeKind.CHAIN_CANCEL],
+		["2A", "5A", ComboSolver.EdgeKind.CHAIN_CANCEL], ["2A", "2A", ComboSolver.EdgeKind.CHAIN_CANCEL],
+		["2A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL], ["2A", "2B", ComboSolver.EdgeKind.CHAIN_CANCEL],
+		["2B", "5C", ComboSolver.EdgeKind.CHAIN_CANCEL], ["2B", "2C", ComboSolver.EdgeKind.CHAIN_CANCEL],
+		["2B", "6A", ComboSolver.EdgeKind.CHAIN_CANCEL],
 		["5A", "236C", ComboSolver.EdgeKind.SPECIAL_CANCEL], ["5B", "236C", ComboSolver.EdgeKind.SPECIAL_CANCEL],
 		["5C", "236C", ComboSolver.EdgeKind.SPECIAL_CANCEL],
 		["5A", "5B", ComboSolver.EdgeKind.NORMAL_LINK], ["5B", "5C", ComboSolver.EdgeKind.NORMAL_LINK],
@@ -363,9 +418,9 @@ func _test_solver_claims_only_configured_connections() -> void:
 	var starts_plain := true
 	for route in report.routes:
 		var first: String = route.move_ids[0]
-		if not (first.length() == 2 and first.begins_with("5")):
+		if not (first.length() == 2 and (first.begins_with("5") or first.begins_with("2"))):
 			starts_plain = false
-	_check(starts_plain, "every readable route starts from a plain ground action key — no neutral-jump air starts")
+	_check(starts_plain, "every readable route starts from a plain ground action key (standing or crouch) — no neutral-jump air starts")
 	_check("空中段只能经" in report.scope, "scope states air segments enter only via configured jump cancel")
 	_check("不证明" in report.scope, "scope keeps the spatial/neutral/collision disclaimer")
 

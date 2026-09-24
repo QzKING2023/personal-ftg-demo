@@ -822,11 +822,12 @@ func _first_candidates() -> Array[String]:
 	for move_id in ids:
 		var move := _table[move_id] as MoveData
 		var physical: String = ACTION_PHYSICAL_KEYS.get(move.action_key, move.action_key)
+		var crouch_mark := "（蹲姿：按下时按住下方向）" if move.requires_crouch else ""
 		if move.direction_derivation == "":
-			lines.append("%s｜%s 键（%s）" % [move_id, physical, move.action_key])
+			lines.append("%s｜%s 键（%s）%s" % [move_id, physical, move.action_key, crouch_mark])
 		else:
 			var digits := move.direction_derivation.left(move.direction_derivation.length() - 1)
-			lines.append("%s｜方向 %s + %s 键（%s）" % [move_id, digits, physical, move.action_key])
+			lines.append("%s｜方向 %s + %s 键（%s）%s" % [move_id, digits, physical, move.action_key, crouch_mark])
 	return lines
 
 
@@ -989,7 +990,8 @@ func _binding_variant_lines() -> Array[String]:
 		var physical: String = ACTION_PHYSICAL_KEYS.get(move.action_key, move.action_key)
 		var notations := _solver_notations(move)
 		if notations.is_empty():
-			lines.append("%s｜%s 键（%s）｜无方向指令" % [move_id, physical, move.action_key])
+			var crouch_note := "｜蹲姿（按下时按住下方向）" if move.requires_crouch else ""
+			lines.append("%s｜%s 键（%s）｜无方向指令%s" % [move_id, physical, move.action_key, crouch_note])
 			continue
 		for notation in notations:
 			lines.append(_variant_line(move_id, move, notation, physical))
@@ -1099,7 +1101,8 @@ func _replay_ops_text(inputs: Array[ScheduledInput], move_ids: Array[String]) ->
 		if spec.key != "":
 			var move_id := move_ids[move_idx] if move_idx < move_ids.size() else ""
 			move_idx += 1
-			ops.append("F%d 按 %s（%s）" % [spec.frame, ACTION_PHYSICAL_KEYS.get(spec.key, spec.key), move_id])
+			var down_mark := "↓+" if spec.down else ""
+			ops.append("F%d 按 %s%s（%s）" % [spec.frame, down_mark, ACTION_PHYSICAL_KEYS.get(spec.key, spec.key), move_id])
 		elif spec.jump:
 			ops.append("F%d Space（起跳）" % spec.frame)
 		else:
@@ -1390,6 +1393,8 @@ func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache
 		var prefix := ""
 		if to_move.direction_derivation != "":
 			prefix = "（方向派生 %s：取消帧前喂入方向序列）" % to_move.direction_derivation
+		elif to_move.requires_crouch:
+			prefix = "（蹲姿按键：取消帧按下时按住下方向）"
 		elif from_move.stance == MoveData.Stance.AIR:
 			prefix = "（空中取消）"
 		edge.reason = "%s有效等待 0–%d 帧 + 目标前摇 %d 帧：最早命中在命中确认后第 %d 帧，不晚于木桩恢复（第 %d 帧），余量 %d 帧%s" % [
@@ -1789,7 +1794,13 @@ func _compile_chain(links: Array[ChainLink]) -> Dictionary:
 			# 面向镜像运行时（issue 12 起）：地面自由行动的面向每帧指向木桩，
 			# 水平输入不再翻转面向；探针按面向钉住木桩，喂入全程面向恒定。
 			# 取消/落地喂入发生在招式或空中阶段，面向同样锁定。
-		if not _merge_input(inputs, press, 0, false, link.press_space, link.key):
+		## 蹲姿招式（requires_crouch）的按下帧携带下方向：会话按当帧输入状态
+		## 招式，不携带则同名站立变体胜出（票据 02）。
+		var press_down := false
+		if link.move_id != "":
+			var pressed_move := _table.get(link.move_id) as MoveData
+			press_down = pressed_move != null and pressed_move.requires_crouch
+		if not _merge_input(inputs, press, 0, press_down, link.press_space, link.key):
 			return {}
 		if link.press_space:
 			jump_frame = press
@@ -2375,7 +2386,8 @@ func _pin_dummy(session: CombatSession) -> void:
 
 func _dummy_pursuable(session: CombatSession) -> bool:
 	return session.dummy_state == CombatSession.DummyState.GROUND_HITSTUN \
-		or session.dummy_state == CombatSession.DummyState.AIR_HITSTUN
+		or session.dummy_state == CombatSession.DummyState.AIR_HITSTUN \
+		or session.dummy_state == CombatSession.DummyState.LOW_FLOAT_SWEEP
 
 
 func _is_plain_start_id(move_id: String) -> bool:

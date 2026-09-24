@@ -27,6 +27,7 @@ enum Reaction {
 	GROUND_HITSTUN = 1,   ## 地面受击硬直（仅 GROUNDED 目标，保持接地）
 	LAUNCH = 2,           ## 浮空受击（空中受身计时 + 垂直初速度）
 	GROUND_KNOCKDOWN = 3, ## 普通倒地（独立倒地计时，进入即结束连段）
+	LOW_FLOAT_SWEEP = 4,  ## 低浮空扫倒（仅 GROUNDED 目标；短暂滞空后触地转普通倒地）
 }
 
 ## 唯一键之一：命中前目标状态。
@@ -41,7 +42,8 @@ enum Reaction {
 @export var ground_stun_frames := -1
 ## 空中受身帧数（仅 LAUNCH；有效值为正整数）。
 @export var air_untech_frames := -1
-## 倒地帧数（仅 GROUND_KNOCKDOWN；有效值为正整数）。
+## 倒地帧数（GROUND_KNOCKDOWN 的倒地计时；LOW_FLOAT_SWEEP 声明触地转换后的
+## 倒地计时。有效值为正整数）。
 @export var knockdown_frames := -1
 ## 水平速度幅值（px/s，沿攻击者面向施加；所有合法 reaction 必须声明且非负）。
 @export var horizontal_speed_px_s := -1.0
@@ -58,6 +60,8 @@ func reaction_timer_frames() -> int:
 			return air_untech_frames
 		Reaction.GROUND_KNOCKDOWN:
 			return knockdown_frames
+		Reaction.LOW_FLOAT_SWEEP:
+			return air_untech_frames
 	return -1
 
 

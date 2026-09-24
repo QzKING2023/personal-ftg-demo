@@ -17,6 +17,7 @@ enum Type {
 	THROW_FAILED,      ## 已配齐的普通投尝试被拒绝（原因见 ThrowFailReason）
 	DASH_STARTED,      ## 66 前冲 / 44 后撤启动（世界方向见 direction；issue 18）
 	LINK_FAILED,       ## 普通连接（目押）尝试失败或已消费的连接招挥空（原因见 LinkFailReason）
+	LOW_FLOAT_LANDED,  ## 低浮空扫倒触地：同帧转普通倒地并结束连段（票据 02）
 }
 
 ## 连段结束原因：收尾、取消窗口关闭、招式收招未接续、木桩自然受身/恢复、
@@ -154,4 +155,10 @@ static func link_failed(reason: LinkFailReason, move_id: String) -> CombatEvent:
 	event.type = Type.LINK_FAILED
 	event.link_fail_reason = reason
 	event.link_move_id = move_id
+	return event
+
+
+static func low_float_landed() -> CombatEvent:
+	var event := CombatEvent.new()
+	event.type = Type.LOW_FLOAT_LANDED
 	return event

@@ -64,7 +64,7 @@ func _test_default_table_reports_config_gaps() -> void:
 
 func _test_gaps_are_never_claimed_as_legal() -> void:
 	var report := ComboSolver.solve()
-	_check(report.edges.size() == 18, "gap enumeration leaves the configured edge set untouched (still 18 edges)")
+	_check(report.edges.size() == 27, "gap enumeration leaves the configured edge set untouched (still 27 edges after ticket 02)")
 	for edge in report.edges:
 		_check(not (edge.from_id == "5A" and edge.to_id == "5D"),
 			"no 5A → 5D edge is invented for the timing-valid unconfigured pair")
@@ -226,8 +226,14 @@ func _test_whiff_reason_distinguishable() -> void:
 	if edge != null:
 		_check("挥空" in edge.reason, "the exclusion reason names the whiff (started but never connected)")
 	var route := _find_route(report, ["5A", "5B"])
+	## 同前缀的截断条目可能来自多条断链分支（票据 02 后 5B 还有 2C 出边）：
+	## 截断条目不冒充成立路线，必须带断点注记；挥空招式本身永不进入路线。
 	if route != null:
-		_check("挥空" in route.note, "the route breakpoint names the whiff")
+		_check(not route.timing_valid and "断开" in route.note,
+			"a truncated 5A → 5B prefix entry (if any) is honestly marked as broken")
+	for entry in report.routes:
+		_check(not entry.move_ids.has("5W") and not entry.move_ids.has("5V"),
+			"whiffed moves never appear inside any route")
 
 
 func _test_recovery_and_tech_reasons_stay_distinct() -> void:

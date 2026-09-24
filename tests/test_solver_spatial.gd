@@ -35,20 +35,30 @@ func _initialize() -> void:
 func _test_without_spatial_data_routes_are_timing_valid_only() -> void:
 	var report := ComboSolver.solve()
 	_check(report.routes.size() > 0, "the default table reports routes to layer")
+	## 票据 02 起默认表含诚实截断路线（A 起手时间层衰减使部分第三击不成立）：
+	## 截断条目不冒充 timing-valid，必须带断点注记；成立路线仍逐条 timing-valid。
+	var truncated_count := 0
 	for route in report.routes:
-		_check(route.timing_valid, "each default route's chain is timing-verified")
+		if not route.timing_valid:
+			truncated_count += 1
+			_check("断开" in route.note, "a truncated default route carries its break note")
 		_check(route.spatial_state == ComboSolver.SolverRoute.SpatialState.UNVERIFIED,
 			"without spatial data every route stays spatially unverified")
 		_check(route.spatial_failures.is_empty(),
 			"no spatial failure is invented without spatial data")
+	_check(truncated_count > 0, "the A-starter decay produces at least one honestly truncated default route")
 	var route_lines := _route_lines(report)
 	_check(route_lines.size() == report.routes.size(),
 		"every route has a readable line in the report")
 	for line in route_lines:
-		_check("timing-valid" in line and "空间未验证" in line,
-			"each route line is marked timing-valid with the spatial layer unverified")
-		_check(not ("spatial-valid" in line),
-			"no route line claims spatial-valid without spatial data")
+		if "timing 未成立" in line:
+			_check(not ("spatial-valid" in line),
+				"a truncated route line never claims spatial-valid")
+		else:
+			_check("timing-valid" in line and "空间未验证" in line,
+				"each verified route line is marked timing-valid with the spatial layer unverified")
+			_check(not ("spatial-valid" in line),
+				"no route line claims spatial-valid without spatial data")
 	var section := "\n".join(report.spatial_lines)
 	_check("未提供空间数据" in section and "不构成空间证明" in section,
 		"the spatial section states that no spatial data was provided and the fixed contact is not a spatial proof")
@@ -59,24 +69,29 @@ func _test_without_spatial_data_routes_are_timing_valid_only() -> void:
 
 func _test_spatial_data_verifies_distance_grid_both_facings() -> void:
 	var report := ComboSolver.solve(_spatial_options())
-	## 新基线调校命中框更短：5A（30×24、gap 2）的远缘恰为 56 px——80 px 站位
-	## 与身体矩形相邻（Godot 相邻矩形不算相交），5A 起手的路线在 80 px 空间失败、
-	## 其余站位与其余起手（5B/5C/5D/6A/236C…）路线空间成立。失败被诚实上报，
-	## 不隐藏也不升级为时序结论。
+	## 新基线调校命中框更短：5A（30×24、gap 2）的远缘恰为 56 px、票据 02 的 2A
+	## （30×20、gap 1）远缘 55 px——80 px 站位与身体矩形相邻（Godot 相邻矩形不算
+	## 相交），5A/2A 起手的路线在 80 px 空间失败、其余站位与其余起手（2B/2C/5B/5C/
+	## 5D/6A/236C…）路线空间成立。失败被诚实上报，不隐藏也不升级为时序结论。
 	for route in report.routes:
-		if route.move_ids[0] == "5A":
-			_check(route.timing_valid and route.spatial_state == ComboSolver.SolverRoute.SpatialState.INVALID,
-				"with spatial data a 5A-started route honestly fails the 80 px standing (tuning hitbox reach 56 px, boundary touch does not intersect)")
+		if not route.timing_valid:
+			_check(route.spatial_state == ComboSolver.SolverRoute.SpatialState.UNVERIFIED,
+				"a truncated route is not spatially re-verified (timing failure is not a spatial claim)")
+			continue
+		if route.move_ids[0] == "5A" or route.move_ids[0] == "2A":
+			_check(route.spatial_state == ComboSolver.SolverRoute.SpatialState.INVALID,
+				"with spatial data a 5A/2A-started route honestly fails the 80 px standing (tuning hitbox reach 55–56 px, boundary touch does not intersect)")
 			var joined := "；".join(route.spatial_failures)
 			_check("80 px" in joined and not ("48 px" in joined) and not ("64 px" in joined),
-				"the 5A boundary failure names only the 80 px standing")
+				"the short-reach boundary failure names only the 80 px standing")
 		else:
-			_check(route.timing_valid and route.spatial_state == ComboSolver.SolverRoute.SpatialState.VALID,
-				"with spatial data every non-5A default route still connects at 48/64/80 px")
+			_check(route.spatial_state == ComboSolver.SolverRoute.SpatialState.VALID,
+				"with spatial data every other verified default route still connects at 48/64/80 px")
 	var route_lines := _route_lines(report)
 	for line in route_lines:
-		if line.begins_with("5A "):
-			_check("空间失败" in line or "timing-valid" in line, "5A-started route lines keep the honest spatial-failure mark")
+		if line.begins_with("5A ") or line.begins_with("2A "):
+			_check("空间失败" in line or "timing 未成立" in line,
+				"5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid")
 		else:
 			_check("spatial-valid" in line, "each verified route line carries the spatial-valid mark")
 	var section := "\n".join(report.spatial_lines)

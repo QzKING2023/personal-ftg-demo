@@ -20,6 +20,7 @@ enum DummyState {
 	AIR_HITSTUN,      ## 浮空受击硬直（滞空期间逐帧消耗，归零即浮空受身）
 	AIR_RECOVERED,    ## 空中已受身（连段已结束，落地后才恢复中立）
 	KNOCKED_DOWN,     ## 普通倒地（独立倒地计时；期间不可命中，计时结束自然恢复）
+	LOW_FLOAT_SWEEP,  ## 低浮空扫倒（短暂滞空的有限受击窗口；触地同帧转普通倒地）
 }
 
 ## 防御姿态：地面 4 为站防、1 为蹲防；真正离地后 4/1 均为空防。
@@ -697,7 +698,7 @@ func _update_posture() -> void:
 		player_crouching = false
 		player_guard = GuardPosture.AIR if _holding_back() else GuardPosture.NONE
 		return
-	player_crouching = _direction_digit() in [1, 2, 3]
+	player_crouching = _down_held()
 	if _holding_back():
 		player_guard = GuardPosture.CROUCH if player_crouching else GuardPosture.STANDING
 	else:
@@ -742,6 +743,11 @@ func _posture_reeval_open() -> bool:
 ## 是否按住“后”（相对帧首面向折算；与方向历史同一口径）。
 func _holding_back() -> bool:
 	return _direction_digit() in [1, 4]
+
+
+## 当帧输入是否按住下方向（含斜下 1/2/3）：蹲姿姿态与蹲姿选招共用同一口径。
+func _down_held() -> bool:
+	return _direction_digit() in [1, 2, 3]
 
 
 ## 输入记录时间戳（正常帧时钟口径）：正常帧记当前时钟；冻结帧记恢复首个正常帧
@@ -850,13 +856,20 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 		HitProfile.Reaction.GROUND_KNOCKDOWN:
 			dummy_state = DummyState.KNOCKED_DOWN
 			dummy_knockdown_left = _scaled_timer_frames(profile.knockdown_frames)
+		HitProfile.Reaction.LOW_FLOAT_SWEEP:
+			## 低浮空扫倒：受击窗口计时入 hitstun 计数；触地后的倒地计时在命中
+			## 当帧按同一时间层预先换算（转换前修正层不会再变化——期间的新命中
+			## 会整体覆盖状态），触地转换时直接取用。
+			dummy_state = DummyState.LOW_FLOAT_SWEEP
+			dummy_hitstun_left = _scaled_timer_frames(profile.air_untech_frames)
+			dummy_knockdown_left = _scaled_timer_frames(profile.knockdown_frames)
 	_dummy_fresh_hitstun = true
 	## 木桩受击打断其进行中的攻击（本帧已捕获的连接仍按互换命中结算）。
 	_clear_dummy_move()
 	dummy_velocity.x = player_facing * roundf(profile.horizontal_speed_px_s * combo_trajectory_scale)
-	if profile.reaction == HitProfile.Reaction.LAUNCH:
-		## 浮空命中必定重起跳：即使木桩仍在上一击的微浮中也按 profile 的垂直
-		## 初速度重置滞空；普通地面命中保持接地，垂直速度不动。
+	if profile.reaction == HitProfile.Reaction.LAUNCH or profile.reaction == HitProfile.Reaction.LOW_FLOAT_SWEEP:
+		## 浮空与低浮空命中必定重起跳：即使木桩仍在上一击的微浮中也按 profile
+		## 的垂直初速度重置滞空；普通地面命中保持接地，垂直速度不动。
 		dummy_velocity.y = -roundf(profile.upward_speed_px_s * combo_trajectory_scale)
 
 	_move_hit_confirmed = true
@@ -1377,7 +1390,7 @@ func _tick_ground_hitstun(events: Array[CombatEvent]) -> void:
 func _motion_dummy(events: Array[CombatEvent]) -> void:
 	var friction := GameParams.DUMMY_FRICTION
 	if dummy_state == DummyState.GROUND_HITSTUN or dummy_state == DummyState.AIR_HITSTUN \
-			or dummy_state == DummyState.KNOCKED_DOWN:
+			or dummy_state == DummyState.KNOCKED_DOWN or dummy_state == DummyState.LOW_FLOAT_SWEEP:
 		friction = GameParams.DUMMY_HITSTUN_FRICTION
 	dummy_velocity.x = move_toward(dummy_velocity.x, 0.0, friction * GameParams.PHYSICS_TICK)
 	if not dummy_on_ground:
@@ -1414,6 +1427,21 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 			if dummy_on_ground:
 				dummy_state = DummyState.NEUTRAL
 				events.append(CombatEvent.dummy_recovered())
+		DummyState.LOW_FLOAT_SWEEP:
+			if dummy_on_ground:
+				## 低浮空触地：同帧转普通倒地并结束连段（运动阶段先于取消窗口
+				## 关闭结算——同帧两者都到时以倒地原因报告）；倒地计时取命中当帧
+				## 按时间层预先换算的值，本帧不消耗（下一帧起按倒地规则倒数）。
+				dummy_state = DummyState.KNOCKED_DOWN
+				events.append(CombatEvent.low_float_landed())
+				_end_combo(CombatEvent.ComboEndReason.KNOCKDOWN, events)
+			elif not _dummy_fresh_hitstun:
+				## 滞空期间消耗受击窗口：调校初值下触地先于窗口耗尽；窗口先
+				## 耗尽时按浮空受身处理（同样结束连段），不产生倒地。
+				dummy_hitstun_left = maxi(dummy_hitstun_left - 1, 0)
+				if dummy_hitstun_left == 0:
+					dummy_state = DummyState.AIR_RECOVERED
+					_end_combo(CombatEvent.ComboEndReason.DUMMY_RECOVERED, events)
 		DummyState.KNOCKED_DOWN:
 			## 普通倒地：独立倒地计时逐帧消耗（命中当帧不消耗，停顿帧不推进）；
 			## 倒地期间不接受主动受身，计时结束自然恢复回中立并开启新连段的资格。
@@ -1639,6 +1667,10 @@ func _select_move_for_key(action_key: String, stance: MoveData.Stance, anchor_fr
 		var move := _moves[move_id] as MoveData
 		if move == null or move.stance != stance or not move.is_strike() or move.action_key != action_key:
 			continue
+		## 蹲姿限定按当帧输入状态判定（下方向 ∈ {1,2,3}，斜下含）：持续按住下
+		## 连续按键不依赖方向历史重新建段——与蹲姿的可观察输入一致。
+		if move.requires_crouch and not _down_held():
+			continue
 		var endpoint := -1
 		if _has_direction_notation(move):
 			var candidate := _best_valid_candidate(move, anchor_frame, segments)
@@ -1805,9 +1837,11 @@ func _can_hit_dummy() -> bool:
 
 
 func _dummy_pursuable() -> bool:
-	## 可追击的受击状态：地面硬直或浮空硬直（连段仍活跃时合法接续可继续命中）。
-	## 普通倒地与空中已受身不在可追击域内。
-	return dummy_state == DummyState.GROUND_HITSTUN or dummy_state == DummyState.AIR_HITSTUN
+	## 可追击的受击状态：地面硬直、浮空硬直或低浮空（连段仍活跃时合法接续可
+	## 继续命中；低浮空的追击窗口由触地转换关闭）。普通倒地与空中已受身不在
+	## 可追击域内。
+	return dummy_state == DummyState.GROUND_HITSTUN or dummy_state == DummyState.AIR_HITSTUN \
+		or dummy_state == DummyState.LOW_FLOAT_SWEEP
 
 
 func _stance_matches(move: MoveData) -> bool:

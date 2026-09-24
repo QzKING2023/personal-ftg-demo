@@ -112,6 +112,15 @@ func _initialize() -> void:
 	_test_three_layer_corrections_accumulate()
 	_test_normal_5D_has_no_reverse_5B()
 	_test_link_failure_reasons_readable()
+	_test_crouch_normals_select_by_down_state()
+	_test_crouch_rapid_repress_without_direction_reentry()
+	_test_crouch_chain_route_2A_2B()
+	_test_stand_chains_into_crouch_5A_2B_5B_2C()
+	_test_2C_low_float_sweep_lifecycle()
+	_test_2C_low_float_corrections_and_combo_end()
+	_test_2C_whiff_no_low_float()
+	_test_2C_airborne_target_miss_no_profile()
+	_test_2C_then_5D_fails_and_no_otg()
 	print("")
 	if _failures == 0:
 		print("ALL SESSION TESTS PASSED")
@@ -2650,6 +2659,297 @@ func _test_link_failure_reasons_readable() -> void:
 				gap_move = event.link_move_id
 	_check(gap_reason == CombatEvent.LinkFailReason.CONFIGURATION_GAP and gap_move == "5C",
 		"an undeclared link target held in the buffer at recovery reports CONFIGURATION_GAP without consuming the input")
+
+
+# --- 票据 02：蹲姿普通技与低浮空扫倒 ---
+
+func _test_crouch_normals_select_by_down_state() -> void:
+	# 蹲姿选招按当帧输入状态（下方向 ∈ {1,2,3}），不依赖方向历史段：
+	# 2A/2B/2C 覆盖同名站立招（优先级），无下方向时回落 5A/5B/5C，空中回落 jA。
+	var table := MoveData.default_table()
+	_check((table["2A"] as MoveData).requires_crouch and (table["2A"] as MoveData).attack_attribute == MoveData.AttackAttribute.LOW,
+		"2A declares the crouch requirement and the low attribute from the resource")
+	_check((table["2B"] as MoveData).requires_crouch and (table["2B"] as MoveData).attack_attribute == MoveData.AttackAttribute.LOW,
+		"2B declares the crouch requirement and the low attribute")
+	_check((table["2C"] as MoveData).requires_crouch and (table["2C"] as MoveData).attack_attribute == MoveData.AttackAttribute.LOW,
+		"2C declares the crouch requirement and the low attribute")
+	var down := CombatSession.new()
+	down.step(FrameInput.make(0, false, "A", true))
+	_check(down.player_move_id == "2A", "down + A starts 2A by the current-frame crouch state")
+	var down_forward := CombatSession.new()
+	down_forward.step(FrameInput.make(1, false, "A", true))
+	_check(down_forward.player_move_id == "2A", "down-forward + A still routes to 2A (down predicate covers 1/2/3)")
+	var down_back := CombatSession.new()
+	down_back.step(FrameInput.make(-1, false, "A", true))
+	_check(down_back.player_move_id == "2A", "down-back + A routes to 2A (crouch guarding input)")
+	var stand := CombatSession.new()
+	stand.step(FrameInput.make(0, false, "A"))
+	_check(stand.player_move_id == "5A", "A without down keeps the standing 5A")
+	var forward := CombatSession.new()
+	forward.step(FrameInput.make(1, false, "A"))
+	_check(forward.player_move_id == "6A", "forward + A keeps the direction-derived 6A")
+	# 2B/2C：B/C 是投组合成员键，配对窗口（+3 物理帧）后按单键起手。
+	var crouch_b := CombatSession.new()
+	for frame in range(1, 7):
+		crouch_b.step(FrameInput.make(0, false, "B" if frame == 1 else "", true))
+	_check(crouch_b.player_move_id == "2B", "down + B resolves to 2B after the combination wait")
+	var crouch_c := CombatSession.new()
+	for frame in range(1, 7):
+		crouch_c.step(FrameInput.make(0, false, "C" if frame == 1 else "", true))
+	_check(crouch_c.player_move_id == "2C", "down + C resolves to 2C after the combination wait")
+	# 空中按下方向不构成蹲姿：蹲姿招式不是候选，A 键解析为 jA。
+	var air := CombatSession.new()
+	air.step(FrameInput.make(0, true))
+	for frame in range(2, 6):
+		air.step(FrameInput.new())
+	var air_events := air.step(FrameInput.make(0, false, "A", true))
+	_check(air_events.size() >= 0 and air.player_move_id == "jA" and not air.player_on_ground,
+		"airborne down + A starts jA; the crouch gate is ground-only")
+
+
+func _test_crouch_rapid_repress_without_direction_reentry() -> void:
+	# 蹲姿选招不消费方向历史：持续按住下时连续两次 A 按下都解析为 2A——
+	# 不要求松开再按下方向重新建段（方向派生路径做不到这一点，是姿态锁定的回归）。
+	var session := CombatSession.new()
+	var move_after_frame := {}
+	for frame in range(1, 26):
+		var key := ""
+		if frame == 1 or frame == 21:
+			key = "A"
+		session.step(FrameInput.make(0, false, key, true))
+		move_after_frame[frame] = session.player_move_id
+	# F1 与 F21 都在按住下时按下 A：两次都是 2A（5+4+10=19 帧，F21 已完全恢复）。
+	_check(move_after_frame[1] == "2A", "first press under held down starts 2A")
+	_check(move_after_frame[21] == "2A", "the re-press after 2A recovery still resolves to 2A without direction re-entry")
+
+
+func _test_crouch_chain_route_2A_2B() -> void:
+	# 2A > 2B 链式取消路线：F1 ↓+A 起手 2A（命中 F6，停顿 F7–F14），F6 命中当帧
+	# 按住下按 B（组合等待在停顿中到期），恢复首帧 F15 以链式取消（2A 链含 2B）
+	# 起手 2B，F22 命中；地面硬直 floor(14×0.658)=9 帧后自然受身（F39）。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	var events: Array[CombatEvent] = []
+	var move_after_frame := {}
+	var hits := 0
+	for frame in range(1, 45):
+		var key := ""
+		if frame == 1 or frame == 6:
+			key = "B" if frame == 6 else "A"
+		var frame_events := session.step(FrameInput.make(0, false, key, true))
+		events.append_array(frame_events)
+		hits += _count_events(frame_events, CombatEvent.Type.HIT)
+		move_after_frame[frame] = session.player_move_id
+	_check(hits == 2 and move_after_frame[1] == "2A" and move_after_frame[15] == "2B",
+		"the 2A -> 2B crouch chain lands both hits via the chain-cancel window")
+	var hit_events := _events_of(events, CombatEvent.Type.HIT)
+	if hit_events.size() == 2:
+		_check(_approx(hit_events[0].damage, 5.8), "2A deals 8 × A-starter 0.72 = 5.8")
+		_check(_approx(hit_events[1].damage, 7.1), "2B deals 11 × 0.648 = 7.1")
+	_check(_approx(session.combo_total_damage, 12.9), "route total is 12.9")
+	_check(_count_events(events, CombatEvent.Type.COMBO_ENDED) == 1
+		and _combo_end_events(events, CombatEvent.ComboEndReason.DUMMY_RECOVERED) == 1,
+		"the crouch chain ends once by the dummy's natural recovery")
+	_check(session.dummy_state == CombatSession.DummyState.NEUTRAL, "2B is a plain grounded hit; no low float appears")
+
+
+func _test_stand_chains_into_crouch_5A_2B_5B_2C() -> void:
+	# 站立普通技的链式取消边声明到蹲姿目标：5A > 2B（F1 A 起手、命中 F6、
+	# F6 按住下按 B → F15 起手 2B、F22 命中）；5B > 2C（F1 B 起手 F4（组合等待）、
+	# 命中 F10、F10 按住下按 C → F19 起手 2C、F28 命中进入低浮空）。
+	var route_a := CombatSession.new()
+	route_a.dummy_position = route_a.player_position + Vector2(70, 0)
+	var hits_a := 0
+	var moves_a: Array[String] = []
+	for frame in range(1, 30):
+		var key := ""
+		if frame == 1:
+			key = "A"
+		elif frame == 6:
+			key = "B"
+		var axis := 0
+		var down := frame >= 6
+		var frame_events := route_a.step(FrameInput.make(axis, false, key, down))
+		hits_a += _count_events(frame_events, CombatEvent.Type.HIT)
+		moves_a.append(String(route_a.player_move_id))
+	_check(hits_a == 2 and moves_a[14] == "2B",
+		"5A chains into the crouch 2B when the B press carries the down state (declared edge 5A -> 2B)")
+	var route_b := CombatSession.new()
+	route_b.dummy_position = route_b.player_position + Vector2(70, 0)
+	var hits_b := 0
+	var moves_b: Array[String] = []
+	for frame in range(1, 40):
+		var key := ""
+		if frame == 1:
+			key = "B"
+		elif frame == 10:
+			key = "C"
+		var down := frame >= 10
+		var frame_events := route_b.step(FrameInput.make(0, false, key, down))
+		hits_b += _count_events(frame_events, CombatEvent.Type.HIT)
+		moves_b.append(String(route_b.player_move_id))
+	_check(hits_b == 2 and moves_b[18] == "2C",
+		"5B chains into the crouch 2C (declared edge 5B -> 2C)")
+	_check(route_b.dummy_state == CombatSession.DummyState.LOW_FLOAT_SWEEP,
+		"the chained 2C puts the grounded dummy into the low-float sweep")
+
+
+func _test_2C_low_float_sweep_lifecycle() -> void:
+	# 单招 2C：F1 ↓+C（组合等待）F4 起手、F13 命中（C 起手 0.90/0.92）——
+	# 低浮空受击计时 floor(20×0.90)=18、触地速度 round(120×0.92)=110、
+	# 倒地计时 floor(30×0.90)=27。F14–F21 停顿（计时冻结）后浮空 F22–F30、
+	# F31 触地转 GROUND_KNOCKDOWN，F58 自然恢复。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	var events: Array[CombatEvent] = []
+	var state_after_frame := {}
+	var timer_after_frame := {}
+	var move_after_frame := {}
+	for frame in range(1, 62):
+		var key := "C" if frame == 1 else ""
+		var frame_events := session.step(FrameInput.make(0, false, key, true))
+		events.append_array(frame_events)
+		state_after_frame[frame] = session.dummy_state
+		move_after_frame[frame] = session.player_move_id
+		timer_after_frame[frame] = [session.dummy_hitstun_left, session.dummy_knockdown_left, session.dummy_on_ground]
+	_check(move_after_frame[4] == "2C", "2C starts after the combination wait resolves")
+	_check(_count_events(events, CombatEvent.Type.HIT) == 1, "solo 2C lands exactly one hit")
+	_check(state_after_frame[13] == CombatSession.DummyState.LOW_FLOAT_SWEEP and not timer_after_frame[13][2],
+		"the 2C hit switches the grounded dummy into the airborne LOW_FLOAT_SWEEP state")
+	_check(timer_after_frame[13][0] == 18, "the low-float hit window is the C-starter-scaled floor(20×0.90)=18 frames")
+	_check(timer_after_frame[21][0] == 18, "the low-float timer stays frozen through the 8 hitstop frames")
+	_check(timer_after_frame[25][0] < 18, "the low-float timer ticks down on normal frames once the freeze ends")
+	var landed := _events_of(events, CombatEvent.Type.LOW_FLOAT_LANDED)
+	_check(landed.size() == 1, "the low float emits exactly one touch-down event")
+	_check(state_after_frame[31] == CombatSession.DummyState.KNOCKED_DOWN and timer_after_frame[31][1] == 27,
+		"touching the ground converts LOW_FLOAT_SWEEP into the plain knockdown with the scaled 27-frame timer")
+	_check(_count_events(events, CombatEvent.Type.DUMMY_RECOVERED) == 1 and session.dummy_state == CombatSession.DummyState.NEUTRAL,
+		"the knockdown recovers naturally back to neutral (no OTG, no tech)")
+	_check(session.dummy_hp == GameParams.DUMMY_MAX_HP - 13.0, "solo 2C deals 14 × C-starter damage layer 0.93 = 13.0")
+
+
+func _test_2C_low_float_corrections_and_combo_end() -> void:
+	# 5B > 2C：B 起手三层修正跨低浮空保留（伤 0.756/时 0.7708/轨 0.8075），
+	# 触地转倒地（F45，与取消窗口关闭同帧时运动阶段先行）清除修正与起手等级；
+	# 触地当帧 COMBO_ENDED(KNOCKDOWN)，F68 自然恢复。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	var events: Array[CombatEvent] = []
+	var combo_state_after_frame := {}
+	for frame in range(1, 72):
+		var key := ""
+		if frame == 1:
+			key = "B"
+		elif frame == 10:
+			key = "C"
+		var down := frame >= 10
+		var frame_events := session.step(FrameInput.make(0, false, key, down))
+		events.append_array(frame_events)
+		combo_state_after_frame[frame] = [session.combo_active, session.combo_starter_grade,
+			session.combo_damage_scale, session.combo_time_scale, session.combo_trajectory_scale,
+			session.dummy_state]
+	_check(_count_events(events, CombatEvent.Type.HIT) == 2, "5B > 2C lands both hits")
+	_check(_approx(session.combo_total_damage, 20.7), "route damage is 10.1 + 10.6 with the B-starter layers")
+	var float_state: Array = combo_state_after_frame[44]
+	_check(float_state[0] and float_state[1] == MoveData.StarterGrade.B
+		and _approx(float_state[2], 0.756) and _approx(float_state[3], 0.7708) and _approx(float_state[4], 0.8075),
+		"the starter grade and all three correction layers persist through the low float")
+	_check(float_state[5] == CombatSession.DummyState.LOW_FLOAT_SWEEP, "the dummy is still in the low float on the frame before touchdown")
+	var knockdown_state: Array = combo_state_after_frame[45]
+	_check(knockdown_state[5] == CombatSession.DummyState.KNOCKED_DOWN and not knockdown_state[0]
+		and knockdown_state[1] == MoveData.StarterGrade.UNSET
+		and knockdown_state[2] == 1.0 and knockdown_state[3] == 1.0 and knockdown_state[4] == 1.0,
+		"entering the knockdown ends the combo and clears the starter grade and correction layers")
+	_check(_combo_end_events(events, CombatEvent.ComboEndReason.KNOCKDOWN) == 1,
+		"the touchdown frame reports the combo end with the KNOCKDOWN reason (motion phase runs before the cancel-window close)")
+	_check(_count_events(events, CombatEvent.Type.DUMMY_RECOVERED) == 1, "the dummy recovers naturally after the knockdown")
+
+
+func _test_2C_whiff_no_low_float() -> void:
+	# 木桩在 2C 判定外：挥空不产生接触、取消年龄或受击状态——低浮空只在
+	# 实际命中 grounded 目标时出现。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(200, 0)
+	var events: Array[CombatEvent] = []
+	for frame in range(1, 45):
+		var key := "C" if frame == 1 else ""
+		events.append_array(session.step(FrameInput.make(0, false, key, true)))
+	_check(_count_events(events, CombatEvent.Type.HIT) == 0 and _count_events(events, CombatEvent.Type.HIT_MISS) == 0,
+		"a whiffed 2C produces no contact events at all")
+	_check(session.dummy_state == CombatSession.DummyState.NEUTRAL and not session.combo_active,
+		"the whiffed sweep leaves the dummy neutral without starting a combo")
+	_check(_count_events(events, CombatEvent.Type.LOW_FLOAT_LANDED) == 0,
+		"a whiffed 2C never raises the low-float or touchdown events")
+	_check(session.player_phase == CombatSession.PlayerPhase.NEUTRAL and session.player_move_id == "",
+		"the whiffed sweep finishes its full recovery back to neutral")
+
+
+func _test_2C_airborne_target_miss_no_profile() -> void:
+	# 2C 只声明 grounded 资料：命中判定前的目标状态是 AIRBORNE 时按精确键
+	# 查找失败（MISS_NO_PROFILE）——不回退 grounded 资料、不改受击状态。
+	# 探针表：6A 链式取消进 2C，2C 判定框放大到覆盖浮空段几何（几何注入只为
+	# 命中资料键行为的可观察性，不是共享表调校值）。
+	var table := MoveData.default_table()
+	var six_a := table["6A"] as MoveData
+	six_a.chain_cancel_targets = ["2C"]
+	six_a.chain_cancel_window_frames = 3
+	var two_c := table["2C"] as MoveData
+	two_c.hitbox_size = Vector2(52, 180)
+	var session := CombatSession.new(table)
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	var events: Array[CombatEvent] = []
+	var state_after_frame := {}
+	for frame in range(1, 40):
+		var key := ""
+		if frame == 2:
+			key = "A"
+		elif frame == 10:
+			key = "C"
+		var down := frame >= 10
+		var frame_events := session.step(FrameInput.make(1 if frame == 1 else 0, false, key, down))
+		events.append_array(frame_events)
+		state_after_frame[frame] = session.dummy_state
+	_check(_count_events(events, CombatEvent.Type.HIT) == 1, "only the 6A launcher connects")
+	_check(_count_events(events, CombatEvent.Type.HIT_MISS) == 1,
+		"2C against the airborne target reports MISS_NO_PROFILE (no AIRBORNE key declared)")
+	_check(state_after_frame[29] == CombatSession.DummyState.AIR_HITSTUN,
+		"the miss does not overwrite the launcher's air hitstun with any grounded result")
+	_check(_count_events(events, CombatEvent.Type.LOW_FLOAT_LANDED) == 0,
+		"no low float appears from the missed sweep")
+
+
+func _test_2C_then_5D_fails_and_no_otg() -> void:
+	# 2C 命中后缓存的 5D 在取消窗口关闭当帧（F30）按 CONFIGURATION_GAP 报告
+	# （2C 未声明到 5D 的普通连接边）；停顿顺延使 2C 完全恢复落在 F41，F38 重按的
+	# D 以独立招式起手（F42），判定窗口 F49–F52 全部落在普通倒地上——不命中、
+	# 不刷新倒地计时（F58 恢复不受影响）。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	var events: Array[CombatEvent] = []
+	var recovered_frame := -1
+	var move_after_frame := {}
+	for frame in range(1, 62):
+		var key := ""
+		if frame == 1:
+			key = "C"
+		elif frame == 30 or frame == 38:
+			key = "D"
+		var frame_events := session.step(FrameInput.make(0, false, key, frame == 1))
+		events.append_array(frame_events)
+		move_after_frame[frame] = session.player_move_id
+		for event in frame_events:
+			if event.type == CombatEvent.Type.DUMMY_RECOVERED:
+				recovered_frame = frame
+	_check(_count_events(events, CombatEvent.Type.HIT) == 1, "only the 2C itself lands")
+	var gaps := _events_of(events, CombatEvent.Type.LINK_FAILED)
+	_check(gaps.size() == 1 and gaps[0].link_fail_reason == CombatEvent.LinkFailReason.CONFIGURATION_GAP
+		and gaps[0].link_move_id == "5D",
+		"the buffered 5D after 2C is reported as an undeclared link edge when the cancel window closes")
+	_check(move_after_frame[42] == "5D", "the 5D still starts independently after the sweep recovery")
+	_check(_count_events(events, CombatEvent.Type.HIT) == 1 and recovered_frame == 58,
+		"the independent 5D cannot hit the knocked-down dummy and never refreshes the knockdown timer (recovery stays at F58)")
+	_check(session.dummy_state == CombatSession.DummyState.NEUTRAL and not session.combo_active,
+		"the session settles back to neutral after the failed pursuit")
 
 
 # --- 辅助 ---

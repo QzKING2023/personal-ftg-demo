@@ -27,6 +27,8 @@ var _dummy_status: Label
 var _debug_line: Label
 ## 最近一次普通连接失败的可读原因（LINK_FAILED 事件驱动；重置清空）。
 var _last_link_fail := ""
+## 最近一次低浮空触地/连段结束的可读事件注记（票据 02 训练场反馈）。
+var _last_state_note := ""
 
 
 func _ready() -> void:
@@ -55,6 +57,10 @@ func _physics_process(_delta: float) -> void:
 			_dummy.flash()
 		if event.type == CombatEvent.Type.LINK_FAILED:
 			_last_link_fail = "%s：%s" % [event.link_move_id, _link_fail_text(event.link_fail_reason)]
+		if event.type == CombatEvent.Type.LOW_FLOAT_LANDED:
+			_last_state_note = "低浮空触地 → 普通倒地"
+		if event.type == CombatEvent.Type.COMBO_ENDED:
+			_last_state_note = "连段结束：%s" % _combo_end_text(event.combo_end_reason)
 	_update_dummy_status()
 	_update_debug_line()
 
@@ -256,6 +262,8 @@ func _update_dummy_status() -> void:
 		state_text = "空中已受身"
 	elif session.dummy_state == CombatSession.DummyState.KNOCKED_DOWN:
 		state_text = "普通倒地（%d）" % session.dummy_knockdown_left
+	elif session.dummy_state == CombatSession.DummyState.LOW_FLOAT_SWEEP:
+		state_text = "低浮空（%d）" % session.dummy_hitstun_left
 	var posture := "空中" if not session.player_on_ground else "地面"
 	# 起手等级与三层累计修正（C-01/C-02）：连段内的可观察反馈。
 	var combo_text := "无"
@@ -267,8 +275,9 @@ func _update_dummy_status() -> void:
 			session.combo_trajectory_scale,
 		]
 	var link_text := _last_link_fail if _last_link_fail != "" else "—"
-	# 两行布局：第一行姿态与血量，第二行受击状态与连段；连接失败原因第三行。
-	_dummy_status.text = "玩家 %s  木桩 HP %d/%d\n状态 %s  连段 %d hit · %.1f  %s\n连接 %s" % [
+	var state_note := _last_state_note if _last_state_note != "" else "—"
+	# 两行布局：第一行姿态与血量，第二行受击状态与连段；连接失败原因与状态事件第三行。
+	_dummy_status.text = "玩家 %s  木桩 HP %d/%d\n状态 %s  连段 %d hit · %.1f  %s\n连接 %s  事件 %s" % [
 		posture,
 		roundi(session.dummy_hp),
 		GameParams.DUMMY_MAX_HP,
@@ -277,6 +286,7 @@ func _update_dummy_status() -> void:
 		session.combo_total_damage,
 		combo_text,
 		link_text,
+		state_note,
 	]
 
 
@@ -303,4 +313,19 @@ func _link_fail_text(reason: CombatEvent.LinkFailReason) -> String:
 			return "距离不足（判定窗口无接触）"
 		CombatEvent.LinkFailReason.CONFIGURATION_GAP:
 			return "未声明该普通连接边"
+	return "未知"
+
+
+func _combo_end_text(reason: CombatEvent.ComboEndReason) -> String:
+	match reason:
+		CombatEvent.ComboEndReason.FINISHER:
+			return "收尾招式"
+		CombatEvent.ComboEndReason.CANCEL_WINDOW_CLOSED:
+			return "取消窗口关闭"
+		CombatEvent.ComboEndReason.MOVE_RECOVERED:
+			return "收招未接续"
+		CombatEvent.ComboEndReason.DUMMY_RECOVERED:
+			return "木桩自然受身"
+		CombatEvent.ComboEndReason.KNOCKDOWN:
+			return "普通倒地"
 	return "未知"

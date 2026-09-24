@@ -1,0 +1,163 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+=== 路线 2A>2B（蹲姿链） | 面向 1 | 起始间距 60 px（身体中心水平） ===
+F1    输入[A+↓] 玩家(240.0,440.0) 面向1 招式2A | 木桩(300.0,440.0) 状态NEUTRAL 剩余0
+F6    HIT    第1击 伤害5.8 | 修正 伤0.7200/时0.7000/轨0.7500 | starter A
+F6    输入[B+↓] 玩家(240.0,440.0) 面向1 招式2A | 木桩(301.9,440.0) 状态GROUND_HITSTUN 剩余9
+F22   HIT    第2击 伤害7.1 | 修正 伤0.6480/时0.6580/轨0.7125 | starter A
+F39   DUMMY_RECOVERED
+F39   COMBO_ENDED 原因DUMMY_RECOVERED
+结果：连段 2 hit · 总伤害 12.9 · HP 87.1 · 连段存续 false
+
+=== 路线 5B>2C（低浮空扫倒→触地→普通倒地） | 面向 1 | 起始间距 60 px（身体中心水平） ===
+F1    输入[B] 玩家(240.0,440.0) 面向1 招式 | 木桩(300.0,440.0) 状态NEUTRAL 剩余0
+F10   HIT    第1击 伤害10.1 | 修正 伤0.8400/时0.8200/轨0.8500 | starter B
+F10   输入[C+↓] 玩家(240.0,440.0) 面向1 招式5B | 木桩(302.1,440.0) 状态GROUND_HITSTUN 剩余11
+F28   HIT    第2击 伤害10.6 | 修正 伤0.7560/时0.7708/轨0.8075 | starter B
+F28          玩家(2C) | 木桩(316.8,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F29          玩家(2C) | 木桩(316.8,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F30          玩家(2C) | 木桩(316.8,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F31          玩家(2C) | 木桩(316.8,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F32          玩家(2C) | 木桩(316.8,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F33          玩家(2C) | 木桩(316.8,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F34          玩家(2C) | 木桩(316.8,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F35          玩家(2C) | 木桩(316.8,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F36          玩家(2C) | 木桩(316.8,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F37          玩家(2C) | 木桩(318.4,437.2) 状态LOW_FLOAT_SWEEP 剩余hitstun14 knockdown23
+F38          玩家(2C) | 木桩(319.8,436.3) 状态LOW_FLOAT_SWEEP 剩余hitstun13 knockdown23
+F39          玩家(2C) | 木桩(321.2,435.9) 状态LOW_FLOAT_SWEEP 剩余hitstun12 knockdown23
+F40          玩家(2C) | 木桩(322.4,435.8) 状态LOW_FLOAT_SWEEP 剩余hitstun11 knockdown23
+F41          玩家(2C) | 木桩(323.4,436.1) 状态LOW_FLOAT_SWEEP 剩余hitstun10 knockdown23
+F42          玩家(2C) | 木桩(324.3,436.9) 状态LOW_FLOAT_SWEEP 剩余hitstun9 knockdown23
+F43          玩家(2C) | 木桩(325.1,438.0) 状态LOW_FLOAT_SWEEP 剩余hitstun8 knockdown23
+F44          玩家(2C) | 木桩(325.7,439.5) 状态LOW_FLOAT_SWEEP 剩余hitstun7 knockdown23
+F45   LOW_FLOAT_LANDED 木桩触地转普通倒地（倒地计时 23）
+F45   COMBO_ENDED 原因KNOCKDOWN
+F45          玩家(2C) | 木桩(326.2,440.0) 状态KNOCKED_DOWN 剩余hitstun7 knockdown23
+F68   DUMMY_RECOVERED
+结果：连段 2 hit · 总伤害 20.7 · HP 79.3 · 连段存续 false
+
+=== 路线 2C（单招扫倒） | 面向 1 | 起始间距 60 px（身体中心水平） ===
+F1    输入[C+↓] 玩家(240.0,440.0) 面向1 招式 | 木桩(300.0,440.0) 状态NEUTRAL 剩余0
+F13   HIT    第1击 伤害13.0 | 修正 伤0.9300/时0.9000/轨0.9200 | starter C
+F13          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F14          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F15          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F16          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F17          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F18          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F19          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F20          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F21          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F22          玩家(2C) | 木桩(303.9,436.7) 状态LOW_FLOAT_SWEEP 剩余hitstun17 knockdown27
+F23          玩家(2C) | 木桩(305.6,435.7) 状态LOW_FLOAT_SWEEP 剩余hitstun16 knockdown27
+F24          玩家(2C) | 木桩(307.2,435.0) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown27
+F25          玩家(2C) | 木桩(308.7,434.7) 状态LOW_FLOAT_SWEEP 剩余hitstun14 knockdown27
+F26          玩家(2C) | 木桩(310.0,434.8) 状态LOW_FLOAT_SWEEP 剩余hitstun13 knockdown27
+F27          玩家(2C) | 木桩(311.2,435.3) 状态LOW_FLOAT_SWEEP 剩余hitstun12 knockdown27
+F28          玩家(2C) | 木桩(312.2,436.2) 状态LOW_FLOAT_SWEEP 剩余hitstun11 knockdown27
+F29          玩家(2C) | 木桩(313.1,437.5) 状态LOW_FLOAT_SWEEP 剩余hitstun10 knockdown27
+F30   COMBO_ENDED 原因CANCEL_WINDOW_CLOSED
+F30          玩家(2C) | 木桩(313.9,439.2) 状态LOW_FLOAT_SWEEP 剩余hitstun9 knockdown27
+F31   LOW_FLOAT_LANDED 木桩触地转普通倒地（倒地计时 27）
+F31          玩家(2C) | 木桩(314.5,440.0) 状态KNOCKED_DOWN 剩余hitstun9 knockdown27
+F58   DUMMY_RECOVERED
+结果：连段 1 hit · 总伤害 13.0 · HP 87.0 · 连段存续 false
+
+=== 路线 2A>2B（蹲姿链） | 面向 -1 | 起始间距 60 px（身体中心水平） ===
+F1    输入[A+↓] 玩家(240.0,440.0) 面向-1 招式2A | 木桩(180.0,440.0) 状态NEUTRAL 剩余0
+F6    HIT    第1击 伤害5.8 | 修正 伤0.7200/时0.7000/轨0.7500 | starter A
+F6    输入[B+↓] 玩家(240.0,440.0) 面向-1 招式2A | 木桩(178.1,440.0) 状态GROUND_HITSTUN 剩余9
+F22   HIT    第2击 伤害7.1 | 修正 伤0.6480/时0.6580/轨0.7125 | starter A
+F39   DUMMY_RECOVERED
+F39   COMBO_ENDED 原因DUMMY_RECOVERED
+结果：连段 2 hit · 总伤害 12.9 · HP 87.1 · 连段存续 false
+
+=== 路线 5B>2C（低浮空扫倒→触地→普通倒地） | 面向 -1 | 起始间距 60 px（身体中心水平） ===
+F1    输入[B] 玩家(240.0,440.0) 面向-1 招式 | 木桩(180.0,440.0) 状态NEUTRAL 剩余0
+F10   HIT    第1击 伤害10.1 | 修正 伤0.8400/时0.8200/轨0.8500 | starter B
+F10   输入[C+↓] 玩家(240.0,440.0) 面向-1 招式5B | 木桩(177.9,440.0) 状态GROUND_HITSTUN 剩余11
+F28   HIT    第2击 伤害10.6 | 修正 伤0.7560/时0.7708/轨0.8075 | starter B
+F28          玩家(2C) | 木桩(163.2,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F29          玩家(2C) | 木桩(163.2,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F30          玩家(2C) | 木桩(163.2,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F31          玩家(2C) | 木桩(163.2,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F32          玩家(2C) | 木桩(163.2,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F33          玩家(2C) | 木桩(163.2,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F34          玩家(2C) | 木桩(163.2,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F35          玩家(2C) | 木桩(163.2,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F36          玩家(2C) | 木桩(163.2,438.4) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown23
+F37          玩家(2C) | 木桩(161.6,437.2) 状态LOW_FLOAT_SWEEP 剩余hitstun14 knockdown23
+F38          玩家(2C) | 木桩(160.2,436.3) 状态LOW_FLOAT_SWEEP 剩余hitstun13 knockdown23
+F39          玩家(2C) | 木桩(158.8,435.9) 状态LOW_FLOAT_SWEEP 剩余hitstun12 knockdown23
+F40          玩家(2C) | 木桩(157.6,435.8) 状态LOW_FLOAT_SWEEP 剩余hitstun11 knockdown23
+F41          玩家(2C) | 木桩(156.6,436.1) 状态LOW_FLOAT_SWEEP 剩余hitstun10 knockdown23
+F42          玩家(2C) | 木桩(155.7,436.9) 状态LOW_FLOAT_SWEEP 剩余hitstun9 knockdown23
+F43          玩家(2C) | 木桩(154.9,438.0) 状态LOW_FLOAT_SWEEP 剩余hitstun8 knockdown23
+F44          玩家(2C) | 木桩(154.3,439.5) 状态LOW_FLOAT_SWEEP 剩余hitstun7 knockdown23
+F45   LOW_FLOAT_LANDED 木桩触地转普通倒地（倒地计时 23）
+F45   COMBO_ENDED 原因KNOCKDOWN
+F45          玩家(2C) | 木桩(153.8,440.0) 状态KNOCKED_DOWN 剩余hitstun7 knockdown23
+F68   DUMMY_RECOVERED
+结果：连段 2 hit · 总伤害 20.7 · HP 79.3 · 连段存续 false
+
+=== 路线 2C（单招扫倒） | 面向 -1 | 起始间距 60 px（身体中心水平） ===
+F1    输入[C+↓] 玩家(240.0,440.0) 面向-1 招式 | 木桩(180.0,440.0) 状态NEUTRAL 剩余0
+F13   HIT    第1击 伤害13.0 | 修正 伤0.9300/时0.9000/轨0.9200 | starter C
+F13          玩家(2C) | 木桩(178.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F14          玩家(2C) | 木桩(178.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F15          玩家(2C) | 木桩(178.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F16          玩家(2C) | 木桩(178.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F17          玩家(2C) | 木桩(178.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F18          玩家(2C) | 木桩(178.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F19          玩家(2C) | 木桩(178.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F20          玩家(2C) | 木桩(178.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F21          玩家(2C) | 木桩(178.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F22          玩家(2C) | 木桩(176.1,436.7) 状态LOW_FLOAT_SWEEP 剩余hitstun17 knockdown27
+F23          玩家(2C) | 木桩(174.4,435.7) 状态LOW_FLOAT_SWEEP 剩余hitstun16 knockdown27
+F24          玩家(2C) | 木桩(172.8,435.0) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown27
+F25          玩家(2C) | 木桩(171.3,434.7) 状态LOW_FLOAT_SWEEP 剩余hitstun14 knockdown27
+F26          玩家(2C) | 木桩(170.0,434.8) 状态LOW_FLOAT_SWEEP 剩余hitstun13 knockdown27
+F27          玩家(2C) | 木桩(168.8,435.3) 状态LOW_FLOAT_SWEEP 剩余hitstun12 knockdown27
+F28          玩家(2C) | 木桩(167.8,436.2) 状态LOW_FLOAT_SWEEP 剩余hitstun11 knockdown27
+F29          玩家(2C) | 木桩(166.9,437.5) 状态LOW_FLOAT_SWEEP 剩余hitstun10 knockdown27
+F30   COMBO_ENDED 原因CANCEL_WINDOW_CLOSED
+F30          玩家(2C) | 木桩(166.1,439.2) 状态LOW_FLOAT_SWEEP 剩余hitstun9 knockdown27
+F31   LOW_FLOAT_LANDED 木桩触地转普通倒地（倒地计时 27）
+F31          玩家(2C) | 木桩(165.5,440.0) 状态KNOCKED_DOWN 剩余hitstun9 knockdown27
+F58   DUMMY_RECOVERED
+结果：连段 1 hit · 总伤害 13.0 · HP 87.0 · 连段存续 false
+
+=== 负例 2C 挥空 | 面向 1 | 起始间距 200 px（身体中心水平） ===
+F1    输入[C+↓] 玩家(240.0,440.0) 面向1 招式 | 木桩(440.0,440.0) 状态NEUTRAL 剩余0
+结果：连段 0 hit · 总伤害 0.0 · HP 100.0 · 连段存续 false
+
+=== 负例 2C 后 5D 追击（CONFIGURATION_GAP + 无 OTG） | 面向 1 | 起始间距 60 px（身体中心水平） ===
+F1    输入[C+↓] 玩家(240.0,440.0) 面向1 招式 | 木桩(300.0,440.0) 状态NEUTRAL 剩余0
+F13   HIT    第1击 伤害13.0 | 修正 伤0.9300/时0.9000/轨0.9200 | starter C
+F13          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F14          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F15          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F16          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F17          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F18          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F19          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F20          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F21          玩家(2C) | 木桩(302.0,438.2) 状态LOW_FLOAT_SWEEP 剩余hitstun18 knockdown27
+F22          玩家(2C) | 木桩(303.9,436.7) 状态LOW_FLOAT_SWEEP 剩余hitstun17 knockdown27
+F23          玩家(2C) | 木桩(305.6,435.7) 状态LOW_FLOAT_SWEEP 剩余hitstun16 knockdown27
+F24          玩家(2C) | 木桩(307.2,435.0) 状态LOW_FLOAT_SWEEP 剩余hitstun15 knockdown27
+F25          玩家(2C) | 木桩(308.7,434.7) 状态LOW_FLOAT_SWEEP 剩余hitstun14 knockdown27
+F26          玩家(2C) | 木桩(310.0,434.8) 状态LOW_FLOAT_SWEEP 剩余hitstun13 knockdown27
+F27          玩家(2C) | 木桩(311.2,435.3) 状态LOW_FLOAT_SWEEP 剩余hitstun12 knockdown27
+F28          玩家(2C) | 木桩(312.2,436.2) 状态LOW_FLOAT_SWEEP 剩余hitstun11 knockdown27
+F29          玩家(2C) | 木桩(313.1,437.5) 状态LOW_FLOAT_SWEEP 剩余hitstun10 knockdown27
+F30   LINK_FAILED 原因4 招式5D
+F30   COMBO_ENDED 原因CANCEL_WINDOW_CLOSED
+F30   输入[D+↓] 玩家(240.0,440.0) 面向1 招式2C | 木桩(313.9,439.2) 状态LOW_FLOAT_SWEEP 剩余9
+F31   LOW_FLOAT_LANDED 木桩触地转普通倒地（倒地计时 27）
+F31          玩家(2C) | 木桩(314.5,440.0) 状态KNOCKED_DOWN 剩余hitstun9 knockdown27
+F38   输入[D+↓] 玩家(240.0,440.0) 面向1 招式2C | 木桩(315.6,440.0) 状态KNOCKED_DOWN 剩余20
+F58   DUMMY_RECOVERED
+结果：连段 1 hit · 总伤害 13.0 · HP 87.0 · 连段存续 false

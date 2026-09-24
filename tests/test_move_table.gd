@@ -20,6 +20,8 @@ func _initialize() -> void:
 	_test_contradictory_fields_rejected()
 	_test_cross_move_references_rejected()
 	_test_same_binding_different_priority_allowed()
+	_test_low_float_profile_validation()
+	_test_requires_crouch_validation()
 	_test_command_tier_and_lenient_validation()
 	_test_hand_edited_tres_missing_field_rejected()
 	_test_tres_type_error_rejected()
@@ -45,7 +47,7 @@ func _test_default_manifest_loads_shared_table() -> void:
 	var result := MoveTable.load_default()
 	_check(result.ok, "default manifest loads and validates")
 	_check(result.errors.is_empty(), "default manifest reports no errors")
-	var expected_ids := ["5A", "5B", "5C", "6A", "236C", "jA", "jB", "jD", "5D", "214D", "BC"]
+	var expected_ids := ["5A", "2A", "5B", "2B", "5C", "2C", "6A", "236C", "jA", "jB", "jD", "5D", "214D", "BC"]
 	_check(result.moves.keys() == expected_ids, "table preserves manifest order and ids (stable enumeration)")
 	for move_id in expected_ids:
 		var move := result.moves[move_id] as MoveData
@@ -56,8 +58,9 @@ func _test_default_table_entries_match_manifest() -> void:
 	# 新基线调校初值（frame-data.md v0.2 TUNING_INITIAL）：startup/active/recovery 与基础伤害。
 	var result := MoveTable.load_default()
 	var expected := {
-		"5A": [5, 4, 10, 8], "5B": [6, 5, 12, 12], "5C": [8, 5, 16, 16],
-		"236C": [6, 5, 18, 18], "5D": [7, 4, 18, 18], "214D": [7, 5, 20, 22],
+		"5A": [5, 4, 10, 8], "2A": [5, 4, 10, 8], "5B": [6, 5, 12, 12], "2B": [7, 5, 12, 11],
+		"5C": [8, 5, 16, 16], "2C": [9, 3, 18, 14], "236C": [6, 5, 18, 18],
+		"5D": [7, 4, 18, 18], "214D": [7, 5, 20, 22],
 		"jA": [4, 6, 10, 8], "jB": [4, 6, 12, 12], "jD": [4, 7, 14, 20],
 		"BC": [5, 11, 10, -1],
 	}
@@ -86,19 +89,45 @@ func _test_default_table_entries_match_manifest() -> void:
 	_check(not five_d.is_finisher and five_d.link_targets.is_empty() and five_d.cancel_targets.is_empty(),
 		"5D is no longer a finisher and declares no reverse 5B link or cancel edge")
 	var five_a := result.moves["5A"] as MoveData
-	_check(five_a.chain_cancel_targets == ["5B"] and five_a.chain_cancel_window_frames == 3,
-		"5A declares its chain cancel edge to 5B with the 3f window")
+	_check(five_a.chain_cancel_targets == ["5B", "2B"] and five_a.chain_cancel_window_frames == 3,
+		"5A declares its chain cancel edges to 5B and the crouch 2B with the 3f window")
 	_check(five_a.special_cancel_targets == ["236C"] and five_a.special_cancel_window_frames == 5,
 		"5A declares its special cancel edge to 236C with the 5f window")
 	_check(five_a.link_targets == ["5B"], "5A declares the normal link edge to 5B")
 	var five_b := result.moves["5B"] as MoveData
-	_check(five_b.chain_cancel_targets == ["5C", "6A", "5D"] and five_b.link_targets == ["5C", "5D"],
+	_check(five_b.chain_cancel_targets == ["5C", "2C", "6A", "5D"] and five_b.link_targets == ["5C", "5D"],
 		"5B declares its chain cancel and link edges per the baseline matrix")
 	_check(five_c.chain_cancel_targets == ["6A", "5D"] and five_c.link_targets == ["5D"],
 		"5C declares its chain cancel and link edges per the baseline matrix")
+	# 票据 02：蹲姿普通技按姿态限定声明；2C 声明 LOW_FLOAT_SWEEP 资料（仅 grounded
+	# 键，缺失 airborne 键由精确匹配拒绝，不回退）；214C 出口待票据 04 接通。
+	var two_a := result.moves["2A"] as MoveData
+	var two_b := result.moves["2B"] as MoveData
+	var two_c := result.moves["2C"] as MoveData
+	_check(two_a.requires_crouch and two_b.requires_crouch and two_c.requires_crouch,
+		"the crouch normals declare the crouch requirement from the resource")
+	_check(two_a.chain_cancel_targets == ["5A", "2A", "5B", "2B"],
+		"2A chains within the A system and into the B system per the matrix")
+	_check(two_b.chain_cancel_targets == ["5C", "2C", "6A"],
+		"2B chains into the C system and 6A per the matrix")
+	_check(two_c.chain_cancel_targets.is_empty() and two_c.special_cancel_targets.is_empty()
+		and two_c.link_targets.is_empty(),
+		"2C declares no outgoing edges this ticket (its 214C special cancel arrives with ticket 04)")
+	var sweep := MoveData.profile_for(two_c, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)
+	_check(sweep != null and sweep.reaction == HitProfile.Reaction.LOW_FLOAT_SWEEP
+		and sweep.air_untech_frames == 20 and sweep.upward_speed_px_s == 120.0
+		and sweep.knockdown_frames == 30,
+		"2C declares the LOW_FLOAT_SWEEP profile (window 20f, lift 120px/s, knockdown 30f)")
+	_check(MoveData.profile_for(two_c, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL) == null,
+		"2C declares no AIRBORNE key: the exact-match selector must not fall back to grounded")
+	_check(MoveData.profile_for(two_c, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.COUNTER) != null
+		and two_c.starter_grade == MoveData.StarterGrade.C,
+		"2C declares its counter pair and the C starter grade")
 	var grades := {
-		"5A": MoveData.StarterGrade.A, "5B": MoveData.StarterGrade.B,
-		"5C": MoveData.StarterGrade.C, "5D": MoveData.StarterGrade.D,
+		"5A": MoveData.StarterGrade.A, "2A": MoveData.StarterGrade.A,
+		"5B": MoveData.StarterGrade.B, "2B": MoveData.StarterGrade.B,
+		"5C": MoveData.StarterGrade.C, "2C": MoveData.StarterGrade.C,
+		"5D": MoveData.StarterGrade.D,
 	}
 	for move_id in grades:
 		_check((result.moves[move_id] as MoveData).starter_grade == grades[move_id],
@@ -294,6 +323,74 @@ func _test_same_binding_different_priority_allowed() -> void:
 		session.dummy_position = session.player_position + Vector2(70, 0)
 		session.step(FrameInput.make(0, false, "A"))
 		_check(session.player_move_id == "5H", "runtime resolves the same binding by declared priority")
+
+
+# --- 票据 02：低浮空资料与蹲姿限定校验 ---
+
+func _valid_low_float_profile() -> HitProfile:
+	var profile := HitProfile.new()
+	profile.target_state = HitProfile.TargetState.GROUNDED
+	profile.hit_context = HitProfile.HitContext.NORMAL
+	profile.reaction = HitProfile.Reaction.LOW_FLOAT_SWEEP
+	profile.air_untech_frames = 20
+	profile.upward_speed_px_s = 120.0
+	profile.horizontal_speed_px_s = 140.0
+	profile.knockdown_frames = 30
+	return profile
+
+
+func _test_low_float_profile_validation() -> void:
+	var move := _valid_strike("2C", "C")
+	move.hit_profiles = [_valid_low_float_profile()]
+	_check(MoveTable.validate([move]).is_empty(), "a grounded LOW_FLOAT_SWEEP profile with window, lift and knockdown timers is legal")
+	var cases := [
+		["target_state", HitProfile.TargetState.AIRBORNE, "低浮空"],
+		["knockdown_frames", -1, "knockdown_frames"],
+		["air_untech_frames", -1, "air_untech_frames"],
+		["ground_stun_frames", 12, "ground_stun_frames"],
+	]
+	for entry in cases:
+		var broken := _valid_strike("2C", "C")
+		var profile := _valid_low_float_profile()
+		profile.set(entry[0], entry[1])
+		broken.hit_profiles = [profile]
+		var errors := MoveTable.validate([broken])
+		_check(not errors.is_empty() and errors[0].contains(entry[2]),
+			"LOW_FLOAT_SWEEP profile with illegal %s is rejected naming the field" % entry[0])
+	var no_lift := _valid_strike("2C", "C")
+	var flat := _valid_low_float_profile()
+	flat.upward_speed_px_s = 0.0
+	no_lift.hit_profiles = [flat]
+	var errors := MoveTable.validate([no_lift])
+	_check(not errors.is_empty() and errors[0].contains("upward_speed_px_s"),
+		"LOW_FLOAT_SWEEP must declare a positive lift speed (it leaves the ground by design)")
+	var counter_only := _valid_strike("2C", "C")
+	var counter := _valid_low_float_profile()
+	counter.hit_context = HitProfile.HitContext.COUNTER
+	counter_only.hit_profiles = [counter]
+	errors = MoveTable.validate([counter_only])
+	_check(not errors.is_empty() and errors[0].contains("counter"),
+		"a LOW_FLOAT counter without its same-state normal pair is rejected")
+
+
+func _test_requires_crouch_validation() -> void:
+	var air_crouch := _valid_strike("jX", "A")
+	air_crouch.stance = MoveData.Stance.AIR
+	air_crouch.requires_crouch = true
+	var errors := MoveTable.validate([air_crouch])
+	_check(not errors.is_empty() and errors[0].contains("requires_crouch"),
+		"an air move declaring the crouch requirement is rejected (crouch is ground-only)")
+	var ground := _valid_strike("2A", "A")
+	ground.requires_crouch = true
+	ground.priority = 2
+	_check(MoveTable.validate([ground, _valid_strike("5B", "B")]).is_empty(),
+		"a ground move with the crouch requirement validates next to other bindings")
+	# 蹲姿限定不是并列破除器：同姿态+同键+同层级+同优先级仍属无确定性选择。
+	var tied := _valid_strike("5A2", "A")
+	tied.requires_crouch = true
+	errors = MoveTable.validate([_valid_strike("5A", "A"), tied])
+	_check(not errors.is_empty() and errors[0].contains("优先级并列"),
+		"same key + tier + priority stays an illegal tie even when one side requires crouch")
 
 
 func _test_command_tier_and_lenient_validation() -> void:

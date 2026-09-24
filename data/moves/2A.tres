@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="MoveData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/move_data.gd" id="1_twoa"]
+[ext_resource type="Script" path="res://scripts/combat/hit_profile.gd" id="2_hitprofile"]
+
+[sub_resource type="Resource" id="HitProfile_2a_normal"]
+script = ExtResource("2_hitprofile")
+target_state = 1
+hit_context = 1
+reaction = 1
+ground_stun_frames = 14
+horizontal_speed_px_s = 160.0
+upward_speed_px_s = 0.0
+
+[sub_resource type="Resource" id="HitProfile_2a_counter"]
+script = ExtResource("2_hitprofile")
+target_state = 1
+hit_context = 2
+reaction = 1
+ground_stun_frames = 18
+horizontal_speed_px_s = 160.0
+upward_speed_px_s = 0.0
+
+[resource]
+script = ExtResource("1_twoa")
+move_id = "2A"
+move_kind = 1
+stance = 1
+action_key = "A"
+startup_frames = 5
+active_frames = 4
+recovery_frames = 10
+base_damage = 8
+attack_attribute = 3
+air_attack = false
+hitbox_size = Vector2(30, 20)
+hitbox_gap = 1.0
+hit_profiles = Array[Resource]([SubResource("HitProfile_2a_normal"), SubResource("HitProfile_2a_counter")])
+throw_range = -1.0
+extra_landing_recovery_frames = 0
+cancel_targets = Array[String]([])
+cancel_window_frames = 8
+chain_cancel_targets = Array[String](["5A", "2A", "5B", "2B"])
+chain_cancel_window_frames = 3
+special_cancel_targets = Array[String]([])
+special_cancel_window_frames = -1
+link_targets = Array[String]([])
+starter_grade = 1
+is_finisher = false
+jump_cancel_targets = Array[String]([])
+landing_cancel_targets = Array[String]([])
+direction_derivation = ""
+input_alternatives = Array[String]([])
+priority = 3
+requires_crouch = true

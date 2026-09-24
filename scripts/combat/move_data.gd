@@ -25,6 +25,11 @@ enum Stance {
 ## 内嵌在 hit_profiles 的每个 HitProfile 中，按 (target_state, hit_context)
 ## 精确选择；不存在旧 hit_result/hitstun_frames/knockback 字段或回退。
 
+## 蹲姿限定（票据 02）：仅当输入帧的方向数字 ∈ {1,2,3}（下方向按住，斜下含）
+## 时才是单键候选；按住下持续再按键不需要方向历史重新建段。与 5X 站立变体
+## 同键共存时靠 priority 分层（同层同优先级仍属非法并列）。仅地面招式可声明。
+@export var requires_crouch := false
+
 ## 攻击属性（防御姿态判定用；air 是与之正交的独立标记，见 air_attack）。
 enum AttackAttribute {
 	UNSET = 0,    ## 未声明（打击招式非法）
