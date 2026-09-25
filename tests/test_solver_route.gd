@@ -64,7 +64,7 @@ func _test_default_table_reports_config_gaps() -> void:
 
 func _test_gaps_are_never_claimed_as_legal() -> void:
 	var report := ComboSolver.solve()
-	_check(report.edges.size() == 27, "gap enumeration leaves the configured edge set untouched (still 27 edges after ticket 02)")
+	_check(report.edges.size() == 35, "gap enumeration leaves the configured edge set untouched (35 edges after ticket 04 adds the 214C specials, rekka derives and the ~B link)")
 	for edge in report.edges:
 		_check(not (edge.from_id == "5A" and edge.to_id == "5D"),
 			"no 5A → 5D edge is invented for the timing-valid unconfigured pair")

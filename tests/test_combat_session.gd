@@ -132,6 +132,14 @@ func _initialize() -> void:
 	_test_blocked_then_guard_release_hits_fresh()
 	_test_undeclared_block_fields_default_deny()
 	_test_blocked_freeze_uses_declared_frames()
+	_test_rekka_window_requires_contact_hit_block_whiff()
+	_test_rekka_first_press_locks_branch()
+	_test_rekka_window_expiry_keeps_throw_rules_outside()
+	_test_rekka_b_ground_knockdown_airborne_extension_and_link()
+	_test_rekka_c_ground_knockdown_and_airborne_spike()
+	_test_rekka_starter_and_corrections_across_rekka()
+	_test_rekka_blocked_derivation_only_block_result()
+	_test_rekka_only_moves_not_input_startable()
 	print("")
 	if _failures == 0:
 		print("ALL SESSION TESTS PASSED")
@@ -4928,6 +4936,357 @@ func _dummy_profiles() -> Array[HitProfile]:
 	airborne.upward_speed_px_s = 60.0
 	profiles.append(airborne)
 	return profiles
+
+
+# --- 票据 04：Rekka 首段、派生锁定与地空结果 ---
+## 时间轴约定：B/C 是投组合成员键——中立按下有 3 物理帧组合等待，C 在 F4 按下
+## 时 214C 首段 F1=F7、active F14–F17、接触 F14、停顿 F15–F22、恢复 F23；
+## 2C 起手同样 +3（F1 按下、F4 起手）。停顿中的按键照常采样锁分支。
+
+
+## 相对方向输入 + 木桩防御请求（Rekka 回放共用）。
+func _rekka_input(session: CombatSession, digit: int, key: String, guard := 0) -> FrameInput:
+	var input := _relative_input(session, digit, key)
+	input.dummy_guard_request = guard
+	return input
+
+
+## 同帧多键按下输入（同帧 B+C 仲裁用：pressed/held 同时含两键）。
+func _multi_key_input(keys: Array, guard := 0) -> FrameInput:
+	var input := FrameInput.new()
+	for key in keys:
+		input.pressed_action_keys.append(key)
+		input.held_action_keys.append(key)
+	input.dummy_guard_request = guard
+	return input
+
+
+## 裸 214C 起手脚本：F1–F3 喂 2/1/4，F4 按 C——首段 F1=F7，active F14–F17。
+func _run_214c_opener(session: CombatSession, guard := 0) -> Array[CombatEvent]:
+	var events: Array[CombatEvent] = []
+	for frame in range(1, 5):
+		var digit: int = [2, 1, 4, 5][frame - 1]
+		var key := "C" if frame == 4 else ""
+		events.append_array(session.step(_rekka_input(session, digit, key, guard)))
+	return events
+
+
+func _test_rekka_window_requires_contact_hit_block_whiff() -> void:
+	# 命中：首段命中开放派生窗口——停顿中按 B 立即锁 ~B，恢复首个正常帧起手派生。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(60, 0)
+	var events := _run_214c_opener(session)
+	var move_after := {}
+	for frame in range(5, 45):
+		var key := "B" if frame == 16 else ""
+		events.append_array(session.step(_rekka_input(session, 5, key)))
+		move_after[frame] = session.player_move_id
+	var locks := events.filter(func(e: CombatEvent) -> bool: return e.type == CombatEvent.Type.REKKA_BRANCH_LOCKED)
+	_check(locks.size() == 1 and locks[0].rekka_branch == "B" and locks[0].rekka_move_id == "214C~B",
+		"first hit contact opens the derivation window and the first B press locks 214C~B")
+	_check(move_after[23] == "214C" and move_after[24] == "214C~B",
+		"the locked branch starts the derived move on the first normal frame after the freeze")
+	_check(_count_events(events, CombatEvent.Type.HIT) == 2,
+		"both the opener and the derived 214C~B land as real hits")
+	# 被防：首段被站防同样开放派生窗口——分支锁定不依赖命中。
+	var session2 := CombatSession.new()
+	session2.dummy_position = session2.player_position + Vector2(60, 0)
+	var events2 := _run_214c_opener(session2, CombatSession.GuardPosture.STANDING)
+	var move_after2 := {}
+	var starter_at_25: int = -1
+	for frame in range(5, 45):
+		var key := "B" if frame == 16 else ""
+		var input := _rekka_input(session2, 5, key)
+		input.dummy_guard_request = CombatSession.GuardPosture.STANDING if frame <= 30 else 0
+		events2.append_array(session2.step(input))
+		move_after2[frame] = session2.player_move_id
+		if frame == 25:
+			starter_at_25 = session2.combo_starter_grade
+	_check(_count_events(events2, CombatEvent.Type.ATTACK_BLOCKED) == 1
+		and _count_events(events2, CombatEvent.Type.REKKA_BRANCH_LOCKED) == 1,
+		"a blocked opener contact still opens the window and locks the branch")
+	_check(move_after2[24] == "214C~B",
+		"the derivation starts after the blocked contact freeze as well")
+	_check(_count_events(events2, CombatEvent.Type.HIT) == 1 and starter_at_25 == MoveData.StarterGrade.UNSET,
+		"the blocked opener does not count as a hit and locks no starter; the derived 214C~B (low) leaks through the standing guard as a fresh B-starter combo")
+	# 挥空：无接触不开窗口——B 只是普通输入，派生从不发生。
+	var session3 := CombatSession.new()
+	session3.dummy_position = session3.player_position + Vector2(200, 0)
+	var events3 := _run_214c_opener(session3)
+	var move_ids := []
+	for frame in range(5, 45):
+		var key := "B" if frame == 16 else ""
+		events3.append_array(session3.step(_rekka_input(session3, 5, key)))
+		move_ids.append(session3.player_move_id)
+	_check(_count_events(events3, CombatEvent.Type.REKKA_BRANCH_LOCKED) == 0 and not move_ids.has("214C~B"),
+		"a whiffed opener never opens the derivation window")
+	_check(_count_events(events3, CombatEvent.Type.HIT) == 0 and _count_events(events3, CombatEvent.Type.ATTACK_BLOCKED) == 0,
+		"a whiff produces no contact at all")
+
+
+func _test_rekka_first_press_locks_branch() -> void:
+	# 同帧 B+C：固定 C > B 优先级直接锁 ~C，不产生普通投等待或投意图。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(60, 0)
+	var events := _run_214c_opener(session)
+	var move_after := {}
+	var branch_at_16 := ""
+	for frame in range(5, 45):
+		var input := _rekka_input(session, 5, "")
+		if frame == 16:
+			input = _multi_key_input(["B", "C"])
+		events.append_array(session.step(input))
+		move_after[frame] = session.player_move_id
+		if frame == 16:
+			branch_at_16 = String(session.debug_snapshot()["rekka_branch"])
+	_check(branch_at_16 == "C",
+		"a same-frame B+C press locks ~C immediately (fixed C > B priority)")
+	_check(_count_events(events, CombatEvent.Type.REKKA_BRANCH_LOCKED) == 1,
+		"only one branch lock event is emitted for the same-frame press")
+	_check(_count_events(events, CombatEvent.Type.THROW_FAILED) == 0 and _count_events(events, CombatEvent.Type.THROW_HIT) == 0,
+		"the same-frame B+C inside the window never becomes a throw combination")
+	_check(move_after[24] == "214C~C",
+		"the locked ~C branch starts after the freeze")
+	# 先 B 后 C：首按锁 ~B，之后另一键不改写分支。
+	var session2 := CombatSession.new()
+	session2.dummy_position = session2.player_position + Vector2(60, 0)
+	var events2 := _run_214c_opener(session2)
+	var move_after2 := {}
+	for frame in range(5, 45):
+		var key := ""
+		if frame == 16:
+			key = "B"
+		elif frame == 19:
+			key = "C"
+		events2.append_array(session2.step(_rekka_input(session2, 5, key)))
+		move_after2[frame] = session2.player_move_id
+	var locks2 := events2.filter(func(e: CombatEvent) -> bool: return e.type == CombatEvent.Type.REKKA_BRANCH_LOCKED)
+	_check(locks2.size() == 1 and locks2[0].rekka_branch == "B",
+		"the first B press locks ~B and the later C press cannot rewrite the branch")
+	_check(move_after2[24] == "214C~B" and not (move_after2.values() as Array).has("214C~C"),
+		"the derived move stays 214C~B and ~C never starts")
+	_check(_count_events(events2, CombatEvent.Type.THROW_FAILED) == 0,
+		"the later C press does not pair into a throw with the consumed B press")
+	# 同帧 D+B：~B 照常锁定；D 不被派生仲裁吞掉，照常写入单键缓存。
+	var session3 := CombatSession.new()
+	session3.dummy_position = session3.player_position + Vector2(60, 0)
+	var events3 := _run_214c_opener(session3)
+	var buffered_at_16 := ""
+	for frame in range(5, 45):
+		var input := _rekka_input(session3, 5, "")
+		if frame == 16:
+			input = _multi_key_input(["D", "B"])
+		events3.append_array(session3.step(input))
+		if frame == 16:
+			buffered_at_16 = String(session3.debug_snapshot()["buffered_key"])
+	_check(_count_events(events3, CombatEvent.Type.REKKA_BRANCH_LOCKED) == 1
+		and buffered_at_16 == "D" and session3.player_move_id == "214C~B",
+		"a same-frame D+B press still locks ~B while the D press buffers normally")
+
+
+func _test_rekka_window_expiry_keeps_throw_rules_outside() -> void:
+	# 窗口长度 12：接触年龄 13 起关闭——窗口外 B+C 走既有组合规则（配对成功、
+	# 招式中被状态门拒绝），窗口关闭后释放的新组合在恢复后可正常投。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(60, 0)
+	var events := _run_214c_opener(session, CombatSession.GuardPosture.STANDING)
+	var move_after := {}
+	for frame in range(5, 70):
+		var input := _rekka_input(session, 5, "", CombatSession.GuardPosture.STANDING if frame <= 20 else 0)
+		if frame == 36 or frame == 48:
+			input = _multi_key_input(["B", "C"])
+		events.append_array(session.step(input))
+		move_after[frame] = session.player_move_id
+	_check(_count_events(events, CombatEvent.Type.REKKA_BRANCH_LOCKED) == 0,
+		"a B+C press after the derivation window closes locks no branch")
+	var failed := events.filter(func(e: CombatEvent) -> bool:
+		return e.type == CombatEvent.Type.THROW_FAILED)
+	_check(failed.size() == 1 and failed[0].throw_fail_reason == CombatEvent.ThrowFailReason.STATE,
+		"outside the window B+C pairs normally and the throw is state-gated while the opener still runs")
+	_check(move_after[48] == "BC" and _count_events(events, CombatEvent.Type.THROW_HIT) == 1,
+		"after the opener fully recovers a fresh B+C combination executes the throw with existing rules")
+
+
+func _test_rekka_b_ground_knockdown_airborne_extension_and_link() -> void:
+	# 地面：首段命中地面目标后 ~B 命中 grounded → GROUND_KNOCKDOWN，连段与修正清除。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(60, 0)
+	var events := _run_214c_opener(session)
+	for frame in range(5, 50):
+		var key := "B" if frame == 16 else ""
+		events.append_array(session.step(_rekka_input(session, 5, key)))
+	_check(session.dummy_state == CombatSession.DummyState.KNOCKED_DOWN,
+		"214C~B on a grounded target causes a normal knockdown")
+	_check(_combo_end_events(events, CombatEvent.ComboEndReason.KNOCKDOWN) == 1
+		and not session.combo_active and session.combo_starter_grade == MoveData.StarterGrade.UNSET,
+		"the knockdown ends the combo and clears the starter and corrections")
+	# 空中（正例路线 2C > 214C > ~B > 5B）：~B 命中 airborne → 延长浮空而非倒地，
+	# 触地转地面硬直保剩余计时，~B 完全恢复后普通连接 5B 命中。
+	# 时间轴：2C F1=F4、接触 F12、停顿 F13–F20；停顿中 F15–F17 喂 214、F18 按 C、
+	# 214C F1=F21、接触 F28（空中）、停顿 F29–F36；F30 按 B、~B F1=F37、接触 F43、
+	# 停顿 F44–F51；~B 收招 F72、F68 缓存 B、5B 起手 F72、命中 F78。
+	var session2 := CombatSession.new()
+	session2.dummy_position = session2.player_position + Vector2(48, 0)
+	var events2: Array[CombatEvent] = []
+	var states := {}
+	for frame in range(1, 95):
+		var digit := 5
+		var key := ""
+		if frame == 1:
+			digit = 2
+			key = "C"
+		elif frame in [15, 16, 17]:
+			digit = [2, 1, 4][frame - 15]
+		elif frame == 19:
+			key = "C"
+		elif frame == 32:
+			key = "B"
+		elif frame == 70:
+			key = "B"
+		events2.append_array(session2.step(_rekka_input(session2, digit, key)))
+		if frame == 48:
+			states["state_at_48"] = session2.dummy_state
+		elif frame == 65:
+			states["state_at_65"] = session2.dummy_state
+		elif frame == 74:
+			states["move_at_74"] = session2.player_move_id
+	_check(_count_events(events2, CombatEvent.Type.HIT) == 4,
+		"the canonical route 2C > 214C > 214C~B > 5B lands four real hits")
+	_check(states["state_at_48"] == CombatSession.DummyState.AIR_HITSTUN,
+		"~B on an airborne target extends the float instead of knocking down")
+	_check(states["state_at_65"] == CombatSession.DummyState.GROUND_HITSTUN,
+		"the extended float lands and converts to ground hitstun keeping the remaining timer")
+	_check(states["move_at_74"] == "5B",
+		"the buffered 5B is consumed as a normal link on the frame 214C~B fully recovers")
+	_check(_count_events(events2, CombatEvent.Type.SPIKE_LANDED) == 0,
+		"~B never triggers the downward-slam landing conversion")
+
+
+func _test_rekka_c_ground_knockdown_and_airborne_spike() -> void:
+	# 地面：~C 命中 grounded 直接普通倒地收尾。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(60, 0)
+	var events := _run_214c_opener(session)
+	for frame in range(5, 50):
+		var key := "C" if frame == 16 else ""
+		events.append_array(session.step(_rekka_input(session, 5, key)))
+	_check(session.dummy_state == CombatSession.DummyState.KNOCKED_DOWN
+		and _combo_end_events(events, CombatEvent.ComboEndReason.KNOCKDOWN) == 1,
+		"214C~C on a grounded target knocks down directly")
+	_check(_count_events(events, CombatEvent.Type.SPIKE_LANDED) == 0,
+		"a grounded ~C hit does not go through the spike fall")
+	# 空中：~C 命中 airborne 使用独立向下击落资料——先坠落（SPIKE_FALL），
+	# 触地同帧转普通倒地并发出 SPIKE_LANDED；收尾在命中当帧结束连段。
+	# 时间轴：同上正例路线，F30 按 C、~C F1=F37、接触 F45（空中）、停顿 F46–F53、
+	# 触地转倒地约 F55。
+	var session2 := CombatSession.new()
+	session2.dummy_position = session2.player_position + Vector2(48, 0)
+	var events2: Array[CombatEvent] = []
+	var spike_states := []
+	for frame in range(1, 75):
+		var digit := 5
+		var key := ""
+		if frame == 1:
+			digit = 2
+			key = "C"
+		elif frame in [15, 16, 17]:
+			digit = [2, 1, 4][frame - 15]
+		elif frame == 19:
+			key = "C"
+		elif frame == 32:
+			key = "C"
+		events2.append_array(session2.step(_rekka_input(session2, digit, key)))
+		if frame >= 49 and frame <= 58:
+			spike_states.append(session2.dummy_state)
+	_check(_count_events(events2, CombatEvent.Type.HIT) == 3,
+		"2C > 214C > 214C~C lands three hits before the spike conversion")
+	_check(spike_states.has(CombatSession.DummyState.SPIKE_FALL),
+		"~C on an airborne target enters the downward spike fall instead of an instant knockdown")
+	_check(session2.dummy_state == CombatSession.DummyState.KNOCKED_DOWN
+		and _count_events(events2, CombatEvent.Type.SPIKE_LANDED) == 1,
+		"the spike lands and converts to a normal knockdown on touch")
+	_check(_combo_end_events(events2, CombatEvent.ComboEndReason.FINISHER) == 1,
+		"~C is a finisher: the combo ends on its hit frame")
+	_check(not session2.combo_active and session2.combo_starter_grade == MoveData.StarterGrade.UNSET,
+		"the finisher clears the combo starter and corrections")
+
+
+func _test_rekka_starter_and_corrections_across_rekka() -> void:
+	# 2C(C 起手) > 214C > 214C~B：起手等级锁定 C，三层修正跨 Rekka 每击累计保留。
+	# 接触帧：2C F12、214C F28、~B F43；停顿冻结期字段稳定，采样点取接触后。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(48, 0)
+	var events: Array[CombatEvent] = []
+	var scales := {}
+	for frame in range(1, 55):
+		var digit := 5
+		var key := ""
+		if frame == 1:
+			digit = 2
+			key = "C"
+		elif frame in [15, 16, 17]:
+			digit = [2, 1, 4][frame - 15]
+		elif frame == 19:
+			key = "C"
+		elif frame == 32:
+			key = "B"
+		events.append_array(session.step(_rekka_input(session, digit, key)))
+		if frame == 15:
+			scales["after_2c"] = [session.combo_starter_grade, session.combo_time_scale]
+		elif frame == 32:
+			scales["after_214c"] = [session.combo_starter_grade, session.combo_time_scale]
+		elif frame == 48:
+			scales["after_b"] = [session.combo_starter_grade, session.combo_time_scale]
+	_check(scales["after_2c"] == [MoveData.StarterGrade.C, 0.90],
+		"the first real hit locks the C starter and initializes the time layer")
+	_check(scales["after_214c"] == [MoveData.StarterGrade.C, 0.90 * 0.94],
+		"the opener hit keeps the starter and multiplies the time layer")
+	_check(scales["after_b"] == [MoveData.StarterGrade.C, 0.90 * 0.94 * 0.94],
+		"the derived hit continues accumulating across the Rekka chain")
+
+
+func _test_rekka_blocked_derivation_only_block_result() -> void:
+	# 蹲防全程：首段 mid 被防开放窗口，~B low 同样被防——派生只产生对应 BLOCKED
+	# 结果，不产生命中、不锁起手、不累计修正。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(60, 0)
+	var events := _run_214c_opener(session, CombatSession.GuardPosture.CROUCH)
+	for frame in range(5, 50):
+		var key := "B" if frame == 16 else ""
+		events.append_array(session.step(_rekka_input(session, 5, key, CombatSession.GuardPosture.CROUCH)))
+	_check(_count_events(events, CombatEvent.Type.ATTACK_BLOCKED) == 2
+		and _count_events(events, CombatEvent.Type.HIT) == 0,
+		"both the opener and the derived 214C~B are blocked with zero hits")
+	_check(_count_events(events, CombatEvent.Type.REKKA_BRANCH_LOCKED) == 1,
+		"the derivation branch still locks from the blocked contact")
+	_check(not session.combo_active and session.combo_hits == 0
+		and session.combo_starter_grade == MoveData.StarterGrade.UNSET
+		and is_equal_approx(session.combo_time_scale, 1.0),
+		"blocked derivations lock no starter and accumulate no corrections")
+
+
+func _test_rekka_only_moves_not_input_startable() -> void:
+	# 派生招式不参与单键/指令选择：中立按 B 起手 5B（组合等待 3 帧后 F4 起手）；
+	# 214 方向后按 B 仍是 5B；214 方向后按 C 起手首段 214C（首段本身是普通指令招式）。
+	var session := CombatSession.new()
+	for frame in range(1, 6):
+		session.step(FrameInput.make(0, false, "B" if frame == 1 else ""))
+	_check(session.player_move_id == "5B",
+		"a neutral B press starts 5B, not the rekka-only 214C~B")
+	var session2 := CombatSession.new()
+	for frame in range(1, 9):
+		var digit: int = [2, 1, 4, 5, 5, 5, 5, 5][frame - 1]
+		var key := "B" if frame == 4 else ""
+		session2.step(_relative_input(session2, digit, key))
+	_check(session2.player_move_id == "5B",
+		"after the 214 motion a B press still resolves to 5B (derived moves are not input-selectable)")
+	var session3 := CombatSession.new()
+	for frame in range(1, 9):
+		var digit: int = [2, 1, 4, 5, 5, 5, 5, 5][frame - 1]
+		var key := "C" if frame == 4 else ""
+		session3.step(_relative_input(session3, digit, key))
+	_check(session3.player_move_id == "214C",
+		"the opener 214C itself is a normal command move and starts from 214+C")
 
 
 func _check(condition: bool, label: String) -> void:

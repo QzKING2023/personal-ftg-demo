@@ -21,6 +21,7 @@ enum DummyState {
 	AIR_RECOVERED,    ## 空中已受身（连段已结束，落地后才恢复中立）
 	KNOCKED_DOWN,     ## 普通倒地（独立倒地计时；期间不可命中，计时结束自然恢复）
 	LOW_FLOAT_SWEEP,  ## 低浮空扫倒（短暂滞空的有限受击窗口；触地同帧转普通倒地）
+	SPIKE_FALL,       ## 向下击落坠落（票据 04：无空中计时，触地同帧转普通倒地）
 }
 
 ## 防御姿态：地面 4 为站防、1 为蹲防；真正离地后 4/1 均为空防。
@@ -220,6 +221,16 @@ var _pending_link_check := false
 ## 当前招式是否经普通连接起手（判定窗口结束无接触时报 DISTANCE_INSUFFICIENT）。
 var _move_via_link := false
 
+# --- Rekka 派生（票据 04，I-04/S-07）---
+## 首段命中或被防接触后派生窗口打开；窗口只属于当前执行的首段招式——
+## 派生起手、首段被打断或自然收招时随招式清除。挥空无接触不开放窗口。
+var _rekka_window_open := false
+## 打开窗口的接触帧（正常帧时钟：Hitstop 不计龄，与取消窗口同口径）。
+var _rekka_contact_frame := 0
+## 已锁定的分支键（"" / "B" / "C"）：窗口内第一个 B/C 新按下立即锁定，
+## 同帧 B+C 固定 C > B 优先级；锁定后另一键不改写、不升级、不补发普通投。
+var _rekka_branch := ""
+
 
 func _init(move_table: Dictionary = {}) -> void:
 	## 空表默认加载共享 manifest（训练场与 Solver 同一份已校验数据）；
@@ -322,6 +333,9 @@ func reset_to_initial_state() -> void:
 	_finished_move = null
 	_pending_link_check = false
 	_move_via_link = false
+	_rekka_window_open = false
+	_rekka_contact_frame = 0
+	_rekka_branch = ""
 
 
 ## 结算一个物理帧，返回该帧产生的战斗事件（按结算发生顺序排列）。
@@ -439,6 +453,9 @@ func debug_snapshot() -> Dictionary:
 		"damage_scale": combo_damage_scale,
 		"time_scale": combo_time_scale,
 		"trajectory_scale": combo_trajectory_scale,
+		"rekka_branch": _rekka_branch,
+		"rekka_window_left": (maxi(0, _current_move.rekka_window_frames - (_normal_frame_index - _rekka_contact_frame))
+			if _rekka_window_active() else -1),
 		"velocity": player_velocity,
 	}
 
@@ -533,6 +550,10 @@ func settlement_state() -> Dictionary:
 		"damage_scale": combo_damage_scale,
 		"time_scale": combo_time_scale,
 		"trajectory_scale": combo_trajectory_scale,
+		# Rekka 派生（票据 04）：分支锁定与窗口开闭影响后续起手资格，是真实结算量。
+		"rekka_branch": _rekka_branch,
+		"rekka_window_open": _rekka_window_open,
+		"rekka_contact_age": (_normal_frame_index - _rekka_contact_frame if _rekka_window_open else -1),
 		# 木桩姿态/阶段、受击计时与速度
 		"dummy_state": dummy_state,
 		"dummy_on_ground": dummy_on_ground,
@@ -579,14 +600,18 @@ func _phase_input(events: Array[CombatEvent]) -> void:
 		_jump_slot_active = false
 	_record_direction()
 	_record_action_key_events()
+	## Rekka 派生仲裁（I-04）先于普通投组合：派生窗口内的 B/C 新按下立即锁分支
+	## 并消费按键——不进入 B+C 组合等待、不写单键缓存；同帧 B+C 固定 ~C 优先。
+	## 冻结帧也采样：停顿中按下同样锁分支，恢复首个正常帧起手派生。
+	var rekka_consumed := _check_rekka_derivation(events)
 	var combination_completed := false
-	if _table_has_throw:
+	if not rekka_consumed and _table_has_throw:
 		combination_completed = _check_throw_combination()
 	## 更新的动作输入覆盖停顿中记录的投组合意图（同帧配齐的按键不视为“更新”）。
-	if not combination_completed and not _frame_input.pressed_action_keys.is_empty() \
+	if not rekka_consumed and not combination_completed and not _frame_input.pressed_action_keys.is_empty() \
 			and _pending_throw_physics > 0 and _frame_index > _pending_throw_physics:
 		_pending_throw_physics = 0
-	if not combination_completed and _frame_input.action_key != "":
+	if not rekka_consumed and not combination_completed and _frame_input.action_key != "":
 		_buffered_key = _frame_input.action_key
 		_buffered_at = input_stamp
 		_buffered_physics = _frame_index
@@ -720,6 +745,86 @@ func _check_throw_combination() -> bool:
 			_clear_buffer()
 		return true
 	return false
+
+
+## Rekka 派生仲裁（票据 04，I-04）：派生窗口活跃时拦截本帧的 B/C 新按下——
+## 第一个有效新按下立即锁定分支（同帧两键同按固定 C > B），并把参与的按键标记
+## 为已消费（不再进入普通投配对、不写单键缓存）。窗口内后续 B/C 新按下同样被
+## 消费但不改写分支。返回 true 表示本帧新按下全部属于 B/C 且已被消费（调用方
+## 据此跳过投配对与单键缓存写入）；同帧夹带的其他按键（如 D）照常走既有规则。
+func _check_rekka_derivation(events: Array[CombatEvent]) -> bool:
+	if not _rekka_window_active():
+		return false
+	var pressed := _frame_input.pressed_action_keys
+	var pressed_any := false
+	var branch := ""
+	for key in ["C", "B"]:
+		if not pressed.has(key):
+			continue
+		pressed_any = true
+		if branch == "":
+			branch = key
+		if _key_presses.has(key):
+			(_key_presses[key] as Array)[1] = true
+	if not pressed_any:
+		return false
+	if branch != "" and _rekka_branch == "":
+		_rekka_branch = branch
+		var target := _rekka_target_for(branch)
+		if target != "":
+			events.append(CombatEvent.rekka_branch_locked(branch, target))
+	for key in pressed:
+		if key != "B" and key != "C":
+			return false
+	return true
+
+
+## 派生窗口当前是否活跃：已打开、首段仍在执行、接触年龄仍在窗口内
+## （正常帧计龄，停顿不计——与链式/必杀取消窗口同口径；过期即关闭，不再拦截）。
+func _rekka_window_active() -> bool:
+	if not _rekka_window_open or _current_move == null:
+		return false
+	return _normal_frame_index - _rekka_contact_frame <= _current_move.rekka_window_frames
+
+
+func _rekka_target_for(branch: String) -> String:
+	if _current_move == null:
+		return ""
+	if branch == "B":
+		return _current_move.rekka_b_target
+	if branch == "C":
+		return _current_move.rekka_c_target
+	return ""
+
+
+## 已锁分支的派生起手：窗口仍开、首段仍在执行时按合法接续起手派生招式并
+## 关闭窗口（停顿中锁定的分支在恢复首个正常帧起手——消费阶段只在正常帧运行）。
+func _start_locked_rekka() -> bool:
+	if _rekka_branch == "" or not _rekka_window_active():
+		return false
+	var target_id := _rekka_target_for(_rekka_branch)
+	var target := _moves.get(target_id) as MoveData
+	if target == null:
+		return false
+	_start_move(target_id, target, true)
+	_note_buffer_consumed(target_id)
+	_clear_rekka_window()
+	return true
+
+
+func _clear_rekka_window() -> void:
+	_rekka_window_open = false
+	_rekka_contact_frame = 0
+	_rekka_branch = ""
+
+
+## 首段接触（命中或被防）打开派生窗口；接触前已有的锁定/窗口状态随前招清除。
+func _open_rekka_window(move: MoveData) -> void:
+	_clear_rekka_window()
+	if move.rekka_window_frames < 0:
+		return
+	_rekka_window_open = true
+	_rekka_contact_frame = _normal_frame_index
 
 
 ## 木桩确定性攻击请求：仅在木桩空闲（中立、落地、无进行中招式、不在被防硬直）
@@ -929,6 +1034,11 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 			dummy_state = DummyState.LOW_FLOAT_SWEEP
 			dummy_hitstun_left = _scaled_timer_frames(profile.air_untech_frames)
 			dummy_knockdown_left = _scaled_timer_frames(profile.knockdown_frames)
+		HitProfile.Reaction.DOWNWARD_SLAM:
+			## 向下击落（票据 04）：无空中受击计时——立即获得向下速度坠落，
+			## 触地同帧转普通倒地；倒地计时按命中当帧时间层预先换算（同低浮空口径）。
+			dummy_state = DummyState.SPIKE_FALL
+			dummy_knockdown_left = _scaled_timer_frames(profile.knockdown_frames)
 	_dummy_fresh_reaction = true
 	## 实际命中覆盖被防硬直：连防姿态让位给受击状态，残留被防计时随之作废。
 	dummy_blockstun_left = 0
@@ -939,12 +1049,15 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 		## 浮空与低浮空命中必定重起跳：即使木桩仍在上一击的微浮中也按 profile
 		## 的垂直初速度重置滞空；普通地面命中保持接地，垂直速度不动。
 		dummy_velocity.y = -roundf(profile.upward_speed_px_s * combo_trajectory_scale)
+	if profile.reaction == HitProfile.Reaction.DOWNWARD_SLAM:
+		dummy_velocity.y = roundf(profile.downward_speed_px_s * combo_trajectory_scale)
 
 	_move_hit_confirmed = true
 	_hit_confirm_frame = _normal_frame_index
 	_move_contact_confirmed = true
 	_contact_frame = _normal_frame_index
 	_move_blocked = false
+	_open_rekka_window(move)
 	events.append(CombatEvent.hit(combo_last_damage, player_facing, combo_hits,
 		context == HitProfile.HitContext.COUNTER))
 	## 命中帧完成命中与受击应用后开始 Hitstop：冻结后续 8 个物理帧（双方动作、
@@ -1074,6 +1187,7 @@ func _apply_player_blocked(move: MoveData, events: Array[CombatEvent]) -> void:
 	_move_contact_confirmed = true
 	_contact_frame = _normal_frame_index
 	_move_blocked = true
+	_open_rekka_window(move)
 	dummy_blockstun_left = move.block_stun_frames
 	_dummy_fresh_reaction = true
 	dummy_velocity.x = player_facing * move.block_pushback_px_s
@@ -1149,6 +1263,7 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 	##    原始请求物理帧——较新者优先、同一物理帧攻击优先，每帧最多启动一个
 	##    新动作；未选中的槽保留原年龄，后续帧按新状态重查。
 	_attempt_pending_throw(events)
+	_start_locked_rekka()
 	_evaluate_throw_tech(events)
 	_apply_throw_result(events)
 	_resolve_pending_link(events)
@@ -1507,7 +1622,8 @@ func _tick_ground_hitstun(events: Array[CombatEvent]) -> void:
 func _motion_dummy(events: Array[CombatEvent]) -> void:
 	var friction := GameParams.DUMMY_FRICTION
 	if dummy_state == DummyState.GROUND_HITSTUN or dummy_state == DummyState.AIR_HITSTUN \
-			or dummy_state == DummyState.KNOCKED_DOWN or dummy_state == DummyState.LOW_FLOAT_SWEEP:
+			or dummy_state == DummyState.KNOCKED_DOWN or dummy_state == DummyState.LOW_FLOAT_SWEEP \
+			or dummy_state == DummyState.SPIKE_FALL:
 		friction = GameParams.DUMMY_HITSTUN_FRICTION
 	dummy_velocity.x = move_toward(dummy_velocity.x, 0.0, friction * GameParams.PHYSICS_TICK)
 	if not dummy_on_ground:
@@ -1563,6 +1679,13 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 				if dummy_hitstun_left == 0:
 					dummy_state = DummyState.AIR_RECOVERED
 					_end_combo(CombatEvent.ComboEndReason.DUMMY_RECOVERED, events)
+		DummyState.SPIKE_FALL:
+			if dummy_on_ground:
+				## 向下击落触地：同帧转普通倒地（倒地计时为命中当帧预先换算值，
+				## 本帧不消耗）；连段若仍活跃（非收尾配置的向下击落）以倒地结束。
+				dummy_state = DummyState.KNOCKED_DOWN
+				events.append(CombatEvent.spike_landed())
+				_end_combo(CombatEvent.ComboEndReason.KNOCKDOWN, events)
 		DummyState.KNOCKED_DOWN:
 			## 普通倒地：独立倒地计时逐帧消耗（命中当帧不消耗，停顿帧不推进）；
 			## 倒地期间不接受主动受身，计时结束自然恢复回中立并开启新连段的资格。
@@ -1735,6 +1858,9 @@ func _start_move(move_id: String, move: MoveData, is_followup: bool) -> void:
 	_move_blocked = false
 	_move_is_followup = is_followup
 	_move_via_link = false
+	## 新招式接管：前招的 Rekka 派生窗口随招式结束（派生起手路径在调用前已
+	## 自行关闭窗口，此处兜底其它起手来源）。
+	_clear_rekka_window()
 	player_phase = PlayerPhase.STARTUP
 	## 招式阶段替换姿态：出招期间不蹲不防，收招后按输入重解析。
 	_clear_posture()
@@ -1755,6 +1881,8 @@ func _clear_current_move() -> void:
 	_move_blocked = false
 	_move_is_followup = false
 	_move_via_link = false
+	## 招式被打断或自然结束：派生窗口只属于该招，随之关闭。
+	_clear_rekka_window()
 	player_move_id = ""
 	player_phase = PlayerPhase.NEUTRAL
 
@@ -1793,6 +1921,9 @@ func _select_move_for_key(action_key: String, stance: MoveData.Stance, anchor_fr
 	for move_id in _moves:
 		var move := _moves[move_id] as MoveData
 		if move == null or move.stance != stance or not move.is_strike() or move.action_key != action_key:
+			continue
+		## Rekka 派生招式只经派生仲裁器起手（票据 04）：不参与单键/指令输入选择。
+		if move.rekka_only:
 			continue
 		## 蹲姿限定按当帧输入状态判定（下方向 ∈ {1,2,3}，斜下含）：持续按住下
 		## 连续按键不依赖方向历史重新建段——与蹲姿的可观察输入一致。
@@ -1931,6 +2062,8 @@ func _direction_lock_entries() -> Array[Dictionary]:
 	for move_id in _moves:
 		var move := _moves[move_id] as MoveData
 		if move == null or move.stance != _current_stance() or not move.is_strike() or not _has_direction_notation(move):
+			continue
+		if move.rekka_only:
 			continue
 		var candidate := _best_valid_candidate(move, _normal_frame_index, segments)
 		if candidate.is_empty():

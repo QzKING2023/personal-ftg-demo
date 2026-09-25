@@ -6,7 +6,7 @@ extends Node2D
 const PlayerScene: PackedScene = preload("res://scenes/player.tscn")
 const DummyScene: PackedScene = preload("res://scenes/dummy.tscn")
 
-const HINT_TEXT := "移动 A/D 或 ←/→    下 S/↓ 蹲下    防御 按住后方向 4/1    跳跃 Space    重置 R\n动作 U/I/K/J = A/B/C/D    派生 236+C / 214+D（方向按面向折算）\n冲刺 双击 →/←（66/44，中间松开一帧）    投 I+K = B+C（≤3帧内同按，投距内成立）\n木桩防御 G 循环：无 → 站防 → 蹲防 → 空防（逐帧确定性请求，木桩无自主决策）"
+const HINT_TEXT := "移动 A/D 或 ←/→    下 S/↓ 蹲下    防御 按住后方向 4/1    跳跃 Space    重置 R\n动作 U/I/K/J = A/B/C/D    派生 236+C / 214+C（方向按面向折算）\n214+C 分支：命中或被防后首按 I/K 锁定 ~B/~C（同帧 I+K 固定 ~C）\n冲刺 双击 →/←（66/44，中间松开一帧）    投 I+K = B+C（≤3帧内同按，投距内成立）\n木桩防御 G 循环：无 → 站防 → 蹲防 → 空防（逐帧确定性请求，木桩无自主决策）"
 
 ## 动作键 A/B/C/D 对应的输入动作名（物理键 U/I/K/J）；C/D 配合方向序列触发派生。
 const ACTION_KEYS: Array[String] = ["A", "B", "C", "D"]
@@ -64,6 +64,11 @@ func _physics_process(_delta: float) -> void:
 			_last_link_fail = "%s：%s" % [event.link_move_id, _link_fail_text(event.link_fail_reason)]
 		if event.type == CombatEvent.Type.LOW_FLOAT_LANDED:
 			_last_state_note = "低浮空触地 → 普通倒地"
+		if event.type == CombatEvent.Type.REKKA_BRANCH_LOCKED:
+			_last_state_note = "Rekka 分支锁定 ~%s（%s）——首个 %s 新按下锁定，同帧 B+C 固定 ~C" % [
+				event.rekka_branch, event.rekka_move_id, event.rekka_branch]
+		if event.type == CombatEvent.Type.SPIKE_LANDED:
+			_last_state_note = "向下击落触地 → 普通倒地"
 		if event.type == CombatEvent.Type.ATTACK_BLOCKED:
 			_last_state_note = "攻击被%s挡下（被防硬直 %d）" % [
 				_guard_posture_text(event.guard_posture), session.dummy_blockstun_left]
@@ -255,12 +260,17 @@ func _update_debug_line() -> void:
 	if bool(snap["cancel_open"]):
 		# 取消资格开放时同时显示正常帧年龄（停顿帧不计龄，issue 14）。
 		cancels += " 龄%d" % int(snap["cancel_age"])
+	# Rekka 派生窗口（票据 04）：分支锁定与窗口剩余（正常帧口径）。
+	var derive_text := "—"
+	if int(snap["rekka_window_left"]) >= 0:
+		var branch := String(snap["rekka_branch"])
+		derive_text = "余%d%s" % [int(snap["rekka_window_left"]), "·锁~" + branch if branch != "" else ""]
 	var attribute := String(snap["move_attribute"])
 	if attribute != "":
 		attribute = " 属性" + attribute
-	_debug_line.text = "诊断 帧%d 面向%s %s 防御%s 招式%s%s 缓存%s 跳槽%s 按住%s 投窗%s%s 方向%s 取消%s" % [
+	_debug_line.text = "诊断 帧%d 面向%s %s 防御%s 招式%s%s 缓存%s 跳槽%s 按住%s 投窗%s%s 方向%s 取消%s 派生%s" % [
 		int(snap["frame"]), facing_text, posture, guard_text, move_text, attribute, buffer_text, jump_text,
-		held_text, throw_text, pending_text, sequence, cancels,
+		held_text, throw_text, pending_text, sequence, cancels, derive_text,
 	]
 
 
@@ -276,6 +286,8 @@ func _update_dummy_status() -> void:
 		state_text = "普通倒地（%d）" % session.dummy_knockdown_left
 	elif session.dummy_state == CombatSession.DummyState.LOW_FLOAT_SWEEP:
 		state_text = "低浮空（%d）" % session.dummy_hitstun_left
+	elif session.dummy_state == CombatSession.DummyState.SPIKE_FALL:
+		state_text = "向下击落坠落"
 	if session.dummy_guard != CombatSession.GuardPosture.NONE:
 		state_text += "·%s" % _guard_posture_text(session.dummy_guard)
 		if session.dummy_blockstun_left > 0:

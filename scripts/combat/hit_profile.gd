@@ -28,6 +28,7 @@ enum Reaction {
 	LAUNCH = 2,           ## 浮空受击（空中受身计时 + 垂直初速度）
 	GROUND_KNOCKDOWN = 3, ## 普通倒地（独立倒地计时，进入即结束连段）
 	LOW_FLOAT_SWEEP = 4,  ## 低浮空扫倒（仅 GROUNDED 目标；短暂滞空后触地转普通倒地）
+	DOWNWARD_SLAM = 5,    ## 向下击落（仅 AIRBORNE 目标；立即获得向下速度，触地转普通倒地）
 }
 
 ## 唯一键之一：命中前目标状态。
@@ -49,6 +50,8 @@ enum Reaction {
 @export var horizontal_speed_px_s := -1.0
 ## 垂直初速度幅值（px/s；LAUNCH 必须大于 0，普通地面命中/倒地为 0）。
 @export var upward_speed_px_s := -1.0
+## 垂直向下初速度幅值（px/s；仅 DOWNWARD_SLAM，正数、方向向下施加）。
+@export var downward_speed_px_s := -1.0
 
 
 ## 本 profile 的反应计时帧数（防御硬直等玩家侧反馈复用同一口径；未声明为 -1）。

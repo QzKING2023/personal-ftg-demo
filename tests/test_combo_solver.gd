@@ -27,6 +27,7 @@ func _initialize() -> void:
 	_test_finisher_back_edge_not_misreported()
 	_test_wait_window_clamped_by_window_and_hitstun()
 	_test_crouch_moves_and_low_float()
+	_test_rekka_derive_edges_and_routes()
 	_test_blocked_cancel_edge_variants()
 	_test_blocked_contact_not_treated_as_hit()
 	_test_solver_claims_only_configured_connections()
@@ -47,7 +48,7 @@ func _initialize() -> void:
 func _test_default_table_reports_ground_route() -> void:
 	var report := ComboSolver.analyze()
 	_check(report.safe and report.cycles.is_empty(), "default table reports no valid cycle")
-	_check(report.edges.size() == 27, "default table enumerates 27 edges (15 chain + 3 special + 4 link + 2 jump + 2 air cancels + 1 landing; ticket 02 adds 5A→2B, 5B→2C and the 2A/2B chain families)")
+	_check(report.edges.size() == 35, "default table enumerates 35 edges (15 chain + 8 special + 4 link + 2 jump + 2 air cancels + 1 landing + 2 Rekka derives + 1 ~B link; ticket 04 adds the 214C special family and the rekka edges)")
 	var ab := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	_check(ab != null and ab.valid, "5A -> 5B is a valid chain continuation")
 	if ab != null:
@@ -348,15 +349,15 @@ func _test_crouch_moves_and_low_float() -> void:
 	var sweep_edge := _find_edge(report, "2B", "2C", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	_check(sweep_edge != null and sweep_edge.valid,
 		"2B -> 2C is validated and puts the dummy into the low float on hit")
-	var route := _find_route(report, ["2B", "2C"])
-	_check(route != null and route.timing_valid and route.combo_hits == 2,
-		"the readable 2B -> 2C sweep route replays with both crouch presses carrying down")
+	var route := _find_route(report, ["2B", "2C", "214C", "214C~B"])
+	_check(route != null and route.timing_valid and route.combo_hits == 4,
+		"the readable 2B -> 2C -> 214C -> 214C~B sweep route replays with both crouch presses carrying down (ticket 04 extends the dead end into the rekka route)")
 	if route != null:
 		var down_presses := 0
 		for spec in route.inputs:
 			if spec.key != "" and spec.down:
 				down_presses += 1
-		_check(down_presses == 2, "both crouch press frames in the route's input table carry the down state")
+		_check(down_presses == 2, "only the two crouch press frames (2B/2C) carry the down state; 214C and ~B presses do not")
 	var crouch_route := _find_route(report, ["2A", "2B", "5C", "5D"])
 	_check(crouch_route != null and crouch_route.timing_valid and crouch_route.combo_hits == 4,
 		"the 2A -> 2B -> 5C -> 5D route extends the crouch opener into the standing chain")
@@ -373,9 +374,51 @@ func _test_crouch_moves_and_low_float() -> void:
 	if truncated != null:
 		_check(not truncated.timing_valid and "断开" in truncated.note,
 			"the truncated 2A -> 2B entry (2C too slow behind the A-starter-decayed 2B stun) is honestly reported as broken")
-	# 2C 无出边：报告不得发明 2C 之后的接续（配置缺口按缺口类型另行报告）。
+	# 2C 唯一声明出边是 214C 必杀取消（票据 04 接通）：报告不得发明其他接续。
 	for edge in report.edges:
-		_check(not (edge.from_id == "2C" and edge.valid), "no valid continuation out of 2C is claimed beyond its declared edges")
+		if edge.from_id == "2C" and edge.valid:
+			_check(edge.to_id == "214C" and edge.kind == ComboSolver.EdgeKind.SPECIAL_CANCEL,
+				"the only valid continuation out of 2C is the declared 214C special cancel (ticket 04)")
+
+
+func _test_rekka_derive_edges_and_routes() -> void:
+	# 票据 04：Rekka 派生边在真实结算中验证——首段接触起的派生窗口、首个
+	# B/C 新按下锁分支、派生按键无组合等待、被防接触同样开放派生；
+	# ~B/~C 不出现在首招候选；正例路线 2C > 214C > ~B 计 3 击、~C 收尾。
+	var report := ComboSolver.analyze()
+	var derive_b := _find_edge(report, "214C", "214C~B", ComboSolver.EdgeKind.REKKA_DERIVE)
+	_check(derive_b != null and derive_b.valid,
+		"the 214C -> 214C~B derivation edge is validated in real settlement")
+	if derive_b != null and derive_b.valid:
+		_check(derive_b.wait_from == 1 and derive_b.wait_from <= derive_b.wait_to,
+			"the derivation wait range starts at 1 (the contact frame itself has not opened the window at input time yet)")
+		_check(derive_b.reason.contains("branch-locked"),
+			"the valid edge reason carries the branch-locked classification")
+	var derive_c := _find_edge(report, "214C", "214C~C", ComboSolver.EdgeKind.REKKA_DERIVE)
+	_check(derive_c != null and derive_c.valid,
+		"the 214C -> 214C~C derivation edge is validated in real settlement")
+	if derive_c != null:
+		_check(derive_c.blocked_valid and derive_c.blocked_reason.contains("再次被防"),
+			"the ~C derivation from a blocked opener is probed and blocked again by the standing guard (overhead)")
+	if derive_b != null and derive_b.blocked_valid:
+		_check(derive_b.blocked_reason.contains("命中") and derive_b.blocked_reason.contains("漏出"),
+			"the ~B derivation from a blocked opener leaks through the standing guard (low) and is reported as a mixed start")
+	for line in report.first_candidates:
+		_check(not line.begins_with("214C~"),
+			"rekka-only derived moves never appear as first candidates (%s)" % line)
+	var route_b := _find_route(report, ["2C", "214C", "214C~B"])
+	_check(route_b != null and route_b.timing_valid and route_b.combo_hits == 3,
+		"the canonical 2C > 214C > 214C~B route replays with three real hits")
+	var route_c := _find_route(report, ["5B", "2C", "214C", "214C~C"])
+	_check(route_c != null and route_c.timing_valid and route_c.combo_hits == 4
+		and route_c.note.contains("收尾"),
+		"the 5B > 2C > 214C > 214C~C route ends as a finisher with four hits")
+	for route in report.routes:
+		_check(not (route.move_ids.has("214C~B") and route.move_ids.has("5B") and route.move_ids.find("5B") > route.move_ids.find("214C~B") and route.combo_hits >= 5),
+			"no route claims the airborne ~B > 5B link as a fifth hit (canonical-context link edge stays excluded; the airborne link is replay-required)")
+	var link_edge := _find_edge(report, "214C~B", "5B", ComboSolver.EdgeKind.NORMAL_LINK)
+	_check(link_edge != null and not link_edge.valid,
+		"the ~B > 5B link edge is honestly reported invalid in its canonical grounded context (knockdown ends the combo)")
 
 
 func _test_blocked_cancel_edge_variants() -> void:
@@ -449,6 +492,11 @@ func _test_solver_claims_only_configured_connections() -> void:
 		["2B", "6A", ComboSolver.EdgeKind.CHAIN_CANCEL],
 		["5A", "236C", ComboSolver.EdgeKind.SPECIAL_CANCEL], ["5B", "236C", ComboSolver.EdgeKind.SPECIAL_CANCEL],
 		["5C", "236C", ComboSolver.EdgeKind.SPECIAL_CANCEL],
+		["5A", "214C", ComboSolver.EdgeKind.SPECIAL_CANCEL], ["2A", "214C", ComboSolver.EdgeKind.SPECIAL_CANCEL],
+		["5B", "214C", ComboSolver.EdgeKind.SPECIAL_CANCEL], ["5C", "214C", ComboSolver.EdgeKind.SPECIAL_CANCEL],
+		["2C", "214C", ComboSolver.EdgeKind.SPECIAL_CANCEL],
+		["214C", "214C~B", ComboSolver.EdgeKind.REKKA_DERIVE], ["214C", "214C~C", ComboSolver.EdgeKind.REKKA_DERIVE],
+		["214C~B", "5B", ComboSolver.EdgeKind.NORMAL_LINK],
 		["5A", "5B", ComboSolver.EdgeKind.NORMAL_LINK], ["5B", "5C", ComboSolver.EdgeKind.NORMAL_LINK],
 		["5B", "5D", ComboSolver.EdgeKind.NORMAL_LINK], ["5C", "5D", ComboSolver.EdgeKind.NORMAL_LINK],
 		["236C", "jA", ComboSolver.EdgeKind.JUMP_CANCEL], ["6A", "jA", ComboSolver.EdgeKind.JUMP_CANCEL],

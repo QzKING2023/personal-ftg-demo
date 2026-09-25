@@ -80,10 +80,10 @@ func _test_first_candidates_ground_only_sorted() -> void:
 	var ids: Array[String] = []
 	for line in report.first_candidates:
 		ids.append(line.split("｜")[0])
-	_check(ids == ["214D", "236C", "2A", "2B", "2C", "5A", "5B", "5C", "5D", "6A"],
-		"first-move candidates enumerate the executable ground moves (standing and crouch) in stable id order")
+	_check(ids == ["214C", "214D", "236C", "2A", "2B", "2C", "5A", "5B", "5C", "5D", "6A"],
+		"first-move candidates enumerate the executable ground moves (standing and crouch) in stable id order (ticket 04 adds the 214C opener)")
 	var text := "\n".join(report.first_candidates)
-	_check("方向 236 + K 键" in text and "方向 214 + J 键" in text,
+	_check("方向 236 + K 键" in text and "方向 214 + J 键" in text and "方向 214 + K 键" in text,
 		"derivative candidates spell out the direction notation and the real key")
 	for air_or_throw in ["jA", "jB", "jD", "BC"]:
 		_check(not ids.has(air_or_throw),

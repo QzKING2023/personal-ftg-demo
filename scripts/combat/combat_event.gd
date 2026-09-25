@@ -20,6 +20,8 @@ enum Type {
 	DASH_STARTED,      ## 66 前冲 / 44 后撤启动（世界方向见 direction；issue 18）
 	LINK_FAILED,       ## 普通连接（目押）尝试失败或已消费的连接招挥空（原因见 LinkFailReason）
 	LOW_FLOAT_LANDED,  ## 低浮空扫倒触地：同帧转普通倒地并结束连段（票据 02）
+	REKKA_BRANCH_LOCKED, ## Rekka 派生窗口内第一个 B/C 新按下锁定分支（见 rekka_branch/rekka_move_id；票据 04）
+	SPIKE_LANDED,      ## 向下击落触地：同帧转普通倒地（票据 04）
 }
 
 ## 连段结束原因：收尾、取消窗口关闭、招式收招未接续、木桩自然受身/恢复、
@@ -82,6 +84,9 @@ var block_stun_frames := -1
 var block_pushback_px_s := -1.0
 ## 木桩防御请求不成立的原因，仅 DUMMY_GUARD_REJECTED 使用。
 var guard_reject_reason: DummyGuardRejectReason = DummyGuardRejectReason.STATE
+## 锁定的 Rekka 分支键（"B"/"C"）与派生招式 id，仅 REKKA_BRANCH_LOCKED 使用。
+var rekka_branch := ""
+var rekka_move_id := ""
 
 
 static func hit(damage: float, direction: int, combo_hits: int, is_counter := false) -> CombatEvent:
@@ -198,4 +203,18 @@ static func link_failed(reason: LinkFailReason, move_id: String) -> CombatEvent:
 static func low_float_landed() -> CombatEvent:
 	var event := CombatEvent.new()
 	event.type = Type.LOW_FLOAT_LANDED
+	return event
+
+
+static func rekka_branch_locked(branch: String, move_id: String) -> CombatEvent:
+	var event := CombatEvent.new()
+	event.type = Type.REKKA_BRANCH_LOCKED
+	event.rekka_branch = branch
+	event.rekka_move_id = move_id
+	return event
+
+
+static func spike_landed() -> CombatEvent:
+	var event := CombatEvent.new()
+	event.type = Type.SPIKE_LANDED
 	return event

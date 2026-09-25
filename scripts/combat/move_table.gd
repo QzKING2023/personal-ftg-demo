@@ -192,6 +192,32 @@ static func _validate_move(move: MoveData, errors: Array[String]) -> void:
 		errors.append("[%s] %s: requires_crouch — 矛盾：蹲姿限定只属于地面招式（空中按下方向不构成蹲姿）" % [
 			source, id_label,
 		])
+	# Rekka 派生字段组合（票据 04，I-04/S-07）。
+	if move.rekka_window_frames >= 0 and move.rekka_b_target == "" and move.rekka_c_target == "":
+		errors.append("[%s] %s: rekka_window_frames — 矛盾：声明派生窗口却未声明任何 B/C 分支目标" % [
+			source, id_label,
+		])
+	if move.rekka_window_frames < 0 and (move.rekka_b_target != "" or move.rekka_c_target != ""):
+		errors.append("[%s] %s: rekka_b_target — 矛盾：声明派生目标却未声明派生窗口" % [
+			source, id_label,
+		])
+	if move.rekka_window_frames >= 0 and move.rekka_b_target == move.rekka_c_target and move.rekka_b_target != "":
+		errors.append("[%s] %s: rekka_b_target — 矛盾：~B 与 ~C 分支不能指向同一招式（分支按首个按键区分）" % [
+			source, id_label,
+		])
+	if move.rekka_only:
+		if not move.is_strike():
+			errors.append("[%s] %s: rekka_only — 矛盾：Rekka 派生限定只属于打击招式" % [
+				source, id_label,
+			])
+		if move.rekka_window_frames >= 0:
+			errors.append("[%s] %s: rekka_only — 矛盾：招式不能既是 Rekka 首段又是派生目标" % [
+				source, id_label,
+			])
+		if move.direction_derivation != "" or not move.input_alternatives.is_empty():
+			errors.append("[%s] %s: rekka_only — 矛盾：派生招式不参与单键/指令输入选择，不声明方向记法" % [
+				source, id_label,
+			])
 
 
 static func _validate_strike_fields(move: MoveData, source: String, id_label: String, errors: Array[String]) -> void:
@@ -306,8 +332,8 @@ static func _validate_hit_profiles(move: MoveData, source: String, id_label: Str
 			])
 		else:
 			seen_keys[key] = i
-		if not _enum_in_range(profile.reaction, 1, 4):
-			errors.append("[%s] %s: %s: reaction — 未知或未声明枚举值 %d（合法范围 1–4：ground_hitstun/launch/ground_knockdown/low_float_sweep）" % [
+		if not _enum_in_range(profile.reaction, 1, 5):
+			errors.append("[%s] %s: %s: reaction — 未知或未声明枚举值 %d（合法范围 1–5：ground_hitstun/launch/ground_knockdown/low_float_sweep/downward_slam）" % [
 				source, id_label, label, profile.reaction,
 			])
 			continue
@@ -379,6 +405,27 @@ static func _validate_hit_profiles(move: MoveData, source: String, id_label: Str
 						source, id_label, label, profile.knockdown_frames,
 					])
 				_reject_foreign_timer(source, id_label, label, profile, "ground_stun_frames", profile.ground_stun_frames, errors)
+			HitProfile.Reaction.DOWNWARD_SLAM:
+				## 向下击落（票据 04，S-07）：仅 airborne 目标；无空中受击计时——
+				## 立即获得向下速度坠落，触地同帧转普通倒地。
+				if profile.target_state != HitProfile.TargetState.AIRBORNE:
+					errors.append("[%s] %s: %s — 矛盾：向下击落只允许 airborne 目标（当前 %s；grounded 击倒请直接声明 GROUND_KNOCKDOWN）" % [
+						source, id_label, label, profile.label(),
+					])
+				if profile.downward_speed_px_s <= 0.0:
+					errors.append("[%s] %s: %s: downward_speed_px_s — 向下击落必须声明大于 0 的向下初速度（当前 %s）" % [
+						source, id_label, label, str(profile.downward_speed_px_s),
+					])
+				if profile.knockdown_frames < 1:
+					errors.append("[%s] %s: %s: knockdown_frames — 触地转换后的倒地计时为负、未设置或为 0（当前 %d，须至少 1 帧）" % [
+						source, id_label, label, profile.knockdown_frames,
+					])
+				if profile.upward_speed_px_s != -1.0:
+					errors.append("[%s] %s: %s: upward_speed_px_s — 矛盾：向下击落不适用向上初速度，须保持未声明 -1（当前 %s）" % [
+						source, id_label, label, str(profile.upward_speed_px_s),
+					])
+				_reject_foreign_timer(source, id_label, label, profile, "ground_stun_frames", profile.ground_stun_frames, errors)
+				_reject_foreign_timer(source, id_label, label, profile, "air_untech_frames", profile.air_untech_frames, errors)
 		if profile.hit_context == HitProfile.HitContext.COUNTER \
 				and not move.has_normal_profile(profile.target_state):
 			errors.append("[%s] %s: %s — 矛盾：声明 %s 的 counter 却缺少同状态 normal profile（不得只提供 counter）" % [
@@ -413,6 +460,8 @@ static func _reaction_name(reaction: int) -> String:
 			return "GROUND_KNOCKDOWN"
 		HitProfile.Reaction.LOW_FLOAT_SWEEP:
 			return "LOW_FLOAT_SWEEP"
+		HitProfile.Reaction.DOWNWARD_SLAM:
+			return "DOWNWARD_SLAM"
 	return "未知反应 %d" % reaction
 
 
@@ -476,7 +525,8 @@ static func _validate_cross_move(move_list: Array, errors: Array[String]) -> voi
 		# 层级进入并列键、方向记法不再进入：超必杀与必杀可同键同优先级共存（由
 		# 指令分层解析），而不同记法（如宽松 623 与严格 236）可能同时命中同一输入，
 		# 同层同优先级时无稳定顺序，一并拒绝、不按表序猜测。
-		if typed.is_strike() and typed.action_key != "":
+		# rekka_only 派生招式不参与输入选择，不进入并列键（票据 04）。
+		if typed.is_strike() and typed.action_key != "" and not typed.rekka_only:
 			var key := "%d|%s|%d|%d" % [
 				typed.stance, typed.action_key, typed.command_tier, typed.priority,
 			]
@@ -498,6 +548,35 @@ static func _validate_cross_move(move_list: Array, errors: Array[String]) -> voi
 					errors.append("[%s] %s: %s — 跨招式非法引用：\"%s\" 不在招式表中" % [
 						source, typed.move_id, field, target,
 					])
+				elif _is_rekka_only_move(move_list, target):
+					errors.append("[%s] %s: %s — 跨招式非法引用：\"%s\" 是 rekka_only 派生招式，只能经 Rekka 派生窗口起手" % [
+						source, typed.move_id, field, target,
+					])
+		# Rekka 首段目标的存在性、派生限定、分支键与姿态一致性（票据 04）。
+		for pair in [["rekka_b_target", typed.rekka_b_target, "B"], ["rekka_c_target", typed.rekka_c_target, "C"]]:
+			var field: String = pair[0]
+			var target_id: String = pair[1]
+			var branch_key: String = pair[2]
+			if target_id == "":
+				continue
+			var target := _find_move(move_list, target_id)
+			if target == null:
+				errors.append("[%s] %s: %s — 跨招式非法引用：\"%s\" 不在招式表中" % [
+					source, typed.move_id, field, target_id,
+				])
+				continue
+			if not target.rekka_only:
+				errors.append("[%s] %s: %s — 矛盾：派生目标 \"%s\" 未声明 rekka_only（派生是唯一入口）" % [
+					source, typed.move_id, field, target_id,
+				])
+			if target.action_key != branch_key:
+				errors.append("[%s] %s: %s — 矛盾：%s 分支目标 \"%s\" 的输入绑定须为 %s 键（当前 \"%s\"）" % [
+					source, typed.move_id, field, branch_key, target_id, branch_key, target.action_key,
+				])
+			if target.stance != typed.stance:
+				errors.append("[%s] %s: %s — 矛盾：派生目标 \"%s\" 与首段姿态不一致（派生不跨姿态）" % [
+					source, typed.move_id, field, target_id,
+				])
 
 
 static func _has_move_id(move_list: Array, move_id: String) -> bool:
@@ -505,6 +584,18 @@ static func _has_move_id(move_list: Array, move_id: String) -> bool:
 		if (move as MoveData).move_id == move_id:
 			return true
 	return false
+
+
+static func _find_move(move_list: Array, move_id: String) -> MoveData:
+	for move in move_list:
+		if (move as MoveData).move_id == move_id:
+			return move
+	return null
+
+
+static func _is_rekka_only_move(move_list: Array, move_id: String) -> bool:
+	var move := _find_move(move_list, move_id)
+	return move != null and move.rekka_only
 
 
 static func _enum_in_range(value: int, low: int, high: int) -> bool:

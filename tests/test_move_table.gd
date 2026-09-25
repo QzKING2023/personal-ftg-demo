@@ -25,6 +25,8 @@ func _initialize() -> void:
 	_test_command_tier_and_lenient_validation()
 	_test_block_result_fields_validation()
 	_test_default_table_block_values()
+	_test_rekka_fields_validation()
+	_test_default_table_rekka_values()
 	_test_hand_edited_tres_missing_field_rejected()
 	_test_tres_type_error_rejected()
 	_test_manifest_errors_rejected()
@@ -49,7 +51,7 @@ func _test_default_manifest_loads_shared_table() -> void:
 	var result := MoveTable.load_default()
 	_check(result.ok, "default manifest loads and validates")
 	_check(result.errors.is_empty(), "default manifest reports no errors")
-	var expected_ids := ["5A", "2A", "5B", "2B", "5C", "2C", "6A", "236C", "jA", "jB", "jD", "5D", "214D", "BC"]
+	var expected_ids := ["5A", "2A", "5B", "2B", "5C", "2C", "6A", "236C", "214C", "214C~B", "214C~C", "jA", "jB", "jD", "5D", "214D", "BC"]
 	_check(result.moves.keys() == expected_ids, "table preserves manifest order and ids (stable enumeration)")
 	for move_id in expected_ids:
 		var move := result.moves[move_id] as MoveData
@@ -93,8 +95,8 @@ func _test_default_table_entries_match_manifest() -> void:
 	var five_a := result.moves["5A"] as MoveData
 	_check(five_a.chain_cancel_targets == ["5B", "2B"] and five_a.chain_cancel_window_frames == 3,
 		"5A declares its chain cancel edges to 5B and the crouch 2B with the 3f window")
-	_check(five_a.special_cancel_targets == ["236C"] and five_a.special_cancel_window_frames == 5,
-		"5A declares its special cancel edge to 236C with the 5f window")
+	_check(five_a.special_cancel_targets == ["236C", "214C"] and five_a.special_cancel_window_frames == 5,
+		"5A declares its special cancel edges to 236C and 214C with the 5f window")
 	_check(five_a.link_targets == ["5B"], "5A declares the normal link edge to 5B")
 	var five_b := result.moves["5B"] as MoveData
 	_check(five_b.chain_cancel_targets == ["5C", "2C", "6A", "5D"] and five_b.link_targets == ["5C", "5D"],
@@ -112,9 +114,9 @@ func _test_default_table_entries_match_manifest() -> void:
 		"2A chains within the A system and into the B system per the matrix")
 	_check(two_b.chain_cancel_targets == ["5C", "2C", "6A"],
 		"2B chains into the C system and 6A per the matrix")
-	_check(two_c.chain_cancel_targets.is_empty() and two_c.special_cancel_targets.is_empty()
+	_check(two_c.chain_cancel_targets.is_empty() and two_c.special_cancel_targets == ["214C"]
 		and two_c.link_targets.is_empty(),
-		"2C declares no outgoing edges this ticket (its 214C special cancel arrives with ticket 04)")
+		"2C declares no chain edges; its 214C special cancel edge arrived with ticket 04")
 	var sweep := MoveData.profile_for(two_c, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)
 	_check(sweep != null and sweep.reaction == HitProfile.Reaction.LOW_FLOAT_SWEEP
 		and sweep.air_untech_frames == 20 and sweep.upward_speed_px_s == 120.0
@@ -464,6 +466,86 @@ func _test_block_result_fields_validation() -> void:
 	var throw_errors := MoveTable.validate(throwing)
 	_check(not throw_errors.is_empty() and throw_errors[0].contains("block_freeze_frames"),
 		"throw declaring block result fields is a contradiction rejected on the field")
+
+
+func _test_rekka_fields_validation() -> void:
+	# Rekka 派生字段组合（票据 04）：窗口与目标成对声明、目标必须 rekka_only、
+	# 分支键一致、派生招式不出现在任何取消/连接目标列表中。
+	var legal := _rekka_strike_list()
+	_check(MoveTable.validate(legal).is_empty(), "a declared rekka opener with rekka-only targets keeps the table legal")
+	var no_targets := _rekka_strike_list()
+	(no_targets[0] as MoveData).rekka_b_target = ""
+	(no_targets[0] as MoveData).rekka_c_target = ""
+	_check(not MoveTable.validate(no_targets).is_empty(),
+		"declaring a derivation window without any branch target rejects the table")
+	var no_window := _rekka_strike_list()
+	(no_window[0] as MoveData).rekka_window_frames = -1
+	var no_window_errors := MoveTable.validate(no_window)
+	_check(not no_window_errors.is_empty() and no_window_errors[0].contains("rekka_b_target"),
+		"declaring branch targets without a window is rejected naming the field")
+	var same_branch := _rekka_strike_list()
+	(same_branch[0] as MoveData).rekka_c_target = "rkB"
+	_check(not MoveTable.validate(same_branch).is_empty(),
+		"pointing both branches at the same derived move is rejected")
+	var not_only := _rekka_strike_list()
+	(not_only[1] as MoveData).rekka_only = false
+	var not_only_errors := MoveTable.validate(not_only)
+	_check(not not_only_errors.is_empty() and not_only_errors[0].contains("rekka_only"),
+		"a branch target without rekka_only is rejected (derivation is the only entry)")
+	var key_mismatch := _rekka_strike_list()
+	(key_mismatch[1] as MoveData).action_key = "C"
+	var key_errors := MoveTable.validate(key_mismatch)
+	_check(not key_errors.is_empty() and key_errors[0].contains("rekka_b_target"),
+		"a B-branch target bound to another key is rejected naming the branch field")
+	var in_cancel := _rekka_strike_list()
+	(in_cancel[0] as MoveData).cancel_targets = ["rkB"]
+	var in_cancel_errors := MoveTable.validate(in_cancel)
+	_check(not in_cancel_errors.is_empty() and in_cancel_errors[0].contains("rekka_only"),
+		"referencing a rekka-only move from cancel targets is rejected")
+	var notation := _rekka_strike_list()
+	(notation[1] as MoveData).direction_derivation = "236B"
+	_check(not MoveTable.validate(notation).is_empty(),
+		"a rekka-only move declaring a command notation is rejected (not input-selectable)")
+	var missing := _rekka_strike_list()
+	(missing[0] as MoveData).rekka_b_target = "ghost"
+	var missing_errors := MoveTable.validate(missing)
+	_check(not missing_errors.is_empty() and missing_errors[0].contains("ghost"),
+		"a branch target missing from the table is rejected naming the id")
+
+
+func _test_default_table_rekka_values() -> void:
+	# 票据 04 迁移：214C 首段（窗口 12、~B/~C 目标）与两个 rekka_only 派生在表；
+	# 2C/5A/2A/5B/5C 声明 214C 必杀取消边。
+	var result := MoveTable.load_default()
+	_check(result.ok, "default manifest loads with the rekka moves")
+	var opener := result.moves.get("214C") as MoveData
+	_check(opener != null and opener.rekka_window_frames == 12
+		and opener.rekka_b_target == "214C~B" and opener.rekka_c_target == "214C~C",
+		"214C declares the TUNING_INITIAL window 12 and both branch targets")
+	var branch_b := result.moves.get("214C~B") as MoveData
+	var branch_c := result.moves.get("214C~C") as MoveData
+	_check(branch_b != null and branch_b.rekka_only and branch_c != null and branch_c.rekka_only,
+		"both derived moves are rekka_only (not input-selectable)")
+	_check(not branch_c.link_targets.is_empty() or branch_c.is_finisher,
+		"the ~C finisher keeps no link edges while ~B carries the 5B link")
+	_check((result.moves["2C"] as MoveData).special_cancel_targets.has("214C"),
+		"2C declares the 214C special cancel edge (the 2C > 214C~B route)")
+	for id in ["5A", "2A", "5B", "5C"]:
+		_check((result.moves[id] as MoveData).special_cancel_targets.has("214C"),
+			"%s declares the 214C special cancel edge per the cancel matrix" % id)
+
+
+## 票据 04 校验探针表：一个 Rekka 首段 + 两个 rekka_only 派生目标。
+func _rekka_strike_list() -> Array:
+	var opener := _valid_strike("rk0", "C")
+	opener.rekka_window_frames = 12
+	opener.rekka_b_target = "rkB"
+	opener.rekka_c_target = "rkC"
+	var branch_b := _valid_strike("rkB", "B")
+	branch_b.rekka_only = true
+	var branch_c := _valid_strike("rkC", "C")
+	branch_c.rekka_only = true
+	return [opener, branch_b, branch_c]
 
 
 func _test_default_table_block_values() -> void:

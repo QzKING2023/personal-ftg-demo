@@ -56,7 +56,7 @@ const RECOVER_HORIZON := 240
 ## 上限不会截掉任何可行延迟，枚举是完备的。
 const MAX_AIR_DELAY := 40
 
-const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性接续——命中确认取消、链式/必杀取消（接触开放，命中或被防）、jump cancel、显式落地接缝与恢复后的普通连接（目押）：前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生与落地接缝都在真实 CombatSession 结算中检验；命中资料与运行时共享同一 (target_state, hit_context) 精确选择：探针木桩不自攻，命中的上下文恒为 normal，缺失目标状态资料的连接按 MISS_NO_PROFILE 断链上报（不回退 grounded/normal 资料），普通倒地期间不可追击；cancel_targets、chain/special_cancel_targets、link_targets、jump_cancel_targets 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；普通连接边与取消边以不同类型分别报告，连接成立与否由前招完全恢复当帧的缓存消费、目标剩余硬直与 active 重叠重新判定；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（空中无二段跳；木桩浮空只由真实命中按所选 profile 的受身计时与速度重建，空中追击的每次命中都应用其 airborne profile），无命中的时间不会自动续期；OTG、地弹、墙反弹与招式无敌不在本轮支持范围，表达这些能力的字段或标签由 MoveTable 整表拒绝；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、起手等级与三层累计修正、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。空间分层：无空间数据时全部路线仅 timing-valid，固定接触位不构成空间证明；提供空间数据（SolverOptions.spatial）后另附 spatial-valid，且只在地面、左右镜像的 48/64/80 px 三组身体中心水平距离上复验，不搜索走位、中立、墙角、推挤、跨身或屏幕边界，配置缺口与时序失败不作空间失败上报。被防分层（票据 03）：链式/必杀边附「被防路径」标注——同一配置边在来源招式被木桩站防/蹲防挡下的探针中验证取消时序；被防是独立接触结果（BLOCKED 不产生命中、不入路线/循环图、不借命中确认或 jump cancel），探针中预期命中帧收到被防结果一律按 blocked 断链上报；被防安全性（指定反击、时机、距离、版边、面向）不在静态证明范围，一律 replay-required。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。"
+const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性接续——命中确认取消、链式/必杀取消（接触开放，命中或被防）、jump cancel、显式落地接缝、恢复后的普通连接（目押）与 Rekka 派生（票据 04：首段命中或被防接触起的派生窗口内首个 B/C 新按下立即锁分支 branch-locked，同帧 B+C 固定 ~C 优先、不进入普通投组合等待；派生招式 rekka_only、不参与单键/指令输入选择；派生地空命中资料按 (target_state, hit_context) 精确选择，~C 空中向下击落触地转普通倒地）：前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生与落地接缝都在真实 CombatSession 结算中检验；命中资料与运行时共享同一 (target_state, hit_context) 精确选择：探针木桩不自攻，命中的上下文恒为 normal，缺失目标状态资料的连接按 MISS_NO_PROFILE 断链上报（不回退 grounded/normal 资料），普通倒地期间不可追击；cancel_targets、chain/special_cancel_targets、link_targets、jump_cancel_targets、rekka_b/c_target 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；普通连接边与取消边以不同类型分别报告，连接成立与否由前招完全恢复当帧的缓存消费、目标剩余硬直与 active 重叠重新判定；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（空中无二段跳；木桩浮空只由真实命中按所选 profile 的受身计时与速度重建，空中追击的每次命中都应用其 airborne profile），无命中的时间不会自动续期；OTG、地弹、墙反弹与招式无敌不在本轮支持范围，表达这些能力的字段或标签由 MoveTable 整表拒绝；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、起手等级与三层累计修正、Rekka 分支锁定、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。空间分层：无空间数据时全部路线仅 timing-valid，固定接触位不构成空间证明；提供空间数据（SolverOptions.spatial）后另附 spatial-valid，且只在地面、左右镜像的 48/64/80 px 三组身体中心水平距离上复验，不搜索走位、中立、墙角、推挤、跨身或屏幕边界，配置缺口与时序失败不作空间失败上报。被防分层（票据 03）：链式/必杀边附「被防路径」标注——同一配置边在来源招式被木桩站防/蹲防挡下的探针中验证取消时序；被防是独立接触结果（BLOCKED 不产生命中、不入路线/循环图、不借命中确认或 jump cancel），探针中预期命中帧收到被防结果一律按 blocked 断链上报；Rekka 派生边同样附被防路径标注（首段被防也开放派生窗口），派生自身的被防结果如实入注；被防安全性（指定反击、时机、距离、版边、面向）不在静态证明范围，一律 replay-required；派生首按锁定输入手感与 ~B 交回回合的安全性也属 replay-required，静态报告不下结论。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。"
 
 ## 接续边类型：命中确认取消 / 链式取消 / 必杀取消 / jump cancel / 显式落地接续 /
 ## 普通连接（目押）。链式与必杀按接触开放（命中或被防），命中确认、jump cancel
@@ -69,6 +69,7 @@ enum EdgeKind {
 	JUMP_CANCEL,     ## jump_cancel_targets：地面招式命中确认后 Space 起跳接空中起手
 	LANDING_CANCEL,  ## landing_cancel_targets：空中招式命中确认后，取消窗口内的落地帧接地面招式
 	NORMAL_LINK,     ## link_targets：前招完全恢复后按缓存消费的普通连接（目押）
+	REKKA_DERIVE,    ## rekka_b/c_target：首段命中或被防接触起的派生窗口内首个 B/C 新按下锁分支起手（票据 04）
 }
 
 
@@ -98,6 +99,9 @@ class ChainLink extends RefCounted:
 	var wait := 0
 	var press_space := false
 	var feed := ""
+	## Rekka 派生按键（票据 04）：按下调起派生（无组合等待），按下当帧即 F1；
+	## 普通取消按键的 B/C 组合等待 +3 模型不适用。
+	var rekka := false
 
 
 ## 落地接缝搜索定位：来源空中招式在接续链中的进入位置与命中序号
@@ -159,6 +163,8 @@ class SolverEdge extends RefCounted:
 				return "必杀取消"
 			EdgeKind.NORMAL_LINK:
 				return "普通连接"
+			EdgeKind.REKKA_DERIVE:
+				return "Rekka 派生"
 		return "取消"
 
 
@@ -696,6 +702,7 @@ func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false
 			[EdgeKind.JUMP_CANCEL, from_move.jump_cancel_targets],
 			[EdgeKind.LANDING_CANCEL, from_move.landing_cancel_targets],
 			[EdgeKind.NORMAL_LINK, from_move.link_targets],
+			[EdgeKind.REKKA_DERIVE, _rekka_targets_of(from_move)],
 		]
 		for pair in kinds_and_targets:
 			var kind: EdgeKind = pair[0]
@@ -710,7 +717,7 @@ func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false
 						targets.append(to_id)
 					# 同一 (from, to) 配置了多种接续时，路线/循环按首先验证成立的接缝出链：
 					# 枚举顺序固定为 命中确认取消 > 链式 > 必杀 > jump cancel > 落地接续 >
-					# 普通连接，确定性且优先中断性取消。
+					# 普通连接 > Rekka 派生，确定性且优先中断性取消。
 					var key := "%s|%s" % [from_id, to_id]
 					if not edge_kinds.has(key):
 						edge_kinds[key] = kind
@@ -1195,17 +1202,39 @@ func _build_contexts() -> Dictionary:
 			if contexts.has(move_id):
 				continue
 			var move := _table[move_id] as MoveData
-			if move == null or _start_key_for(move_id) == "":
+			if move == null or (_start_key_for(move_id) == "" and not move.rekka_only):
 				continue
 			var links := _context_via_jump(move_id, contexts)
 			if links.is_empty():
 				links = _context_via_cancel(move_id, contexts)
 			if links.is_empty():
 				links = _context_via_landing(move_id, contexts)
+			if links.is_empty():
+				links = _context_via_rekka(move_id, contexts)
 			if not links.is_empty():
 				contexts[move_id] = links
 				grew = true
 	return contexts
+
+
+## Rekka 派生目标的上下文（票据 04）：复用首段的规范入口链，追加派生按键
+## （接触后首个正常帧按下、当帧起手，无组合等待）。派生招式不作为独立起手。
+func _context_via_rekka(move_id: String, contexts: Dictionary) -> Array[ChainLink]:
+	var target := _table[move_id] as MoveData
+	if target == null or not target.rekka_only:
+		return []
+	for opener_id in _table:
+		var opener := _table[opener_id] as MoveData
+		if opener == null or opener.rekka_window_frames < 0:
+			continue
+		if opener.rekka_b_target != move_id and opener.rekka_c_target != move_id:
+			continue
+		if not contexts.has(opener_id):
+			continue
+		var links: Array[ChainLink] = (contexts[opener_id] as Array[ChainLink]).duplicate()
+		links.append_array(_links_for_edge(opener_id, move_id, EdgeKind.REKKA_DERIVE))
+		return links
+	return []
 
 
 func _start_stance() -> MoveData.Stance:
@@ -1271,6 +1300,17 @@ func _context_via_landing(move_id: String, contexts: Dictionary) -> Array[ChainL
 # --- 接续边 ---
 
 
+## Rekka 首段的派生目标集合（~B 在前、~C 在后，确定性枚举）。
+func _rekka_targets_of(move: MoveData) -> Array[String]:
+	var targets: Array[String] = []
+	if move == null or move.rekka_window_frames < 0:
+		return targets
+	for target in [move.rekka_b_target, move.rekka_c_target]:
+		if target != "" and not targets.has(target):
+			targets.append(target)
+	return targets
+
+
 ## 一条接续边对应的输入链接：普通取消在来源命中帧按键（方向派生先喂方向序列）；
 ## jump cancel 是 Space + 空中起手（延迟由搜索指定）；落地接续在预测落地帧按键。
 func _links_for_edge(from_id: String, to_id: String, kind: EdgeKind) -> Array[ChainLink]:
@@ -1303,6 +1343,16 @@ func _links_for_edge(from_id: String, to_id: String, kind: EdgeKind) -> Array[Ch
 			link_link.trigger = ChainLink.Trigger.PREV_HIT
 			link_link.wait = _link_press_wait(_table[from_id] as MoveData, _table[to_id] as MoveData)
 			links.append(link_link)
+		EdgeKind.REKKA_DERIVE:
+			## 派生按键安排在接触后的第一个正常帧（接触当帧窗口尚未在输入阶段
+			## 打开，停顿中按下同样落在恢复首个正常帧）；按下当帧起手派生。
+			var derive := ChainLink.new()
+			derive.move_id = to_id
+			derive.key = (_table.get(to_id) as MoveData).action_key
+			derive.trigger = ChainLink.Trigger.PREV_HIT
+			derive.wait = 1
+			derive.rekka = true
+			links.append(derive)
 		_:
 			var cancel_link := ChainLink.new()
 			cancel_link.move_id = to_id
@@ -1356,12 +1406,15 @@ func _build_edge(from_id: String, to_id: String, kind: EdgeKind, contexts: Dicti
 	if from_move.is_finisher:
 		edge.reason = "收尾招式命中即结束连段，不开放命中确认取消"
 		return edge
-	if _start_key_for(to_id) == "":
+	if kind != EdgeKind.REKKA_DERIVE and _start_key_for(to_id) == "":
 		edge.reason = "目标无法由动作键起手，超出本 Solver 的输入表达范围"
+		return edge
+	if kind == EdgeKind.REKKA_DERIVE and not to_move.rekka_only:
+		edge.reason = "派生目标未声明 rekka_only，不能作为 Rekka 分支（配置校验缺口）"
 		return edge
 	var context: Array[ChainLink] = contexts.get(from_id, [] as Array[ChainLink])
 	if context.is_empty():
-		edge.reason = "无法从起始状态构造到达 %s 的合法上下文（起始姿态 / jump cancel / 取消 / 落地接续链不可达）" % from_id
+		edge.reason = "无法从起始状态构造到达 %s 的合法上下文（起始姿态 / jump cancel / 取消 / 落地接续 / Rekka 派生链不可达）" % from_id
 		return edge
 	match kind:
 		EdgeKind.JUMP_CANCEL:
@@ -1372,7 +1425,7 @@ func _build_edge(from_id: String, to_id: String, kind: EdgeKind, contexts: Dicti
 			_fill_link_edge(edge, context, timing_cache)
 		_:
 			_fill_cancel_edge(edge, context, timing_cache, kind)
-	if kind == EdgeKind.CHAIN_CANCEL or kind == EdgeKind.SPECIAL_CANCEL:
+	if kind == EdgeKind.CHAIN_CANCEL or kind == EdgeKind.SPECIAL_CANCEL or kind == EdgeKind.REKKA_DERIVE:
 		_fill_blocked_cancel_edge(edge, context)
 	return edge
 
@@ -1393,17 +1446,25 @@ func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache
 	if run["ok"]:
 		edge.valid = true
 		edge.hit_age = run["hit_frames"][run["hit_frames"].size() - 1] - timing["hit_frame"]
-		edge.wait_from = 0
-		# 有效等待 = 取消仍在窗口内，且目标命中（等待 + 目标前摇）不晚于木桩恢复。
-		# recover_age 在来源招式的规范入口上下文中测量；路线/循环里的真实可行性
-		# 总是由逐帧模拟复验，这里只影响报告标注。
-		## B/C 的组合等待使有效等待上界收窄（命中当帧按下 w=0 恰好消费，其余
-		## 等待档需窗口容纳 +3 等待）；下限为 0——w=0 总是可用档。
-		var key_wait := _single_key_wait(to_move.action_key)
-		edge.wait_to = maxi(0, mini(window_frames - key_wait,
-			edge.recover_age - to_move.startup_frames - key_wait))
+		if kind == EdgeKind.REKKA_DERIVE:
+			## 派生按键无组合等待：接触当帧（w=0）窗口尚未在输入阶段打开，
+			## 有效等待自 1 起；按下当帧起手，命中 = 等待 + 目标前摇。
+			edge.wait_from = 1
+			edge.wait_to = maxi(1, mini(window_frames, edge.recover_age - to_move.startup_frames))
+		else:
+			edge.wait_from = 0
+			# 有效等待 = 取消仍在窗口内，且目标命中（等待 + 目标前摇）不晚于木桩恢复。
+			# recover_age 在来源招式的规范入口上下文中测量；路线/循环里的真实可行性
+			# 总是由逐帧模拟复验，这里只影响报告标注。
+			## B/C 的组合等待使有效等待上界收窄（命中当帧按下 w=0 恰好消费，其余
+			## 等待档需窗口容纳 +3 等待）；下限为 0——w=0 总是可用档。
+			var key_wait := _single_key_wait(to_move.action_key)
+			edge.wait_to = maxi(0, mini(window_frames - key_wait,
+				edge.recover_age - to_move.startup_frames - key_wait))
 		var prefix := ""
-		if to_move.direction_derivation != "":
+		if kind == EdgeKind.REKKA_DERIVE:
+			prefix = "（Rekka 派生：首段接触起首个 %s 新按下立即锁分支 branch-locked，同帧 B+C 固定 ~C 优先；派生按键无组合等待）" % to_move.action_key
+		elif to_move.direction_derivation != "":
 			prefix = "（方向派生 %s：取消帧前喂入方向序列）" % to_move.direction_derivation
 		elif to_move.requires_crouch:
 			prefix = "（蹲姿按键：取消帧按下时按住下方向）"
@@ -1432,9 +1493,15 @@ func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache
 		"whiff":
 			edge.reason = "取消未成立：目标招式已起手但判定未在预期帧连接（挥空）"
 		"no_start":
-			edge.reason = "取消未成立：目标未能在取消窗口内起手（窗口关闭或缓存过期）"
+			if kind == EdgeKind.REKKA_DERIVE:
+				edge.reason = "派生未成立（buffer-expired）：B/C 新按下未落在首段接触后 0–%d 帧派生窗口内（窗口关闭，按键不锁分支）" % window_frames
+			else:
+				edge.reason = "取消未成立：目标未能在取消窗口内起手（窗口关闭或缓存过期）"
 		"miss_profile":
-			edge.reason = "取消未成立：" + run["reason"]
+			if kind == EdgeKind.REKKA_DERIVE:
+				edge.reason = "派生未成立（state-incompatible）：" + run["reason"]
+			else:
+				edge.reason = "取消未成立：" + run["reason"]
 		"blocked":
 			edge.reason = "取消未成立：" + run["reason"]
 		_:
@@ -1552,13 +1619,15 @@ func _guard_posture_label(guard: int) -> String:
 	return "无防御"
 
 
-## 各取消接缝的窗口长度（帧）：命中确认 / 链式 / 必杀三类窗口独立声明。
+## 各取消接缝的窗口长度（帧）：命中确认 / 链式 / 必杀 / Rekka 派生窗口独立声明。
 func _cancel_window_for(move: MoveData, kind: EdgeKind) -> int:
 	match kind:
 		EdgeKind.CHAIN_CANCEL:
 			return move.chain_cancel_window_frames
 		EdgeKind.SPECIAL_CANCEL:
 			return move.special_cancel_window_frames
+		EdgeKind.REKKA_DERIVE:
+			return move.rekka_window_frames
 	return move.cancel_window_frames
 
 
@@ -1836,6 +1905,7 @@ func _clone_link_with_wait(link: ChainLink, wait: int) -> ChainLink:
 	clone.wait = wait
 	clone.press_space = link.press_space
 	clone.feed = link.feed
+	clone.rekka = link.rekka
 	return clone
 
 
@@ -1939,7 +2009,11 @@ func _compile_chain(links: Array[ChainLink]) -> Dictionary:
 				return {}
 			var key_wait := _single_key_wait(link.key)
 			var start_delay := 0
-			if key_wait == 0:
+			if link.rekka:
+				## Rekka 派生按键被派生仲裁器直接消费（优先于 B+C 组合等待）：
+				## 按下当帧锁分支并起手，无 +3 等待（票据 04）。
+				start_delay = 0
+			elif key_wait == 0:
 				## 落地接续的起手帧是落地帧本身（前一帧按下、落地帧消费起手）。
 				## B/C 落地目标（现无此数据）的等待使落地帧消费不可达——按下方
 				## +3 模型预测的帧不会命中，逐帧复验会如实判该边无效。
@@ -2528,6 +2602,8 @@ func _is_plain_start_id(move_id: String) -> bool:
 	var move := _table.get(move_id) as MoveData
 	if move == null or move.stance != _start_stance() or move.direction_derivation != "":
 		return false
+	if move.rekka_only:
+		return false
 	return move.is_strike() and move.action_key != ""
 
 
@@ -2546,6 +2622,9 @@ func _single_key_wait(key: String) -> int:
 func _start_key_for(move_id: String) -> String:
 	var move := _table.get(move_id) as MoveData
 	if move == null or move.is_throw():
+		return ""
+	if move.rekka_only:
+		## Rekka 派生招式只经派生仲裁器起手（票据 04），不是单键/指令起手目标。
 		return ""
 	if move.stance == MoveData.Stance.AIR and move.direction_derivation != "":
 		return ""

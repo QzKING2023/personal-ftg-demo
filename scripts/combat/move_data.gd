@@ -58,6 +58,10 @@ enum StarterGrade {
 	D = 4,     ## 重起手：修正最好
 }
 
+## Rekka 派生（票据 04，I-04/S-07）：首段命中或被防接触起开放派生窗口，
+## 窗口内第一个 B/C 新按下立即锁定分支并起手派生招式；同帧 B+C 固定 ~C 优先。
+## 派生优先于普通投的 B+C 组合等待；挥空无接触不开放窗口。
+
 ## 稳定 id：资源身份，不由文件名推断；manifest 与运行时/Solver 都以它引用招式。
 @export var move_id := ""
 ## 招式类别（打击/普通投）。
@@ -105,6 +109,14 @@ enum StarterGrade {
 ## 普通连接（目押）边：不在取消目标内——前招完全恢复后的首个合法帧按缓存消费、
 ## 目标剩余硬直、距离与 active 重叠重新判定（I-06）。每条路线须显式声明。
 @export var link_targets: Array[String] = []
+## Rekka 首段：接触（命中或被防）起第 0–N 帧派生窗口；-1 = 非 Rekka 首段。
+@export var rekka_window_frames := -1
+## Rekka 派生目标：窗口内第一个 B / C 新按下锁定的派生招式 id（须为 rekka_only）。
+@export var rekka_b_target := ""
+@export var rekka_c_target := ""
+## 仅由 Rekka 派生起手的招式：不参与单键/指令输入选择，也不得出现在任何取消、
+## 连接或派生之外的接续目标列表中（派生是唯一入口）。
+@export var rekka_only := false
 ## 起手等级：首次实际 HIT 锁定；打击招式必须显式声明，未声明整表拒绝。
 @export var starter_grade: StarterGrade = StarterGrade.UNSET
 ## 被防结果（票据 03，D-02/D-03）：被防是独立于命中资料的接触结果，三项逐招显式

@@ -1,0 +1,86 @@
+[gd_resource type="Resource" script_class="MoveData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/move_data.gd" id="1_214c"]
+[ext_resource type="Script" path="res://scripts/combat/hit_profile.gd" id="2_hitprofile"]
+
+[sub_resource type="Resource" id="HitProfile_214c_grounded_normal"]
+script = ExtResource("2_hitprofile")
+target_state = 1
+hit_context = 1
+reaction = 1
+ground_stun_frames = 14
+horizontal_speed_px_s = 160.0
+upward_speed_px_s = 0.0
+downward_speed_px_s = -1.0
+
+[sub_resource type="Resource" id="HitProfile_214c_grounded_counter"]
+script = ExtResource("2_hitprofile")
+target_state = 1
+hit_context = 2
+reaction = 1
+ground_stun_frames = 18
+horizontal_speed_px_s = 160.0
+upward_speed_px_s = 0.0
+downward_speed_px_s = -1.0
+
+[sub_resource type="Resource" id="HitProfile_214c_airborne_normal"]
+script = ExtResource("2_hitprofile")
+target_state = 2
+hit_context = 1
+reaction = 2
+air_untech_frames = 28
+horizontal_speed_px_s = 40.0
+upward_speed_px_s = 240.0
+downward_speed_px_s = -1.0
+
+[sub_resource type="Resource" id="HitProfile_214c_airborne_counter"]
+script = ExtResource("2_hitprofile")
+target_state = 2
+hit_context = 2
+reaction = 2
+air_untech_frames = 34
+horizontal_speed_px_s = 40.0
+upward_speed_px_s = 240.0
+downward_speed_px_s = -1.0
+
+[resource]
+script = ExtResource("1_214c")
+move_id = "214C"
+move_kind = 1
+stance = 1
+action_key = "C"
+startup_frames = 8
+active_frames = 4
+recovery_frames = 20
+base_damage = 10
+attack_attribute = 2
+air_attack = false
+hitbox_size = Vector2(42, 28)
+hitbox_gap = 3.0
+hit_profiles = Array[Resource]([SubResource("HitProfile_214c_grounded_normal"), SubResource("HitProfile_214c_grounded_counter"), SubResource("HitProfile_214c_airborne_normal"), SubResource("HitProfile_214c_airborne_counter")])
+throw_range = -1.0
+extra_landing_recovery_frames = 0
+cancel_targets = Array[String]([])
+cancel_window_frames = 8
+chain_cancel_targets = Array[String]([])
+chain_cancel_window_frames = -1
+special_cancel_targets = Array[String]([])
+special_cancel_window_frames = -1
+link_targets = Array[String]([])
+starter_grade = 4
+block_freeze_frames = 8
+block_stun_frames = 9
+block_pushback_px_s = 45.0
+is_finisher = false
+jump_cancel_targets = Array[String]([])
+landing_cancel_targets = Array[String]([])
+direction_derivation = "214C"
+lenient_command = false
+input_alternatives = Array[String]([])
+command_tier = 1
+priority = 2
+requires_crouch = false
+rekka_window_frames = 12
+rekka_b_target = "214C~B"
+rekka_c_target = "214C~C"
+rekka_only = false
