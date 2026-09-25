@@ -47,3 +47,6 @@ direction_derivation = "6A"
 input_alternatives = Array[String]([])
 priority = 2
 starter_grade = 3
+block_freeze_frames = 8
+block_stun_frames = 9
+block_pushback_px_s = 45.0

@@ -121,6 +121,17 @@ func _initialize() -> void:
 	_test_2C_whiff_no_low_float()
 	_test_2C_airborne_target_miss_no_profile()
 	_test_2C_then_5D_fails_and_no_otg()
+	_test_dummy_guard_request_drives_posture()
+	_test_dummy_guard_rejections_observable()
+	_test_player_attack_blocked_independent_result()
+	_test_dummy_guard_attribute_leak_matrix()
+	_test_blocked_contact_opens_chain_and_special_cancels()
+	_test_blocked_denies_hit_confirm_and_jump_cancel()
+	_test_whiff_still_cannot_cancel()
+	_test_blockstun_locks_dummy_actions_and_holds_guard()
+	_test_blocked_then_guard_release_hits_fresh()
+	_test_undeclared_block_fields_default_deny()
+	_test_blocked_freeze_uses_declared_frames()
 	print("")
 	if _failures == 0:
 		print("ALL SESSION TESTS PASSED")
@@ -2950,6 +2961,406 @@ func _test_2C_then_5D_fails_and_no_otg() -> void:
 		"the independent 5D cannot hit the knocked-down dummy and never refreshes the knockdown timer (recovery stays at F58)")
 	_check(session.dummy_state == CombatSession.DummyState.NEUTRAL and not session.combo_active,
 		"the session settles back to neutral after the failed pursuit")
+
+
+# --- 木桩防御与被防取消（票据 03）---
+
+## 带木桩防御请求的帧输入：guard 取 GuardPosture 值（0 无 / 1 站 / 2 蹲 / 3 空）。
+func _guard_input(key: String, guard: int, down := false, axis := 0) -> FrameInput:
+	var input := FrameInput.make(axis, false, key, down)
+	input.dummy_guard_request = guard
+	return input
+
+
+## 探针招式的被防结果声明（D-02/D-03 三字段）。
+func _set_probe_block(move: MoveData, freeze: int, stun: int, pushback: float) -> void:
+	move.block_freeze_frames = freeze
+	move.block_stun_frames = stun
+	move.block_pushback_px_s = pushback
+
+
+func _test_dummy_guard_request_drives_posture() -> void:
+	# 逐帧显式请求驱动木桩防御姿态；NONE 不防御；木桩出招期间请求不成立
+	# （BUSY 可观察拒绝），木桩无自主决策。
+	var session := CombatSession.new()
+	session.step(_guard_input("", CombatSession.GuardPosture.STANDING))
+	_check(session.dummy_guard == CombatSession.GuardPosture.STANDING,
+		"a STAND request puts the grounded dummy into standing guard")
+	session.step(_guard_input("", CombatSession.GuardPosture.CROUCH))
+	_check(session.dummy_guard == CombatSession.GuardPosture.CROUCH,
+		"a CROUCH request switches the dummy into crouch guard the same frame")
+	session.step(_guard_input("", CombatSession.GuardPosture.NONE))
+	_check(session.dummy_guard == CombatSession.GuardPosture.NONE,
+		"a NONE request stops guarding without any fallback")
+	var attack := FrameInput.make(0, false, "", false)
+	attack.dummy_guard_request = CombatSession.GuardPosture.STANDING
+	attack.dummy_move_request = "5A"
+	session.step(attack)
+	_check(session.dummy_move_id == "5A" and session.dummy_guard == CombatSession.GuardPosture.NONE,
+		"starting the requested attack replaces the guard posture (no guarding while attacking)")
+	var follow_events := session.step(_guard_input("", CombatSession.GuardPosture.STANDING))
+	_check(session.dummy_move_id == "5A" and session.dummy_guard == CombatSession.GuardPosture.NONE,
+		"the dummy cannot guard while executing its own requested attack (guard stays down)")
+	var rejects := _events_of(follow_events, CombatEvent.Type.DUMMY_GUARD_REJECTED)
+	_check(rejects.size() == 1 and rejects[0].guard_reject_reason == CombatEvent.DummyGuardRejectReason.BUSY,
+		"the guard request during the dummy move is rejected with the observable BUSY reason")
+
+
+func _test_dummy_guard_rejections_observable() -> void:
+	# 地面木桩收到 AIR：请求不成立（STATE），不静默回退为任何地面防御；
+	# 空中木桩收到 STAND 同为 STATE；空中受击中收到 AIR 是 BUSY——原因可区分。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	var events: Array[CombatEvent] = []
+	var guard_after := {}
+	for frame in range(1, 6):
+		events.append_array(session.step(_guard_input("", CombatSession.GuardPosture.AIR)))
+		guard_after[frame] = session.dummy_guard
+	var rejects := _events_of(events, CombatEvent.Type.DUMMY_GUARD_REJECTED)
+	_check(rejects.size() == 5 and rejects[0].guard_reject_reason == CombatEvent.DummyGuardRejectReason.STATE,
+		"an AIR request on the grounded dummy is rejected every frame with the STATE reason")
+	_check(guard_after[5] == CombatSession.GuardPosture.NONE,
+		"the mismatched AIR request never silently becomes any ground guard")
+	# 236C 命中把木桩打入浮空：F30–F33 请求 STAND（状态不符）→ STATE；F34–F36
+	# 请求 AIR（姿态匹配但受击占用）→ BUSY。
+	var launch_events: Array[CombatEvent] = []
+	for frame in range(1, 37):
+		var digit := 5
+		var key := ""
+		if frame == 1:
+			digit = 2
+		elif frame == 2:
+			digit = 3
+		elif frame == 3:
+			digit = 6
+		elif frame == 4:
+			key = "C"
+		var request := CombatSession.GuardPosture.NONE
+		if frame >= 30 and frame <= 33:
+			request = CombatSession.GuardPosture.STANDING
+		elif frame >= 34:
+			request = CombatSession.GuardPosture.AIR
+		var input := _relative_input(session, digit, key)
+		input.dummy_guard_request = request
+		launch_events.append_array(session.step(input))
+	var state_rejects := 0
+	var busy_rejects := 0
+	for event in launch_events:
+		if event.type == CombatEvent.Type.DUMMY_GUARD_REJECTED:
+			if event.guard_reject_reason == CombatEvent.DummyGuardRejectReason.STATE:
+				state_rejects += 1
+			elif event.guard_reject_reason == CombatEvent.DummyGuardRejectReason.BUSY:
+				busy_rejects += 1
+	_check(state_rejects == 4, "STAND requests on the airborne dummy report the STATE mismatch (4 frames)")
+	_check(busy_rejects == 3, "AIR requests while airborne in hitstun report the BUSY reason (3 frames)")
+
+
+func _test_player_attack_blocked_independent_result() -> void:
+	# 5A 被站防：ATTACK_BLOCKED 记录方向与姿态；被防停顿/硬直/推退独立结算，
+	# 不读 HitProfile、不掉血、不起连段、不锁 starter、不累计三层修正。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(60, 0)
+	var events: Array[CombatEvent] = []
+	var blockstun_after := {}
+	var guard_after := {}
+	var pushback_velocity := 0.0
+	var state_at_contact := {}
+	var player_x := session.player_position.x
+	var dummy_x := session.dummy_position.x
+	var dummy_pushed_away := false
+	for frame in range(1, 30):
+		var key := "A" if frame == 1 else ""
+		var frame_events := session.step(_guard_input(key, CombatSession.GuardPosture.STANDING))
+		events.append_array(frame_events)
+		blockstun_after[frame] = session.dummy_blockstun_left
+		guard_after[frame] = session.dummy_guard
+		if frame == 6:
+			state_at_contact = session.settlement_state()
+			pushback_velocity = session.dummy_velocity.x
+		if frame == 20:
+			dummy_pushed_away = session.dummy_position.x > dummy_x and session.player_position.x <= player_x
+	var blocked := _events_of(events, CombatEvent.Type.ATTACK_BLOCKED)
+	_check(blocked.size() == 1, "the guarded 5A raises exactly one ATTACK_BLOCKED contact event")
+	_check(blocked[0].direction == 1 and blocked[0].guard_posture == CombatSession.GuardPosture.STANDING,
+		"the blocked event records the attack direction and the guarding posture")
+	_check(blocked[0].block_freeze_frames == 8 and blocked[0].block_stun_frames == 9
+		and _approx(blocked[0].block_pushback_px_s, 45.0),
+		"the blocked event carries the declared block freeze/stun/pushback values")
+	_check(_count_events(events, CombatEvent.Type.HIT) == 0,
+		"a blocked contact never reports a HIT event")
+	_check(_count_events(events, CombatEvent.Type.HITSTOP_STARTED) == 1,
+		"the blocked contact still opens exactly one freeze window (declared block freeze)")
+	_check(session.dummy_hp == GameParams.DUMMY_MAX_HP and not session.combo_active and session.combo_hits == 0,
+		"a blocked attack deals no damage and never starts a combo")
+	_check(session.combo_starter_grade == MoveData.StarterGrade.UNSET
+		and _approx(session.combo_damage_scale, 1.0) and _approx(session.combo_time_scale, 1.0)
+		and _approx(session.combo_trajectory_scale, 1.0),
+		"a blocked contact locks no starter grade and accumulates no correction layer")
+	_check(blockstun_after[6] == 9, "the defender enters the declared 9f blockstun on the contact frame")
+	_check(blockstun_after[14] == 9 and blockstun_after[15] == 8,
+		"the blockstun timer stays frozen through the 8 freeze frames, then ticks on normal frames")
+	_check(guard_after[23] == CombatSession.GuardPosture.STANDING,
+		"the blockstun keeps the guarding posture frozen (block strings hold the guard)")
+	_check(pushback_velocity > 0.0,
+		"the contact frame leaves the defender with pushback velocity away from the attacker")
+	_check(dummy_pushed_away, "after the freeze the defender is actually pushed away in space")
+	_check(state_at_contact.get("move_blocked", false) == true and int(state_at_contact.get("contact_age", -1)) == 0,
+		"the settlement snapshot exposes the blocked contact with a contact age for solver state keys")
+
+
+func _test_dummy_guard_attribute_leak_matrix() -> void:
+	# 木桩侧与玩家同一属性矩阵：站防漏 low（2A 命中）、蹲防挡 low（2A 被防）、
+	# mid（5A）两种姿态都挡。
+	var outcomes := {}
+	for row in [["STAND_2A", CombatSession.GuardPosture.STANDING, true],
+			["CROUCH_2A", CombatSession.GuardPosture.CROUCH, true],
+			["STAND_5A", CombatSession.GuardPosture.STANDING, false]]:
+		var session := CombatSession.new()
+		session.dummy_position = session.player_position + Vector2(60, 0)
+		var events: Array[CombatEvent] = []
+		for frame in range(1, 12):
+			var key := "A" if frame == 1 else ""
+			events.append_array(session.step(_guard_input(key, int(row[1]), bool(row[2]))))
+		outcomes[row[0]] = [
+			_count_events(events, CombatEvent.Type.HIT),
+			_count_events(events, CombatEvent.Type.ATTACK_BLOCKED),
+		]
+	_check(outcomes["STAND_2A"][0] == 1 and outcomes["STAND_2A"][1] == 0,
+		"the standing guard leaks low: 2A hits through it")
+	_check(outcomes["CROUCH_2A"][0] == 0 and outcomes["CROUCH_2A"][1] == 1,
+		"the crouch guard blocks the low 2A")
+	_check(outcomes["STAND_5A"][0] == 0 and outcomes["STAND_5A"][1] == 1,
+		"the standing guard blocks the mid 5A")
+
+
+func _test_blocked_contact_opens_chain_and_special_cancels() -> void:
+	# 被防接触开放配置的链式/必杀取消：5A 被防后同窗口内 5B（链）与 236C（必杀）
+	# 都能起手并再次被防——被防不当命中、不断连段。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(60, 0)
+	var events: Array[CombatEvent] = []
+	var move_after := {}
+	for frame in range(1, 30):
+		var key := ""
+		if frame == 1:
+			key = "A"
+		elif frame == 6:
+			key = "B"
+		events.append_array(session.step(_guard_input(key, CombatSession.GuardPosture.STANDING)))
+		move_after[frame] = session.player_move_id
+	_check(_count_events(events, CombatEvent.Type.ATTACK_BLOCKED) == 2
+		and _count_events(events, CombatEvent.Type.HIT) == 0,
+		"5A blocked → chain-cancelled 5B is blocked again (two contacts, zero hits)")
+	_check(move_after[15] == "5B",
+		"the buffered B starts 5B as a chain cancel right after the freeze (within the contact window)")
+	_check(move_after[14] == "5A",
+		"the cancel starts before the first 5A finished recovering (a cancel, not a wait for recovery)")
+	# 必杀取消：停顿中喂 236 方向并在停顿内按 C——恢复首个正常帧后 236C 起手并被防。
+	var session2 := CombatSession.new()
+	session2.dummy_position = session2.player_position + Vector2(60, 0)
+	var events2: Array[CombatEvent] = []
+	var move_after2 := {}
+	for frame in range(1, 34):
+		var digit := 5
+		var key := ""
+		if frame == 1:
+			key = "A"
+		elif frame == 7:
+			digit = 2
+		elif frame == 8:
+			digit = 3
+		elif frame == 9:
+			digit = 6
+		elif frame == 13:
+			key = "C"
+		var input := _relative_input(session2, digit, key)
+		input.dummy_guard_request = CombatSession.GuardPosture.STANDING
+		events2.append_array(session2.step(input))
+		move_after2[frame] = session2.player_move_id
+	_check(move_after2[16] == "236C",
+		"the buffered C starts 236C as a special cancel after the freeze (within the contact window)")
+	_check(_count_events(events2, CombatEvent.Type.ATTACK_BLOCKED) == 2
+		and _count_events(events2, CombatEvent.Type.HIT) == 0,
+		"both the 5A and the cancelled 236C are blocked by the standing guard")
+
+
+func _test_blocked_denies_hit_confirm_and_jump_cancel() -> void:
+	# 被防只开链式：命中确认目标 5X 不因被防起手，Space 不因被防 jump cancel；
+	# 同一被防接触下链式 5B 仍然成立（分支选择性的正反对照）。
+	var table := {
+		"5A": _probe_move("5A", "A"),
+		"5X": _probe_move("5X", "X"),
+		"5B": _probe_move("5B", "B"),
+	}
+	var five := table["5A"] as MoveData
+	five.cancel_targets = ["5X"]
+	five.chain_cancel_targets = ["5B"]
+	five.chain_cancel_window_frames = 3
+	five.jump_cancel_targets = ["jA"]
+	_set_probe_block(five, 2, 4, 0.0)
+	_set_probe_block(table["5X"] as MoveData, 2, 4, 0.0)
+	_set_probe_block(table["5B"] as MoveData, 2, 4, 0.0)
+	var session := CombatSession.new(table)
+	session.dummy_position = session.player_position + Vector2(60, 0)
+	var events: Array[CombatEvent] = []
+	var move_ids: Array = []
+	var prejump_values: Array = []
+	for frame in range(1, 32):
+		var key := ""
+		var jump := false
+		if frame == 1:
+			key = "A"
+		elif frame == 7:
+			key = "X"
+		elif frame == 8:
+			jump = true
+		elif frame == 9:
+			key = "B"
+		var input := _guard_input(key, CombatSession.GuardPosture.STANDING)
+		input.jump_pressed = jump
+		input.up_held = jump
+		events.append_array(session.step(input))
+		move_ids.append(session.player_move_id)
+		prejump_values.append(session.player_prejump_left)
+	# 探针 5A（5/7/13）F1 起手、F6 被防、停顿 F7–F8、F9 恢复首个正常帧。
+	_check(not move_ids.has("5X"),
+		"the hit-confirm-only target 5X never starts from the blocked contact")
+	_check(_range_all(prejump_values, 0, 30, 0),
+		"Space never opens a jump cancel on a blocked contact")
+	_check(move_ids[8] == "5B",
+		"the chain-configured 5B still starts from the same blocked contact")
+	_check(_count_events(events, CombatEvent.Type.ATTACK_BLOCKED) == 2
+		and _count_events(events, CombatEvent.Type.HIT) == 0,
+		"both contacts are blocked and neither counts as a hit")
+
+
+func _test_whiff_still_cannot_cancel() -> void:
+	# 挥空没有接触：不产生取消年龄、不开任何取消目标；窗口内缓存的 B 过期作废。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(200, 0)
+	var events: Array[CombatEvent] = []
+	var move_ids: Array = []
+	var cancel_open_values: Array = []
+	var cancel_age_at_six := -2
+	for frame in range(1, 40):
+		var key := ""
+		if frame == 1:
+			key = "A"
+		elif frame == 6:
+			key = "B"
+		events.append_array(session.step(FrameInput.make(0, false, key)))
+		move_ids.append(session.player_move_id)
+		var snap := session.debug_snapshot()
+		cancel_open_values.append(bool(snap["cancel_open"]))
+		if frame == 6:
+			cancel_age_at_six = int(snap["cancel_age"])
+	_check(_count_events(events, CombatEvent.Type.ATTACK_BLOCKED) == 0
+		and _count_events(events, CombatEvent.Type.HIT) == 0,
+		"a whiff produces neither a hit nor a blocked contact")
+	_check(not move_ids.has("5B"),
+		"the buffered B expires without ever starting a cancel")
+	var cancel_never_open := true
+	for opened in cancel_open_values:
+		cancel_never_open = cancel_never_open and not opened
+	_check(cancel_never_open and cancel_age_at_six == -1,
+		"the whiffed move never opens a cancel window or a cancel age")
+
+
+func _test_blockstun_locks_dummy_actions_and_holds_guard() -> void:
+	# 被防硬直期间木桩不能按请求出招（反击时点观察口）；硬直结束后的首个输入帧
+	# 请求生效。连防：被防硬直内姿态冻结，后续攻击再次被防。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(60, 0)
+	var dummy_move_ids: Array = []
+	for frame in range(1, 26):
+		var input := _guard_input("A" if frame == 1 else "", CombatSession.GuardPosture.STANDING)
+		if frame >= 15:
+			input.dummy_move_request = "5A"
+		session.step(input)
+		dummy_move_ids.append(session.dummy_move_id)
+	_check(_range_all(dummy_move_ids, 14, 22, ""),
+		"the blockstunned dummy cannot start the requested counter before the stun ends")
+	_check(dummy_move_ids[23] == "5A",
+		"the requested counter starts on the first input frame after the blockstun")
+	var session2 := CombatSession.new()
+	session2.dummy_position = session2.player_position + Vector2(60, 0)
+	var events: Array[CombatEvent] = []
+	var guard_always_held := true
+	## 被防停顿顺延恢复：第一记 5A 到 F28 才收招，第二记 F32 起手、F37 接触。
+	for frame in range(1, 46):
+		var key := ""
+		if frame == 1 or frame == 32:
+			key = "A"
+		events.append_array(session2.step(_guard_input(key, CombatSession.GuardPosture.STANDING)))
+		guard_always_held = guard_always_held and session2.dummy_guard == CombatSession.GuardPosture.STANDING
+	_check(_count_events(events, CombatEvent.Type.ATTACK_BLOCKED) == 2,
+		"the second 5A is also blocked while the guard request is held (block string)")
+	_check(guard_always_held,
+		"the guard posture stays observable through the whole block string")
+
+
+func _test_blocked_then_guard_release_hits_fresh() -> void:
+	# 站防请求在被防硬直内停止：姿态冻结到硬直结束才落地 NONE；随后同一招正常
+	# 命中——命中/被防两分支在同一站位可切换复现。
+	var session := CombatSession.new()
+	session.dummy_position = session.player_position + Vector2(60, 0)
+	var events: Array[CombatEvent] = []
+	var guard_after := {}
+	for frame in range(1, 42):
+		var key := ""
+		if frame == 1 or frame == 30:
+			key = "A"
+		var request := CombatSession.GuardPosture.STANDING if frame <= 14 else CombatSession.GuardPosture.NONE
+		events.append_array(session.step(_guard_input(key, request)))
+		guard_after[frame] = session.dummy_guard
+	_check(guard_after[20] == CombatSession.GuardPosture.STANDING and guard_after[24] == CombatSession.GuardPosture.NONE,
+		"releasing the request during blockstun keeps the posture frozen until the stun ends")
+	_check(_count_events(events, CombatEvent.Type.ATTACK_BLOCKED) == 1
+		and _count_events(events, CombatEvent.Type.HIT) == 1,
+		"the first 5A is blocked and the second, after the release, lands a clean hit")
+	_check(session.combo_hits == 1 and session.combo_starter_grade == MoveData.StarterGrade.A,
+		"the fresh hit starts a new combo and locks its own starter grade")
+
+
+func _test_undeclared_block_fields_default_deny() -> void:
+	# 未声明被防结果的招式不可被防（默认禁止）：木桩保持站防姿态，攻击照常命中。
+	var session := CombatSession.new({"5A": _probe_move("5A", "A")})
+	session.dummy_position = session.player_position + Vector2(60, 0)
+	var events: Array[CombatEvent] = []
+	for frame in range(1, 12):
+		var key := "A" if frame == 1 else ""
+		events.append_array(session.step(_guard_input(key, CombatSession.GuardPosture.STANDING)))
+	_check(_count_events(events, CombatEvent.Type.HIT) == 1
+		and _count_events(events, CombatEvent.Type.ATTACK_BLOCKED) == 0,
+		"an undeclared block result denies blocking: the attack hits through the guard")
+	_check(session.dummy_guard == CombatSession.GuardPosture.STANDING,
+		"the guard posture itself stays observable even while the move is unblockable")
+
+
+func _test_blocked_freeze_uses_declared_frames() -> void:
+	# 被防停顿读取招式声明的 3f，不沿用命中 Hitstop 的 8f；停顿结束后的首帧即恢复
+	# 被防硬直倒数。300px/s 推退让双方位移都大到可观察（45px/s 初值下攻击方推退
+	# 在接触当帧被摩擦抵消，见共享表测试）。
+	var table := {"5A": _probe_move("5A", "A")}
+	_set_probe_block(table["5A"] as MoveData, 3, 5, 300.0)
+	var session := CombatSession.new(table)
+	session.dummy_position = session.player_position + Vector2(60, 0)
+	var events: Array[CombatEvent] = []
+	var blockstun_after := {}
+	var hitstop_after := {}
+	var player_x := session.player_position.x
+	var dummy_x := session.dummy_position.x
+	for frame in range(1, 16):
+		var key := "A" if frame == 1 else ""
+		events.append_array(session.step(_guard_input(key, CombatSession.GuardPosture.STANDING)))
+		blockstun_after[frame] = session.dummy_blockstun_left
+		hitstop_after[frame] = session.debug_snapshot()["hitstop_left"]
+	_check(hitstop_after[6] == 3 and hitstop_after[8] == 1 and hitstop_after[9] == 0,
+		"the block freeze lasts exactly the declared 3 frames (not the 8f hit hitstop)")
+	_check(blockstun_after[9] == 5 and blockstun_after[10] == 4,
+		"the blockstun ticks again from the first normal frame after the freeze")
+	_check(session.dummy_position.x > dummy_x + 5.0 and session.player_position.x < player_x - 5.0,
+		"the declared 300px/s pushback visibly separates both sides after the freeze")
 
 
 # --- 辅助 ---

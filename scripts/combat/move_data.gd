@@ -107,6 +107,11 @@ enum StarterGrade {
 @export var link_targets: Array[String] = []
 ## 起手等级：首次实际 HIT 锁定；打击招式必须显式声明，未声明整表拒绝。
 @export var starter_grade: StarterGrade = StarterGrade.UNSET
+## 被防结果（票据 03，D-02/D-03）：被防是独立于命中资料的接触结果，三项逐招显式
+## 声明；未声明（哨兵）= 本招不可被防——默认禁止，不回退全局参数。投技不得声明。
+@export var block_freeze_frames := -1   ## 被防停顿：双方动作/运动冻结的物理帧数（允许 0）。
+@export var block_stun_frames := -1     ## 被防硬直：防守方停顿结束后不可行动的正常帧数。
+@export var block_pushback_px_s := -1.0 ## 被防推退：停顿结束后施加给双方的水平速度（px/s）。
 ## 收尾招式：命中后结束当前连段路线；不主动清除木桩的受击/倒地处理。
 @export var is_finisher := false
 ## jump cancel 配置：命中确认后的取消窗口内允许 Space 取消起跳转入空中追击的

@@ -6,7 +6,7 @@ extends Node2D
 const PlayerScene: PackedScene = preload("res://scenes/player.tscn")
 const DummyScene: PackedScene = preload("res://scenes/dummy.tscn")
 
-const HINT_TEXT := "移动 A/D 或 ←/→    下 S/↓ 蹲下    防御 按住后方向 4/1    跳跃 Space    重置 R\n动作 U/I/K/J = A/B/C/D    派生 236+C / 214+D（方向按面向折算）\n冲刺 双击 →/←（66/44，中间松开一帧）    投 I+K = B+C（≤3帧内同按，投距内成立）"
+const HINT_TEXT := "移动 A/D 或 ←/→    下 S/↓ 蹲下    防御 按住后方向 4/1    跳跃 Space    重置 R\n动作 U/I/K/J = A/B/C/D    派生 236+C / 214+D（方向按面向折算）\n冲刺 双击 →/←（66/44，中间松开一帧）    投 I+K = B+C（≤3帧内同按，投距内成立）\n木桩防御 G 循环：无 → 站防 → 蹲防 → 空防（逐帧确定性请求，木桩无自主决策）"
 
 ## 动作键 A/B/C/D 对应的输入动作名（物理键 U/I/K/J）；C/D 配合方向序列触发派生。
 const ACTION_KEYS: Array[String] = ["A", "B", "C", "D"]
@@ -29,6 +29,9 @@ var _debug_line: Label
 var _last_link_fail := ""
 ## 最近一次低浮空触地/连段结束的可读事件注记（票据 02 训练场反馈）。
 var _last_state_note := ""
+## 木桩防御训练模式（票据 03）：G 键循环 无→站防→蹲防→空防，每帧作为确定性
+## 防御请求喂给会话——玩家驱动的训练设置，木桩本身无自主决策。
+var _dummy_guard_mode := 0
 
 
 func _ready() -> void:
@@ -49,6 +52,8 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	if session == null:
 		return
+	if Input.is_action_just_pressed("dummy_guard"):
+		_dummy_guard_mode = (_dummy_guard_mode + 1) % 4
 	var events: Array[CombatEvent] = session.step(_read_frame_input())
 	_player.apply_session(session)
 	_dummy.apply_session(session)
@@ -59,6 +64,11 @@ func _physics_process(_delta: float) -> void:
 			_last_link_fail = "%s：%s" % [event.link_move_id, _link_fail_text(event.link_fail_reason)]
 		if event.type == CombatEvent.Type.LOW_FLOAT_LANDED:
 			_last_state_note = "低浮空触地 → 普通倒地"
+		if event.type == CombatEvent.Type.ATTACK_BLOCKED:
+			_last_state_note = "攻击被%s挡下（被防硬直 %d）" % [
+				_guard_posture_text(event.guard_posture), session.dummy_blockstun_left]
+		if event.type == CombatEvent.Type.DUMMY_GUARD_REJECTED:
+			_last_state_note = "木桩防御请求不成立：%s" % _guard_reject_text(event.guard_reject_reason)
 		if event.type == CombatEvent.Type.COMBO_ENDED:
 			_last_state_note = "连段结束：%s" % _combo_end_text(event.combo_end_reason)
 	_update_dummy_status()
@@ -83,6 +93,8 @@ func _read_frame_input() -> FrameInput:
 			input.pressed_action_keys.append(key)
 		if Input.is_action_pressed("attack_" + key.to_lower()):
 			input.held_action_keys.append(key)
+	# 木桩防御训练模式：当前模式作为逐帧确定性请求喂给会话（票据 03）。
+	input.dummy_guard_request = _dummy_guard_mode
 	return input
 
 
@@ -264,6 +276,10 @@ func _update_dummy_status() -> void:
 		state_text = "普通倒地（%d）" % session.dummy_knockdown_left
 	elif session.dummy_state == CombatSession.DummyState.LOW_FLOAT_SWEEP:
 		state_text = "低浮空（%d）" % session.dummy_hitstun_left
+	if session.dummy_guard != CombatSession.GuardPosture.NONE:
+		state_text += "·%s" % _guard_posture_text(session.dummy_guard)
+		if session.dummy_blockstun_left > 0:
+			state_text += "（防僵%d）" % session.dummy_blockstun_left
 	var posture := "空中" if not session.player_on_ground else "地面"
 	# 起手等级与三层累计修正（C-01/C-02）：连段内的可观察反馈。
 	var combo_text := "无"
@@ -313,6 +329,26 @@ func _link_fail_text(reason: CombatEvent.LinkFailReason) -> String:
 			return "距离不足（判定窗口无接触）"
 		CombatEvent.LinkFailReason.CONFIGURATION_GAP:
 			return "未声明该普通连接边"
+	return "未知"
+
+
+func _guard_posture_text(posture: int) -> String:
+	match posture:
+		CombatSession.GuardPosture.STANDING:
+			return "站防"
+		CombatSession.GuardPosture.CROUCH:
+			return "蹲防"
+		CombatSession.GuardPosture.AIR:
+			return "空防"
+	return "未防御"
+
+
+func _guard_reject_text(reason: CombatEvent.DummyGuardRejectReason) -> String:
+	match reason:
+		CombatEvent.DummyGuardRejectReason.STATE:
+			return "姿态与地面/空中状态不符（不回退其他防御）"
+		CombatEvent.DummyGuardRejectReason.BUSY:
+			return "木桩受击/倒地/出招中，本帧无法进入防御"
 	return "未知"
 
 

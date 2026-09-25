@@ -27,6 +27,8 @@ func _initialize() -> void:
 	_test_finisher_back_edge_not_misreported()
 	_test_wait_window_clamped_by_window_and_hitstun()
 	_test_crouch_moves_and_low_float()
+	_test_blocked_cancel_edge_variants()
+	_test_blocked_contact_not_treated_as_hit()
 	_test_solver_claims_only_configured_connections()
 	_test_solver_does_not_modify_runtime_state()
 	_test_report_lines_readable()
@@ -376,6 +378,60 @@ func _test_crouch_moves_and_low_float() -> void:
 		_check(not (edge.from_id == "2C" and edge.valid), "no valid continuation out of 2C is claimed beyond its declared edges")
 
 
+func _test_blocked_cancel_edge_variants() -> void:
+	# 被防接触变体（票据 03）：链式/必杀边附「被防路径」标注——来源被站防/蹲防
+	# 挡下时取消仍能在窗口内起手；目标自身接触如实入注；来源未声明被防结果的
+	# 注入边默认不可被防；报告显式声明安全性 replay-required。
+	var report := ComboSolver.analyze()
+	var chain := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
+	_check(chain != null and chain.blocked_valid, "5A -> 5B has a validated blocked-contact variant (cancelled while the dummy stands guard)")
+	if chain != null and chain.blocked_valid:
+		_check(chain.blocked_reason.contains("站防") and chain.blocked_reason.contains("再次被防"),
+			"the blocked variant reports the standing-guard probe and the target being blocked again")
+	var special := _find_edge(report, "5A", "236C", ComboSolver.EdgeKind.SPECIAL_CANCEL)
+	_check(special != null and special.blocked_valid,
+		"the special-cancel 5A -> 236C also opens on a blocked contact")
+	var low_source := _find_edge(report, "2A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
+	_check(low_source != null and low_source.blocked_valid and low_source.blocked_reason.contains("蹲防"),
+		"a low source (2A) probes with the crouch guard that can actually block it")
+	var leak := _find_edge(report, "5A", "2B", ComboSolver.EdgeKind.CHAIN_CANCEL)
+	_check(leak != null and leak.blocked_valid and leak.blocked_reason.contains("命中"),
+		"the blocked 5A cancelled into the low 2B hits through the standing guard (attribute leak reported as a hit, not as a blocked hit)")
+	var has_note := false
+	for note in report.notes:
+		has_note = has_note or (note.contains("replay-required") and note.contains("被防"))
+	_check(has_note, "the report notes declare block safety conclusions replay-required")
+	var unblockable_table := _blocked_probe_table(false)
+	var unblockable_report := ComboSolver.analyze(unblockable_table)
+	var unblockable := _find_edge(unblockable_report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
+	_check(unblockable != null and not unblockable.blocked_valid and unblockable.blocked_reason.contains("未声明被防结果"),
+		"an injected source without declared block result denies the blocked variant (default deny, no global fallback)")
+
+
+func _test_blocked_contact_not_treated_as_hit() -> void:
+	# 被防不产生命中：被防路径标注不改变路线图——路线的 combo_hits 只统计 HIT；
+	# 被防变体成立的边不因此出现以被防为起点的「路线」。
+	var report := ComboSolver.analyze()
+	for route in report.routes:
+		_check(route.combo_hits == route.hit_frames.size(),
+			"every route counts exactly its HIT events (blocked contacts never inflate hit counts)")
+	var chain := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
+	_check(chain != null and chain.valid and chain.blocked_valid,
+		"the blocked variant annotates the same configured edge without replacing the hit-path validation")
+
+
+## 被防探针注入表：A 键探针 5A（可配置是否声明被防结果）链式取消 B 键 5B。
+func _blocked_probe_table(blockable: bool) -> Dictionary:
+	var five_a := _probe_strike("5A", "A")
+	var five_b := _probe_strike("5B", "B")
+	five_a.chain_cancel_targets = ["5B"]
+	five_a.chain_cancel_window_frames = 5
+	if blockable:
+		five_a.block_freeze_frames = 8
+		five_a.block_stun_frames = 9
+		five_a.block_pushback_px_s = 45.0
+	return {"5A": five_a, "5B": five_b}
+
 func _test_solver_claims_only_configured_connections() -> void:
 	# 验收 5：Solver 只主张招式数据配置过的连接——边集等于配置关系集，
 	# 空中段只能经配置的 jump cancel 进入，路线只从地面普通动作键起手。
@@ -469,6 +525,36 @@ func _test_analysis_is_deterministic() -> void:
 
 
 # --- 辅助 ---
+
+## 探针打击招式（字段齐全的合法构造，票据 03 被防探针用）。
+func _probe_strike(id: String, key: String) -> MoveData:
+	var move := MoveData.new()
+	move.move_id = id
+	move.move_kind = MoveData.MoveKind.STRIKE
+	move.stance = MoveData.Stance.GROUND
+	move.action_key = key
+	move.startup_frames = 5
+	move.active_frames = 4
+	move.recovery_frames = 10
+	move.cancel_window_frames = 8
+	move.priority = 1
+	move.base_damage = 10
+	move.attack_attribute = MoveData.AttackAttribute.MID
+	move.hitbox_size = Vector2(64, 60)
+	move.hitbox_gap = 4.0
+	move.starter_grade = MoveData.StarterGrade.A
+	var normal := HitProfile.new()
+	normal.target_state = HitProfile.TargetState.GROUNDED
+	normal.hit_context = HitProfile.HitContext.NORMAL
+	normal.reaction = HitProfile.Reaction.GROUND_HITSTUN
+	normal.ground_stun_frames = 14
+	normal.horizontal_speed_px_s = 160.0
+	normal.upward_speed_px_s = 0.0
+	var counter := normal.duplicate() as HitProfile
+	counter.hit_context = HitProfile.HitContext.COUNTER
+	move.hit_profiles = [normal, counter]
+	return move
+
 
 func _find_edge(report: ComboSolver.SolverReport, from_id: String, to_id: String, kind: int = -1) -> ComboSolver.SolverEdge:
 	for edge in report.edges:

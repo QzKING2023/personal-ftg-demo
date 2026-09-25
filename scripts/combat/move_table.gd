@@ -230,6 +230,17 @@ static func _validate_strike_fields(move: MoveData, source: String, id_label: St
 		errors.append("[%s] %s: throw_range — 矛盾：打击招式不声明投距（当前 %s）" % [
 			source, id_label, str(move.throw_range),
 		])
+	for pair in [["block_freeze_frames", move.block_freeze_frames], ["block_stun_frames", move.block_stun_frames]]:
+		var block_field: String = pair[0]
+		var block_value: int = pair[1]
+		if block_value < 0:
+			errors.append("[%s] %s: %s — 被防停顿/硬直为负或未声明（当前 %d；被防结果独立于命中资料逐招声明，无全局回退）" % [
+				source, id_label, block_field, block_value,
+			])
+	if move.block_pushback_px_s < 0.0:
+		errors.append("[%s] %s: block_pushback_px_s — 被防推退为负或未声明（当前 %s；被防结果独立于命中资料逐招声明，无全局回退）" % [
+			source, id_label, str(move.block_pushback_px_s),
+		])
 	_validate_hit_profiles(move, source, id_label, errors)
 
 
@@ -258,6 +269,10 @@ static func _validate_throw_fields(move: MoveData, source: String, id_label: Str
 	if move.direction_derivation != "":
 		errors.append("[%s] %s: direction_derivation — 矛盾：普通投不支持方向派生记法（当前 \"%s\"）" % [
 			source, id_label, move.direction_derivation,
+		])
+	if move.block_freeze_frames != -1 or move.block_stun_frames != -1 or move.block_pushback_px_s >= 0.0:
+		errors.append("[%s] %s: block_freeze_frames — 矛盾：普通投不可被防御，不声明被防结果（当前停顿 %d / 硬直 %d / 推退 %s）" % [
+			source, id_label, move.block_freeze_frames, move.block_stun_frames, str(move.block_pushback_px_s),
 		])
 
 

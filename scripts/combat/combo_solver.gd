@@ -56,7 +56,7 @@ const RECOVER_HORIZON := 240
 ## 上限不会截掉任何可行延迟，枚举是完备的。
 const MAX_AIR_DELAY := 40
 
-const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性接续——命中确认取消、链式/必杀取消（接触开放，命中或被防）、jump cancel、显式落地接缝与恢复后的普通连接（目押）：前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生与落地接缝都在真实 CombatSession 结算中检验；命中资料与运行时共享同一 (target_state, hit_context) 精确选择：探针木桩不自攻，命中的上下文恒为 normal，缺失目标状态资料的连接按 MISS_NO_PROFILE 断链上报（不回退 grounded/normal 资料），普通倒地期间不可追击；cancel_targets、chain/special_cancel_targets、link_targets、jump_cancel_targets 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；普通连接边与取消边以不同类型分别报告，连接成立与否由前招完全恢复当帧的缓存消费、目标剩余硬直与 active 重叠重新判定；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（空中无二段跳；木桩浮空只由真实命中按所选 profile 的受身计时与速度重建，空中追击的每次命中都应用其 airborne profile），无命中的时间不会自动续期；OTG、地弹、墙反弹与招式无敌不在本轮支持范围，表达这些能力的字段或标签由 MoveTable 整表拒绝；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、起手等级与三层累计修正、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。空间分层：无空间数据时全部路线仅 timing-valid，固定接触位不构成空间证明；提供空间数据（SolverOptions.spatial）后另附 spatial-valid，且只在地面、左右镜像的 48/64/80 px 三组身体中心水平距离上复验，不搜索走位、中立、墙角、推挤、跨身或屏幕边界，配置缺口与时序失败不作空间失败上报。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。"
+const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性接续——命中确认取消、链式/必杀取消（接触开放，命中或被防）、jump cancel、显式落地接缝与恢复后的普通连接（目押）：前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生与落地接缝都在真实 CombatSession 结算中检验；命中资料与运行时共享同一 (target_state, hit_context) 精确选择：探针木桩不自攻，命中的上下文恒为 normal，缺失目标状态资料的连接按 MISS_NO_PROFILE 断链上报（不回退 grounded/normal 资料），普通倒地期间不可追击；cancel_targets、chain/special_cancel_targets、link_targets、jump_cancel_targets 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；普通连接边与取消边以不同类型分别报告，连接成立与否由前招完全恢复当帧的缓存消费、目标剩余硬直与 active 重叠重新判定；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（空中无二段跳；木桩浮空只由真实命中按所选 profile 的受身计时与速度重建，空中追击的每次命中都应用其 airborne profile），无命中的时间不会自动续期；OTG、地弹、墙反弹与招式无敌不在本轮支持范围，表达这些能力的字段或标签由 MoveTable 整表拒绝；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、起手等级与三层累计修正、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。空间分层：无空间数据时全部路线仅 timing-valid，固定接触位不构成空间证明；提供空间数据（SolverOptions.spatial）后另附 spatial-valid，且只在地面、左右镜像的 48/64/80 px 三组身体中心水平距离上复验，不搜索走位、中立、墙角、推挤、跨身或屏幕边界，配置缺口与时序失败不作空间失败上报。被防分层（票据 03）：链式/必杀边附「被防路径」标注——同一配置边在来源招式被木桩站防/蹲防挡下的探针中验证取消时序；被防是独立接触结果（BLOCKED 不产生命中、不入路线/循环图、不借命中确认或 jump cancel），探针中预期命中帧收到被防结果一律按 blocked 断链上报；被防安全性（指定反击、时机、距离、版边、面向）不在静态证明范围，一律 replay-required。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。"
 
 ## 接续边类型：命中确认取消 / 链式取消 / 必杀取消 / jump cancel / 显式落地接续 /
 ## 普通连接（目押）。链式与必杀按接触开放（命中或被防），命中确认、jump cancel
@@ -139,6 +139,10 @@ class SolverEdge extends RefCounted:
 	var align_to := -1
 	## 落地接续专用：最晚对齐档（命中恰在落地帧或最接近）的完整输入表，供与运行时对拍。
 	var align_inputs: Array[ScheduledInput] = []
+	## 被防接触变体（票据 03）：同一链式/必杀配置边在「来源被木桩防御挡下」探针
+	## 中的取消时序验证。被防不是 HIT——该变体只作标注，不进入路线/循环图。
+	var blocked_valid := false
+	var blocked_reason := ""
 
 	func label() -> String:
 		return "%s → %s" % [from_id, to_id]
@@ -322,7 +326,10 @@ class SolverReport extends RefCounted:
 		if edges.is_empty():
 			lines.append("（招式表中没有可分析的接续边）")
 		for edge in edges:
-			lines.append("%s（%s）：%s｜%s" % [edge.label(), edge.kind_text(), "有效" if edge.valid else "排除", edge.reason])
+			var edge_line := "%s（%s）：%s｜%s" % [edge.label(), edge.kind_text(), "有效" if edge.valid else "排除", edge.reason]
+			if edge.blocked_valid or edge.blocked_reason != "":
+				edge_line += "｜被防路径%s" % (("成立：" + edge.blocked_reason) if edge.blocked_valid else edge.blocked_reason)
+			lines.append(edge_line)
 		lines.append("--- 配置缺口 ---")
 		if gaps.is_empty():
 			lines.append("（未发现时序成立但缺少配置的候选接续）")
@@ -513,10 +520,11 @@ static func _edge_signature(edge: SolverEdge, facing: int) -> String:
 		align_parts.append("%d/%s/%s/%d" % [
 			spec.frame, spec.key, str(spec.jump), _relative_digit(spec.axis, spec.down, facing),
 		])
-	return "%s>%s:%d:%s:%d:%d:%d:%d:%d:%d:%s:%s" % [
+	return "%s>%s:%d:%s:%d:%d:%d:%d:%d:%d:%s:%s:%s:%s" % [
 		edge.from_id, edge.to_id, edge.kind, str(edge.valid),
 		edge.wait_from, edge.wait_to, edge.hit_age, edge.recover_age,
 		edge.align_from, edge.align_to, edge.reason, ";".join(align_parts),
+		str(edge.blocked_valid), edge.blocked_reason,
 	]
 
 
@@ -707,6 +715,8 @@ func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false
 					if not edge_kinds.has(key):
 						edge_kinds[key] = kind
 	_enumerate_gaps(contexts, timing_cache, report)
+	if report.edges.any(func(edge: SolverEdge) -> bool: return edge.blocked_valid):
+		report.notes.append("被防取消边只在固定探针姿态下验证取消时序（被防是独立接触结果，不产生命中，不入路线/循环图）；被防安全性（指定反击招式、时机、距离、版中/版边与左右面向）必须真实空间回放（replay-required），静态报告不下安全结论")
 	## 图的路线起点：起始姿态下单键可起手、无方向派生的打击招式（按表内顺序，确定性枚举）。
 	var sources: Array[String] = []
 	for move_id in _table:
@@ -1362,6 +1372,8 @@ func _build_edge(from_id: String, to_id: String, kind: EdgeKind, contexts: Dicti
 			_fill_link_edge(edge, context, timing_cache)
 		_:
 			_fill_cancel_edge(edge, context, timing_cache, kind)
+	if kind == EdgeKind.CHAIN_CANCEL or kind == EdgeKind.SPECIAL_CANCEL:
+		_fill_blocked_cancel_edge(edge, context)
 	return edge
 
 
@@ -1423,8 +1435,121 @@ func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache
 			edge.reason = "取消未成立：目标未能在取消窗口内起手（窗口关闭或缓存过期）"
 		"miss_profile":
 			edge.reason = "取消未成立：" + run["reason"]
+		"blocked":
+			edge.reason = "取消未成立：" + run["reason"]
 		_:
 			edge.reason = "取消未成立：目标未在取消窗口内起手或命中（未观测到第二次命中）"
+
+
+## 被防接触变体（票据 03）：链式/必杀配置边在「来源招式被木桩防御挡下」探针
+## 中的真实结算验证。木桩按能挡住来源属性的姿态逐帧请求防御（low→蹲防，
+## 其余→站防；与来源是否命中无关）。验证：来源在预期首接触帧被防
+## （ATTACK_BLOCKED，绝不产生 HIT）、目标在被防取消窗口内起手；目标自身的
+## 接触结果如实入注。被防不是 HIT——该变体只作时序标注，不进入路线/循环图；
+## 被防安全性（指定反击、时机、距离、版边、面向）一律 replay-required。
+func _fill_blocked_cancel_edge(edge: SolverEdge, context: Array[ChainLink]) -> void:
+	var from_move := _table.get(edge.from_id) as MoveData
+	if from_move.block_freeze_frames < 0 or from_move.block_stun_frames < 0 or from_move.block_pushback_px_s < 0.0:
+		edge.blocked_reason = "来源招式未声明被防结果（默认不可被防，无全局回退）"
+		return
+	var guard := CombatSession.GuardPosture.STANDING
+	if from_move.attack_attribute == MoveData.AttackAttribute.LOW:
+		guard = CombatSession.GuardPosture.CROUCH
+	var links: Array[ChainLink] = context.duplicate()
+	links.append_array(_links_for_edge(edge.from_id, edge.to_id, edge.kind))
+	var run := _run_blocked_probe(_compile_chain(links), guard, edge.from_id, edge.to_id)
+	edge.blocked_valid = bool(run["ok"])
+	edge.blocked_reason = String(run["reason"])
+
+
+## 被防探针的逐帧执行：来源首个预期接触帧必须是 ATTACK_BLOCKED（无 HIT），
+## 目标招式须起手；随后观测目标的自身接触（再被防/属性漏出命中/资料缺失/挥空）。
+## 时间轴与 _run_schedule 同口径：按正常战斗帧推进，冻结帧以空输入步过。
+func _run_blocked_probe(compiled: Dictionary, guard: int, from_id: String, to_id: String) -> Dictionary:
+	if compiled.is_empty():
+		return {"ok": false, "reason": "被防探针输入表冲突：同一物理帧需要两个互斥输入"}
+	var inputs := {}
+	for spec in compiled["inputs"]:
+		inputs[spec.frame] = spec
+	var hit_frames: Array[int] = compiled["hit_frames"]
+	var source_contact := hit_frames[0]
+	var target_contact := hit_frames[hit_frames.size() - 1]
+	var to_move := _table.get(to_id) as MoveData
+	var scan_end := target_contact + (to_move.active_frames if to_move != null else 6) + 12
+	var session := _new_session()
+	var source_blocked := false
+	var target_started := false
+	var outcome := ""
+	var outcome_frame := -1
+	var frame := 0
+	var physics := 0
+	while frame < scan_end and physics < 600:
+		if session.hitstop_active():
+			physics += 1
+			session.step(FrameInput.new())
+			_pin_dummy(session)
+			continue
+		frame += 1
+		physics += 1
+		var input := FrameInput.new()
+		input.dummy_guard_request = guard
+		if inputs.has(frame):
+			input = (inputs[frame] as ScheduledInput).to_frame_input()
+			input.dummy_guard_request = guard
+		var events := session.step(input)
+		_pin_dummy(session)
+		if session.player_move_id == to_id:
+			target_started = true
+		for event in events:
+			match event.type:
+				CombatEvent.Type.ATTACK_BLOCKED:
+					if not source_blocked:
+						source_blocked = true
+						if frame != source_contact:
+							return {"ok": false, "reason": "来源招式被防发生在第 %d 帧（预期首接触帧 %d）——探针几何被打破" % [frame, source_contact]}
+					elif outcome == "":
+						outcome = "blocked"
+						outcome_frame = frame
+				CombatEvent.Type.HIT:
+					if not source_blocked:
+						return {"ok": false, "reason": "来源招式（%s）在防御探针中命中——%s 未挡住该属性，被防探针不成立" % [
+							from_id, _guard_posture_label(guard)]}
+					if outcome == "":
+						outcome = "hit"
+						outcome_frame = frame
+				CombatEvent.Type.HIT_MISS:
+					if source_blocked and outcome == "":
+						outcome = "miss"
+						outcome_frame = frame
+	if not source_blocked:
+		return {"ok": false, "reason": "来源招式未在第 %d 帧被防——防御探针未成立（几何或姿态问题）" % source_contact}
+	if not target_started:
+		return {"ok": false, "reason": "目标未能在被防取消窗口内起手（窗口关闭或缓存过期）"}
+	if outcome == "":
+		outcome = "whiff"
+	var outcome_text := ""
+	match outcome:
+		"blocked":
+			outcome_text = "再次被防"
+		"hit":
+			outcome_text = "命中（该姿态漏出此属性——被防取消转命中的混合起点）"
+		"miss":
+			outcome_text = "命中框连接但无匹配命中资料（MISS_NO_PROFILE）"
+		"whiff":
+			outcome_text = "判定窗口结束无接触（挥空）"
+	return {"ok": true, "reason": "被防探针（%s）：来源第 %d 帧被防、目标起手并于第 %d 帧%s；被防不产生命中——安全性（反击/距离/版边/面向）replay-required" % [
+		_guard_posture_label(guard), source_contact, outcome_frame, outcome_text]}
+
+
+func _guard_posture_label(guard: int) -> String:
+	match guard:
+		CombatSession.GuardPosture.STANDING:
+			return "站防"
+		CombatSession.GuardPosture.CROUCH:
+			return "蹲防"
+		CombatSession.GuardPosture.AIR:
+			return "空防"
+	return "无防御"
 
 
 ## 各取消接缝的窗口长度（帧）：命中确认 / 链式 / 必杀三类窗口独立声明。
@@ -1936,10 +2061,18 @@ func _run_schedule(compiled: Dictionary, opts: Dictionary) -> Dictionary:
 				## 木桩普通倒地期间的打击一律不命中。
 				var expected_move: String = hit_moves[verified]
 				var miss_profile := false
+				var blocked_contact := false
 				for event in events:
 					if event.type == CombatEvent.Type.HIT_MISS:
 						miss_profile = true
-				if miss_profile:
+					elif event.type == CombatEvent.Type.ATTACK_BLOCKED:
+						blocked_contact = true
+				if blocked_contact:
+					break_kind = "blocked"
+					break_reason = "第 %d 招（%s）在预期帧（第 %d 帧）被木桩防御挡下（BLOCKED）——被防是独立接触结果，不产生命中" % [
+						verified + 1, expected_move, frame,
+					]
+				elif miss_profile:
 					break_kind = "miss_profile"
 					break_reason = "第 %d 招（%s）命中框已连接但目标状态 × 命中上下文无匹配 HitProfile（MISS_NO_PROFILE）——缺失不回退，不借用其他状态的资料" % [
 						verified + 1, expected_move,

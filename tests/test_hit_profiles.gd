@@ -725,6 +725,9 @@ func _strike_with(profiles: Array) -> MoveData:
 		typed.append(profile)
 	move.hit_profiles = typed
 	move.starter_grade = MoveData.StarterGrade.D
+	move.block_freeze_frames = 8
+	move.block_stun_frames = 9
+	move.block_pushback_px_s = 45.0
 	return move
 
 

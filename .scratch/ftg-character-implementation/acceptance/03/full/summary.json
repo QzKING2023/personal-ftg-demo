@@ -1,0 +1,114 @@
+[
+  {
+    "test": "import",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 0,
+    "seconds": 5.15
+  },
+  {
+    "test": "test_combat_session",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 771,
+    "seconds": 1.9
+  },
+  {
+    "test": "test_combo_solver",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 214,
+    "seconds": 347.46
+  },
+  {
+    "test": "test_crouch_stationary",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 45,
+    "seconds": 0.4
+  },
+  {
+    "test": "test_hit_profiles",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 105,
+    "seconds": 55.7
+  },
+  {
+    "test": "test_input_normalization",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 22,
+    "seconds": 0.57
+  },
+  {
+    "test": "test_joint_acceptance",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 28,
+    "seconds": 0.39
+  },
+  {
+    "test": "test_move_table",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 214,
+    "seconds": 62.0
+  },
+  {
+    "test": "test_replay_acceptance",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 123,
+    "seconds": 179.0
+  },
+  {
+    "test": "test_smoke",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 123,
+    "seconds": 18.0
+  },
+  {
+    "test": "test_solver_cycles",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 30,
+    "seconds": 346.0
+  },
+  {
+    "test": "test_solver_entry",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 49,
+    "seconds": 340.0
+  },
+  {
+    "test": "test_solver_route",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 322,
+    "seconds": 427.0
+  },
+  {
+    "test": "test_solver_spatial",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 619,
+    "seconds": 617.0
+  },
+  {
+    "test": "diagnose_inputs",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 0,
+    "seconds": 15.0
+  },
+  {
+    "test": "main-smoke",
+    "exit": 0,
+    "script_errors": 0,
+    "pass_lines": 0,
+    "seconds": 12.0
+  }
+]

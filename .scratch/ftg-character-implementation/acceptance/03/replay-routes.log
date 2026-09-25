@@ -1,0 +1,133 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+=== 被防链式取消 5A>5B | 面向 1 | 起始间距 60 px ===
+F6   ATTACK_BLOCKED 姿态站防 | 停顿剩余8 被防硬直9 | 玩家(240.0) 木桩(300.2) 招式5A
+F6   HITSTOP_STARTED
+F15  HITSTOP_ENDED 被防硬直8
+F21  ATTACK_BLOCKED 姿态站防 | 停顿剩余8 被防硬直9 | 玩家(240.0) 木桩(300.4) 招式5B
+F21  HITSTOP_STARTED
+F30  HITSTOP_ENDED 被防硬直8
+F63  HIT 第1击 伤5.8 starterA | 修正 伤0.720/时0.700/轨0.750 | HP 94.2
+F63  HITSTOP_STARTED
+结果：连段 1 hit · 总伤害 5.8 · HP 94.2
+
+=== 被防链式取消 5A>5B | 面向 -1 | 起始间距 60 px ===
+F6   ATTACK_BLOCKED 姿态站防 | 停顿剩余8 被防硬直9 | 玩家(240.0) 木桩(179.8) 招式5A
+F6   HITSTOP_STARTED
+F15  HITSTOP_ENDED 被防硬直8
+F21  ATTACK_BLOCKED 姿态站防 | 停顿剩余8 被防硬直9 | 玩家(240.0) 木桩(179.6) 招式5B
+F21  HITSTOP_STARTED
+F30  HITSTOP_ENDED 被防硬直8
+F63  HIT 第1击 伤5.8 starterA | 修正 伤0.720/时0.700/轨0.750 | HP 94.2
+F63  HITSTOP_STARTED
+结果：连段 1 hit · 总伤害 5.8 · HP 94.2
+
+=== 被防必杀取消 5A>236C | 面向 1 | 起始间距 60 px ===
+F6   ATTACK_BLOCKED 姿态站防 | 停顿剩余8 被防硬直9 | 玩家(240.0) 木桩(300.2) 招式5A
+F6   HITSTOP_STARTED
+F15  HITSTOP_ENDED 被防硬直8
+F22  ATTACK_BLOCKED 姿态站防 | 停顿剩余8 被防硬直9 | 玩家(240.0) 木桩(300.4) 招式236C
+F22  HITSTOP_STARTED
+F31  HITSTOP_ENDED 被防硬直8
+
+=== 被防必杀取消 5A>236C | 面向 -1 | 起始间距 60 px ===
+F6   ATTACK_BLOCKED 姿态站防 | 停顿剩余8 被防硬直9 | 玩家(240.0) 木桩(179.8) 招式5A
+F6   HITSTOP_STARTED
+F15  HITSTOP_ENDED 被防硬直8
+F22  ATTACK_BLOCKED 姿态站防 | 停顿剩余8 被防硬直9 | 玩家(240.0) 木桩(179.6) 招式236C
+F22  HITSTOP_STARTED
+F31  HITSTOP_ENDED 被防硬直8
+
+=== 被防转命中 5A>2B（low 漏站防） | 面向 1 | 起始间距 60 px ===
+F6   ATTACK_BLOCKED 姿态站防 | 停顿剩余8 被防硬直9 | 玩家(240.0) 木桩(300.2) 招式5A
+F6   HITSTOP_STARTED
+F15  HITSTOP_ENDED 被防硬直8
+F22  HIT 第1击 伤9.2 starterB | 修正 伤0.840/时0.820/轨0.850 | HP 90.8
+F22  HITSTOP_STARTED
+F31  HITSTOP_ENDED 被防硬直0
+F39  COMBO_ENDED CANCEL_WINDOW_CLOSED
+F41  DUMMY_RECOVERED
+结果：starter=未锁定 连段=1 hit 修正 伤1.000/时1.000/轨1.000
+
+=== 被防转命中 5A>2B（low 漏站防） | 面向 -1 | 起始间距 60 px ===
+F6   ATTACK_BLOCKED 姿态站防 | 停顿剩余8 被防硬直9 | 玩家(240.0) 木桩(179.8) 招式5A
+F6   HITSTOP_STARTED
+F15  HITSTOP_ENDED 被防硬直8
+F22  HIT 第1击 伤9.2 starterB | 修正 伤0.840/时0.820/轨0.850 | HP 90.8
+F22  HITSTOP_STARTED
+F31  HITSTOP_ENDED 被防硬直0
+F39  COMBO_ENDED CANCEL_WINDOW_CLOSED
+F41  DUMMY_RECOVERED
+结果：starter=未锁定 连段=1 hit 修正 伤1.000/时1.000/轨1.000
+
+=== 负例：挥空取消 | 面向 1 | 起始间距 200 px ===
+F6   输入[B] 招式5A 木桩防1 | 玩家(240.0) 木桩(440.0)
+F12  输入[] 招式5A 木桩防1 | 玩家(240.0) 木桩(440.0)
+F20  输入[] 招式 木桩防1 | 玩家(240.0) 木桩(440.0)
+F30  输入[] 招式 木桩防1 | 玩家(240.0) 木桩(440.0)
+结果：任何接触事件=false（预期 false）；F30 玩家招式=（预期空，B 从未起手）
+
+=== 负例：被防不开 jump cancel（6A 被站防后 Space） | 面向 1 ===
+F9   ATTACK_BLOCKED 姿态站防 | 停顿剩余8 被防硬直9 | 玩家(240.7) 木桩(300.2) 招式6A
+F9   HITSTOP_STARTED
+F18  HITSTOP_ENDED 被防硬直8
+结果：prejump 全程为 0；玩家招式= 空闲=true
+
+=== 反击安全 | 近距 60 px | 面向 1 | 被防招式 5A（含停顿至 F27 恢复）| 玩家不防御 ===
+F6   ATTACK_BLOCKED 站防 被防硬直9
+F29  PLAYER_HIT 反击命中 → 已恢复未防（攻击方 F28 起可行动但未挡）
+结论：已恢复未防（攻击方 F28 起可行动但未挡） | 间距 60.0→63.2
+
+=== 反击安全 | 近距 60 px | 面向 1 | 被防招式 5A（含停顿至 F27 恢复）| 玩家尝试防御 ===
+F6   ATTACK_BLOCKED 站防 被防硬直9
+F29  BLOCKED 反击被玩家挡下 → 被防（攻击方及时恢复并挡住反击）
+结论：被防（攻击方及时恢复并挡住反击） | 间距 60.0→149.1
+
+=== 反击安全 | 近距 60 px | 面向 1 | 被防招式 5D（含停顿至 F37 恢复）| 玩家不防御 ===
+F8   ATTACK_BLOCKED 站防 被防硬直9
+F31  PLAYER_HIT 反击命中 → 确反（攻击方 F38 前尚不能行动）
+结论：确反（攻击方 F38 前尚不能行动） | 间距 60.0→63.2
+
+=== 反击安全 | 近距 60 px | 面向 1 | 被防招式 5D（含停顿至 F37 恢复）| 玩家尝试防御 ===
+F8   ATTACK_BLOCKED 站防 被防硬直9
+F31  PLAYER_HIT 反击命中 → 确反（攻击方 F38 前尚不能行动）
+结论：确反（攻击方 F38 前尚不能行动） | 间距 60.0→117.4
+
+=== 反击安全 | 近距 60 px | 面向 -1 | 被防招式 5A（含停顿至 F27 恢复）| 玩家不防御 ===
+F6   ATTACK_BLOCKED 站防 被防硬直9
+F29  PLAYER_HIT 反击命中 → 已恢复未防（攻击方 F28 起可行动但未挡）
+结论：已恢复未防（攻击方 F28 起可行动但未挡） | 间距 60.0→63.2
+
+=== 反击安全 | 近距 60 px | 面向 -1 | 被防招式 5A（含停顿至 F27 恢复）| 玩家尝试防御 ===
+F6   ATTACK_BLOCKED 站防 被防硬直9
+F29  BLOCKED 反击被玩家挡下 → 被防（攻击方及时恢复并挡住反击）
+结论：被防（攻击方及时恢复并挡住反击） | 间距 60.0→149.1
+
+=== 反击安全 | 近距 60 px | 面向 -1 | 被防招式 5D（含停顿至 F37 恢复）| 玩家不防御 ===
+F8   ATTACK_BLOCKED 站防 被防硬直9
+F31  PLAYER_HIT 反击命中 → 确反（攻击方 F38 前尚不能行动）
+结论：确反（攻击方 F38 前尚不能行动） | 间距 60.0→63.2
+
+=== 反击安全 | 近距 60 px | 面向 -1 | 被防招式 5D（含停顿至 F37 恢复）| 玩家尝试防御 ===
+F8   ATTACK_BLOCKED 站防 被防硬直9
+F31  PLAYER_HIT 反击命中 → 确反（攻击方 F38 前尚不能行动）
+结论：确反（攻击方 F38 前尚不能行动） | 间距 60.0→117.4
+
+=== 反击安全 | 中板 100 px | 面向 1 | 被防招式 5D（含停顿至 F37 恢复）| 玩家不防御 ===
+F8   ATTACK_BLOCKED 站防 被防硬直9
+结论：反击未在观测窗口内命中（距离或时序不足） | 间距 100.0→100.2
+
+=== 反击安全 | 中板 100 px | 面向 1 | 被防招式 5D（含停顿至 F37 恢复）| 玩家尝试防御 ===
+F8   ATTACK_BLOCKED 站防 被防硬直9
+结论：反击未在观测窗口内命中（距离或时序不足） | 间距 100.0→262.1
+
+=== 反击安全 | 版边 | 面向 1 | 木桩贴墙，玩家距墙 60 px ===
+F8   ATTACK_BLOCKED 站防 | 木桩x=912.0（墙限 912.0）
+F31  PLAYER_HIT → 确反（攻击方 F38 前尚不能行动）
+结论：确反（攻击方 F38 前尚不能行动） | 版边木桩位移被墙截断（贴墙 912.0）
+
+=== 反击安全 | 版边 | 面向 -1 | 木桩贴墙，玩家距墙 60 px ===
+F8   ATTACK_BLOCKED 站防 | 木桩x=48.0（墙限 912.0）
+F31  PLAYER_HIT → 确反（攻击方 F38 前尚不能行动）
+结论：确反（攻击方 F38 前尚不能行动） | 版边木桩位移被墙截断（贴墙 48.0）
+

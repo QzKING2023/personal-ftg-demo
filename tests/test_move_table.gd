@@ -23,6 +23,8 @@ func _initialize() -> void:
 	_test_low_float_profile_validation()
 	_test_requires_crouch_validation()
 	_test_command_tier_and_lenient_validation()
+	_test_block_result_fields_validation()
+	_test_default_table_block_values()
 	_test_hand_edited_tres_missing_field_rejected()
 	_test_tres_type_error_rejected()
 	_test_manifest_errors_rejected()
@@ -436,6 +438,49 @@ func _test_command_tier_and_lenient_validation() -> void:
 
 # --- 文件级加载与手改资源 ---
 
+func _test_block_result_fields_validation() -> void:
+	# 被防是独立于 HitProfile 的接触结果（D-02/D-03）：停顿/硬直/推退逐招显式声明，
+	# 未声明哨兵拒绝（默认禁止，无全局回退）；投技不得声明被防结果。
+	var legal := _valid_strike_list()
+	_check(MoveTable.validate(legal).is_empty(), "declared block result fields keep the table legal")
+	for field in ["block_freeze_frames", "block_stun_frames"]:
+		var moves := _valid_strike_list()
+		(moves[0] as MoveData).set(field, -1)
+		var errors := MoveTable.validate(moves)
+		_check(not errors.is_empty() and errors[0].contains("5A") and errors[0].contains(field),
+			"strike missing %s rejects the table naming the move id and field" % field)
+	var no_pushback := _valid_strike_list()
+	(no_pushback[0] as MoveData).block_pushback_px_s = -1.0
+	var pushback_errors := MoveTable.validate(no_pushback)
+	_check(not pushback_errors.is_empty() and pushback_errors[0].contains("block_pushback_px_s"),
+		"strike missing block_pushback_px_s is rejected naming the field")
+	var negative := _valid_strike_list()
+	(negative[0] as MoveData).block_stun_frames = -3
+	var negative_errors := MoveTable.validate(negative)
+	_check(not negative_errors.is_empty() and negative_errors[0].contains("block_stun_frames"),
+		"negative block_stun_frames is rejected naming the field")
+	var throwing := [_valid_throw()]
+	(throwing[0] as MoveData).block_freeze_frames = 8
+	var throw_errors := MoveTable.validate(throwing)
+	_check(not throw_errors.is_empty() and throw_errors[0].contains("block_freeze_frames"),
+		"throw declaring block result fields is a contradiction rejected on the field")
+
+
+func _test_default_table_block_values() -> void:
+	# 票据 03 迁移：全部打击招式按 frame-data.md v0.5 落表被防初值 8/9/45；
+	# BC 投不声明被防结果（保持未声明哨兵）。
+	var result := MoveTable.load_default()
+	_check(result.ok, "default manifest still loads after the block-result migration")
+	for move_id in result.moves:
+		var move := result.moves[move_id] as MoveData
+		if move.is_throw():
+			_check(move.block_freeze_frames == -1 and move.block_stun_frames == -1 and move.block_pushback_px_s < 0.0,
+				"%s is a throw and keeps block result fields undeclared" % move_id)
+		else:
+			_check(move.block_freeze_frames == 8 and move.block_stun_frames == 9 and is_equal_approx(move.block_pushback_px_s, 45.0),
+				"%s declares the TUNING_INITIAL block result 8/9/45" % move_id)
+
+
 func _test_hand_edited_tres_missing_field_rejected() -> void:
 	# 设计者手改 .tres 删掉伤害行：加载后是哨兵缺省值，整表拒绝并指出字段。
 	var paths := _write_valid_table("mt_hand_edit", 1)
@@ -613,6 +658,9 @@ func _valid_strike(id: String, key: String) -> MoveData:
 	move.hitbox_size = Vector2(64, 60)
 	move.hitbox_gap = 4.0
 	move.starter_grade = MoveData.StarterGrade.A
+	move.block_freeze_frames = 8
+	move.block_stun_frames = 9
+	move.block_pushback_px_s = 45.0
 	var normal := HitProfile.new()
 	normal.target_state = HitProfile.TargetState.GROUNDED
 	normal.hit_context = HitProfile.HitContext.NORMAL
@@ -633,6 +681,9 @@ func _valid_throw() -> MoveData:
 	move.startup_frames = 5
 	move.active_frames = GameParams.THROW_TECH_WINDOW_AFTER_GRAB + 1
 	move.throw_range = 64.0
+	move.block_freeze_frames = -1
+	move.block_stun_frames = -1
+	move.block_pushback_px_s = -1.0
 	return move
 
 

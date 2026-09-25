@@ -59,6 +59,10 @@ var dummy_on_ground := true
 var dummy_hitstun_left := 0
 ## 剩余普通倒地帧数（含当前帧；独立于受击硬直计时，归零自然恢复回中立）。
 var dummy_knockdown_left := 0
+## 木桩当前防御姿态（票据 03：由逐帧显式请求驱动；被防硬直期间冻结保持）。
+var dummy_guard: GuardPosture = GuardPosture.NONE
+## 剩余被防硬直帧数（含当前帧；停顿结束后按正常帧倒数，木桩期间不可出招）。
+var dummy_blockstun_left := 0
 
 # --- 木桩确定性攻击（issue 16：属性矩阵与防御观察用）---
 ## 木桩当前执行的招式 id（空闲时为空串）。木桩无自主决策，招式经 FrameInput
@@ -101,12 +105,18 @@ var _hit_once_this_move := false
 ## 本招是否已命中确认（命中确认取消的必要条件；挥空永远为 false）。
 var _move_hit_confirmed := false
 var _hit_confirm_frame := 0
+## 本招是否已发生接触（命中或被防，票据 03）：链式/必杀取消的资格来源；
+## 挥空永远为 false，不产生接触年龄。
+var _move_contact_confirmed := false
+var _contact_frame := 0
+## 本次接触是否为被防（区分命中与被防两类接触年龄的开放分支）。
+var _move_blocked := false
 ## 本招是否为连段内的合法接续（决定能否命中仍在受击中的木桩）。
 var _move_is_followup := false
 var _frame_input := FrameInput.new()
 var _pending_hit: MoveData = null
-## 本帧刚应用过受击硬直：命中的当帧不消耗新硬直（先刷新、后落地/自然受身）。
-var _dummy_fresh_hitstun := false
+## 本帧刚应用过受击或被防结果：当帧不消耗新硬直/被防硬直（先刷新、后落地/受身）。
+var _dummy_fresh_reaction := false
 
 # --- 显式组合与普通投（issue 17）---
 ## 表内是否含普通投（B+C 显式组合存在时，成员键 B/C 的单键输入有 3f 组合等待）。
@@ -257,6 +267,8 @@ func reset_to_initial_state() -> void:
 	dummy_on_ground = true
 	dummy_hitstun_left = 0
 	dummy_knockdown_left = 0
+	dummy_guard = GuardPosture.NONE
+	dummy_blockstun_left = 0
 	combo_hits = 0
 	combo_active = false
 	combo_total_damage = 0.0
@@ -271,9 +283,12 @@ func reset_to_initial_state() -> void:
 	_hit_once_this_move = false
 	_move_hit_confirmed = false
 	_hit_confirm_frame = 0
+	_move_contact_confirmed = false
+	_contact_frame = 0
+	_move_blocked = false
 	_move_is_followup = false
 	_pending_hit = null
-	_dummy_fresh_hitstun = false
+	_dummy_fresh_reaction = false
 	_frame_input = FrameInput.new()
 	_frame_index = 0
 	_normal_frame_index = 0
@@ -395,6 +410,11 @@ func debug_snapshot() -> Dictionary:
 		"hitstun_left": player_hitstun_left,
 		"dummy_move_id": dummy_move_id,
 		"dummy_phase": dummy_phase,
+		"dummy_guard": dummy_guard,
+		"dummy_blockstun_left": dummy_blockstun_left,
+		"blocked_contact": _move_contact_confirmed and _move_blocked,
+		"blocked_age": (maxi(0, _normal_frame_index - _contact_frame)
+			if _move_contact_confirmed and _move_blocked else -1),
 		"hitstop_left": _hitstop_left,
 		"prejump_left": player_prejump_left,
 		"landing_recovery_left": player_landing_recovery_left,
@@ -524,6 +544,13 @@ func settlement_state() -> Dictionary:
 		"dummy_phase": dummy_phase,
 		"dummy_move_frame": _dummy_move_frame,
 		"dummy_hit_once": _dummy_hit_once,
+		# 木桩防御与被防接触（影响未来结算：姿态挡住后续攻击、被防硬直锁出招、
+		# 被防接触开放链式/必杀取消窗口）。
+		"dummy_guard": dummy_guard,
+		"dummy_blockstun_left": dummy_blockstun_left,
+		"move_contact": _move_contact_confirmed,
+		"move_blocked": _move_blocked,
+		"contact_age": (_normal_frame_index - _contact_frame if _move_contact_confirmed else -1),
 		# Hitstop 冻结
 		"hitstop_left": _hitstop_left,
 		"hitstop_resume_pending": _hitstop_resume_pending,
@@ -586,7 +613,36 @@ func _phase_input(events: Array[CombatEvent]) -> void:
 		return
 	_check_dash_start(events)
 	_update_posture()
+	_update_dummy_guard(events)
 	_process_dummy_request()
+
+
+## 木桩防御姿态解析（票据 03，D-01）：逐帧由显式请求驱动，先于命中判定使当帧
+## 进入的防御参与同帧的攻击结算。被防硬直期间姿态冻结（连防，与玩家防御硬直
+## 同口径）；NONE 不防御。请求不成立时不静默回退为其他防御，按原因可观察拒绝：
+## 姿态与地面/空中状态不符为 STATE；木桩处于受击/倒地/自身招式中为 BUSY。
+func _update_dummy_guard(events: Array[CombatEvent]) -> void:
+	if dummy_blockstun_left > 0:
+		return
+	var request := _frame_input.dummy_guard_request
+	if request == GuardPosture.NONE:
+		dummy_guard = GuardPosture.NONE
+		return
+	var state_ok := false
+	match request:
+		GuardPosture.STANDING, GuardPosture.CROUCH:
+			state_ok = dummy_on_ground
+		GuardPosture.AIR:
+			state_ok = not dummy_on_ground
+	if not state_ok:
+		dummy_guard = GuardPosture.NONE
+		events.append(CombatEvent.dummy_guard_rejected(CombatEvent.DummyGuardRejectReason.STATE))
+		return
+	if dummy_state != DummyState.NEUTRAL or _dummy_move != null:
+		dummy_guard = GuardPosture.NONE
+		events.append(CombatEvent.dummy_guard_rejected(CombatEvent.DummyGuardRejectReason.BUSY))
+		return
+	dummy_guard = request
 
 
 ## 66 前冲 / 44 后撤触发（issue 18）：方向历史只在变化时记录条目，因此"两个独立
@@ -666,12 +722,15 @@ func _check_throw_combination() -> bool:
 	return false
 
 
-## 木桩确定性攻击请求：仅在木桩空闲（中立、落地、无进行中招式）时按请求起手，
-## 请求帧为该招式第 1 帧；其余状态静默忽略（木桩无自主决策，不排队、不补发）。
+## 木桩确定性攻击请求：仅在木桩空闲（中立、落地、无进行中招式、不在被防硬直）
+## 时按请求起手，请求帧为该招式第 1 帧；其余状态静默忽略（木桩无自主决策，
+## 不排队、不补发）。被防硬直结束后的首个输入帧即合法反击时点（R-02 观察口）。
 func _process_dummy_request() -> void:
 	if _frame_input.dummy_move_request == "" or _dummy_move != null:
 		return
 	if dummy_state != DummyState.NEUTRAL or not dummy_on_ground:
+		return
+	if dummy_blockstun_left > 0:
 		return
 	var move := _moves.get(_frame_input.dummy_move_request) as MoveData
 	if move == null or not move.is_strike():
@@ -683,6 +742,8 @@ func _process_dummy_request() -> void:
 	_dummy_move_frame = 0
 	_dummy_hit_once = false
 	dummy_phase = PlayerPhase.STARTUP
+	## 出招替换姿态（与玩家 _start_move 同口径）：木桩攻击期间不保持防御。
+	dummy_guard = GuardPosture.NONE
 
 
 ## 姿态解析（蹲下与防御，issue 16）：先于命中判定，使当帧进入的蹲下/防御
@@ -813,10 +874,15 @@ func _phase_apply_hits(events: Array[CombatEvent]) -> void:
 
 
 func _apply_player_hit(events: Array[CombatEvent]) -> void:
-	## 玩家命中木桩的结算：先按命中判定前的目标状态与 Counter 窗口精确选择
-	## HitProfile（无匹配 = MISS_NO_PROFILE，不造成任何受击效果），再连段伤害
-	## 递减、按 reaction 应用受击状态、计时与速度。
+	## 玩家命中木桩的结算：先看木桩防御是否挡下（被防是独立接触结果，票据 03），
+	## 未挡住时按命中判定前的目标状态与 Counter 窗口精确选择 HitProfile
+	## （无匹配 = MISS_NO_PROFILE，不造成任何受击效果），再连段伤害递减、
+	## 按 reaction 应用受击状态、计时与速度。
 	var move := _pending_hit
+	if _dummy_blocks_attack(move):
+		_apply_player_blocked(move, events)
+		_pending_hit = null
+		return
 	var context := _dummy_hit_context()
 	var profile := MoveData.profile_for(move, _dummy_target_state(), context)
 	if profile == null:
@@ -863,7 +929,9 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 			dummy_state = DummyState.LOW_FLOAT_SWEEP
 			dummy_hitstun_left = _scaled_timer_frames(profile.air_untech_frames)
 			dummy_knockdown_left = _scaled_timer_frames(profile.knockdown_frames)
-	_dummy_fresh_hitstun = true
+	_dummy_fresh_reaction = true
+	## 实际命中覆盖被防硬直：连防姿态让位给受击状态，残留被防计时随之作废。
+	dummy_blockstun_left = 0
 	## 木桩受击打断其进行中的攻击（本帧已捕获的连接仍按互换命中结算）。
 	_clear_dummy_move()
 	dummy_velocity.x = player_facing * roundf(profile.horizontal_speed_px_s * combo_trajectory_scale)
@@ -874,6 +942,9 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 
 	_move_hit_confirmed = true
 	_hit_confirm_frame = _normal_frame_index
+	_move_contact_confirmed = true
+	_contact_frame = _normal_frame_index
+	_move_blocked = false
 	events.append(CombatEvent.hit(combo_last_damage, player_facing, combo_hits,
 		context == HitProfile.HitContext.COUNTER))
 	## 命中帧完成命中与受击应用后开始 Hitstop：冻结后续 8 个物理帧（双方动作、
@@ -960,15 +1031,12 @@ func _phase_apply_dummy_hit(events: Array[CombatEvent]) -> void:
 	_pending_dummy_hit = null
 
 
-## 防御姿态 × 攻击属性矩阵：站防挡 high/mid/overhead、漏 low；蹲防挡
-## high/mid/low、漏 overhead；空防默认可挡带 air 的打击（正交类别；纯地面
-## 属性不在空防默认域内，未来例外须显式声明）；无姿态不挡。
-## 受击硬直中被打破的防御不提供保护——硬直期间一律不挡（姿态可观测量冻结
-## 只是"不改姿态"，不代表仍在防御）。
-func _blocks_attack(move: MoveData) -> bool:
-	if player_hitstun_left > 0:
-		return false
-	match player_guard:
+## 防御姿态 × 攻击属性矩阵（玩家与木桩共用同一领域规则）：站防挡
+## high/mid/overhead、漏 low；蹲防挡 high/mid/low、漏 overhead；空防默认可挡
+## 带 air 的打击（正交类别；纯地面属性不在空防默认域内，未来例外须显式声明）；
+## 无姿态不挡。
+static func _posture_blocks(posture: GuardPosture, move: MoveData) -> bool:
+	match posture:
 		GuardPosture.STANDING:
 			return move.attack_attribute != MoveData.AttackAttribute.LOW
 		GuardPosture.CROUCH:
@@ -977,6 +1045,44 @@ func _blocks_attack(move: MoveData) -> bool:
 			return move.air_attack
 		_:
 			return false
+
+
+## 玩家侧挡下判定：受击硬直中被打破的防御不提供保护——硬直期间一律不挡
+## （姿态可观测量冻结只是"不改姿态"，不代表仍在防御）。
+func _blocks_attack(move: MoveData) -> bool:
+	if player_hitstun_left > 0:
+		return false
+	return _posture_blocks(player_guard, move)
+
+
+## 木桩是否挡下玩家攻击（票据 03）：被防结果三字段未声明的招式默认不可被防
+## （默认禁止，无全局回退）；受击/倒地/受身状态不挡；被防硬直期间姿态冻结
+## 保持（连防）。挡下走独立被防结算，不读命中资料。
+func _dummy_blocks_attack(move: MoveData) -> bool:
+	if move.block_freeze_frames < 0 or move.block_stun_frames < 0 or move.block_pushback_px_s < 0.0:
+		return false
+	if dummy_state != DummyState.NEUTRAL:
+		return false
+	return _posture_blocks(dummy_guard, move)
+
+
+## 玩家攻击被木桩挡下的独立结算（D-02/D-03）：记录被防接触（链式/必杀取消的
+## 资格来源，不产生命中确认），施加被防停顿、被防硬直与双方被防推退；不造成
+## 伤害、不改受击状态、不锁 starter、不累计修正、不续连段。停顿期间一切计时
+## 冻结，被防硬直自恢复后的首个正常帧起倒数。
+func _apply_player_blocked(move: MoveData, events: Array[CombatEvent]) -> void:
+	_move_contact_confirmed = true
+	_contact_frame = _normal_frame_index
+	_move_blocked = true
+	dummy_blockstun_left = move.block_stun_frames
+	_dummy_fresh_reaction = true
+	dummy_velocity.x = player_facing * move.block_pushback_px_s
+	player_velocity.x = -player_facing * move.block_pushback_px_s
+	_hitstop_left = move.block_freeze_frames
+	events.append(CombatEvent.attack_blocked(player_facing, dummy_guard,
+		move.block_freeze_frames, move.block_stun_frames, move.block_pushback_px_s))
+	if move.block_freeze_frames > 0:
+		events.append(CombatEvent.hitstop_started())
 
 
 func _phase_motion(events: Array[CombatEvent]) -> void:
@@ -992,24 +1098,34 @@ func _phase_motion(events: Array[CombatEvent]) -> void:
 
 func _phase_cancel() -> void:
 	## 5. 取消判定：链式取消、必杀取消、命中确认取消是三种独立窗口（B7）。
-	##    链式/必杀按接触结果开放（命中或被防；被防路径属后续票据），命中确认、
-	##    jump cancel 只在实际 HIT 成立；挥空不产生接触、取消年龄或连段延续。
+	##    链式/必杀按接触结果开放——实际 HIT 与被防（BLOCKED）接触都成立，窗口
+	##    自接触帧计龄（票据 03）；命中确认与 jump cancel 只在实际 HIT 且连段仍
+	##    活跃、木桩仍可追击时成立；挥空不产生接触、取消年龄或连段延续。
 	##    状态锁同时约束独立起手与取消；显式目标不能绕过落地首帧或空技恢复。
 	##    目标必须与当前招式同姿态，落地不把空中缓存重解释为地面技。
 	_cancel_targets.clear()
-	if _current_move == null or not _move_hit_confirmed or not combo_active or not _dummy_pursuable():
+	if _current_move == null or not _independent_start_allowed():
 		return
-	if not _independent_start_allowed():
+	if _move_hit_confirmed and combo_active and _dummy_pursuable():
+		var age := _normal_frame_index - _hit_confirm_frame
+		if age < 0:
+			return
+		for pair in [
+				[_current_move.cancel_targets, _current_move.cancel_window_frames],
+				[_current_move.chain_cancel_targets, _current_move.chain_cancel_window_frames],
+				[_current_move.special_cancel_targets, _current_move.special_cancel_window_frames]]:
+			if age <= pair[1]:
+				_append_stance_matching_targets(pair[0], _current_move.stance)
 		return
-	var age := _normal_frame_index - _hit_confirm_frame
-	if age < 0:
-		return
-	for pair in [
-			[_current_move.cancel_targets, _current_move.cancel_window_frames],
-			[_current_move.chain_cancel_targets, _current_move.chain_cancel_window_frames],
-			[_current_move.special_cancel_targets, _current_move.special_cancel_window_frames]]:
-		if age <= pair[1]:
-			_append_stance_matching_targets(pair[0], _current_move.stance)
+	if _move_contact_confirmed and _move_blocked:
+		var contact_age := _normal_frame_index - _contact_frame
+		if contact_age < 0:
+			return
+		for pair in [
+				[_current_move.chain_cancel_targets, _current_move.chain_cancel_window_frames],
+				[_current_move.special_cancel_targets, _current_move.special_cancel_window_frames]]:
+			if contact_age <= pair[1]:
+				_append_stance_matching_targets(pair[0], _current_move.stance)
 
 
 func _append_stance_matching_targets(move_ids: Array[String], stance: MoveData.Stance) -> void:
@@ -1230,7 +1346,8 @@ func _apply_throw_result(events: Array[CombatEvent]) -> void:
 	_throw_result_applied = true
 	dummy_state = DummyState.GROUND_HITSTUN
 	dummy_hitstun_left = GameParams.THROW_HITSTUN_FRAMES
-	_dummy_fresh_hitstun = true
+	dummy_blockstun_left = 0
+	_dummy_fresh_reaction = true
 	_clear_dummy_move()
 	dummy_velocity.x = player_facing * GameParams.THROW_KNOCKBACK
 	events.append(CombatEvent.throw_hit(player_facing))
@@ -1404,9 +1521,13 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 		dummy_on_ground = true
 	else:
 		dummy_on_ground = false
+	if dummy_state == DummyState.NEUTRAL and dummy_blockstun_left > 0 and not _dummy_fresh_reaction:
+		## 被防硬直：停顿结束后按正常帧倒数（被防当帧不消耗，冻结帧不推进）；
+		## 期间姿态冻结（连防）、不可按请求出招，倒数归零后的下一输入帧恢复自由。
+		dummy_blockstun_left = maxi(dummy_blockstun_left - 1, 0)
 	match dummy_state:
 		DummyState.GROUND_HITSTUN:
-			if dummy_on_ground and not _dummy_fresh_hitstun:
+			if dummy_on_ground and not _dummy_fresh_reaction:
 				# 自然受身：地面硬直归零即回到中立并结束受击。
 				# 落地保留剩余受击硬直——滞空期间硬直帧数暂停消耗。
 				_tick_ground_hitstun(events)
@@ -1415,9 +1536,9 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 				# 落地保留剩余浮空硬直：未耗尽就落地时转为地面硬直，
 				# 落地当帧起按地面规则继续消耗（与地面受击的落地帧一致）。
 				dummy_state = DummyState.GROUND_HITSTUN
-				if not _dummy_fresh_hitstun:
+				if not _dummy_fresh_reaction:
 					_tick_ground_hitstun(events)
-			elif not _dummy_fresh_hitstun:
+			elif not _dummy_fresh_reaction:
 				# 浮空受身：浮空硬直归零当帧立即结束连段；落地后才恢复中立。
 				dummy_hitstun_left = maxi(dummy_hitstun_left - 1, 0)
 				if dummy_hitstun_left == 0:
@@ -1435,7 +1556,7 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 				dummy_state = DummyState.KNOCKED_DOWN
 				events.append(CombatEvent.low_float_landed())
 				_end_combo(CombatEvent.ComboEndReason.KNOCKDOWN, events)
-			elif not _dummy_fresh_hitstun:
+			elif not _dummy_fresh_reaction:
 				## 滞空期间消耗受击窗口：调校初值下触地先于窗口耗尽；窗口先
 				## 耗尽时按浮空受身处理（同样结束连段），不产生倒地。
 				dummy_hitstun_left = maxi(dummy_hitstun_left - 1, 0)
@@ -1445,14 +1566,14 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 		DummyState.KNOCKED_DOWN:
 			## 普通倒地：独立倒地计时逐帧消耗（命中当帧不消耗，停顿帧不推进）；
 			## 倒地期间不接受主动受身，计时结束自然恢复回中立并开启新连段的资格。
-			if not _dummy_fresh_hitstun:
+			if not _dummy_fresh_reaction:
 				dummy_knockdown_left = maxi(dummy_knockdown_left - 1, 0)
 				if dummy_knockdown_left == 0:
 					dummy_state = DummyState.NEUTRAL
 					events.append(CombatEvent.dummy_recovered())
 		_:
 			pass
-	_dummy_fresh_hitstun = false
+	_dummy_fresh_reaction = false
 
 
 ## 地面自由行动（中立/移动/蹲下；出招、受击/防御硬直与空中除外）时每帧面向
@@ -1609,6 +1730,9 @@ func _start_move(move_id: String, move: MoveData, is_followup: bool) -> void:
 	_hit_once_this_move = false
 	_move_hit_confirmed = false
 	_hit_confirm_frame = 0
+	_move_contact_confirmed = false
+	_contact_frame = 0
+	_move_blocked = false
 	_move_is_followup = is_followup
 	_move_via_link = false
 	player_phase = PlayerPhase.STARTUP
@@ -1626,6 +1750,9 @@ func _clear_current_move() -> void:
 	_hit_once_this_move = false
 	_move_hit_confirmed = false
 	_hit_confirm_frame = 0
+	_move_contact_confirmed = false
+	_contact_frame = 0
+	_move_blocked = false
 	_move_is_followup = false
 	_move_via_link = false
 	player_move_id = ""

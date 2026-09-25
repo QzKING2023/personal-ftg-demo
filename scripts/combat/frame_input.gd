@@ -23,6 +23,23 @@ var dummy_tech_request := false
 ## 木桩确定性攻击请求（招式表内打击招式 id）：测试与验证驱动属性矩阵/防御
 ## 观察用；训练场不设置（木桩无自主决策）。会话在木桩空闲时按请求起手。
 var dummy_move_request := ""
+## 木桩逐帧防御请求（票据 03，D-01）：取值同 CombatSession.GuardPosture
+## （0 无 / 1 站防 / 2 蹲防 / 3 空防）。只表达木桩本帧保持的防御姿态；能否进入
+## 仍受地面/空中状态、受击/倒地与木桩招式阶段限制，不成立时给出可观察失败，
+## 不自动改成另一种防御。测试/验证与训练设置驱动；木桩无自主决策。
+var dummy_guard_request := 0
+
+
+static func make(move_axis: int = 0, jump_pressed: bool = false, action_key: String = "", down_held: bool = false, dummy_move_request: String = "", dummy_guard_request: int = 0) -> FrameInput:
+	var input := FrameInput.new()
+	input.move_axis = move_axis
+	input.jump_pressed = jump_pressed
+	input.up_held = jump_pressed
+	input.action_key = action_key
+	input.down_held = down_held
+	input.dummy_move_request = dummy_move_request
+	input.dummy_guard_request = dummy_guard_request
+	return input
 
 
 ## 同帧单键选择（无显式组合完成时按 D>C>B>A）：读取方沿用的兼容口径，
@@ -42,14 +59,3 @@ var action_key: String:
 		if value != "":
 			pressed_action_keys.append(value)
 			held_action_keys.append(value)
-
-
-static func make(move_axis: int = 0, jump_pressed: bool = false, action_key: String = "", down_held: bool = false, dummy_move_request: String = "") -> FrameInput:
-	var input := FrameInput.new()
-	input.move_axis = move_axis
-	input.jump_pressed = jump_pressed
-	input.up_held = jump_pressed
-	input.action_key = action_key
-	input.down_held = down_held
-	input.dummy_move_request = dummy_move_request
-	return input

@@ -20,7 +20,7 @@
 
 打击接受帧是 F1，第一命中在接受帧 + startup；I/K 的组合等待另计。BC 的帧 5 为投发生点，未拆投结果到帧 15 才应用，不能用打击首 active 的公式推导它。
 
-必填通用字段：`move_id`、`move_kind`、`stance`、`action_key`、三个帧窗口、`cancel_window_frames`、`priority`。打击还需 `base_damage`（非负）、`attack_attribute`、`air_attack`、命中框/间距、至少一个合法 `HitProfile`；投需 `throw_range`，不走单键绑定，也不得声明命中资料。旧 `hit_result`/`hitstun_frames`/`knockback`/`knockback_up` 字段已删除，不存在回退。
+必填通用字段：`move_id`、`move_kind`、`stance`、`action_key`、三个帧窗口、`cancel_window_frames`、`priority`。打击还需 `base_damage`（非负）、`attack_attribute`、`air_attack`、命中框/间距、至少一个合法 `HitProfile`，以及被防结果三字段（2026-09-25 票据 03）：`block_freeze_frames`（被防停顿，双方冻结的物理帧数）、`block_stun_frames`（被防硬直，防守方停顿后不可行动的正常帧数）、`block_pushback_px_s`（被防推退，停顿后施加给双方的水平速度）——三项逐招显式声明、整表齐备，投技不得声明；程序注入表未声明时该招不可被防（默认禁止，无全局回退参数）。投需 `throw_range`，不走单键绑定，也不得声明命中资料。旧 `hit_result`/`hitstun_frames`/`knockback`/`knockback_up` 字段已删除，不存在回退。当前全部打击的被防初值为 8/9 帧、45px/s（frame-data v0.5 TUNING_INITIAL）。
 
 `cancel_targets` / `jump_cancel_targets` 只是必要条件，仍须姿态、命中确认、取消年龄和目标可追击同时成立。`landing_cancel_targets` 保留旧资源读取和排除诊断，不能绕过落地恢复；恢复后的普通连接尚未进入 Solver 搜索。`extra_landing_recovery_frames` 叠加在空技默认一次 +1f 之上，不延长 active。方向串、替代串、严格/宽松、指令层级和 priority 共同决定识别结果；三步串窗口为 30 个正常帧，窗口含首帧。
 
@@ -28,7 +28,7 @@
 
 地面蹲姿禁止主动水平移动，是 `CombatSession` 的行为规则，没有独立“蹲行速度”字段。2026-09-18 按真人反馈修订：入蹲当帧清除行走惯性，1/3 方向仍进入指令历史；受击击退不被蹲姿抹除。训练场与 Solver 共用此会话规则。
 
-当前默认打击均为 high，空中技另有 air 标记。测试用注入属性验证站防挡 high/mid/overhead、蹲防挡 high/mid/low、空防挡 air。防御硬直目前取所选 HitProfile 的反应计时，但这个参数关系仍待规则确认，不能视为真人验收通过。
+当前默认打击均为 high，空中技另有 air 标记。测试用注入属性验证站防挡 high/mid/overhead、蹲防挡 high/mid/low、空防挡 air。玩家侧防御硬直仍取所选 HitProfile 的反应计时；木桩侧自票据 03 起由逐帧防御请求（NONE/STAND/CROUCH/AIR，`FrameInput.dummy_guard_request`）驱动，挡下玩家攻击产生独立 ATTACK_BLOCKED 接触结果（停顿/硬直/推退读招式被防三字段，不读命中资料；请求不成立时按状态不符/占用可观察拒绝）。两者都不能视为真人验收通过。
 
 ## 文件级同步实测
 

@@ -7,6 +7,8 @@ enum Type {
 	HIT,               ## 招式命中木桩
 	HIT_MISS,          ## 命中框已连接但 (target_state, hit_context) 无匹配 HitProfile：不造成伤害、不改变受击状态、不取得命中确认
 	BLOCKED,           ## 玩家以防御姿态挡下一次木桩打击（方向见 direction）
+	ATTACK_BLOCKED,    ## 玩家攻击被木桩防御挡下（方向见 direction；木桩姿态见 guard_posture，取值同 CombatSession.GuardPosture；票据 03）
+	DUMMY_GUARD_REJECTED, ## 木桩防御请求不成立（原因见 DummyGuardRejectReason；不回退为其他防御）
 	PLAYER_HIT,        ## 玩家被木桩打击命中（未防御或姿态漏防；方向见 direction）
 	HITSTOP_STARTED,   ## 命中帧结算完毕，后续 HITSTOP_FRAMES 个物理帧冻结（Hitstop 开始边界）
 	HITSTOP_ENDED,     ## 冻结结束，本帧起恢复正常结算（Hitstop 结束边界 = 恢复首个正常帧）
@@ -46,6 +48,13 @@ enum LinkFailReason {
 	CONFIGURATION_GAP = 4,   ## 前招未声明到该招的普通连接边（输入按独立招式处理）
 }
 
+## 木桩防御请求不成立的原因（D-01）：姿态与地面/空中状态不符（不静默回退），
+## 或木桩被受击/倒地/自身招式占用（本帧无法进入任何防御）。
+enum DummyGuardRejectReason {
+	STATE = 1,
+	BUSY = 2,
+}
+
 var type: Type = Type.HIT
 ## 命中方向（攻击方朝向，1 向右 / -1 向左），仅 HIT/HIT_MISS 使用。
 var direction := 1
@@ -63,6 +72,16 @@ var throw_fail_reason: ThrowFailReason = ThrowFailReason.STATE
 var link_fail_reason: LinkFailReason = LinkFailReason.TARGET_RECOVERED
 ## 普通连接尝试涉及的招式 id（前招完全恢复后的目标普通技），仅 LINK_FAILED 使用。
 var link_move_id := ""
+## 被挡下的防御姿态（取值同 CombatSession.GuardPosture：1 站 / 2 蹲 / 3 空），
+## 仅 ATTACK_BLOCKED 使用。
+var guard_posture := 0
+## 被防结果三值（票据 03，事件自带完整被防记录）：停顿（冻结物理帧）、
+## 硬直（防守方停顿后不可行动正常帧）、推退（停顿后施加双方的水平速度 px/s）。
+var block_freeze_frames := -1
+var block_stun_frames := -1
+var block_pushback_px_s := -1.0
+## 木桩防御请求不成立的原因，仅 DUMMY_GUARD_REJECTED 使用。
+var guard_reject_reason: DummyGuardRejectReason = DummyGuardRejectReason.STATE
 
 
 static func hit(damage: float, direction: int, combo_hits: int, is_counter := false) -> CombatEvent:
@@ -94,6 +113,24 @@ static func blocked(direction: int) -> CombatEvent:
 	var event := CombatEvent.new()
 	event.type = Type.BLOCKED
 	event.direction = direction
+	return event
+
+
+static func attack_blocked(direction: int, guard_posture: int, freeze: int, stun: int, pushback: float) -> CombatEvent:
+	var event := CombatEvent.new()
+	event.type = Type.ATTACK_BLOCKED
+	event.direction = direction
+	event.guard_posture = guard_posture
+	event.block_freeze_frames = freeze
+	event.block_stun_frames = stun
+	event.block_pushback_px_s = pushback
+	return event
+
+
+static func dummy_guard_rejected(reason: DummyGuardRejectReason) -> CombatEvent:
+	var event := CombatEvent.new()
+	event.type = Type.DUMMY_GUARD_REJECTED
+	event.guard_reject_reason = reason
 	return event
 
 

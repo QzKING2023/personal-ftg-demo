@@ -31,12 +31,17 @@ func _process(delta: float) -> void:
 			modulate = Color.WHITE
 
 
-## 从战斗会话同步本帧的呈现状态（位置、血条）。
+## 从战斗会话同步本帧的呈现状态（位置、血条、防御姿态色调）。
 func apply_session(session: CombatSession) -> void:
 	position = session.dummy_position
 	if hp != session.dummy_hp:
 		hp = session.dummy_hp
 		queue_redraw()
+	# 防御姿态色调与蹲防压缩（纯视觉，与玩家防御同口径；结算仍在会话）。
+	if _flash_timer > 0.0:
+		return
+	modulate = GameParams.PLAYER_GUARD_COLOR if session.dummy_guard != CombatSession.GuardPosture.NONE else Color.WHITE
+	_visuals.scale.y = GameParams.PLAYER_CROUCH_SCALE if session.dummy_guard == CombatSession.GuardPosture.CROUCH else 1.0
 
 
 func _draw() -> void:
