@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="MoveData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/hit_profile.gd" id="1_hifvk"]
+[ext_resource type="Script" path="res://scripts/combat/move_data.gd" id="2_ogaqi"]
+[ext_resource type="Script" path="res://scripts/combat/move_segment.gd" id="3_mhyv5"]
+
+[sub_resource type="Resource" id="Resource_ybypk"]
+script = ExtResource("1_hifvk")
+target_state = 1
+hit_context = 1
+reaction = 1
+ground_stun_frames = 12
+horizontal_speed_px_s = 160.0
+upward_speed_px_s = 0.0
+
+[resource]
+script = ExtResource("2_ogaqi")
+move_id = "5A"
+move_kind = 1
+stance = 1
+action_key = "A"
+startup_frames = 5
+active_frames = 7
+recovery_frames = 13
+base_damage = 10
+attack_attribute = 1
+hitbox_size = Vector2(64, 60)
+hitbox_gap = 4.0
+hit_profiles = Array[ExtResource("1_hifvk")]([SubResource("Resource_ybypk")])
+cancel_window_frames = 8
+starter_grade = 1
+block_freeze_frames = 8
+block_stun_frames = 9
+block_pushback_px_s = 45.0
+priority = 1

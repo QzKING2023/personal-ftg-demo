@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="MoveManifest" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/move_manifest.gd" id="1_vrgke"]
+
+[resource]
+script = ExtResource("1_vrgke")
+move_paths = Array[String](["user://mt_no_such_move.tres"])

@@ -49,11 +49,11 @@ func _s1_qcf_facing_right() -> void:
 		_step("S+D", 1, true, "", false, 2),
 		_step("D", 1, false, "", false, 2),
 		_step("D+K", 1, false, "C"),
-		_step("—", 0, false, "", false, 20),
+		_step("—", 0, false, "", false, 28),
 	], trace)
 	_print_scenario("S1 右面向 236C（S → S+D → D → K）", trace)
 	_expect(run["move_ids"].has("236C"), "S1: 236C 被识别并起手（识别阶段）")
-	_expect(int(run["hits"]) == 1, "S1: 236C 命中一次（命中阶段）")
+	_expect(int(run["hits"]) == 2, "S1: 236C 两段都命中（票据 05 起两段判定）")
 
 
 func _s2_qcf_facing_left() -> void:
@@ -70,11 +70,11 @@ func _s2_qcf_facing_left() -> void:
 		_step("S+A", -1, true, "", false, 2),
 		_step("A", -1, false, "", false, 2),
 		_step("A+K", -1, false, "C"),
-		_step("—", 0, false, "", false, 20),
+		_step("—", 0, false, "", false, 28),
 	], trace)
 	_print_scenario("S2 左面向 236C（面向 -1：S → S+A → A → K）", trace)
 	_expect(run["move_ids"].has("236C"), "S2: 左面向下 236C 被识别并起手")
-	_expect(int(run["hits"]) == 1, "S2: 左面向下 236C 命中一次")
+	_expect(int(run["hits"]) == 2, "S2: 左面向下 236C 两段都命中（票据 05）")
 
 
 func _s3_qcb_ground_neutral() -> void:

@@ -28,6 +28,7 @@ func _initialize() -> void:
 	_test_wait_window_clamped_by_window_and_hitstun()
 	_test_crouch_moves_and_low_float()
 	_test_rekka_derive_edges_and_routes()
+	_test_special_entry_edges_and_slide_scope()
 	_test_blocked_cancel_edge_variants()
 	_test_blocked_contact_not_treated_as_hit()
 	_test_solver_claims_only_configured_connections()
@@ -48,7 +49,7 @@ func _initialize() -> void:
 func _test_default_table_reports_ground_route() -> void:
 	var report := ComboSolver.analyze()
 	_check(report.safe and report.cycles.is_empty(), "default table reports no valid cycle")
-	_check(report.edges.size() == 35, "default table enumerates 35 edges (15 chain + 8 special + 4 link + 2 jump + 2 air cancels + 1 landing + 2 Rekka derives + 1 ~B link; ticket 04 adds the 214C special family and the rekka edges)")
+	_check(report.edges.size() == 36, "default table enumerates 36 edges (15 chain + 8 special + 4 link + 1 jump + 2 air cancels + 1 landing + 2 Rekka derives + 1 ~B link + 1 special D entry + 1 source-limited 5B link; ticket 05 adds the 236C special-entry family and removes the retired 236C jump cancel)")
 	var ab := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	_check(ab != null and ab.valid, "5A -> 5B is a valid chain continuation")
 	if ab != null:
@@ -59,7 +60,7 @@ func _test_default_table_reports_ground_route() -> void:
 	var derivative := _find_edge(report, "5A", "236C", ComboSolver.EdgeKind.SPECIAL_CANCEL)
 	_check(derivative != null and derivative.valid, "special-cancel edge 5A -> 236C is validated by feeding 236 before the cancel frame")
 	if derivative != null:
-		_check(derivative.valid and derivative.hit_age == 7, "236C connects 7 frames after 5A's confirm (resume age 1 + its own startup 6)")
+		_check(derivative.valid and derivative.hit_age == 12, "236C's second segment connects 12 frames after 5A's confirm (seg1 at 7 + the 5-normal-frame inter-segment gap)")
 	var derivative_two := _find_edge(report, "5B", "6A", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	_check(derivative_two != null and derivative_two.valid and derivative_two.hit_age == 8, "derivative chain edge 5B -> 6A is valid (feed 6 during 5B)")
 	var link := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.NORMAL_LINK)
@@ -215,8 +216,7 @@ func _test_default_table_air_edges() -> void:
 	_check(jump_6a != null and jump_6a.valid, "6A -> jA is a valid jump-cancel edge (5C no longer launches: baseline)")
 	if jump_6a != null:
 		_check(jump_6a.valid and jump_6a.hit_age == 5 + GameParams.PLAYER_PREJUMP_FRAMES, "jump-canceled jA hits 9 frames after 6A's confirm (Space on the hit frame, prep 4, press at takeoff+1, startup 4)")
-	var jump_236c := _find_edge(report, "236C", "jA", ComboSolver.EdgeKind.JUMP_CANCEL)
-	_check(jump_236c != null and jump_236c.valid and jump_236c.hit_age == 5 + GameParams.PLAYER_PREJUMP_FRAMES, "236C -> jA is a valid jump-cancel edge from the derivative launcher")
+	_check(_find_edge(report, "236C", "jA", ComboSolver.EdgeKind.JUMP_CANCEL) == null, "236C no longer declares jump cancel (ticket 05: the D special entry replaces the retired launcher role)")
 	var air_cancel := _find_edge(report, "jA", "jB", ComboSolver.EdgeKind.CANCEL)
 	_check(air_cancel != null and air_cancel.valid, "jA -> jB is a valid air cancel")
 	if air_cancel != null:
@@ -233,22 +233,22 @@ func _test_full_air_route_matches_runtime() -> void:
 	# 验收 2：完整空中路线的合法接续与运行时一致——把 Solver 发现的输入表回放到
 	# 真实 CombatSession（同一几何假设：木桩钉在玩家面前），命中帧/连段数/伤害逐项对拍。
 	var report := ComboSolver.analyze()
-	var route := _find_route(report, ["5A", "236C", "jA", "jB", "jD"])
-	_check(route != null, "the full air route 5A -> 236C -> Space -> jA -> jB -> jD is reported")
+	var route := _find_route(report, ["5A", "5B", "6A", "jA", "jB", "jD"])
+	_check(route != null, "the full air route 5A -> 5B -> 6A -> Space -> jA -> jB -> jD is reported")
 	if route == null:
 		return
-	_check(route.hit_frames == [6, 13, 22, 27, 31], "air route hits on frames 6/13/22/27/31 (w=0 cancels with the B pairing wait, earliest air press after pre-jump)")
-	_check(route.combo_hits == 5 and _approx(route.total_damage, 37.9), "air route counts 5 hits for 37.9 total (three-layer corrections), matching the runtime air-route test")
+	_check(route.hit_frames == [6, 13, 21, 30, 35, 39], "air route hits on frames 6/13/21/30/35/39 (w=0 cancels with the B pairing wait, earliest air press after pre-jump)")
+	_check(route.combo_hits == 6 and _approx(route.total_damage, 41.3), "air route counts 6 hits for 41.3 total (three-layer corrections), matching the runtime air-route test")
 	var replay := _replay_inputs(route.inputs, route.hit_frames[route.hit_frames.size() - 1])
 	_check(replay.hit_frames == route.hit_frames, "replaying the solver schedule on a fresh CombatSession reproduces every hit frame")
-	_check(replay.combo_hits == 5 and _approx(replay.total_damage, route.total_damage), "replay matches combo count and decayed damage")
+	_check(replay.combo_hits == 6 and _approx(replay.total_damage, route.total_damage), "replay matches combo count and decayed damage")
 	_check(replay.air_hits_all_airborne, "every air-segment hit lands while the player is airborne")
 	_check(replay.end_reasons == [CombatEvent.ComboEndReason.FINISHER], "the route ends only on the jD finisher hit")
 
 
 func _test_landing_route_and_critical_frame() -> void:
 	var report := ComboSolver.analyze()
-	_check(_find_route(report, ["5A", "236C", "jA", "jB", "5D"]) == null,
+	_check(_find_route(report, ["5A", "5B", "6A", "jA", "jB", "5D"]) == null,
 		"forbidden landing-frame route is absent from legal routes")
 	var edge := _find_edge(report, "jB", "5D", ComboSolver.EdgeKind.LANDING_CANCEL)
 	_check(edge != null and not edge.valid and edge.align_inputs.is_empty(),
@@ -326,8 +326,8 @@ func _test_injected_landing_back_edge_reports_cycle() -> void:
 	_check(report.safe and report.cycles.is_empty(), "configured landing back edge cannot bypass recovery or prove a cycle")
 	var edge := _find_edge(report, "jB", "5A", ComboSolver.EdgeKind.LANDING_CANCEL)
 	_check(edge != null and not edge.valid, "landing back edge is excluded")
-	var finite := _find_route(report, ["5A", "236C", "jA", "jB", "jD"])
-	_check(finite != null and finite.combo_hits == 5, "finite air route remains available")
+	var finite := _find_route(report, ["5A", "5B", "6A", "jA", "jB", "jD"])
+	_check(finite != null and finite.combo_hits == 6, "finite air route remains available (six hits after the 6A launcher migration)")
 
 
 # --- 票据 02：蹲姿招式输入表达与低浮空状态 ---
@@ -358,15 +358,12 @@ func _test_crouch_moves_and_low_float() -> void:
 			if spec.key != "" and spec.down:
 				down_presses += 1
 		_check(down_presses == 2, "only the two crouch press frames (2B/2C) carry the down state; 214C and ~B presses do not")
+	## 票据 05 起 5D → 5B 是来源限定边：普通来源 5D 的延长（如 2A > 2B > 5C > 5D
+	## 之后接 5B）在逐帧模拟中如实断链，路线记录截断为四招前缀——四招本身仍经
+	## 上面 2A > 2B > 214C > 214C~B 的可读路线证明蹲姿→站立链可用。
 	var crouch_route := _find_route(report, ["2A", "2B", "5C", "5D"])
-	_check(crouch_route != null and crouch_route.timing_valid and crouch_route.combo_hits == 4,
-		"the 2A -> 2B -> 5C -> 5D route extends the crouch opener into the standing chain")
-	if crouch_route != null:
-		var down_presses := 0
-		for spec in crouch_route.inputs:
-			if spec.key != "" and spec.down:
-				down_presses += 1
-		_check(down_presses == 2, "only the crouch presses (2A/2B) carry the down state; 5C/5D presses do not")
+	_check(crouch_route != null and not crouch_route.timing_valid and "在此截断" in crouch_route.note,
+		"the 2A > 2B > 5C > 5D walk is recorded truncated at the source-limited 5B extension (normal-source 5D keeps no reverse link)")
 	## A 起手时间层衰减的诚实截断：2A > 2B 后接 2C 的第三击因 2B 受击窗口
 	## （floor(14×0.658)=9）短于 2C 前摇到达而不成立——按截断路线如实报告，
 	## 不伪装成时序成立。
@@ -420,6 +417,34 @@ func _test_rekka_derive_edges_and_routes() -> void:
 	_check(link_edge != null and not link_edge.valid,
 		"the ~B > 5B link edge is honestly reported invalid in its canonical grounded context (knockdown ends the combo)")
 
+
+func _test_special_entry_edges_and_slide_scope() -> void:
+	# 票据 05：特殊进入边与来源限定连接在真实结算中验证；slide 捞起与段间
+	# 距离明确 replay-required；普通来源 5D 不取得反向 5B；结构性循环只允许
+	# 断链/未完成观测，不产生有效循环证明。
+	var report := ComboSolver.analyze()
+	var entry := _find_edge(report, "236C", "5D", ComboSolver.EdgeKind.SPECIAL_ENTRY)
+	_check(entry != null and entry.valid, "the 236C -> 5D special entry edge is timing-valid on the pinned grid")
+	if entry != null and entry.valid:
+		_check("replay-required" in entry.reason and "slide" in entry.reason,
+			"the entry edge marks slide pickup and inter-segment reachability as replay-required (pins never produce the slide)")
+		_check("airborne" in entry.reason and "grounded-stun" in entry.reason,
+			"the entry edge reports the target states observed across its valid wait range")
+	var link := _find_edge(report, "5D", "5B", ComboSolver.EdgeKind.SPECIAL_ENTRY_LINK)
+	_check(link != null and link.valid, "the source-limited 5D -> 5B link edge validates in the special-entry context (solo 236C start, D starter)")
+	if link != null and link.valid:
+		_check("来源限定" in link.reason and "直接起手" in link.reason,
+			"the link edge names its entry context and the source limitation")
+	_check(_find_edge(report, "5D", "5B", ComboSolver.EdgeKind.NORMAL_LINK) == null,
+		"no unconditional 5D -> 5B link edge exists (normal-source 5D keeps no reverse link)")
+	var route := _find_route(report, ["5B", "236C", "5D"])
+	_check(route != null and route.timing_valid and route.combo_hits == 4,
+		"the 5B > 236C(both segments) > 5D route is timing-valid with all four hits predicted")
+	var cycle_route := _find_route(report, ["5B", "236C", "5D", "5B"])
+	if cycle_route != null and cycle_route.timing_valid:
+		_check(report.safe and report.cycles.is_empty(),
+			"the 5B > 236C > 5D > 5B structural cycle never becomes a proven loop (bounded by corrections and real hitstun)")
+	_check(report.safe, "the default table still reports no proven cycle after the special-entry family")
 
 func _test_blocked_cancel_edge_variants() -> void:
 	# 被防接触变体（票据 03）：链式/必杀边附「被防路径」标注——来源被站防/蹲防
@@ -499,9 +524,11 @@ func _test_solver_claims_only_configured_connections() -> void:
 		["214C~B", "5B", ComboSolver.EdgeKind.NORMAL_LINK],
 		["5A", "5B", ComboSolver.EdgeKind.NORMAL_LINK], ["5B", "5C", ComboSolver.EdgeKind.NORMAL_LINK],
 		["5B", "5D", ComboSolver.EdgeKind.NORMAL_LINK], ["5C", "5D", ComboSolver.EdgeKind.NORMAL_LINK],
-		["236C", "jA", ComboSolver.EdgeKind.JUMP_CANCEL], ["6A", "jA", ComboSolver.EdgeKind.JUMP_CANCEL],
+		["6A", "jA", ComboSolver.EdgeKind.JUMP_CANCEL],
 		["jA", "jB", ComboSolver.EdgeKind.CANCEL], ["jB", "jD", ComboSolver.EdgeKind.CANCEL],
 		["jB", "5D", ComboSolver.EdgeKind.LANDING_CANCEL],
+		["236C", "5D", ComboSolver.EdgeKind.SPECIAL_ENTRY],
+		["5D", "5B", ComboSolver.EdgeKind.SPECIAL_ENTRY_LINK],
 	]
 	_check(report.edges.size() == pairs.size(), "the default report enumerates exactly the configured continuation relations")
 	var reported := {}
@@ -518,7 +545,7 @@ func _test_solver_claims_only_configured_connections() -> void:
 	for edge in report.edges:
 		if edge.to_id == "jA" and edge.kind == ComboSolver.EdgeKind.JUMP_CANCEL:
 			into_ja.append(edge.from_id)
-	_check(into_ja == ["6A", "236C"], "jA is reached only through the configured jump-cancel launchers — no neutral-jump or spatial claim")
+	_check(into_ja == ["6A"], "jA is reached only through the configured 6A jump cancel — no neutral-jump or spatial claim")
 	var starts_plain := true
 	for route in report.routes:
 		var first: String = route.move_ids[0]

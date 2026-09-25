@@ -378,8 +378,8 @@ func _test_ground_combo_display(main: Node2D, session: CombatSession) -> void:
 
 
 func _test_direction_derivative_and_float(main: Node2D, session: CombatSession) -> void:
-	# 键盘方向输入经训练场适配进入方向历史：↓ → ↓+→ → → 再按 C 触发 236C 浮空派生，
-	# 状态栏依次显示浮空受击、空中已受身，落地后回到中立。
+	# 键盘方向输入经训练场适配进入方向历史：↓ → ↓+→ → → 再按 C 触发 236C 两段判定
+	#（票据 05：段 1 浮空 + 段 2 延长），状态栏显示浮空受击与落地后的地面硬直。
 	# 先等上一段测试的招式与木桩硬直全部结束，方向序列才不会被缓存冲突吃掉。
 	for i in 60:
 		await physics_frame
@@ -388,7 +388,8 @@ func _test_direction_derivative_and_float(main: Node2D, session: CombatSession) 
 	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
 	session.player_velocity = Vector2.ZERO
 	session.player_facing = 1
-	session.dummy_position = session.player_position + Vector2(85, 0)
+	## 82 px：段 1 触及 91 px 内、段 2（97 px）覆盖段 1 击退后的位置。
+	session.dummy_position = session.player_position + Vector2(82, 0)
 	session.dummy_velocity = Vector2.ZERO
 	var hp_before := session.dummy_hp
 	await physics_frame
@@ -409,35 +410,34 @@ func _test_direction_derivative_and_float(main: Node2D, session: CombatSession) 
 		if session.player_move_id == "236C":
 			locked = true
 			break
-	_check(locked, "keyboard 236 then C locks the derivative move")
+	_check(locked, "keyboard 236 then C locks the two-segment derivative")
 	var saw_float := false
 	var saw_float_status := false
-	var saw_air_recovered := false
-	var saw_air_recovered_status := false
+	var saw_ground_stun := false
 	var back_to_neutral := false
 	var status: Label = main.get_node("DummyStatus")
-	for i in 100:
+	## 票据 05：85 px 两段都命中——段 1 浮空、段 2 空中延长后落地转地面硬直，
+	## 不再出现旧单段 launcher 的空中受身路径。
+	for i in 120:
 		await physics_frame
 		if session.dummy_state == CombatSession.DummyState.AIR_HITSTUN:
 			saw_float = true
 			saw_float_status = saw_float_status or status.text.contains("浮空受击")
-		elif session.dummy_state == CombatSession.DummyState.AIR_RECOVERED:
-			saw_air_recovered = true
-			saw_air_recovered_status = saw_air_recovered_status or status.text.contains("空中已受身")
+		elif session.dummy_state == CombatSession.DummyState.GROUND_HITSTUN and saw_float:
+			saw_ground_stun = true
 		elif session.dummy_state == CombatSession.DummyState.NEUTRAL and saw_float:
 			back_to_neutral = true
 			break
-	_check(saw_float, "236C hit launches the dummy into float hitstun via keyboard input")
+	_check(saw_float, "236C segment 1 launches the dummy into float hitstun via keyboard input")
 	_check(saw_float_status, "status display shows the float hitstun state")
-	_check(saw_air_recovered, "dummy techs in the air after the float hitstun")
-	_check(saw_air_recovered_status, "status display shows the air-recovered state")
+	_check(saw_ground_stun, "segment 2's air extension lands into ground hitstun (no mid-air tech on this baseline)")
 	_check(back_to_neutral and status.text.contains("中立"), "dummy returns to neutral after landing")
-	_check(_approx_hp(session.dummy_hp, hp_before - GameParams.MOVE_236C_DAMAGE), "236C applies its own base damage")
+	_check(_approx_hp(session.dummy_hp, hp_before - 8.0 - 10.8), "both 236C segments apply their own damage (8×1.0 + 12×0.90)")
 
 
 func _test_jump_cancel_air_pursuit(main: Node2D, session: CombatSession) -> void:
-	# 键盘完整走通 jump cancel 前半段：236C 命中 → Space 取消起跳（连段保留、
-	# 姿态转空中）→ A 起手 jA 空中追击命中；追击不刷新滞空，木桩照常落地。
+	# 键盘完整走通 jump cancel 前半段（票据 05 起 6A launcher）：6A 命中 → Space
+	# 取消起跳（连段保留、姿态转空中）→ A 起手 jA 空中追击命中；追击不刷新滞空。
 	for i in 60:
 		await physics_frame
 		if session.player_phase == CombatSession.PlayerPhase.NEUTRAL and session.dummy_state == CombatSession.DummyState.NEUTRAL:
@@ -449,24 +449,20 @@ func _test_jump_cancel_air_pursuit(main: Node2D, session: CombatSession) -> void
 	session.dummy_velocity = Vector2.ZERO
 	var hp_before := session.dummy_hp
 	await physics_frame
-	Input.action_press("move_down")
-	await physics_frame
 	Input.action_press("move_right")
 	await physics_frame
-	Input.action_release("move_down")
+	Input.action_press("attack_a")
 	await physics_frame
-	Input.action_press("attack_c")
-	await physics_frame
-	Input.action_release("attack_c")
+	Input.action_release("attack_a")
 	Input.action_release("move_right")
 	# action_press 要到下一个物理帧才会被 just_pressed 消费：轮询等待派生锁定与命中。
 	var locked := false
 	for i in 6:
 		await physics_frame
-		if session.player_move_id == "236C":
+		if session.player_move_id == "6A":
 			locked = true
 			break
-	_check(locked, "keyboard 236 then C locks the derivative for the jump cancel route")
+	_check(locked, "keyboard forward + A locks the 6A launcher for the jump cancel route")
 	var jumped := false
 	for i in 10:
 		await physics_frame
@@ -479,7 +475,7 @@ func _test_jump_cancel_air_pursuit(main: Node2D, session: CombatSession) -> void
 			await physics_frame
 			jumped = true
 			break
-	_check(jumped, "236C lands to open the jump cancel window after the freeze")
+	_check(jumped, "6A lands to open the jump cancel window after the freeze")
 	# Space 请求先进入 4f 起跳准备（issue 15）：轮询等待离地再观察姿态与空中输入。
 	var airborne := false
 	for i in 10:
@@ -512,12 +508,13 @@ func _test_jump_cancel_air_pursuit(main: Node2D, session: CombatSession) -> void
 			break
 	_check(landed, "player and dummy both land after the pursuit")
 	_check(session.combo_hits == 2, "no extra hits: the pursuit does not refresh the float for another launch")
-	_check(session.dummy_hp == hp_before - GameParams.MOVE_236C_DAMAGE - GameParams.MOVE_JA_DAMAGE * 0.9, "route damage is 236C full plus decayed jA")
+	_check(_approx_hp(session.dummy_hp, hp_before - 14.9 - 6.7), "route damage is 6A at C-starter scale plus decayed jA")
 
 
 func _test_full_air_route_keyboard(main: Node2D, session: CombatSession) -> void:
-	# 键盘完整走通进阶路线 5A → 236C → Space → jA → jB → jD：五击全部命中，
-	# 空中收尾结束连段；状态栏显示空中姿态与连段计数，木桩照常落地并自然受身。
+	# 键盘完整走通进阶路线 5A → 5B → 6A → Space → jA → jB → jD（票据 05 起
+	# launcher 为 6A）：六击全部命中，空中收尾结束连段；状态栏显示空中姿态与
+	# 连段计数，木桩照常落地并自然受身。
 	for i in 60:
 		await physics_frame
 		if session.player_phase == CombatSession.PlayerPhase.NEUTRAL and session.dummy_state == CombatSession.DummyState.NEUTRAL:
@@ -542,24 +539,31 @@ func _test_full_air_route_keyboard(main: Node2D, session: CombatSession) -> void
 			got_hit = true
 			break
 	_check(got_hit, "5A opens the air route as the first hit via keyboard")
-	# 5A 取消窗内输入 236 再按 C，命中确认后取消进浮空。
-	Input.action_press("move_down")
+	# 5A 取消窗内按 B 链式取消进 5B（票据 05 起基线链），再于 5B 取消窗内
+	# 持前 + A 链式取消进 6A launcher。
+	Input.action_press("attack_b")
 	await physics_frame
-	Input.action_press("move_right")
-	await physics_frame
-	Input.action_release("move_down")
-	await physics_frame
-	Input.action_press("attack_c")
-	await physics_frame
-	Input.action_release("attack_c")
-	Input.action_release("move_right")
+	Input.action_release("attack_b")
 	got_hit = false
 	for i in 15:
 		await physics_frame
 		if session.combo_hits == 2:
 			got_hit = true
 			break
-	_check(got_hit and session.player_move_id == "236C", "buffered 236C cancels 5A into the launcher")
+	_check(got_hit and session.player_move_id == "5B", "buffered 5B chain-cancels 5A as the second hit")
+	Input.action_press("move_right")
+	await physics_frame
+	Input.action_press("attack_a")
+	await physics_frame
+	Input.action_release("attack_a")
+	Input.action_release("move_right")
+	got_hit = false
+	for i in 15:
+		await physics_frame
+		if session.combo_hits == 3:
+			got_hit = true
+			break
+	_check(got_hit and session.player_move_id == "6A", "buffered 6A chain-cancels 5B into the launcher")
 	_check(session.dummy_state == CombatSession.DummyState.AIR_HITSTUN, "launcher puts the dummy into float hitstun")
 	# Space jump cancel 转入空中，连段保留。停顿内 Space 写入独立跳跃槽、恢复
 	# 首个正常帧消费（issue 15）；这里等停顿结束后按下，再轮询等待 4f 准备过去。
@@ -585,15 +589,15 @@ func _test_full_air_route_keyboard(main: Node2D, session: CombatSession) -> void
 		for i in 15:
 			await physics_frame
 			saw_air_posture = saw_air_posture or status.text.contains("玩家 空中")
-			if session.combo_hits == 2 + route_hits + 1:
+			if session.combo_hits == 3 + route_hits + 1:
 				got_hit = true
 				break
 		route_hits += 1
-		_check(got_hit, "air route key %s lands as combo hit %d" % [key.to_upper(), 2 + route_hits])
-	_check(route_hits == 3 and session.combo_hits == 5 and not session.combo_active, "jD finishes the air route at five hits and ends the combo")
+		_check(got_hit, "air route key %s lands as combo hit %d" % [key.to_upper(), 3 + route_hits])
+	_check(route_hits == 3 and session.combo_hits == 6 and not session.combo_active, "jD finishes the air route at six hits and ends the combo")
 	_check(saw_air_posture, "status display shows the airborne posture during the route")
-	_check(status.text.contains("连段 5"), "status display shows the five-hit combo")
-	_check(_approx_hp(session.dummy_hp, GameParams.DUMMY_MAX_HP - 37.9), "route damage totals 37.9 through the three-layer corrections")
+	_check(status.text.contains("连段 6"), "status display shows the six-hit combo")
+	_check(_approx_hp(session.dummy_hp, GameParams.DUMMY_MAX_HP - 41.3), "route damage totals 41.3 through the three-layer corrections")
 	var settled := false
 	for i in 90:
 		await physics_frame
@@ -601,7 +605,7 @@ func _test_full_air_route_keyboard(main: Node2D, session: CombatSession) -> void
 			settled = true
 			break
 	_check(settled, "player lands and the dummy recovers naturally after the air finisher")
-	_check(session.combo_hits == 5, "no extra hits land after the route")
+	_check(session.combo_hits == 6, "no extra hits land after the route")
 
 
 func _approx_hp(value: float, expected: float) -> bool:

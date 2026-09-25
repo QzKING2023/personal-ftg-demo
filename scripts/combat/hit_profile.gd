@@ -6,12 +6,15 @@ extends Resource
 ## 组合使整张 MoveTable 拒绝。计时与速度的负数默认值只表示缺省——加载校验
 ## 不得把它们解释成 0。
 
-## 命中前目标状态：接地且非倒地为 GROUNDED，真正离地为 AIRBORNE。
+## 命中前目标状态：接地且非倒地为 GROUNDED，真正离地为 AIRBORNE，
+## 地面滑行（票据 05，S-05）为 GROUND_SLIDE——只有显式声明该状态资料的招式
+## 能命中滑行目标，缺失不回退为 GROUNDED 或 AIRBORNE。
 ## 倒地、未支持状态和未知状态不会被转换成 grounded。
 enum TargetState {
-	UNSET = 0,    ## 未声明（非法）
-	GROUNDED = 1, ## 地面目标
-	AIRBORNE = 2, ## 空中目标
+	UNSET = 0,        ## 未声明（非法）
+	GROUNDED = 1,     ## 地面目标
+	AIRBORNE = 2,     ## 空中目标
+	GROUND_SLIDE = 3, ## 地面滑行目标（仅显式捞起资料可命中）
 }
 
 ## 命中上下文：目标处于自身招式 startup/recovery 的显式易受击窗口时为 COUNTER。
@@ -27,8 +30,9 @@ enum Reaction {
 	GROUND_HITSTUN = 1,   ## 地面受击硬直（仅 GROUNDED 目标，保持接地）
 	LAUNCH = 2,           ## 浮空受击（空中受身计时 + 垂直初速度）
 	GROUND_KNOCKDOWN = 3, ## 普通倒地（独立倒地计时，进入即结束连段）
-	LOW_FLOAT_SWEEP = 4,  ## 低浮空扫倒（仅 GROUNDED 目标；短暂滞空后触地转普通倒地）
-	DOWNWARD_SLAM = 5,    ## 向下击落（仅 AIRBORNE 目标；立即获得向下速度，触地转普通倒地）
+	LOW_FLOAT_SWEEP = 4,     ## 低浮空扫倒（仅 GROUNDED 目标；短暂滞空后触地转普通倒地）
+	DOWNWARD_SLAM = 5,       ## 向下击落（仅 AIRBORNE 目标；立即获得向下速度，触地转普通倒地）
+	LOW_FLOAT_TO_SLIDE = 6,  ## 击飞触地滑行（仅 GROUNDED 目标；短暂滞空后触地转 GROUND_SLIDE，票据 05）
 }
 
 ## 唯一键之一：命中前目标状态。
@@ -52,6 +56,9 @@ enum Reaction {
 @export var upward_speed_px_s := -1.0
 ## 垂直向下初速度幅值（px/s；仅 DOWNWARD_SLAM，正数、方向向下施加）。
 @export var downward_speed_px_s := -1.0
+## 地面滑行持续帧数（仅 LOW_FLOAT_TO_SLIDE；触地转换时启用，自下一正常帧倒数）。
+## 命中当帧按时间层预先换算（同低浮空的倒地计时口径），期间的新命中整体覆盖。
+@export var slide_frames := -1
 
 
 ## 本 profile 的反应计时帧数（防御硬直等玩家侧反馈复用同一口径；未声明为 -1）。
@@ -64,6 +71,8 @@ func reaction_timer_frames() -> int:
 		Reaction.GROUND_KNOCKDOWN:
 			return knockdown_frames
 		Reaction.LOW_FLOAT_SWEEP:
+			return air_untech_frames
+		Reaction.LOW_FLOAT_TO_SLIDE:
 			return air_untech_frames
 	return -1
 
@@ -78,6 +87,8 @@ func _target_state_label() -> String:
 			return "grounded"
 		TargetState.AIRBORNE:
 			return "airborne"
+		TargetState.GROUND_SLIDE:
+			return "slide"
 	return "unset"
 
 

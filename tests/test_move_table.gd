@@ -21,6 +21,10 @@ func _initialize() -> void:
 	_test_cross_move_references_rejected()
 	_test_same_binding_different_priority_allowed()
 	_test_low_float_profile_validation()
+	_test_low_float_to_slide_profile_validation()
+	_test_slide_target_state_validation()
+	_test_segment_fields_validation()
+	_test_special_entry_fields_validation()
 	_test_requires_crouch_validation()
 	_test_command_tier_and_lenient_validation()
 	_test_block_result_fields_validation()
@@ -63,7 +67,7 @@ func _test_default_table_entries_match_manifest() -> void:
 	var result := MoveTable.load_default()
 	var expected := {
 		"5A": [5, 4, 10, 8], "2A": [5, 4, 10, 8], "5B": [6, 5, 12, 12], "2B": [7, 5, 12, 11],
-		"5C": [8, 5, 16, 16], "2C": [9, 3, 18, 14], "236C": [6, 5, 18, 18],
+		"5C": [8, 5, 16, 16], "2C": [9, 3, 18, 14], "236C": [6, 2, 22, 8],
 		"5D": [7, 4, 18, 18], "214D": [7, 5, 20, 22],
 		"jA": [4, 6, 10, 8], "jB": [4, 6, 12, 12], "jD": [4, 7, 14, 20],
 		"BC": [5, 11, 10, -1],
@@ -78,7 +82,18 @@ func _test_default_table_entries_match_manifest() -> void:
 	_check(launcher.direction_derivation == "236C" and launch_profile != null
 		and launch_profile.reaction == HitProfile.Reaction.LAUNCH and launch_profile.upward_speed_px_s > 0.0,
 		"236C declares its direction derivation and a grounded launch profile")
-	_check(launcher.jump_cancel_targets == ["jA"], "236C declares its jump cancel target")
+	# 票据 05 迁移：236C 不再承担专用 launcher/jump cancel（6A 承担），改为两段
+	# 判定 + 特殊进入 D 资格；jump cancel 声明移除是负例（不再开放 jc 边）。
+	_check(launcher.jump_cancel_targets.is_empty(), "236C no longer declares jump cancel (6A owns the launcher role)")
+	_check(launcher.segment_count() == 2 and launcher.segment_active_from(1) == 11 and launcher.segment_active_to(1) == 12
+		and launcher.total_frames() == 35,
+		"236C declares its second segment (gap 3f, active F11-12, total 35 frames)")
+	var seg2_grounded := launcher.segment_profile_for(1, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)
+	_check(seg2_grounded != null and seg2_grounded.reaction == HitProfile.Reaction.LOW_FLOAT_TO_SLIDE
+		and seg2_grounded.slide_frames == 18,
+		"236C segment 2 grounded hit launches into a ground slide (LOW_FLOAT_TO_SLIDE)")
+	_check(launcher.special_entry_targets == ["5D"] and launcher.special_entry_window_frames == 16,
+		"236C declares its special D entry qualification with the 16f window")
 	var air := result.moves["jD"] as MoveData
 	_check(air.stance == MoveData.Stance.AIR and air.is_finisher, "jD is an air finisher")
 	# 阶段 3 新职责：5C 是普通地面重攻击（不再是专用 launcher，无 jump cancel），
@@ -375,6 +390,181 @@ func _test_low_float_profile_validation() -> void:
 	errors = MoveTable.validate([counter_only])
 	_check(not errors.is_empty() and errors[0].contains("counter"),
 		"a LOW_FLOAT counter without its same-state normal pair is rejected")
+
+
+func _valid_to_slide_profile() -> HitProfile:
+	var profile := HitProfile.new()
+	profile.target_state = HitProfile.TargetState.GROUNDED
+	profile.hit_context = HitProfile.HitContext.NORMAL
+	profile.reaction = HitProfile.Reaction.LOW_FLOAT_TO_SLIDE
+	profile.air_untech_frames = 16
+	profile.upward_speed_px_s = 120.0
+	profile.horizontal_speed_px_s = 100.0
+	profile.slide_frames = 18
+	return profile
+
+
+func _valid_segment() -> MoveSegment:
+	var segment := MoveSegment.new()
+	segment.startup_frames = 3
+	segment.active_frames = 2
+	segment.base_damage = 12
+	segment.hitbox_size = Vector2(46, 30)
+	segment.hitbox_gap = 3.0
+	segment.hit_profiles = [_valid_to_slide_profile()]
+	return segment
+
+
+func _valid_two_segment_strike() -> MoveData:
+	var move := _valid_strike("236X", "C")
+	move.special_entry_targets = ["5D"]
+	move.special_entry_window_frames = 16
+	return move
+
+
+func _test_low_float_to_slide_profile_validation() -> void:
+	# 击飞触地滑行（票据 05，S-04）：仅 grounded 目标；滞空窗口、离地速度与
+	# 滑行持续必填；不携带倒地/地面硬直计时（不经过普通倒地）。
+	var move := _valid_strike("236X", "C")
+	move.hit_profiles = [_valid_to_slide_profile()]
+	_check(MoveTable.validate([move]).is_empty(), "a grounded LOW_FLOAT_TO_SLIDE profile with window, lift and slide duration is legal")
+	var cases := [
+		["target_state", HitProfile.TargetState.AIRBORNE, "击飞触地滑行只允许 grounded"],
+		["slide_frames", -1, "slide_frames"],
+		["air_untech_frames", -1, "air_untech_frames"],
+		["knockdown_frames", 30, "knockdown_frames"],
+		["ground_stun_frames", 12, "ground_stun_frames"],
+	]
+	for entry in cases:
+		var broken := _valid_strike("236X", "C")
+		var profile := _valid_to_slide_profile()
+		profile.set(entry[0], entry[1])
+		broken.hit_profiles = [profile]
+		var errors := MoveTable.validate([broken])
+		_check(not errors.is_empty() and errors[0].contains(entry[2]),
+			"LOW_FLOAT_TO_SLIDE profile with illegal %s is rejected naming the field" % entry[0])
+	var no_lift := _valid_strike("236X", "C")
+	var flat := _valid_to_slide_profile()
+	flat.upward_speed_px_s = 0.0
+	no_lift.hit_profiles = [flat]
+	_check(not MoveTable.validate([no_lift]).is_empty() and MoveTable.validate([no_lift])[0].contains("upward_speed_px_s"),
+		"LOW_FLOAT_TO_SLIDE must declare a positive lift speed")
+
+
+func _test_slide_target_state_validation() -> void:
+	# slide 目标资料门（S-05）：GROUND_SLIDE 键上的合法 reaction 目前只有捞起
+	# （LAUNCH）；地面硬直/倒地/低浮空资料在 slide 键上整表拒绝，缺失即无命中。
+	var cases := [
+		[HitProfile.Reaction.GROUND_HITSTUN, {"ground_stun_frames": 12, "upward_speed_px_s": 0.0}, "grounded"],
+		[HitProfile.Reaction.GROUND_KNOCKDOWN, {"knockdown_frames": 30, "upward_speed_px_s": 0.0}, "grounded"],
+		[HitProfile.Reaction.LOW_FLOAT_SWEEP, {"air_untech_frames": 20, "upward_speed_px_s": 120.0, "knockdown_frames": 30}, "grounded"],
+	]
+	for entry in cases:
+		var broken := _valid_strike("5X", "D")
+		var profile := HitProfile.new()
+		profile.target_state = HitProfile.TargetState.GROUND_SLIDE
+		profile.hit_context = HitProfile.HitContext.NORMAL
+		profile.reaction = entry[0]
+		profile.horizontal_speed_px_s = 60.0
+		for field in entry[1]:
+			profile.set(field, entry[1][field])
+		broken.hit_profiles = [profile]
+		var errors := MoveTable.validate([broken])
+		_check(not errors.is_empty(), "a %s profile on the GROUND_SLIDE key is rejected (only the scoop LAUNCH is legal there)" % entry[0])
+	var scoop := _valid_strike("5X", "D")
+	var profile := HitProfile.new()
+	profile.target_state = HitProfile.TargetState.GROUND_SLIDE
+	profile.hit_context = HitProfile.HitContext.NORMAL
+	profile.reaction = HitProfile.Reaction.LAUNCH
+	profile.air_untech_frames = 30
+	profile.horizontal_speed_px_s = 60.0
+	profile.upward_speed_px_s = 180.0
+	scoop.hit_profiles = [profile]
+	_check(MoveTable.validate([scoop]).is_empty(), "a scoop LAUNCH profile on the GROUND_SLIDE key is legal")
+
+
+func _test_segment_fields_validation() -> void:
+	# 附加判定段（票据 05）：每段显式声明间隔/active/伤害/命中框/资料；投技
+	# 不得声明段；段内非法资料整表拒绝并定位到段。
+	var legal := _valid_two_segment_strike()
+	legal.segments = [_valid_segment()]
+	var entry := _valid_strike("5D", "D")
+	entry.stance = MoveData.Stance.GROUND
+	var table := [legal, entry]
+	_check(MoveTable.validate(table).is_empty(), "a strike with a fully declared second segment keeps the table legal")
+	var cases := [
+		["startup_frames", -1, "startup_frames"],
+		["active_frames", 0, "active_frames"],
+		["base_damage", -1, "base_damage"],
+		["hitbox_gap", -1.0, "hitbox_gap"],
+	]
+	for entry2 in cases:
+		var broken := _valid_two_segment_strike()
+		var segment := _valid_segment()
+		segment.set(entry2[0], entry2[1])
+		broken.segments = [segment]
+		var errors := MoveTable.validate([broken, entry])
+		_check(not errors.is_empty() and errors[0].contains(entry2[2]),
+			"a segment with illegal %s is rejected naming the field" % entry2[0])
+	var no_profiles := _valid_two_segment_strike()
+	var empty_seg := _valid_segment()
+	empty_seg.hit_profiles = []
+	no_profiles.segments = [empty_seg]
+	var errors := MoveTable.validate([no_profiles, entry])
+	_check(not errors.is_empty() and errors[0].contains("hit_profiles"),
+		"a segment without hit profiles is rejected")
+	var airborne_slide := _valid_two_segment_strike()
+	var bad_seg := _valid_segment()
+	var bad_profile := _valid_to_slide_profile()
+	bad_profile.target_state = HitProfile.TargetState.AIRBORNE
+	bad_seg.hit_profiles = [bad_profile]
+	airborne_slide.segments = [bad_seg]
+	errors = MoveTable.validate([airborne_slide, entry])
+	_check(not errors.is_empty() and errors[0].contains("击飞触地滑行只允许 grounded"),
+		"an illegal profile inside a segment is rejected with the segment-scoped label")
+	var throw_segment := _valid_throw()
+	throw_segment.segments = [_valid_segment()]
+	errors = MoveTable.validate([throw_segment])
+	_check(not errors.is_empty() and errors[0].contains("segments"),
+		"a throw declaring segments is rejected")
+
+
+func _test_special_entry_fields_validation() -> void:
+	# 特殊进入资格（票据 05，I-05）：目标与窗口成对声明；目标必须在表中、与
+	# 来源同姿态；来源限定连接边同样做跨招式引用校验。
+	var five_d := _valid_strike("5D", "D")
+	var legal := _valid_two_segment_strike()
+	legal.segments = [_valid_segment()]
+	_check(MoveTable.validate([legal, five_d]).is_empty(), "a declared special entry target with its window keeps the table legal")
+	var no_window := _valid_two_segment_strike()
+	no_window.special_entry_window_frames = -1
+	var errors := MoveTable.validate([no_window, five_d])
+	_check(not errors.is_empty() and errors[0].contains("special_entry_window_frames"),
+		"special entry targets without a window are rejected naming the field")
+	var no_targets := _valid_two_segment_strike()
+	no_targets.special_entry_targets = [] as Array[String]
+	errors = MoveTable.validate([no_targets, five_d])
+	_check(not errors.is_empty() and errors[0].contains("special_entry_window_frames"),
+		"a special entry window without targets is rejected")
+	var ghost := _valid_two_segment_strike()
+	ghost.segments = [_valid_segment()]
+	ghost.special_entry_targets = ["ghost"]
+	errors = MoveTable.validate([ghost, five_d])
+	_check(not errors.is_empty() and errors[0].contains("ghost"),
+		"a special entry target missing from the table is rejected naming the id")
+	var stance_mismatch := _valid_two_segment_strike()
+	stance_mismatch.segments = [_valid_segment()]
+	var air_target := _valid_strike("jD2", "D")
+	air_target.stance = MoveData.Stance.AIR
+	stance_mismatch.special_entry_targets = ["jD2"]
+	errors = MoveTable.validate([stance_mismatch, air_target])
+	_check(not errors.is_empty() and errors[0].contains("姿态不一致"),
+		"a special entry target with a mismatched stance is rejected")
+	var link_ghost := _valid_strike("5D2", "D")
+	link_ghost.special_entry_link_targets = ["ghostB"]
+	errors = MoveTable.validate([link_ghost])
+	_check(not errors.is_empty() and errors[0].contains("ghostB"),
+		"a source-limited link target missing from the table is rejected naming the id")
 
 
 func _test_requires_crouch_validation() -> void:

@@ -20,9 +20,9 @@ extends SceneTree
 
 const GROUND_ROUTE := ["5A", "5B", "5D"]
 ## 旧派生代表 5B→214D 已废弃；新基线派生代表为 5B 必杀取消 236C 的空中路线。
-const DERIVATIVE_ROUTE := ["5B", "236C", "jA", "jB", "jD"]
-const AIR_ROUTE := ["5A", "236C", "jA", "jB", "jD"]
-const LANDING_ROUTE := ["5A", "236C", "jA", "jB", "5D"]
+const DERIVATIVE_ROUTE := ["5B", "6A", "jA", "jB", "jD"]
+const AIR_ROUTE := ["5A", "5B", "6A", "jA", "jB", "jD"]
+const LANDING_ROUTE := ["5A", "5B", "6A", "jA", "jB", "5D"]
 ## 训练场键盘回放的站位（真实击退物理）：地面/派生用固定接触位 70 px；
 ## 空中/落地用空间网格的 48 px 贴身档——真实击退下 70 px 起手的空中后段会
 ## 漂出命中距离，回放记录如实区分钉位层与真实击退层的结论。
@@ -126,7 +126,7 @@ func _test_pinned_replay_reproduces_solver_results(report: ComboSolver.SolverRep
 ## 保留旧 Solver 的真实帧表作负例，不能把它混回当前合法路线。
 func _legacy_landing_fixture() -> ComboSolver.SolverRoute:
 	var route := ComboSolver.SolverRoute.new()
-	route.move_ids.assign(LANDING_ROUTE)
+	route.move_ids.assign(["5A", "236C", "jA", "jB", "5D"])
 	route.hit_frames.assign([6, 13, 43])
 	route.combo_hits = 3
 	route.total_damage = 32.6
@@ -148,8 +148,8 @@ func _test_rejected_landing_replay(report: ComboSolver.SolverReport) -> void:
 	var route := _legacy_landing_fixture()
 	for facing in [1, -1]:
 		var run := _replay_route(route, facing, 70.0, _shared_table(), true)
-		_check(run["hit_frames"] == [6, 13] and int(run["combo_hits"]) == 2,
-			"legacy landing replay stops at two hits despite fixed contact (the time-decayed stun drops the old jA seam before its press)")
+		_check(run["hit_frames"] == [6, 13, 18] and int(run["combo_hits"]) == 3,
+			"legacy landing replay on the two-segment baseline lands 5A plus both 236C segments and stops there (no jump cancel exists; the old air schedule never connects)")
 		_check(not (run["landing_move_ids"] as Array).has("5D"), "legacy schedule cannot start 5D on landing")
 		_records.append(_record_line(route, facing, "站位：旧样本钉位 70 px", run,
 			"命中帧", "timing-invalid（恢复锁拒绝旧样本第5击；不作空间证明）"))
@@ -235,8 +235,10 @@ func _test_timing_spatial_layering_and_whiff_replay(plain: ComboSolver.SolverRep
 			_check(run["hit_frames"] == air.hit_frames and _approx(float(run["total_damage"]), air.total_damage),
 				"spatial re-verification: the %d px pinned replay reproduces the air route (hits %s)" % [dx, str(air.hit_frames)])
 		else:
-			_check(int(run["combo_hits"]) == 0 and (run["started_without_hit"] as Array).has("5A"),
-				"the %d px pinned replay confirms the 5A boundary whiff (touching rects do not intersect; that standing is not claimed)" % dx)
+			## 票据 05 起空中路线为 5A > 5B > 6A > …：80 px 上 5A 边界相邻不相交
+			##（真实挥空），后续独立链部分接通——该站位不作路线空间声明。
+			_check(int(run["combo_hits"]) < air.combo_hits and not (run["hit_frames"] as Array).has(air.hit_frames[0]),
+				"the %d px pinned replay confirms the 5A boundary whiff (touching rects do not intersect; the partial chain is not claimed as the route at this standing)" % dx)
 	var record_run := _replay_route(air, 1, 64.0, table, true)
 	_records.append(_record_line(air, 1, "站位：探针钉位 64 px（空间网格档）", record_run,
 		"命中帧", "timing-valid；spatial-valid（48/64/80 px 钉位复验）"))
@@ -309,8 +311,8 @@ func _test_keyboard_replay_matches_session_probe(plain: ComboSolver.SolverReport
 				"%s: the player lands on the same tick (%s)" % [tag, str(keyboard["landing_ticks"])])
 		var layer := "timing-valid（键盘回放证实真实击退下完整接通）"
 		if kind == "landing":
-			_check(int(keyboard["combo_hits"]) == 2, "legacy landing schedule stops at two hits on the real keyboard path")
-			layer = "timing-invalid（旧落地样本负例：时间层修正使旧样本后续帧表失效；恢复锁仍拒绝第5击）"
+			_check(int(keyboard["combo_hits"]) == 3, "legacy landing schedule lands the same three hits on the real keyboard path (the retired 236C launcher no longer jump-cancels)")
+			layer = "timing-invalid（旧落地样本负例：两段基线下旧 236C launcher 帧表失效、无 jump cancel；恢复锁仍拒绝第5击）"
 		elif int(keyboard["combo_hits"]) < route.combo_hits:
 			layer = "timing-valid（键盘回放 %.0f px 真实击退下第 %d 击后漂出命中距离——钉位层结论见钉位回放记录）" % [
 				dx, int(keyboard["combo_hits"])]
@@ -426,8 +428,8 @@ func _settle(session: CombatSession) -> void:
 
 func _test_replay_records_complete() -> void:
 	_check(_records.size() >= 10, "the replay records cover the representative routes (pinned both facings + keyboard + spatial)")
-	_check(_records.any(func(line: String) -> bool: return line.contains("5B → 236C → jA → jB → jD｜面向 -1") and line.contains("3[S+A]") and line.contains("6[A]")),
-		"left-facing replay records mirror physical keys while retaining the relative 236 fold")
+	_check(_records.any(func(line: String) -> bool: return line.contains("5B → 6A → jA → jB → jD｜面向 -1") and line.contains("6[A]")),
+		"left-facing replay records mirror physical keys while retaining the relative forward fold")
 	for line in _records:
 		var complete := true
 		for token in ["回放记录｜", "面向", "站位：", "输入 ", "｜伤害 ", "timing-"]:

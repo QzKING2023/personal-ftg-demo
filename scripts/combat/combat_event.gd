@@ -22,6 +22,7 @@ enum Type {
 	LOW_FLOAT_LANDED,  ## 低浮空扫倒触地：同帧转普通倒地并结束连段（票据 02）
 	REKKA_BRANCH_LOCKED, ## Rekka 派生窗口内第一个 B/C 新按下锁定分支（见 rekka_branch/rekka_move_id；票据 04）
 	SPIKE_LANDED,      ## 向下击落触地：同帧转普通倒地（票据 04）
+	SLIDE_STARTED,     ## 击飞触地转地面滑行：进入 GROUND_SLIDE 可追击窗口（票据 05；计时自下一正常帧倒数）
 }
 
 ## 连段结束原因：收尾、取消窗口关闭、招式收招未接续、木桩自然受身/恢复、
@@ -87,24 +88,29 @@ var guard_reject_reason: DummyGuardRejectReason = DummyGuardRejectReason.STATE
 ## 锁定的 Rekka 分支键（"B"/"C"）与派生招式 id，仅 REKKA_BRANCH_LOCKED 使用。
 var rekka_branch := ""
 var rekka_move_id := ""
+## 本次接触来自多段招式的第几段（1 基；单段招式恒为 1），仅 HIT/HIT_MISS/
+## ATTACK_BLOCKED 使用（票据 05：两段判定的可观察段标识）。
+var move_segment := 1
 
 
-static func hit(damage: float, direction: int, combo_hits: int, is_counter := false) -> CombatEvent:
+static func hit(damage: float, direction: int, combo_hits: int, is_counter := false, move_segment := 1) -> CombatEvent:
 	var event := CombatEvent.new()
 	event.type = Type.HIT
 	event.damage = damage
 	event.direction = direction
 	event.combo_hits = combo_hits
 	event.is_counter = is_counter
+	event.move_segment = move_segment
 	return event
 
 
 ## 命中框已连接但目标状态 × 命中上下文无匹配 profile（MISS_NO_PROFILE）：
 ## 不造成伤害、不改变受击状态、不取得任何命中确认或取消资格。
-static func hit_miss(direction: int) -> CombatEvent:
+static func hit_miss(direction: int, move_segment := 1) -> CombatEvent:
 	var event := CombatEvent.new()
 	event.type = Type.HIT_MISS
 	event.direction = direction
+	event.move_segment = move_segment
 	return event
 
 
@@ -121,7 +127,7 @@ static func blocked(direction: int) -> CombatEvent:
 	return event
 
 
-static func attack_blocked(direction: int, guard_posture: int, freeze: int, stun: int, pushback: float) -> CombatEvent:
+static func attack_blocked(direction: int, guard_posture: int, freeze: int, stun: int, pushback: float, move_segment := 1) -> CombatEvent:
 	var event := CombatEvent.new()
 	event.type = Type.ATTACK_BLOCKED
 	event.direction = direction
@@ -129,6 +135,7 @@ static func attack_blocked(direction: int, guard_posture: int, freeze: int, stun
 	event.block_freeze_frames = freeze
 	event.block_stun_frames = stun
 	event.block_pushback_px_s = pushback
+	event.move_segment = move_segment
 	return event
 
 
@@ -217,4 +224,10 @@ static func rekka_branch_locked(branch: String, move_id: String) -> CombatEvent:
 static func spike_landed() -> CombatEvent:
 	var event := CombatEvent.new()
 	event.type = Type.SPIKE_LANDED
+	return event
+
+
+static func slide_started() -> CombatEvent:
+	var event := CombatEvent.new()
+	event.type = Type.SLIDE_STARTED
 	return event

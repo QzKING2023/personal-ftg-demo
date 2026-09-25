@@ -15,13 +15,15 @@ enum PlayerPhase {
 }
 
 enum DummyState {
-	NEUTRAL,          ## 中立
-	GROUND_HITSTUN,   ## 地面受击硬直
-	AIR_HITSTUN,      ## 浮空受击硬直（滞空期间逐帧消耗，归零即浮空受身）
-	AIR_RECOVERED,    ## 空中已受身（连段已结束，落地后才恢复中立）
-	KNOCKED_DOWN,     ## 普通倒地（独立倒地计时；期间不可命中，计时结束自然恢复）
-	LOW_FLOAT_SWEEP,  ## 低浮空扫倒（短暂滞空的有限受击窗口；触地同帧转普通倒地）
-	SPIKE_FALL,       ## 向下击落坠落（票据 04：无空中计时，触地同帧转普通倒地）
+	NEUTRAL,            ## 中立
+	GROUND_HITSTUN,     ## 地面受击硬直
+	AIR_HITSTUN,        ## 浮空受击硬直（滞空期间逐帧消耗，归零即浮空受身）
+	AIR_RECOVERED,      ## 空中已受身（连段已结束，落地后才恢复中立）
+	KNOCKED_DOWN,       ## 普通倒地（独立倒地计时；期间不可命中，计时结束自然恢复）
+	LOW_FLOAT_SWEEP,    ## 低浮空扫倒（短暂滞空的有限受击窗口；触地同帧转普通倒地）
+	SPIKE_FALL,         ## 向下击落坠落（票据 04：无空中计时，触地同帧转普通倒地）
+	LOW_FLOAT_TO_SLIDE, ## 击飞触地滑行前滞空（票据 05：触地转 GROUND_SLIDE，不经过倒地）
+	GROUND_SLIDE,       ## 地面滑行（独立计时；仅显式 slide 资料的招式可命中覆盖，归零自然回中立）
 }
 
 ## 防御姿态：地面 4 为站防、1 为蹲防；真正离地后 4/1 均为空防。
@@ -60,6 +62,9 @@ var dummy_on_ground := true
 var dummy_hitstun_left := 0
 ## 剩余普通倒地帧数（含当前帧；独立于受击硬直计时，归零自然恢复回中立）。
 var dummy_knockdown_left := 0
+## 剩余地面滑行帧数（票据 05：触地转换起自下一正常帧倒数，含当前帧；归零自然
+## 回中立并结束连段。命中当帧按时间层预先换算，滑行中的有效命中整体覆盖）。
+var dummy_slide_left := 0
 ## 木桩当前防御姿态（票据 03：由逐帧显式请求驱动；被防硬直期间冻结保持）。
 var dummy_guard: GuardPosture = GuardPosture.NONE
 ## 剩余被防硬直帧数（含当前帧；停顿结束后按正常帧倒数，木桩期间不可出招）。
@@ -103,6 +108,12 @@ var _moves: Dictionary = {}
 var _current_move: MoveData = null
 var _move_frame := 0
 var _hit_once_this_move := false
+## 多段招式（票据 05）：当前帧所属判定段索引与逐段命中标记（每段对同一目标
+## 至多命中一次；单段招式恒为 [x] 一项）。
+var _current_segment := 0
+var _segment_hit_done: Array[bool] = []
+## 本帧待应用命中的判定段索引（与 _pending_hit 配对）。
+var _pending_hit_segment := 0
 ## 本招是否已命中确认（命中确认取消的必要条件；挥空永远为 false）。
 var _move_hit_confirmed := false
 var _hit_confirm_frame := 0
@@ -231,6 +242,24 @@ var _rekka_contact_frame := 0
 ## 同帧 B+C 固定 C > B 优先级；锁定后另一键不改写、不升级、不补发普通投。
 var _rekka_branch := ""
 
+# --- 特殊进入资格（票据 05，I-05：SPECIAL_D_ENTRY_FROM_236C）---
+## 声明了 special_entry_targets 的招式（236C）在实际 HIT 的命中应用阶段授予
+## 一次性资格；只在授予招式仍在执行、窗口（special_entry_window_frames，正常帧
+## 计龄）内且连段仍活跃时开放取消目标。启动目标招式（普通 5D/5[D]）时消费；
+## 资格绑定本次连段与当前目标——被防、挥空、缺失 profile 不授予，连段结束、
+## 授予招式结束或窗口关闭即失效，不跨连段/跨目标继承。
+var _special_entry_open := false
+## 授予帧（正常帧时钟；停顿不计龄——Hitstop 中资格保持不老化）。
+var _special_entry_frame := 0
+## 授予资格的招式（资格只在授予招式自身的特殊取消窗口内可消费）。
+var _special_entry_move: MoveData = null
+## 当前招式是否经特殊进入资格起手（来源限定普通连接边的资格来源；D 保持
+## 普通招式身份，本标记只用于 5D → 5B 目押边的来源限定）。
+var _move_via_special_entry := false
+## 收招当帧快照的命中与来源标记（收招后 _move_* 已清零，普通连接消费阶段读取）。
+var _finished_move_hit := false
+var _finished_move_via_entry := false
+
 
 func _init(move_table: Dictionary = {}) -> void:
 	## 空表默认加载共享 manifest（训练场与 Solver 同一份已校验数据）；
@@ -278,6 +307,7 @@ func reset_to_initial_state() -> void:
 	dummy_on_ground = true
 	dummy_hitstun_left = 0
 	dummy_knockdown_left = 0
+	dummy_slide_left = 0
 	dummy_guard = GuardPosture.NONE
 	dummy_blockstun_left = 0
 	combo_hits = 0
@@ -292,6 +322,9 @@ func reset_to_initial_state() -> void:
 	_current_move = null
 	_move_frame = 0
 	_hit_once_this_move = false
+	_current_segment = 0
+	_segment_hit_done.clear()
+	_pending_hit_segment = 0
 	_move_hit_confirmed = false
 	_hit_confirm_frame = 0
 	_move_contact_confirmed = false
@@ -336,6 +369,12 @@ func reset_to_initial_state() -> void:
 	_rekka_window_open = false
 	_rekka_contact_frame = 0
 	_rekka_branch = ""
+	_special_entry_open = false
+	_special_entry_frame = 0
+	_special_entry_move = null
+	_move_via_special_entry = false
+	_finished_move_hit = false
+	_finished_move_via_entry = false
 
 
 ## 结算一个物理帧，返回该帧产生的战斗事件（按结算发生顺序排列）。
@@ -371,13 +410,15 @@ func hitstop_active() -> bool:
 	return _hitstop_left > 0
 
 
-## 当前招式的命中框（世界坐标）；没有进行中的打击招式时返回空矩形（投技无
-## 命中框）。判定阶段与非判定阶段共用同一几何，是否生效由 player_phase 决定。
+## 当前招式当前判定段的命中框（世界坐标）；没有进行中的打击招式时返回空矩形
+## （投技无命中框）。判定阶段与非判定阶段共用同一几何，是否生效由 player_phase
+## 决定；多段招式按当前段声明取段命中框（票据 05）。
 func player_attack_rect() -> Rect2:
 	if _current_move == null or not _current_move.is_strike():
 		return Rect2()
-	var center := player_position + Vector2(player_facing * _current_move.hitbox_offset(), 0.0)
-	return Rect2(center - _current_move.hitbox_size * 0.5, _current_move.hitbox_size)
+	var size := _current_move.segment_hitbox_size(_current_segment)
+	var center := player_position + Vector2(player_facing * _current_move.segment_hitbox_offset(_current_segment), 0.0)
+	return Rect2(center - size * 0.5, size)
 
 
 ## 木桩当前招式的命中框（世界坐标，朝玩家一侧）；没有进行中的招式时返回空矩形。
@@ -454,6 +495,10 @@ func debug_snapshot() -> Dictionary:
 		"time_scale": combo_time_scale,
 		"trajectory_scale": combo_trajectory_scale,
 		"rekka_branch": _rekka_branch,
+		"special_entry_open": _special_entry_open,
+		"special_entry_age": (maxi(0, _normal_frame_index - _special_entry_frame) if _special_entry_open else -1),
+		"move_via_special_entry": _move_via_special_entry,
+		"dummy_slide_left": dummy_slide_left,
 		"rekka_window_left": (maxi(0, _current_move.rekka_window_frames - (_normal_frame_index - _rekka_contact_frame))
 			if _rekka_window_active() else -1),
 		"velocity": player_velocity,
@@ -511,13 +556,18 @@ func settlement_state() -> Dictionary:
 		"guard_stun_left": player_guard_stun_left,
 		"dash_left": player_dash_left,
 		"dash_direction": _dash_direction,
-		# 当前招式及招式帧
+		# 当前招式及招式帧（多段：段索引与逐段命中标记影响后续命中资格）
 		"move_id": player_move_id,
 		"move_frame": _move_frame,
 		"hit_once": _hit_once_this_move,
+		"current_segment": _current_segment,
+		"segment_hit_done": _segment_hit_done.duplicate(),
 		"hit_confirmed": _move_hit_confirmed,
 		"cancel_age": cancel_age,
 		"move_is_followup": _move_is_followup,
+		"move_via_special_entry": _move_via_special_entry,
+		"finished_move_hit": _finished_move_hit,
+		"finished_move_via_entry": _finished_move_via_entry,
 		# 面向与速度
 		"facing": player_facing,
 		"velocity": player_velocity,
@@ -554,11 +604,16 @@ func settlement_state() -> Dictionary:
 		"rekka_branch": _rekka_branch,
 		"rekka_window_open": _rekka_window_open,
 		"rekka_contact_age": (_normal_frame_index - _rekka_contact_frame if _rekka_window_open else -1),
-		# 木桩姿态/阶段、受击计时与速度
+		# 特殊进入资格（票据 05）：授予开闭与年龄影响 D 取消起手资格与来源限定
+		# 普通连接边，是真实结算量（授予招式由 move_id 表达）。
+		"special_entry_open": _special_entry_open,
+		"special_entry_age": (_normal_frame_index - _special_entry_frame if _special_entry_open else -1),
+		# 木桩姿态/阶段、受击计时与速度（滑行计时影响追击窗口与自然恢复时点）
 		"dummy_state": dummy_state,
 		"dummy_on_ground": dummy_on_ground,
 		"dummy_hitstun_left": dummy_hitstun_left,
 		"dummy_knockdown_left": dummy_knockdown_left,
+		"dummy_slide_left": dummy_slide_left,
 		"dummy_velocity": dummy_velocity,
 		"dummy_position_y": dummy_position.y,
 		"dummy_move_id": dummy_move_id,
@@ -953,13 +1008,16 @@ func _direction_digit() -> int:
 func _phase_hit_detection() -> void:
 	## 2. 命中判定：判定帧内检查命中框与木桩身体的几何重叠。
 	##    木桩中立时可被任何招式命中；受击中只有连段内的合法接续招式可以继续命中，
-	##    没有取消资格的独立招式不能绕过取消条件追击。同一次出招最多命中一次。
+	##    没有取消资格的独立招式不能绕过取消条件追击。同一次出招最多命中一次；
+	##    多段招式按段计——每段对同一目标至多命中一次（票据 05，S-02）。
 	_pending_hit = null
-	if player_phase == PlayerPhase.ACTIVE and not _hit_once_this_move and _current_move != null \
-			and _current_move.is_strike() \
+	if player_phase == PlayerPhase.ACTIVE and _current_move != null \
+			and _current_move.is_strike() and not _segment_hit_done[_current_segment] \
 			and player_attack_rect().intersects(_dummy_body_rect()) and _can_hit_dummy():
+		_segment_hit_done[_current_segment] = true
 		_hit_once_this_move = true
 		_pending_hit = _current_move
+		_pending_hit_segment = _current_segment
 	## 木桩打击的对称判定：判定帧内检查木桩命中框与玩家身体的几何重叠，
 	## 每次挥击至多连接一次（防御或命中在受击应用阶段结算）。同帧双方都在
 	## 判定时按先玩家、后木桩的固定顺序应用（互换命中有效）。
@@ -980,20 +1038,20 @@ func _phase_apply_hits(events: Array[CombatEvent]) -> void:
 
 func _apply_player_hit(events: Array[CombatEvent]) -> void:
 	## 玩家命中木桩的结算：先看木桩防御是否挡下（被防是独立接触结果，票据 03），
-	## 未挡住时按命中判定前的目标状态与 Counter 窗口精确选择 HitProfile
-	## （无匹配 = MISS_NO_PROFILE，不造成任何受击效果），再连段伤害递减、
-	## 按 reaction 应用受击状态、计时与速度。
+	## 未挡住时按命中判定前的目标状态与 Counter 窗口精确选择当前判定段的
+	## HitProfile（多段招式逐段独立选择，票据 05；无匹配 = MISS_NO_PROFILE，
+	## 不造成任何受击效果），再连段伤害递减、按 reaction 应用受击状态、计时与速度。
 	var move := _pending_hit
 	if _dummy_blocks_attack(move):
 		_apply_player_blocked(move, events)
 		_pending_hit = null
 		return
 	var context := _dummy_hit_context()
-	var profile := MoveData.profile_for(move, _dummy_target_state(), context)
+	var profile := move.segment_profile_for(_pending_hit_segment, _dummy_target_state(), context)
 	if profile == null:
-		## 缺失不回退：不借用 grounded/normal 资料，不造成伤害、不改变受击状态、
-		## 不刷新倒地计时，也不取得命中确认或取消资格。
-		events.append(CombatEvent.hit_miss(player_facing))
+		## 缺失不回退：不借用 grounded/normal 资料（或其他段的资料），不造成伤害、
+		## 不改变受击状态、不刷新倒地/滑行计时，也不取得命中确认或取消资格。
+		events.append(CombatEvent.hit_miss(player_facing, _pending_hit_segment + 1))
 		_pending_hit = null
 		return
 	if not combo_active or dummy_state == DummyState.NEUTRAL:
@@ -1002,18 +1060,23 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 	combo_active = true
 	combo_hits += 1
 	## 起手修正（C-01/C-02）：首击锁定 starter grade 并以 starter 倍率初始化三层；
-	## 后续每击把普通命中倍率乘入各层。三层独立舍入输出，互不反推。
+	## 后续每击把命中倍率乘入各层——命中滑行目标使用 slide 倍率（票据 05，S-05），
+	## 其余按普通命中倍率。三层独立舍入输出，互不反推。
 	if combo_hits == 1:
 		combo_starter_grade = move.starter_grade
 		combo_damage_scale = float(GameParams.STARTER_DAMAGE_SCALE[move.starter_grade])
 		combo_time_scale = float(GameParams.STARTER_TIME_SCALE[move.starter_grade])
 		combo_trajectory_scale = float(GameParams.STARTER_TRAJECTORY_SCALE[move.starter_grade])
+	elif _dummy_target_state() == HitProfile.TargetState.GROUND_SLIDE:
+		combo_damage_scale *= GameParams.SLIDE_HIT_DAMAGE_SCALE
+		combo_time_scale *= GameParams.SLIDE_HIT_TIME_SCALE
+		combo_trajectory_scale *= GameParams.SLIDE_HIT_TRAJECTORY_SCALE
 	else:
 		combo_damage_scale *= GameParams.NORMAL_HIT_DAMAGE_SCALE
 		combo_time_scale *= GameParams.NORMAL_HIT_TIME_SCALE
 		combo_trajectory_scale *= GameParams.NORMAL_HIT_TRAJECTORY_SCALE
 	combo_last_scale = maxf(GameParams.COMBO_DAMAGE_FLOOR, combo_damage_scale)
-	var damage_base := move.base_damage if profile.damage_override < 0 else profile.damage_override
+	var damage_base := move.segment_base_damage(_pending_hit_segment) if profile.damage_override < 0 else profile.damage_override
 	combo_last_damage = snappedf(damage_base * combo_last_scale, 0.1)
 	combo_total_damage = snappedf(combo_total_damage + combo_last_damage, 0.1)
 	dummy_hp = maxf(dummy_hp - combo_last_damage, 0.0)
@@ -1039,15 +1102,24 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 			## 触地同帧转普通倒地；倒地计时按命中当帧时间层预先换算（同低浮空口径）。
 			dummy_state = DummyState.SPIKE_FALL
 			dummy_knockdown_left = _scaled_timer_frames(profile.knockdown_frames)
+		HitProfile.Reaction.LOW_FLOAT_TO_SLIDE:
+			## 击飞触地滑行（票据 05，S-04）：受击窗口计时入 hitstun 计数；触地后
+			## 的滑行持续在命中当帧按同一时间层预先换算（期间的新命中会整体覆盖
+			## 状态），触地转换时直接取用。有效命中覆盖既有 slide，不叠加计时。
+			dummy_state = DummyState.LOW_FLOAT_TO_SLIDE
+			dummy_hitstun_left = _scaled_timer_frames(profile.air_untech_frames)
+			dummy_slide_left = _scaled_timer_frames(profile.slide_frames)
+			dummy_knockdown_left = 0
 	_dummy_fresh_reaction = true
 	## 实际命中覆盖被防硬直：连防姿态让位给受击状态，残留被防计时随之作废。
 	dummy_blockstun_left = 0
 	## 木桩受击打断其进行中的攻击（本帧已捕获的连接仍按互换命中结算）。
 	_clear_dummy_move()
 	dummy_velocity.x = player_facing * roundf(profile.horizontal_speed_px_s * combo_trajectory_scale)
-	if profile.reaction == HitProfile.Reaction.LAUNCH or profile.reaction == HitProfile.Reaction.LOW_FLOAT_SWEEP:
-		## 浮空与低浮空命中必定重起跳：即使木桩仍在上一击的微浮中也按 profile
-		## 的垂直初速度重置滞空；普通地面命中保持接地，垂直速度不动。
+	if profile.reaction == HitProfile.Reaction.LAUNCH or profile.reaction == HitProfile.Reaction.LOW_FLOAT_SWEEP \
+			or profile.reaction == HitProfile.Reaction.LOW_FLOAT_TO_SLIDE:
+		## 浮空、低浮空与击飞触地滑行命中必定重起跳：即使木桩仍在上一击的微浮中
+		## 也按 profile 的垂直初速度重置滞空；普通地面命中保持接地，垂直速度不动。
 		dummy_velocity.y = -roundf(profile.upward_speed_px_s * combo_trajectory_scale)
 	if profile.reaction == HitProfile.Reaction.DOWNWARD_SLAM:
 		dummy_velocity.y = roundf(profile.downward_speed_px_s * combo_trajectory_scale)
@@ -1058,8 +1130,14 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 	_contact_frame = _normal_frame_index
 	_move_blocked = false
 	_open_rekka_window(move)
+	## 特殊进入资格授予（票据 05，I-05）：实际 HIT 当下取得（被防、挥空、缺失
+	## profile 都不授予）；多段招式每段命中各自授予并重置窗口。
+	if not move.special_entry_targets.is_empty():
+		_special_entry_open = true
+		_special_entry_frame = _normal_frame_index
+		_special_entry_move = move
 	events.append(CombatEvent.hit(combo_last_damage, player_facing, combo_hits,
-		context == HitProfile.HitContext.COUNTER))
+		context == HitProfile.HitContext.COUNTER, _pending_hit_segment + 1))
 	## 命中帧完成命中与受击应用后开始 Hitstop：冻结后续 8 个物理帧（双方动作、
 	## 位置、速度、受击、落地与受身计时暂停；物理帧号照常递增，输入仍被采样记录）。
 	_hitstop_left = GameParams.HITSTOP_FRAMES
@@ -1080,9 +1158,13 @@ func _scaled_timer_frames(declared_frames: int) -> int:
 	return maxi(1, int(floor(declared_frames * combo_time_scale)))
 
 
-## 命中判定前的木桩目标状态：接地且非倒地为 GROUNDED，真正离地为 AIRBORNE。
+## 命中判定前的木桩目标状态：接地且非倒地为 GROUNDED，真正离地为 AIRBORNE，
+## 地面滑行为 GROUND_SLIDE（票据 05，S-05：只有显式 slide 资料的招式能命中，
+## 缺失即 MISS_NO_PROFILE，不回退 grounded/airborne）。
 ## 倒地不可命中（_can_hit_dummy 已排除），不会进入本分类。
 func _dummy_target_state() -> HitProfile.TargetState:
+	if dummy_state == DummyState.GROUND_SLIDE:
+		return HitProfile.TargetState.GROUND_SLIDE
 	return HitProfile.TargetState.GROUNDED if dummy_on_ground else HitProfile.TargetState.AIRBORNE
 
 
@@ -1183,6 +1265,8 @@ func _dummy_blocks_attack(move: MoveData) -> bool:
 ## 资格来源，不产生命中确认），施加被防停顿、被防硬直与双方被防推退；不造成
 ## 伤害、不改受击状态、不锁 starter、不累计修正、不续连段。停顿期间一切计时
 ## 冻结，被防硬直自恢复后的首个正常帧起倒数。
+## 多段招式段 1 被防立即终止整招（票据 05，S-02）：只产生段 1 的被防结果，
+## 后续段与后摇不再执行——停顿结束后玩家直接回中立。
 func _apply_player_blocked(move: MoveData, events: Array[CombatEvent]) -> void:
 	_move_contact_confirmed = true
 	_contact_frame = _normal_frame_index
@@ -1194,9 +1278,11 @@ func _apply_player_blocked(move: MoveData, events: Array[CombatEvent]) -> void:
 	player_velocity.x = -player_facing * move.block_pushback_px_s
 	_hitstop_left = move.block_freeze_frames
 	events.append(CombatEvent.attack_blocked(player_facing, dummy_guard,
-		move.block_freeze_frames, move.block_stun_frames, move.block_pushback_px_s))
+		move.block_freeze_frames, move.block_stun_frames, move.block_pushback_px_s, _pending_hit_segment + 1))
 	if move.block_freeze_frames > 0:
 		events.append(CombatEvent.hitstop_started())
+	if _pending_hit_segment == 0 and move.segment_count() > 1:
+		_clear_current_move()
 
 
 func _phase_motion(events: Array[CombatEvent]) -> void:
@@ -1230,6 +1316,10 @@ func _phase_cancel() -> void:
 				[_current_move.special_cancel_targets, _current_move.special_cancel_window_frames]]:
 			if age <= pair[1]:
 				_append_stance_matching_targets(pair[0], _current_move.stance)
+		## 特殊进入资格（票据 05，I-05）：仅实际 HIT 授予，不开放于被防接触；
+		## 资格属于授予招式且仍在自身消费窗口内时开放其声明目标（如 236C → 5D）。
+		if _special_entry_live():
+			_append_stance_matching_targets(_special_entry_move.special_entry_targets, _current_move.stance)
 		return
 	if _move_contact_confirmed and _move_blocked:
 		var contact_age := _normal_frame_index - _contact_frame
@@ -1250,6 +1340,15 @@ func _append_stance_matching_targets(move_ids: Array[String], stance: MoveData.S
 		var target := _moves.get(move_id) as MoveData
 		if target != null and target.stance == stance and _stance_matches(target):
 			_cancel_targets.append(move_id)
+
+
+## 特殊进入资格当前是否可消费：资格开放、授予招式仍在执行且接触年龄仍在
+## special_entry_window_frames 内（正常帧计龄，Hitstop 不计——停顿中资格保持）。
+func _special_entry_live() -> bool:
+	if not _special_entry_open or _special_entry_move == null or _special_entry_move != _current_move:
+		return false
+	var age := _normal_frame_index - _special_entry_frame
+	return age >= 0 and age <= _special_entry_move.special_entry_window_frames
 
 
 func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
@@ -1284,9 +1383,13 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 		_clear_current_move()
 	## 命中确认取消窗口关闭且没有接续时连段结束；木桩受击处理不受影响。
 	## 窗口年龄按正常战斗帧计：Hitstop 之后关闭帧相应后移。声明了普通连接边的
-	## 招式不在此结束——连接评估保留到完全恢复后的首个合法帧（I-06）。
+	## 招式不在此结束——连接评估保留到完全恢复后的首个合法帧（I-06）。特殊进入
+	## 资格仍在消费窗口内（票据 05：命中当下取得、Hitstop 与 slide 期间保留），
+	## 或本招经资格起手且声明了来源限定连接边时，同样推迟到窗口关闭/完全恢复。
 	if _current_move != null and _move_hit_confirmed and combo_active \
 			and _current_move.link_targets.is_empty() \
+			and not _special_entry_live() \
+			and not (_move_via_special_entry and not _current_move.special_entry_link_targets.is_empty()) \
 			and _normal_frame_index - _hit_confirm_frame > _current_move.cancel_window_frames:
 		_report_undeclared_link_gap(_current_move, events)
 		_end_combo(CombatEvent.ComboEndReason.CANCEL_WINDOW_CLOSED, events)
@@ -1623,7 +1726,8 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 	var friction := GameParams.DUMMY_FRICTION
 	if dummy_state == DummyState.GROUND_HITSTUN or dummy_state == DummyState.AIR_HITSTUN \
 			or dummy_state == DummyState.KNOCKED_DOWN or dummy_state == DummyState.LOW_FLOAT_SWEEP \
-			or dummy_state == DummyState.SPIKE_FALL:
+			or dummy_state == DummyState.SPIKE_FALL or dummy_state == DummyState.LOW_FLOAT_TO_SLIDE \
+			or dummy_state == DummyState.GROUND_SLIDE:
 		friction = GameParams.DUMMY_HITSTUN_FRICTION
 	dummy_velocity.x = move_toward(dummy_velocity.x, 0.0, friction * GameParams.PHYSICS_TICK)
 	if not dummy_on_ground:
@@ -1686,6 +1790,32 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 				dummy_state = DummyState.KNOCKED_DOWN
 				events.append(CombatEvent.spike_landed())
 				_end_combo(CombatEvent.ComboEndReason.KNOCKDOWN, events)
+		DummyState.LOW_FLOAT_TO_SLIDE:
+			if dummy_on_ground:
+				## 击飞触地滑行（票据 05，S-04/S-05）：同帧转 GROUND_SLIDE；滑行
+				## 计时为命中当帧预先换算值，自下一正常帧起倒数（本帧 match 已
+				## 分发，不重复消耗）。连段继续——slide 是可追击窗口，不是倒地。
+				dummy_state = DummyState.GROUND_SLIDE
+				dummy_hitstun_left = 0
+				events.append(CombatEvent.slide_started())
+			elif not _dummy_fresh_reaction:
+				## 滞空期间消耗击飞受击窗口：调校初值下触地先于窗口耗尽；窗口先
+				## 耗尽时按浮空受身处理（结束连段），不产生滑行。
+				dummy_hitstun_left = maxi(dummy_hitstun_left - 1, 0)
+				if dummy_hitstun_left == 0:
+					dummy_state = DummyState.AIR_RECOVERED
+					_end_combo(CombatEvent.ComboEndReason.DUMMY_RECOVERED, events)
+		DummyState.GROUND_SLIDE:
+			## 地面滑行：独立计时逐帧倒数（触地转换当帧不消耗，停顿帧不推进）；
+			## 归零自然回中立并结束连段，不转普通倒地、不接受 OTG。滑行期间只有
+			## 显式声明 slide 资料的招式能命中（资料门由 profile 精确匹配承担），
+			## 有效命中整体覆盖本状态与计时。
+			if not _dummy_fresh_reaction:
+				dummy_slide_left = maxi(dummy_slide_left - 1, 0)
+				if dummy_slide_left == 0:
+					dummy_state = DummyState.NEUTRAL
+					events.append(CombatEvent.dummy_recovered())
+					_end_combo(CombatEvent.ComboEndReason.DUMMY_RECOVERED, events)
 		DummyState.KNOCKED_DOWN:
 			## 普通倒地：独立倒地计时逐帧消耗（命中当帧不消耗，停顿帧不推进）；
 			## 倒地期间不接受主动受身，计时结束自然恢复回中立并开启新连段的资格。
@@ -1733,25 +1863,30 @@ func _resolve_body_overlap() -> void:
 
 func _advance_move(events: Array[CombatEvent]) -> void:
 	## 招式帧计数在运动阶段末尾推进。招式在消费阶段起手，起手帧即第 1 帧。
+	## 多段招式按段窗口推导阶段（票据 05）：段间隔算后续段的前摇，只有各段
+	## active 窗口内是判定帧。
 	if _current_move == null:
 		return
 	var was_active := player_phase == PlayerPhase.ACTIVE
 	_move_frame += 1
-	if _move_frame < _current_move.active_from():
-		player_phase = PlayerPhase.STARTUP
-	elif _move_frame <= _current_move.active_to():
-		player_phase = PlayerPhase.ACTIVE
-	elif _move_frame < _current_move.total_frames():
-		player_phase = PlayerPhase.RECOVERY
-		if was_active and not _hit_once_this_move and _move_via_link:
-			## 普通连接起手的招式判定窗口结束仍无接触：按目标当下状态区分
-			## 已恢复与距离不足的可读原因（连段按原规则到收招/恢复时结束）。
-			events.append(CombatEvent.link_failed(
-				CombatEvent.LinkFailReason.TARGET_RECOVERED if not _dummy_pursuable() \
-					else CombatEvent.LinkFailReason.DISTANCE_INSUFFICIENT,
-				_current_move.move_id))
-	else:
-		_finish_move(events)
+	_current_segment = _current_move.segment_index_for_frame(_move_frame)
+	match _current_move.segment_phase_code(_move_frame):
+		0:
+			player_phase = PlayerPhase.STARTUP
+		1:
+			player_phase = PlayerPhase.ACTIVE
+		_:
+			if _move_frame < _current_move.total_frames():
+				player_phase = PlayerPhase.RECOVERY
+				if was_active and not _hit_once_this_move and _move_via_link:
+					## 普通连接起手的招式判定窗口结束仍无接触：按目标当下状态区分
+					## 已恢复与距离不足的可读原因（连段按原规则到收招/恢复时结束）。
+					events.append(CombatEvent.link_failed(
+						CombatEvent.LinkFailReason.TARGET_RECOVERED if not _dummy_pursuable() \
+							else CombatEvent.LinkFailReason.DISTANCE_INSUFFICIENT,
+						_current_move.move_id))
+			else:
+				_finish_move(events)
 
 
 func _finish_move(events: Array[CombatEvent]) -> void:
@@ -1760,6 +1895,10 @@ func _finish_move(events: Array[CombatEvent]) -> void:
 	## 结束连段。声明了普通连接边的招式不因取消窗口关闭提前结束连段（连接评估
 	## 推迟到完全恢复后的首个合法帧）。
 	_finished_move = _current_move
+	## 收招当帧快照命中与来源标记：清招后普通连接消费阶段仍需区分来源限定边
+	## （票据 05：5D → 5B 只对经特殊进入起手且实际命中的 D 开放）。
+	_finished_move_hit = _move_hit_confirmed
+	_finished_move_via_entry = _move_via_special_entry
 	_pending_link_check = _link_candidate_available(_current_move)
 	if _pending_link_check:
 		_clear_current_move()
@@ -1775,13 +1914,14 @@ func _finish_move(events: Array[CombatEvent]) -> void:
 
 
 ## 普通连接候选是否可消费（收招当帧评估）：缓存目标在前招声明的 link_targets
-## 内、未处于组合等待、连段仍活跃、目标仍可追击且玩家可独立起手。
+## 内（或前招经特殊进入起手且实际命中时的 special_entry_link_targets 内，票据 05）、
+## 未处于组合等待、连段仍活跃、目标仍可追击且玩家可独立起手。
 func _link_candidate_available(finished: MoveData) -> bool:
-	if finished == null or finished.link_targets.is_empty():
+	if finished == null:
 		return false
 	if _buffered_move_id == "" or _buffer_waiting:
 		return false
-	if not finished.link_targets.has(_buffered_move_id):
+	if not _link_edge_declared(finished):
 		return false
 	var target := _moves.get(_buffered_move_id) as MoveData
 	if target == null or not _stance_matches(target):
@@ -1791,11 +1931,21 @@ func _link_candidate_available(finished: MoveData) -> bool:
 
 ## 缓存是否持有前招声明的普通连接目标（无论消费门是否满足）。
 func _link_declared_but_gated(finished: MoveData) -> bool:
-	if finished == null or finished.link_targets.is_empty():
+	if finished == null:
 		return false
 	if _buffered_move_id == "" or _buffer_waiting:
 		return false
-	return finished.link_targets.has(_buffered_move_id)
+	return _link_edge_declared(finished)
+
+
+## 缓存目标是否落在前招声明的普通连接边上：无条件 link_targets，或前招经特殊
+## 进入资格起手且实际命中时的来源限定 special_entry_link_targets（票据 05，I-05：
+## 普通来源起手的同一招式不取得这些边，不构成全局反向取消）。
+func _link_edge_declared(finished: MoveData) -> bool:
+	if finished.link_targets.has(_buffered_move_id):
+		return true
+	return _finished_move_via_entry and _finished_move_hit \
+		and finished.special_entry_link_targets.has(_buffered_move_id)
 
 
 ## 普通连接失败原因：目标已自然恢复（连段资格消失）为已恢复；不可追击的
@@ -1810,6 +1960,8 @@ func _link_fail_reason(target: MoveData) -> CombatEvent.LinkFailReason:
 
 ## 配置缺口诊断：连段结束时缓存仍持有姿态匹配的地面打击、目标仍可追击，但
 ## 前招未声明到该招的普通连接边——报告后输入按独立招式继续（不作废缓存）。
+## 来源限定边（special_entry_link_targets）不算已声明：普通来源起手的招式不
+## 取得这些边，如实报配置缺口（票据 05：普通 5D → 5B 的可观察负例）。
 func _report_undeclared_link_gap(source: MoveData, events: Array[CombatEvent]) -> void:
 	if _buffered_move_id == "" or _buffer_waiting:
 		return
@@ -1851,6 +2003,10 @@ func _start_move(move_id: String, move: MoveData, is_followup: bool) -> void:
 	player_move_id = move_id
 	_move_frame = 1
 	_hit_once_this_move = false
+	_current_segment = 0
+	_segment_hit_done.clear()
+	for i in move.segment_count():
+		_segment_hit_done.append(false)
 	_move_hit_confirmed = false
 	_hit_confirm_frame = 0
 	_move_contact_confirmed = false
@@ -1858,6 +2014,12 @@ func _start_move(move_id: String, move: MoveData, is_followup: bool) -> void:
 	_move_blocked = false
 	_move_is_followup = is_followup
 	_move_via_link = false
+	## 特殊进入消费（票据 05，I-05）：资格开放中且本招是其声明目标时，本招经
+	## 来源资格起手——消费资格（一次性），标记来源限定普通连接边可用。
+	_move_via_special_entry = _special_entry_open and _special_entry_move != null \
+		and _special_entry_move.special_entry_targets.has(move_id)
+	if _move_via_special_entry:
+		_close_special_entry()
 	## 新招式接管：前招的 Rekka 派生窗口随招式结束（派生起手路径在调用前已
 	## 自行关闭窗口，此处兜底其它起手来源）。
 	_clear_rekka_window()
@@ -1874,6 +2036,8 @@ func _clear_current_move() -> void:
 	_current_move = null
 	_move_frame = 0
 	_hit_once_this_move = false
+	_current_segment = 0
+	_segment_hit_done.clear()
 	_move_hit_confirmed = false
 	_hit_confirm_frame = 0
 	_move_contact_confirmed = false
@@ -1881,10 +2045,19 @@ func _clear_current_move() -> void:
 	_move_blocked = false
 	_move_is_followup = false
 	_move_via_link = false
-	## 招式被打断或自然结束：派生窗口只属于该招，随之关闭。
+	_move_via_special_entry = false
+	## 招式被打断或自然结束：派生窗口与特殊进入资格只属于该招，随之关闭
+	## （未消费的资格不能跨招式补发）。
 	_clear_rekka_window()
+	_close_special_entry()
 	player_move_id = ""
 	player_phase = PlayerPhase.NEUTRAL
+
+
+func _close_special_entry() -> void:
+	_special_entry_open = false
+	_special_entry_frame = 0
+	_special_entry_move = null
 
 
 func _clear_buffer() -> void:
@@ -2086,22 +2259,25 @@ func _collapsed_direction_sequence() -> String:
 
 
 func _can_hit_dummy() -> bool:
-	## 木桩中立时可被任何招式命中；受击中只有连段内的合法接续招式可以继续命中；
+	## 木桩中立时可被任何招式命中；受击中只有连段内的合法接续招式可以继续命中
+	## （多段招式段 1 实际命中后，后续段是本招自身的连段延续，票据 05 S-02）；
 	## 空中已受身与普通倒地不可追击（倒地期间任何打击都不命中、不刷新计时），
 	## 恢复中立后才能开启新一段连段。
 	if dummy_state == DummyState.NEUTRAL:
 		return true
 	if not _dummy_pursuable():
 		return false
-	return combo_active and _move_is_followup
+	return combo_active and (_move_is_followup or _move_hit_confirmed)
 
 
 func _dummy_pursuable() -> bool:
-	## 可追击的受击状态：地面硬直、浮空硬直或低浮空（连段仍活跃时合法接续可
-	## 继续命中；低浮空的追击窗口由触地转换关闭）。普通倒地与空中已受身不在
-	## 可追击域内。
+	## 可追击的受击状态：地面硬直、浮空硬直、低浮空、击飞触地滑行前滞空或
+	## 地面滑行（连段仍活跃时合法接续可继续命中；低浮空的追击窗口由触地转换
+	## 关闭，滑行的追击窗口由滑行计时关闭——S-05）。普通倒地与空中已受身不在
+	## 可追击域内；滑行目标能否被某招命中另由该招的 slide 资料门决定。
 	return dummy_state == DummyState.GROUND_HITSTUN or dummy_state == DummyState.AIR_HITSTUN \
-		or dummy_state == DummyState.LOW_FLOAT_SWEEP
+		or dummy_state == DummyState.LOW_FLOAT_SWEEP or dummy_state == DummyState.LOW_FLOAT_TO_SLIDE \
+		or dummy_state == DummyState.GROUND_SLIDE
 
 
 func _stance_matches(move: MoveData) -> bool:
@@ -2114,11 +2290,12 @@ func _end_combo(reason: CombatEvent.ComboEndReason, events: Array[CombatEvent]) 
 		return
 	combo_active = false
 	## 连段结束清除起手等级与三层累计修正（自然恢复/普通倒地/收尾同口径）；
-	## 下一段连段首击重新锁定。
+	## 下一段连段首击重新锁定。特殊进入资格绑定本次连段，随之清除（I-05.3）。
 	combo_starter_grade = MoveData.StarterGrade.UNSET
 	combo_damage_scale = 1.0
 	combo_time_scale = 1.0
 	combo_trajectory_scale = 1.0
+	_close_special_entry()
 	events.append(CombatEvent.combo_ended(reason))
 
 

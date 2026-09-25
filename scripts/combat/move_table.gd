@@ -171,7 +171,9 @@ static func _validate_move(move: MoveData, errors: Array[String]) -> void:
 				["landing_cancel_targets", move.landing_cancel_targets],
 				["chain_cancel_targets", move.chain_cancel_targets],
 				["special_cancel_targets", move.special_cancel_targets],
-				["link_targets", move.link_targets]]:
+				["link_targets", move.link_targets],
+				["special_entry_targets", move.special_entry_targets],
+				["special_entry_link_targets", move.special_entry_link_targets]]:
 			var field: String = pair[0]
 			var targets: Array[String] = pair[1]
 			if not targets.is_empty():
@@ -192,6 +194,28 @@ static func _validate_move(move: MoveData, errors: Array[String]) -> void:
 		errors.append("[%s] %s: requires_crouch — 矛盾：蹲姿限定只属于地面招式（空中按下方向不构成蹲姿）" % [
 			source, id_label,
 		])
+	# 附加判定段（票据 05）：仅打击招式；每段自带 active/命中框/伤害/命中资料，
+	# 未声明字段整表拒绝。
+	if not move.segments.is_empty():
+		if not move.is_strike():
+			errors.append("[%s] %s: segments — 矛盾：普通投不声明附加判定段（当前 %d 段）" % [
+				source, id_label, move.segments.size(),
+			])
+		for i in move.segments.size():
+			_validate_segment(move.segments[i], i, source, id_label, errors)
+	# 特殊进入资格（票据 05，I-05）：目标与窗口成对声明；与链式/必杀取消独立。
+	for pair in [["special_entry_targets", move.special_entry_targets, "special_entry_window_frames", move.special_entry_window_frames]]:
+		var targets: Array[String] = pair[1]
+		var window_field: String = pair[2]
+		var window: int = pair[3]
+		if not targets.is_empty() and window < 0:
+			errors.append("[%s] %s: %s — 矛盾：声明 %d 个特殊进入目标却未声明窗口（当前 %d）" % [
+				source, id_label, window_field, targets.size(), window,
+			])
+		if targets.is_empty() and window >= 0:
+			errors.append("[%s] %s: %s — 矛盾：没有特殊进入目标却声明了窗口（当前 %d，空列表须保持未声明 -1）" % [
+				source, id_label, window_field, window,
+			])
 	# Rekka 派生字段组合（票据 04，I-04/S-07）。
 	if move.rekka_window_frames >= 0 and move.rekka_b_target == "" and move.rekka_c_target == "":
 		errors.append("[%s] %s: rekka_window_frames — 矛盾：声明派生窗口却未声明任何 B/C 分支目标" % [
@@ -270,6 +294,42 @@ static func _validate_strike_fields(move: MoveData, source: String, id_label: St
 	_validate_hit_profiles(move, source, id_label, errors)
 
 
+## 附加判定段校验（票据 05）：段的帧窗口/命中框/伤害/命中资料全部显式声明；
+## 命中资料沿用与段 1 相同的反应组合与 Counter 成对规则。
+static func _validate_segment(segment: MoveSegment, index: int, source: String, id_label: String, errors: Array[String]) -> void:
+	var label := "segments[%d]" % index
+	if not (segment is MoveSegment):
+		errors.append("[%s] %s: %s — 条目类型错误：期望 MoveSegment，实际 %s" % [
+			source, id_label, label, segment.get_class() if segment != null else "null",
+		])
+		return
+	if segment.startup_frames < 0:
+		errors.append("[%s] %s: %s: startup_frames — 段间隔为负或未声明（当前 %d，合法为 ≥0）" % [
+			source, id_label, label, segment.startup_frames,
+		])
+	if segment.active_frames < 1:
+		errors.append("[%s] %s: %s: active_frames — 判定帧数为负、未设置或为 0（当前 %d，须至少 1 帧）" % [
+			source, id_label, label, segment.active_frames,
+		])
+	if segment.base_damage < 0:
+		errors.append("[%s] %s: %s: base_damage — 段伤害为负或未声明（当前 %d，须为非负）" % [
+			source, id_label, label, segment.base_damage,
+		])
+	if segment.hitbox_size.x <= 0.0 or segment.hitbox_size.y <= 0.0:
+		errors.append("[%s] %s: %s: hitbox_size — 段缺少命中框（当前 %s，两轴均须为正）" % [
+			source, id_label, label, str(segment.hitbox_size),
+		])
+	if segment.hitbox_gap < 0.0:
+		errors.append("[%s] %s: %s: hitbox_gap — 段命中框间隙为负或未设置（当前 %s）" % [
+			source, id_label, label, str(segment.hitbox_gap),
+		])
+	if segment.hit_profiles.is_empty():
+		errors.append("[%s] %s: %s: hit_profiles — 段缺少命中资料（至少一个合法 HitProfile）" % [
+			source, id_label, label,
+		])
+	_validate_hit_profiles(segment, source, "%s: %s" % [id_label, label], errors)
+
+
 static func _validate_throw_fields(move: MoveData, source: String, id_label: String, errors: Array[String]) -> void:
 	if move.throw_range <= 0.0:
 		errors.append("[%s] %s: throw_range — 投技缺少投距或数值非法（当前 %s，须为正）" % [
@@ -304,19 +364,20 @@ static func _validate_throw_fields(move: MoveData, source: String, id_label: Str
 
 ## 命中资料校验（规格 §3）：枚举范围、(target_state, hit_context) 唯一键、
 ## reaction 与目标/计时/速度的组合规则、Counter 依赖同状态 NORMAL。数组顺序
-## 不是选择依据，只用于错误定位。
-static func _validate_hit_profiles(move: MoveData, source: String, id_label: String, errors: Array[String]) -> void:
+## 不是选择依据，只用于错误定位。owner 是 MoveData（段 1）或 MoveSegment
+## （附加段，票据 05）——两者同构持有 hit_profiles 与 has_normal_profile。
+static func _validate_hit_profiles(owner, source: String, id_label: String, errors: Array[String]) -> void:
 	var seen_keys := {}
-	for i in move.hit_profiles.size():
-		var profile := move.hit_profiles[i]
+	for i in owner.hit_profiles.size():
+		var profile: HitProfile = owner.hit_profiles[i]
 		var label := "hit_profiles[%d]" % i
 		if not (profile is HitProfile):
 			errors.append("[%s] %s: %s — 条目类型错误：期望 HitProfile，实际 %s" % [
 				source, id_label, label, profile.get_class() if profile != null else "null",
 			])
 			continue
-		if not _enum_in_range(profile.target_state, 1, 2):
-			errors.append("[%s] %s: %s: target_state — 未知或未声明枚举值 %d（合法范围 1–2：grounded/airborne）" % [
+		if not _enum_in_range(profile.target_state, 1, 3):
+			errors.append("[%s] %s: %s: target_state — 未知或未声明枚举值 %d（合法范围 1–3：grounded/airborne/slide）" % [
 				source, id_label, label, profile.target_state,
 			])
 			continue
@@ -332,8 +393,8 @@ static func _validate_hit_profiles(move: MoveData, source: String, id_label: Str
 			])
 		else:
 			seen_keys[key] = i
-		if not _enum_in_range(profile.reaction, 1, 5):
-			errors.append("[%s] %s: %s: reaction — 未知或未声明枚举值 %d（合法范围 1–5：ground_hitstun/launch/ground_knockdown/low_float_sweep/downward_slam）" % [
+		if not _enum_in_range(profile.reaction, 1, 6):
+			errors.append("[%s] %s: %s: reaction — 未知或未声明枚举值 %d（合法范围 1–6：ground_hitstun/launch/ground_knockdown/low_float_sweep/downward_slam/low_float_to_slide）" % [
 				source, id_label, label, profile.reaction,
 			])
 			continue
@@ -426,8 +487,29 @@ static func _validate_hit_profiles(move: MoveData, source: String, id_label: Str
 					])
 				_reject_foreign_timer(source, id_label, label, profile, "ground_stun_frames", profile.ground_stun_frames, errors)
 				_reject_foreign_timer(source, id_label, label, profile, "air_untech_frames", profile.air_untech_frames, errors)
+			HitProfile.Reaction.LOW_FLOAT_TO_SLIDE:
+				## 击飞触地滑行（票据 05，S-04）：仅 grounded 目标；短暂滞空受击窗口后
+				## 触地转 GROUND_SLIDE，不经过普通倒地。
+				if profile.target_state != HitProfile.TargetState.GROUNDED:
+					errors.append("[%s] %s: %s — 矛盾：击飞触地滑行只允许 grounded 目标（当前 %s；airborne 键请声明独立空中资料，slide 目标缺失资料即无命中）" % [
+						source, id_label, label, profile.label(),
+					])
+				if profile.air_untech_frames < 1:
+					errors.append("[%s] %s: %s: air_untech_frames — 击飞受击窗口为负、未设置或为 0（当前 %d，须至少 1 帧）" % [
+						source, id_label, label, profile.air_untech_frames,
+					])
+				if profile.upward_speed_px_s <= 0.0:
+					errors.append("[%s] %s: %s: upward_speed_px_s — 矛盾：击飞必须声明大于 0 的垂直初速度（当前 %s）" % [
+						source, id_label, label, str(profile.upward_speed_px_s),
+					])
+				if profile.slide_frames < 1:
+					errors.append("[%s] %s: %s: slide_frames — 触地后滑行持续为负、未设置或为 0（当前 %d，须至少 1 帧）" % [
+						source, id_label, label, profile.slide_frames,
+					])
+				_reject_foreign_timer(source, id_label, label, profile, "ground_stun_frames", profile.ground_stun_frames, errors)
+				_reject_foreign_timer(source, id_label, label, profile, "knockdown_frames", profile.knockdown_frames, errors)
 		if profile.hit_context == HitProfile.HitContext.COUNTER \
-				and not move.has_normal_profile(profile.target_state):
+				and not owner.has_normal_profile(profile.target_state):
 			errors.append("[%s] %s: %s — 矛盾：声明 %s 的 counter 却缺少同状态 normal profile（不得只提供 counter）" % [
 				source, id_label, label, _target_state_name(profile.target_state),
 			])
@@ -447,6 +529,8 @@ static func _target_state_name(target_state: int) -> String:
 			return "grounded"
 		HitProfile.TargetState.AIRBORNE:
 			return "airborne"
+		HitProfile.TargetState.GROUND_SLIDE:
+			return "slide"
 	return "未知目标状态 %d" % target_state
 
 
@@ -462,6 +546,8 @@ static func _reaction_name(reaction: int) -> String:
 			return "LOW_FLOAT_SWEEP"
 		HitProfile.Reaction.DOWNWARD_SLAM:
 			return "DOWNWARD_SLAM"
+		HitProfile.Reaction.LOW_FLOAT_TO_SLIDE:
+			return "LOW_FLOAT_TO_SLIDE"
 	return "未知反应 %d" % reaction
 
 
@@ -540,7 +626,9 @@ static func _validate_cross_move(move_list: Array, errors: Array[String]) -> voi
 				["landing_cancel_targets", typed.landing_cancel_targets],
 				["chain_cancel_targets", typed.chain_cancel_targets],
 				["special_cancel_targets", typed.special_cancel_targets],
-				["link_targets", typed.link_targets]]:
+				["link_targets", typed.link_targets],
+				["special_entry_targets", typed.special_entry_targets],
+				["special_entry_link_targets", typed.special_entry_link_targets]]:
 			var field: String = pair[0]
 			var targets: Array[String] = pair[1]
 			for target in targets:
@@ -552,6 +640,14 @@ static func _validate_cross_move(move_list: Array, errors: Array[String]) -> voi
 					errors.append("[%s] %s: %s — 跨招式非法引用：\"%s\" 是 rekka_only 派生招式，只能经 Rekka 派生窗口起手" % [
 						source, typed.move_id, field, target,
 					])
+		# 特殊进入目标（票据 05）：与来源同姿态（取消不跨姿态），且目标自身仍按
+		# 普通招式结算——资源只声明入口资格，不创建特殊招式身份。
+		for target_id in typed.special_entry_targets:
+			var entry_target := _find_move(move_list, target_id)
+			if entry_target != null and entry_target.stance != typed.stance:
+				errors.append("[%s] %s: special_entry_targets — 矛盾：特殊进入目标 \"%s\" 与来源姿态不一致（不跨姿态）" % [
+					source, typed.move_id, target_id,
+				])
 		# Rekka 首段目标的存在性、派生限定、分支键与姿态一致性（票据 04）。
 		for pair in [["rekka_b_target", typed.rekka_b_target, "B"], ["rekka_c_target", typed.rekka_c_target, "C"]]:
 			var field: String = pair[0]
@@ -613,6 +709,8 @@ static func _fresh_copy(move: MoveData) -> MoveData:
 	copy.chain_cancel_targets = move.chain_cancel_targets.duplicate()
 	copy.special_cancel_targets = move.special_cancel_targets.duplicate()
 	copy.link_targets = move.link_targets.duplicate()
+	copy.special_entry_targets = move.special_entry_targets.duplicate()
+	copy.special_entry_link_targets = move.special_entry_link_targets.duplicate()
 	copy.input_alternatives = move.input_alternatives.duplicate()
 	var profiles: Array[HitProfile] = []
 	for profile in move.hit_profiles:
@@ -620,4 +718,16 @@ static func _fresh_copy(move: MoveData) -> MoveData:
 		profile_copy.resource_path = ""
 		profiles.append(profile_copy)
 	copy.hit_profiles = profiles
+	var segments: Array[MoveSegment] = []
+	for segment in move.segments:
+		var segment_copy := segment.duplicate() as MoveSegment
+		segment_copy.resource_path = ""
+		var segment_profiles: Array[HitProfile] = []
+		for profile in segment.hit_profiles:
+			var profile_copy := profile.duplicate() as HitProfile
+			profile_copy.resource_path = ""
+			segment_profiles.append(profile_copy)
+		segment_copy.hit_profiles = segment_profiles
+		segments.append(segment_copy)
+	copy.segments = segments
 	return copy

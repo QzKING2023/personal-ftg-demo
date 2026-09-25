@@ -93,7 +93,10 @@ func _test_spatial_data_verifies_distance_grid_both_facings() -> void:
 			_check("空间失败" in line or "timing 未成立" in line,
 				"5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid")
 		else:
-			_check("spatial-valid" in line, "each verified route line carries the spatial-valid mark")
+			## 票据 05：非 5A/2A 起手的走查也可能经来源限定 5D > 5B 断链截断——
+			## 截断行保留诚实的 timing 未成立标记，不计入 spatial-valid。
+			_check("spatial-valid" in line or "timing 未成立" in line,
+				"each verified route line carries the spatial-valid mark (truncated walks keep the honest timing-failure mark)")
 	var section := "\n".join(report.spatial_lines)
 	for token in ["48", "64", "80", "+1", "-1", "spatial-valid"]:
 		_check(token in section, "the spatial section documents the grid item %s" % token)

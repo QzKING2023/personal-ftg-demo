@@ -109,6 +109,21 @@ enum StarterGrade {
 ## 普通连接（目押）边：不在取消目标内——前招完全恢复后的首个合法帧按缓存消费、
 ## 目标剩余硬直、距离与 active 重叠重新判定（I-06）。每条路线须显式声明。
 @export var link_targets: Array[String] = []
+## 附加判定段（票据 05，S-01/S-02）：非空时本招为多段招式——段 1 沿用上方基础
+## 字段，后续段顺序执行；每段独立 active/命中框/伤害/命中资料，对同一目标至多
+## 命中一次。段 1 被防立即终止整招，段 1 挥空不追踪但后续段按自身 active 继续。
+@export var segments: Array[MoveSegment] = []
+## 特殊进入（来源限定资格，票据 05，I-05）：本招实际 HIT 授予的一次性资格允许
+## 取消进入的招式 id（如 236C → 5D/5[D]）。被防、挥空、缺失 profile 不授予；
+## 资格绑定本次连段与当前目标，启动目标招式时消费；不与链式/必杀取消共用窗口
+## ——被防接触不开放本边。
+@export var special_entry_targets: Array[String] = []
+## 特殊进入消费窗口：授予帧起第 0–N 帧（含两端，正常帧计龄，Hitstop 不计）。
+@export var special_entry_window_frames := -1
+## 来源限定普通连接边（票据 05，I-05）：仅当本招经特殊进入资格起手且实际命中时
+## 开放的普通连接目标（如 236C 特殊进入的 5D → 5B）；普通来源起手的本招不取得
+## 这些边，不构成全局反向取消。
+@export var special_entry_link_targets: Array[String] = []
 ## Rekka 首段：接触（命中或被防）起第 0–N 帧派生窗口；-1 = 非 Rekka 首段。
 @export var rekka_window_frames := -1
 ## Rekka 派生目标：窗口内第一个 B / C 新按下锁定的派生招式 id（须为 rekka_only）。
@@ -162,7 +177,91 @@ static func is_throw_combination_member(key: String) -> bool:
 
 
 func total_frames() -> int:
-	return startup_frames + active_frames + recovery_frames
+	## 多段招式：最后一段 active 结束 + 后摇 + 收招帧；单段公式不变
+	## （segment_active_to(0) + recovery + 1 ≡ startup + active + recovery）。
+	return segment_active_to(segment_count() - 1) + recovery_frames + 1
+
+
+## 判定段总数（含段 1）。
+func segment_count() -> int:
+	return 1 + segments.size()
+
+
+## 第 index 段的 active 首帧编号（1 基，含）：段 1 为 startup_frames；后续段为
+## 上一段 active 末帧 + 1 + 段间隔。
+func segment_active_from(index: int) -> int:
+	if index <= 0:
+		return startup_frames
+	return segment_active_to(index - 1) + 1 + segments[index - 1].startup_frames
+
+
+## 第 index 段的 active 末帧编号（含）。
+func segment_active_to(index: int) -> int:
+	if index <= 0:
+		return startup_frames + active_frames - 1
+	var segment := segments[index - 1]
+	return segment_active_from(index) + segment.active_frames - 1
+
+
+## 第 index 段的命中资料数组（段 1 为招式级 hit_profiles）。
+func segment_profiles(index: int) -> Array[HitProfile]:
+	if index <= 0:
+		return hit_profiles
+	return segments[index - 1].hit_profiles
+
+
+## 第 index 段按 (target_state, hit_context) 精确查找命中资料（与静态 profile_for
+## 同一口径，运行时按当前段索引调用）。
+func segment_profile_for(index: int, target_state: HitProfile.TargetState, hit_context: HitProfile.HitContext) -> HitProfile:
+	if index <= 0:
+		return profile_for(self, target_state, hit_context)
+	return segments[index - 1].profile_for(target_state, hit_context)
+
+
+func segment_hitbox_size(index: int) -> Vector2:
+	if index <= 0:
+		return hitbox_size
+	return segments[index - 1].hitbox_size
+
+
+func segment_hitbox_gap(index: int) -> float:
+	if index <= 0:
+		return hitbox_gap
+	return segments[index - 1].hitbox_gap
+
+
+func segment_base_damage(index: int) -> int:
+	if index <= 0:
+		return base_damage
+	return segments[index - 1].base_damage
+
+
+## 第 index 段命中框中心相对角色中心的偏移（乘以 facing 得到世界方向）。
+func segment_hitbox_offset(index: int) -> float:
+	return GameParams.BODY_SIZE.x * 0.5 + segment_hitbox_gap(index) + segment_hitbox_size(index).x * 0.5
+
+
+## 招式帧所处的阶段码（多段感知）：0 = 前摇（含段间隔），1 = 判定，2 = 后摇。
+## 段间隔按后续段的前摇处理（进入 Counter 易受击窗口）。
+func segment_phase_code(frame: int) -> int:
+	if frame < segment_active_from(0):
+		return 0
+	for i in range(segment_count()):
+		if frame >= segment_active_from(i) and frame <= segment_active_to(i):
+			return 1
+	if frame < segment_active_to(segment_count() - 1):
+		return 0
+	return 2
+
+
+## 当前招式帧所属/即将进入的判定段索引：取首个 active 末帧不早于当前帧的段——
+## 段间隔归属后续段，全部 active 结束后取最后一段（后摇阶段不再产生判定，
+## 是否生效由阶段码决定）。
+func segment_index_for_frame(frame: int) -> int:
+	for i in range(segment_count()):
+		if frame <= segment_active_to(i):
+			return i
+	return segment_count() - 1
 
 
 ## 按 (target_state, hit_context) 精确查找命中资料（运行时与 Combo Solver 共用的

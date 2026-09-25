@@ -119,14 +119,17 @@ func _test_guide_uses_real_keys_for_both_facings() -> void:
 		_check("F1 按 U" in route_line and "F6 按 I" in route_line and "F13 按 J" in route_line,
 			"guide presses use the real action keys U/I/J at the scheduled frames")
 		_check("等 4 帧" in route_line and "等 6 帧" in route_line, "the guide states the wait frames between presses")
+	## 票据 05：有效 236C 入口路线改经链式取消（如 2A/5A > … > 236C > 5D），
+	## 直接 5A > 236C 前缀只剩断链残根（无回放输入）；折叠断言改为定位任一
+	## 含 236C 按键的有效指南行。
 	var derivative_line := ""
 	for line in report.guide_lines:
-		if line.begins_with("5A → 236C"):
+		if "按 K（236C）" in line and "↓[S]" in line and not line.contains("断链路线"):
 			derivative_line = line
 			break
-	_check(derivative_line != "", "the derivative route has an operation guide")
+	_check(derivative_line != "", "a valid 236C-entry route has an operation guide with the quarter-circle fold")
 	if derivative_line != "":
-		_check("F3 ↓[S]" in derivative_line and "F4 ↓+前[S+D]" in derivative_line and "F5 前[D]" in derivative_line,
+		_check("↓+前[S+D]" in derivative_line and "前[D]" in derivative_line,
 			"the right-facing guide folds 236 into the real keys S, S+D, D")
 	# 面向左分节：同一相对输入折叠为镜像物理键。
 	var in_left_section := false
@@ -134,8 +137,8 @@ func _test_guide_uses_real_keys_for_both_facings() -> void:
 	for line in report.guide_lines:
 		if "面向左" in line:
 			in_left_section = true
-		elif in_left_section and line.begins_with("5A → 236C"):
-			left_feed = "F4 ↓+前[S+A]" in line and "F5 前[A]" in line
+		elif in_left_section and "按 K（236C）" in line and not line.contains("断链路线"):
+			left_feed = "↓+前[S+A]" in line and "前[A]" in line
 			break
 	_check(in_left_section and left_feed,
 		"the left-facing guide mirrors the physical direction keys for the same relative input")

@@ -6,7 +6,8 @@ extends Node2D
 const PlayerScene: PackedScene = preload("res://scenes/player.tscn")
 const DummyScene: PackedScene = preload("res://scenes/dummy.tscn")
 
-const HINT_TEXT := "移动 A/D 或 ←/→    下 S/↓ 蹲下    防御 按住后方向 4/1    跳跃 Space    重置 R\n动作 U/I/K/J = A/B/C/D    派生 236+C / 214+C（方向按面向折算）\n214+C 分支：命中或被防后首按 I/K 锁定 ~B/~C（同帧 I+K 固定 ~C）\n冲刺 双击 →/←（66/44，中间松开一帧）    投 I+K = B+C（≤3帧内同按，投距内成立）\n木桩防御 G 循环：无 → 站防 → 蹲防 → 空防（逐帧确定性请求，木桩无自主决策）"
+const HINT_TEXT := "移动 A/D 或 ←/→    下 S/↓ 蹲下    防御 按住后方向 4/1    跳跃 Space    重置 R\n动作 U/I/K/J = A/B/C/D    派生 236+C / 214+C（方向按面向折算）
+236C 两段判定：命中当下按 J 经来源资格进入 5D（窗口 16 帧，被防不开放）\n214+C 分支：命中或被防后首按 I/K 锁定 ~B/~C（同帧 I+K 固定 ~C）\n冲刺 双击 →/←（66/44，中间松开一帧）    投 I+K = B+C（≤3帧内同按，投距内成立）\n木桩防御 G 循环：无 → 站防 → 蹲防 → 空防（逐帧确定性请求，木桩无自主决策）"
 
 ## 动作键 A/B/C/D 对应的输入动作名（物理键 U/I/K/J）；C/D 配合方向序列触发派生。
 const ACTION_KEYS: Array[String] = ["A", "B", "C", "D"]
@@ -69,6 +70,8 @@ func _physics_process(_delta: float) -> void:
 				event.rekka_branch, event.rekka_move_id, event.rekka_branch]
 		if event.type == CombatEvent.Type.SPIKE_LANDED:
 			_last_state_note = "向下击落触地 → 普通倒地"
+		if event.type == CombatEvent.Type.SLIDE_STARTED:
+			_last_state_note = "击飞触地 → 地面滑行（%d 帧，可被 5D 捞起）" % session.dummy_slide_left
 		if event.type == CombatEvent.Type.ATTACK_BLOCKED:
 			_last_state_note = "攻击被%s挡下（被防硬直 %d）" % [
 				_guard_posture_text(event.guard_posture), session.dummy_blockstun_left]
@@ -288,6 +291,10 @@ func _update_dummy_status() -> void:
 		state_text = "低浮空（%d）" % session.dummy_hitstun_left
 	elif session.dummy_state == CombatSession.DummyState.SPIKE_FALL:
 		state_text = "向下击落坠落"
+	elif session.dummy_state == CombatSession.DummyState.LOW_FLOAT_TO_SLIDE:
+		state_text = "击飞触地前（%d→滑行%d）" % [session.dummy_hitstun_left, session.dummy_slide_left]
+	elif session.dummy_state == CombatSession.DummyState.GROUND_SLIDE:
+		state_text = "地面滑行（%d）" % session.dummy_slide_left
 	if session.dummy_guard != CombatSession.GuardPosture.NONE:
 		state_text += "·%s" % _guard_posture_text(session.dummy_guard)
 		if session.dummy_blockstun_left > 0:

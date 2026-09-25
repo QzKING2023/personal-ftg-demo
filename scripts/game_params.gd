@@ -79,12 +79,13 @@ const MOVE_5C_ACTIVE_FRAMES := 5
 const MOVE_5C_RECOVERY_FRAMES := 16
 const MOVE_5C_KNOCKBACK := 140.0
 
-# 236C 方向浮空派生（236 + C；伤害更重的浮空，滞空与普通浮空一致）。
-const MOVE_236C_DAMAGE := 18
+# 236C 方向派生（236 + C；票据 05 起为两段判定：段 1 低浮空、段 2 击飞触地
+# GROUND_SLIDE；资源 data/moves/236C.tres 是数据事实来源，本组常量仅作历史对照）。
+const MOVE_236C_DAMAGE := 8
 const MOVE_236C_STARTUP_FRAMES := 6
-const MOVE_236C_ACTIVE_FRAMES := 5
-const MOVE_236C_RECOVERY_FRAMES := 18
-const MOVE_236C_KNOCKBACK := 200.0
+const MOVE_236C_ACTIVE_FRAMES := 2
+const MOVE_236C_RECOVERY_FRAMES := 22
+const MOVE_236C_KNOCKBACK := 60.0
 
 # 214D 方向收尾派生（214 + D；比 5D 更重的收尾）。
 const MOVE_214D_DAMAGE := 22
@@ -157,6 +158,11 @@ const STARTER_TRAJECTORY_SCALE := {
 const NORMAL_HIT_DAMAGE_SCALE := 0.90
 const NORMAL_HIT_TIME_SCALE := 0.94
 const NORMAL_HIT_TRAJECTORY_SCALE := 0.95
+# 滑行命中每击累计倍率（票据 05，S-05：命中 GROUND_SLIDE 目标的后续击；
+# 与普通命中分层声明，调校初值）。
+const SLIDE_HIT_DAMAGE_SCALE := 0.92
+const SLIDE_HIT_TIME_SCALE := 0.96
+const SLIDE_HIT_TRAJECTORY_SCALE := 0.96
 # 伤害层底线：累计修正不再低于 10%（只作用伤害层）。
 const COMBO_DAMAGE_FLOOR := 0.1
 
