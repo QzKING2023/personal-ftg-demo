@@ -7,6 +7,8 @@ extends SceneTree
 ## 产生一致变化的同步性。既有 Hitstop/落地恢复/自然受身回归由既有测试套件承载。
 ## 运行：godot --headless --path . -s res://tests/test_hit_profiles.gd
 
+const AcceptanceSolverMetrics = preload("res://tests/acceptance_solver_metrics.gd")
+var _metrics := AcceptanceSolverMetrics.new()
 var _failures := 0
 
 
@@ -27,6 +29,7 @@ func _initialize() -> void:
 	_test_profile_edits_sync_session_and_solver()
 	_test_missing_profile_reports_consistently_in_solver()
 	print("")
+	_metrics.emit("test_hit_profiles")
 	if _failures == 0:
 		print("ALL HIT PROFILE TESTS PASSED")
 		quit(0)
@@ -627,7 +630,7 @@ func _test_player_side_uses_profile_selection() -> void:
 
 func _test_profile_edits_sync_session_and_solver() -> void:
 	var table := MoveData.default_table()
-	var report := ComboSolver.solve(_options(table))
+	var report := _metrics.solve(_options(table))
 	var route := _find_route(report, ["5A", "5B", "6A", "jA", "jB", "jD"])
 	_check(route != null and route.timing_valid,
 		"the solver walks the 5A → 5B → 6A (chain cancels) → jump cancel → jA → jB → jD route on the shared table")
@@ -641,7 +644,7 @@ func _test_profile_edits_sync_session_and_solver() -> void:
 		HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)
 	six_normal.damage_override = 25
 	six_normal.horizontal_speed_px_s = 90.0
-	var edited_report := ComboSolver.solve(_options(table))
+	var edited_report := _metrics.solve(_options(table))
 	var edited_route := _find_route(edited_report, ["5A", "5B", "6A", "jA", "jB", "jD"])
 	## 6A 现为路线第三击：伤害层 0.72×0.9²=0.5832 → (25−16)×0.5832 ≈ 5.2。
 	_check(edited_route != null and _approx(edited_route.total_damage, base_damage + 5.3),
@@ -652,7 +655,7 @@ func _test_profile_edits_sync_session_and_solver() -> void:
 	var six_counter := MoveData.profile_for(table["6A"] as MoveData,
 		HitProfile.TargetState.GROUNDED, HitProfile.HitContext.COUNTER)
 	six_counter.damage_override = 40
-	var counter_report := ComboSolver.solve(_options(table))
+	var counter_report := _metrics.solve(_options(table))
 	var counter_route := _find_route(counter_report, ["5A", "5B", "6A", "jA", "jB", "jD"])
 	_check(counter_route != null and _approx(counter_route.total_damage, edited_route.total_damage),
 		"counter-profile edits never leak into the solver's normal-context routes (no fallback)")
@@ -666,7 +669,7 @@ func _test_missing_profile_reports_consistently_in_solver() -> void:
 	# 测试表把 5B 命中框加高：浮空木桩在判定帧仍与命中框相交，接缝卡在
 	# profile 缺失（MISS_NO_PROFILE）而不是垂直脱靶。
 	(table["5B"] as MoveData).hitbox_size = Vector2(42, 120)
-	var report := ComboSolver.solve(_options(table))
+	var report := _metrics.solve(_options(table))
 	var edge := _find_edge(report, "236C", "5B", ComboSolver.EdgeKind.CANCEL)
 	_check(edge != null and not edge.valid and edge.reason.contains("MISS_NO_PROFILE"),
 		"the 236C → 5B edge is excluded with the MISS_NO_PROFILE reason (5B has no airborne profile)")

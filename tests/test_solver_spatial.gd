@@ -7,6 +7,8 @@ extends SceneTree
 ## 空间失败点名具体站位与碰撞条件，配置缺口与时序失败不作空间失败上报。
 ## 运行：godot --headless --path . -s res://tests/test_solver_spatial.gd
 
+const AcceptanceSolverMetrics = preload("res://tests/acceptance_solver_metrics.gd")
+var _metrics := AcceptanceSolverMetrics.new()
 var _failures := 0
 
 
@@ -21,6 +23,7 @@ func _initialize() -> void:
 	_test_report_declares_no_search_scope()
 	_test_spatial_deterministic_and_isolated()
 	print("")
+	_metrics.emit("test_solver_spatial")
 	if _failures == 0:
 		print("ALL SOLVER SPATIAL TESTS PASSED")
 		quit(0)
@@ -33,7 +36,7 @@ func _initialize() -> void:
 
 
 func _test_without_spatial_data_routes_are_timing_valid_only() -> void:
-	var report := ComboSolver.solve()
+	var report := _default_solve()
 	_check(report.routes.size() > 0, "the default table reports routes to layer")
 	## 票据 02 起默认表含诚实截断路线（A 起手时间层衰减使部分第三击不成立）：
 	## 截断条目不冒充 timing-valid，必须带断点注记；成立路线仍逐条 timing-valid。
@@ -68,7 +71,7 @@ func _test_without_spatial_data_routes_are_timing_valid_only() -> void:
 
 
 func _test_spatial_data_verifies_distance_grid_both_facings() -> void:
-	var report := ComboSolver.solve(_spatial_options())
+	var report := _spatial_solve()
 	## 新基线调校命中框更短：5A（30×24、gap 2）的远缘恰为 56 px、票据 02 的 2A
 	## （30×20、gap 1）远缘 55 px——80 px 站位与身体矩形相邻（Godot 相邻矩形不算
 	## 相交），5A/2A 起手的路线在 80 px 空间失败、其余站位与其余起手（2B/2C/5B/5C/
@@ -116,7 +119,7 @@ func _test_spatial_failure_names_standing_and_collision() -> void:
 	short_reach.hitbox_gap = 4.0
 	table["5R"] = short_reach
 	(table["5A"] as MoveData).cancel_targets.append("5R")
-	var report := ComboSolver.solve(_spatial_options(table))
+	var report := _metrics.solve(_spatial_options(table))
 	var route := _find_route(report, ["5A", "5R"])
 	_check(route != null, "the short-reach route is walked from the configured cancel")
 	if route != null:
@@ -142,8 +145,8 @@ func _test_spatial_failure_names_standing_and_collision() -> void:
 
 
 func _test_gaps_and_timing_exclusions_never_become_spatial() -> void:
-	var plain := ComboSolver.solve()
-	var spatial := ComboSolver.solve(_spatial_options())
+	var plain := _default_solve()
+	var spatial := _spatial_solve()
 	_check(spatial.gaps.size() == plain.gaps.size() and spatial.gaps.size() > 0,
 		"providing spatial data does not change the config-gap set")
 	for i in range(spatial.gaps.size()):
@@ -163,7 +166,7 @@ func _test_gaps_and_timing_exclusions_never_become_spatial() -> void:
 	table["5H"] = slow
 	(table["5A"] as MoveData).cancel_targets.append("5W")
 	(table["5A"] as MoveData).cancel_targets.append("5H")
-	var report := ComboSolver.solve(_spatial_options(table))
+	var report := _metrics.solve(_spatial_options(table))
 	var whiff_edge := _find_edge(report, "5A", "5W")
 	_check(whiff_edge != null and not whiff_edge.valid, "the whiffed pair stays excluded")
 	if whiff_edge != null:
@@ -186,7 +189,7 @@ func _test_gaps_and_timing_exclusions_never_become_spatial() -> void:
 func _test_mismatched_body_rect_refused() -> void:
 	var opts := _spatial_options()
 	opts.spatial.body_size = Vector2(40, 70)
-	var report := ComboSolver.solve(opts)
+	var report := _metrics.solve(opts)
 	_check(report.refused, "a body rect differing from the runtime geometry refuses the analysis")
 	_check("身体矩形" in report.refusal_reason and "运行时" in report.refusal_reason,
 		"the refusal names the mismatch against the runtime geometry")
@@ -198,7 +201,7 @@ func _test_air_start_with_spatial_refused() -> void:
 	var opts := _spatial_options()
 	opts.start = ComboSolver.SolverStartState.new()
 	opts.start.stance = MoveData.Stance.AIR
-	var report := ComboSolver.solve(opts)
+	var report := _metrics.solve(opts)
 	_check(report.refused and "地面" in report.refusal_reason,
 		"spatial verification with an explicit air start is refused — the v1 grid is ground-only")
 	_check(report.routes.is_empty() and report.first_candidates.is_empty(),
@@ -209,7 +212,7 @@ func _test_air_start_with_spatial_refused() -> void:
 
 
 func _test_report_declares_no_search_scope() -> void:
-	for report in [ComboSolver.solve(), ComboSolver.solve(_spatial_options())]:
+	for report in [_default_solve(), _spatial_solve()]:
 		var text := "\n".join(report.to_lines())
 		_check("不搜索" in text, "the report declares what the spatial layer does not search")
 		for term in ["走位", "中立", "墙角", "推挤", "跨身", "屏幕边界"]:
@@ -220,8 +223,8 @@ func _test_report_declares_no_search_scope() -> void:
 
 
 func _test_spatial_deterministic_and_isolated() -> void:
-	var first := ComboSolver.solve(_spatial_options())
-	_check(ComboSolver.solve(_spatial_options()).to_lines() == first.to_lines(),
+	var first := _spatial_solve()
+	_check(_spatial_solve().to_lines() == first.to_lines(),
 		"solving twice with spatial data yields identical reports")
 	var session := CombatSession.new()
 	session.dummy_position = session.player_position + Vector2(ComboSolver.PIN_DX, 0)
@@ -229,7 +232,7 @@ func _test_spatial_deterministic_and_isolated() -> void:
 	for i in range(5):
 		session.step(FrameInput.new())
 	var before := _snapshot_session(session)
-	ComboSolver.solve(_spatial_options())
+	_spatial_solve()
 	var after := _snapshot_session(session)
 	_check(before == after, "spatial probes leave every observable field of a live session untouched")
 	_check(session.player_move_id == "5A" and session.combo_hits == 1,
@@ -363,3 +366,10 @@ func _check(condition: bool, label: String) -> void:
 	else:
 		print("FAIL  " + label)
 		_failures += 1
+
+func _default_solve() -> ComboSolver.SolverReport:
+	return _metrics.solve_reused("default")
+
+func _spatial_solve() -> ComboSolver.SolverReport:
+	return _metrics.solve_reused("spatial", _spatial_options())
+

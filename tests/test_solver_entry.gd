@@ -7,6 +7,8 @@ extends SceneTree
 ## 非法表与训练场观察同一拒绝原因。
 ## 运行：godot --headless --path . -s res://tests/test_solver_entry.gd
 
+const AcceptanceSolverMetrics = preload("res://tests/acceptance_solver_metrics.gd")
+var _metrics := AcceptanceSolverMetrics.new()
 var _failures := 0
 
 
@@ -29,6 +31,7 @@ func _initialize() -> void:
 	_test_solve_reflects_resource_changes()
 	_test_key_map_matches_training_ground()
 	print("")
+	_metrics.emit("test_solver_entry")
 	if _failures == 0:
 		print("ALL SOLVER ENTRY TESTS PASSED")
 		quit(0)
@@ -40,7 +43,7 @@ func _initialize() -> void:
 # --- 入口契约与起始状态说明 ---
 
 func _test_solve_defaults_document_start_state() -> void:
-	var report := ComboSolver.solve()
+	var report := _default_solve()
 	_check(not report.refused, "solve() without arguments analyzes the shared manifest")
 	var text := "\n".join(report.start_lines)
 	_check("地面中立" in text and "空输入缓存" in text and "方向历史" in text,
@@ -50,7 +53,7 @@ func _test_solve_defaults_document_start_state() -> void:
 
 
 func _test_default_run_verifies_both_facings() -> void:
-	var report := ComboSolver.solve()
+	var report := _default_solve()
 	_check(report.verified_facings == [1, -1], "the default run verifies right then left facing")
 	_check(report.mirror_consistent, "both facings yield mirrored results on the default table")
 	var mirror_note := ""
@@ -63,7 +66,7 @@ func _test_default_run_verifies_both_facings() -> void:
 	# 搜索选项：只要单面向时不作镜像宣称。
 	var opts := ComboSolver.SolverOptions.new()
 	opts.facings = [1]
-	var single := ComboSolver.solve(opts)
+	var single := _metrics.solve(opts)
 	_check(single.verified_facings == [1], "the facings option restricts verification to the requested facing")
 	var mirror_claimed := false
 	for note in single.notes:
@@ -76,7 +79,7 @@ func _test_default_run_verifies_both_facings() -> void:
 # --- 首招候选与起手约束 ---
 
 func _test_first_candidates_ground_only_sorted() -> void:
-	var report := ComboSolver.solve()
+	var report := _default_solve()
 	var ids: Array[String] = []
 	for line in report.first_candidates:
 		ids.append(line.split("｜")[0])
@@ -91,7 +94,7 @@ func _test_first_candidates_ground_only_sorted() -> void:
 
 
 func _test_routes_start_from_ground_moves_only() -> void:
-	var report := ComboSolver.solve()
+	var report := _default_solve()
 	var table := MoveData.default_table()
 	var all_ground := true
 	for route in report.routes:
@@ -104,7 +107,7 @@ func _test_routes_start_from_ground_moves_only() -> void:
 # --- 操作说明（真实键位、双面向、等待帧）---
 
 func _test_guide_uses_real_keys_for_both_facings() -> void:
-	var report := ComboSolver.solve()
+	var report := _default_solve()
 	var guide := "\n".join(report.guide_lines)
 	_check("面向右" in guide and "面向左" in guide, "the guide covers both facings")
 	_check("前=D/→ 后=A/←" in guide and "前=A/← 后=D/→" in guide,
@@ -154,7 +157,7 @@ func _explicit_air_options() -> ComboSolver.SolverOptions:
 
 
 func _test_explicit_air_start_switches_candidates() -> void:
-	var report := ComboSolver.solve(_explicit_air_options())
+	var report := _explicit_air_solve()
 	var ids: Array[String] = []
 	for line in report.first_candidates:
 		ids.append(line.split("｜")[0])
@@ -166,7 +169,7 @@ func _test_explicit_air_start_switches_candidates() -> void:
 
 
 func _test_explicit_air_start_reports_air_route() -> void:
-	var report := ComboSolver.solve(_explicit_air_options())
+	var report := _explicit_air_solve()
 	var route := _find_route(report, ["jA", "jB", "jD"])
 	_check(route != null, "the air chain jA → jB → jD is verified from the explicit air start")
 	if route != null:
@@ -178,14 +181,14 @@ func _test_explicit_air_start_reports_air_route() -> void:
 
 
 func _test_explicit_air_start_guide_documents_prologue() -> void:
-	var report := ComboSolver.solve(_explicit_air_options())
+	var report := _explicit_air_solve()
 	var guide := "\n".join(report.guide_lines)
 	_check("Space 垂直起跳" in guide and "起跳准备" in guide,
 		"the air-start guide documents the Space prologue its route frames are measured from")
 
 
 func _test_explicit_air_start_landing_seam_not_claimed() -> void:
-	var report := ComboSolver.solve(_explicit_air_options())
+	var report := _explicit_air_solve()
 	var edge := _find_edge(report, "jB", "5D", ComboSolver.EdgeKind.LANDING_CANCEL)
 	_check(edge != null and not edge.valid,
 		"the landing seam is not claimed as valid from an explicit air start")
@@ -203,7 +206,7 @@ func _test_out_of_range_air_frames_refused() -> void:
 	opts.start = ComboSolver.SolverStartState.new()
 	opts.start.stance = MoveData.Stance.AIR
 	opts.start.air_frames = GameParams.PLAYER_JUMP_AIRTIME_FRAMES
-	var report := ComboSolver.solve(opts)
+	var report := _metrics.solve(opts)
 	_check(report.refused and "滞空" in report.refusal_reason,
 		"an air start at or beyond the airtime is refused with a locatable reason")
 	_check(report.edges.is_empty() and report.routes.is_empty() and report.first_candidates.is_empty(),
@@ -211,7 +214,7 @@ func _test_out_of_range_air_frames_refused() -> void:
 
 
 func _test_outputs_are_stably_sorted() -> void:
-	var report := ComboSolver.solve()
+	var report := _default_solve()
 	var edge_keys: Array[String] = []
 	for edge in report.edges:
 		edge_keys.append("%s|%s|%d" % [edge.from_id, edge.to_id, edge.kind])
@@ -227,7 +230,7 @@ func _test_outputs_are_stably_sorted() -> void:
 
 
 func _test_solve_is_deterministic() -> void:
-	_check(ComboSolver.solve().to_lines() == ComboSolver.solve().to_lines(),
+	_check(_default_solve().to_lines() == _default_solve().to_lines(),
 		"solving the same table twice yields identical reports, guide included")
 
 
@@ -240,8 +243,8 @@ func _test_solve_does_not_modify_runtime_session() -> void:
 	for i in range(5):
 		session.step(FrameInput.new())
 	var before := _snapshot_session(session)
-	ComboSolver.solve()
-	ComboSolver.solve(_explicit_air_options())
+	_default_solve()
+	_explicit_air_solve()
 	var after := _snapshot_session(session)
 	_check(before == after, "running solve() leaves every observable field of a live session untouched")
 	_check(session.player_move_id == "5A" and session.combo_hits == 1,
@@ -257,7 +260,7 @@ func _test_solve_refuses_invalid_manifest_with_shared_reason() -> void:
 	ResourceSaver.save(manifest, "user://solver_entry_bad_manifest.tres")
 	var opts := ComboSolver.SolverOptions.new()
 	opts.manifest_path = "user://solver_entry_bad_manifest.tres"
-	var report := ComboSolver.solve(opts)
+	var report := _metrics.solve(opts)
 	var loaded := MoveTable.load_manifest("user://solver_entry_bad_manifest.tres")
 	_check(report.refused, "solve() refuses the invalid manifest instead of analyzing it")
 	_check(report.refusal_reason == loaded.first_error(),
@@ -271,13 +274,13 @@ func _test_solve_reflects_resource_changes() -> void:
 	(table["5B"] as MoveData).startup_frames = 4
 	var opts := ComboSolver.SolverOptions.new()
 	opts.move_table = table
-	var report := ComboSolver.solve(opts)
+	var report := _metrics.solve(opts)
 	var ab := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	_check(ab != null and ab.valid, "the edited table still yields the 5A → 5B edge")
 	if ab != null:
 		_check(ab.hit_age == 5, "editing the shared move's startup moves the timing report (earliest hit age 7 → 5)")
 		_check("前摇 4 帧" in ab.reason, "the edge reason quotes the edited startup value")
-	var default_ab := _find_edge(ComboSolver.solve(), "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
+	var default_ab := _find_edge(_default_solve(), "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	_check(default_ab != null and default_ab.hit_age == 7,
 		"the default manifest still reports the untouched baseline")
 
@@ -324,3 +327,10 @@ func _check(condition: bool, label: String) -> void:
 	else:
 		print("FAIL  " + label)
 		_failures += 1
+
+func _default_solve() -> ComboSolver.SolverReport:
+	return _metrics.solve_reused("default")
+
+func _explicit_air_solve() -> ComboSolver.SolverReport:
+	return _metrics.solve_reused("explicit-air", _explicit_air_options())
+

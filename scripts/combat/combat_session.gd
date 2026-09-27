@@ -35,6 +35,11 @@ enum GuardPosture {
 	AIR = 3,      ## 空防：默认挡带 air 的打击（正交 air 类别）
 }
 
+## Versioned format for the execution seam.  This is deliberately separate from
+## settlement_state(): settlement_state() is a compact solver key, while this
+## format contains every mutable value that can affect the next step().
+const STATE_FORMAT := "CombatSessionState/v1"
+
 # --- 可观察的玩家状态 ---
 var player_position: Vector2
 var player_velocity: Vector2
@@ -375,6 +380,324 @@ func reset_to_initial_state() -> void:
 	_move_via_special_entry = false
 	_finished_move_hit = false
 	_finished_move_via_entry = false
+
+
+## Capture the complete mutable execution state. MoveData resources are kept in
+## the session's immutable move table and are represented by their stable ids.
+## The returned dictionary owns all arrays/dictionaries it exposes.
+## Completeness contract: every member that can affect a future step() must be
+## captured here — tests/test_combat_session_restore.gd enforces this by
+## diffing from-scratch runs against restored runs (settlement_state() alone is
+## not a sufficient key for that; it omits HP, positions and input history).
+func clone_state() -> Dictionary:
+	return {
+		"format": STATE_FORMAT,
+		"config": {
+			"direction_retention": _direction_retention,
+			"table_has_throw": _table_has_throw,
+			"throw_move_id": _move_id(_throw_move),
+		},
+		"player": {
+			"position": player_position,
+			"velocity": player_velocity,
+			"facing": player_facing,
+			"phase": player_phase,
+			"on_ground": player_on_ground,
+			"move_id": player_move_id,
+			"crouching": player_crouching,
+			"guard": player_guard,
+			"guard_stun_left": player_guard_stun_left,
+			"hitstun_left": player_hitstun_left,
+			"prejump_left": player_prejump_left,
+			"landing_recovery_left": player_landing_recovery_left,
+			"air_move_started": _air_move_started,
+			"air_extra_recovery": _air_extra_recovery,
+			"jump_direction": _jump_direction,
+			"dash_left": player_dash_left,
+			"dash_direction": _dash_direction,
+		},
+		"dummy": {
+			"position": dummy_position,
+			"velocity": dummy_velocity,
+			"hp": dummy_hp,
+			"state": dummy_state,
+			"on_ground": dummy_on_ground,
+			"hitstun_left": dummy_hitstun_left,
+			"knockdown_left": dummy_knockdown_left,
+			"slide_left": dummy_slide_left,
+			"guard": dummy_guard,
+			"blockstun_left": dummy_blockstun_left,
+			"move_id": dummy_move_id,
+			"phase": dummy_phase,
+			"move_frame": _dummy_move_frame,
+			"hit_once": _dummy_hit_once,
+			"pending_move_id": _move_id(_pending_dummy_hit),
+			"fresh_reaction": _dummy_fresh_reaction,
+		},
+		"combo": {
+			"hits": combo_hits,
+			"active": combo_active,
+			"total_damage": combo_total_damage,
+			"last_scale": combo_last_scale,
+			"last_damage": combo_last_damage,
+			"starter_grade": combo_starter_grade,
+			"damage_scale": combo_damage_scale,
+			"time_scale": combo_time_scale,
+			"trajectory_scale": combo_trajectory_scale,
+		},
+		"player_move": {
+			"move_id": _move_id(_current_move),
+			"frame": _move_frame,
+			"hit_once": _hit_once_this_move,
+			"segment": _current_segment,
+			"segment_hit_done": _segment_hit_done.duplicate(),
+			"pending_hit_segment": _pending_hit_segment,
+			"hit_confirmed": _move_hit_confirmed,
+			"hit_confirm_frame": _hit_confirm_frame,
+			"contact_confirmed": _move_contact_confirmed,
+			"contact_frame": _contact_frame,
+			"blocked": _move_blocked,
+			"is_followup": _move_is_followup,
+			"pending_hit_id": _move_id(_pending_hit),
+			"via_link": _move_via_link,
+			"finished_move_id": _move_id(_finished_move),
+			"pending_link_check": _pending_link_check,
+			"finished_move_hit": _finished_move_hit,
+			"finished_move_via_entry": _finished_move_via_entry,
+			"via_special_entry": _move_via_special_entry,
+		},
+		"input": _clone_frame_input(_frame_input),
+		"keys": {
+			"presses": _key_presses.duplicate(true),
+			"held": _key_held.duplicate(),
+		},
+		"action_buffer": {
+			"waiting": _buffer_waiting,
+			"endpoint": _buffered_endpoint,
+			"pending_throw_physics": _pending_throw_physics,
+			"throw_result_applied": _throw_result_applied,
+			"key": _buffered_key,
+			"move_id": _buffered_move_id,
+			"at": _buffered_at,
+			"physics": _buffered_physics,
+			"consumed_move_id": _buffer_consumed_move_id,
+			"consumed_frame": _buffer_consumed_frame,
+		},
+		"jump_slot": {
+			"active": _jump_slot_active,
+			"at": _jump_slot_at,
+			"physics": _jump_slot_physics,
+			"axis": _jump_slot_axis,
+		},
+		"direction": {
+			"history": _direction_history.duplicate(),
+			"last_digit": _last_direction_digit,
+		},
+		"cancel": {
+			"targets": _cancel_targets.duplicate(),
+			"jump_cancel_followups": _jump_cancel_followups.duplicate(),
+			"just_landed": _player_just_landed,
+		},
+		"rekka": {
+			"window_open": _rekka_window_open,
+			"contact_frame": _rekka_contact_frame,
+			"branch": _rekka_branch,
+		},
+		"special_entry": {
+			"open": _special_entry_open,
+			"frame": _special_entry_frame,
+			"move_id": _move_id(_special_entry_move),
+		},
+		"clock": {
+			"frame": _frame_index,
+			"normal_frame": _normal_frame_index,
+			"hitstop_left": _hitstop_left,
+			"hitstop_resume_pending": _hitstop_resume_pending,
+		},
+		"flags": {
+			"player_fresh_stun": _player_fresh_stun,
+		},
+	}
+
+
+## Restore a state produced by clone_state(). The move table is immutable for a
+## session, so move references are resolved by id. Returning false keeps a bad
+## state from partially mutating the session.
+func restore_state(state: Dictionary) -> bool:
+	if state.get("format", "") != STATE_FORMAT:
+		return false
+	var player: Dictionary = state.get("player", {})
+	var config: Dictionary = state.get("config", {})
+	var dummy: Dictionary = state.get("dummy", {})
+	var combo: Dictionary = state.get("combo", {})
+	var move_state: Dictionary = state.get("player_move", {})
+	var input_state: Dictionary = state.get("input", {})
+	var keys: Dictionary = state.get("keys", {})
+	var buffer: Dictionary = state.get("action_buffer", {})
+	var jump_slot: Dictionary = state.get("jump_slot", {})
+	var direction: Dictionary = state.get("direction", {})
+	var cancel: Dictionary = state.get("cancel", {})
+	var rekka: Dictionary = state.get("rekka", {})
+	var special: Dictionary = state.get("special_entry", {})
+	var clock: Dictionary = state.get("clock", {})
+	var flags: Dictionary = state.get("flags", {})
+	if int(config.get("direction_retention", _direction_retention)) != _direction_retention:
+		return false
+	if bool(config.get("table_has_throw", _table_has_throw)) != _table_has_throw:
+		return false
+	var state_throw_id := String(config.get("throw_move_id", _move_id(_throw_move)))
+	if state_throw_id != _move_id(_throw_move):
+		return false
+	var ids := [
+		String(player.get("move_id", "")), String(dummy.get("move_id", "")),
+		String(dummy.get("pending_move_id", "")), String(move_state.get("move_id", "")),
+		String(move_state.get("pending_hit_id", "")), String(move_state.get("finished_move_id", "")),
+		String(special.get("move_id", "")), String(buffer.get("move_id", "")),
+		state_throw_id,
+	]
+	for id in ids:
+		if id != "" and not _moves.has(id):
+			return false
+
+	player_position = player.get("position", Vector2.ZERO)
+	player_velocity = player.get("velocity", Vector2.ZERO)
+	player_facing = int(player.get("facing", 1))
+	player_phase = int(player.get("phase", PlayerPhase.NEUTRAL))
+	player_on_ground = bool(player.get("on_ground", true))
+	player_move_id = String(player.get("move_id", ""))
+	player_crouching = bool(player.get("crouching", false))
+	player_guard = int(player.get("guard", GuardPosture.NONE))
+	player_guard_stun_left = int(player.get("guard_stun_left", 0))
+	player_hitstun_left = int(player.get("hitstun_left", 0))
+	player_prejump_left = int(player.get("prejump_left", 0))
+	player_landing_recovery_left = int(player.get("landing_recovery_left", 0))
+	_air_move_started = bool(player.get("air_move_started", false))
+	_air_extra_recovery = int(player.get("air_extra_recovery", 0))
+	_jump_direction = int(player.get("jump_direction", 0))
+	player_dash_left = int(player.get("dash_left", 0))
+	_dash_direction = int(player.get("dash_direction", 0))
+
+	dummy_position = dummy.get("position", Vector2.ZERO)
+	dummy_velocity = dummy.get("velocity", Vector2.ZERO)
+	dummy_hp = float(dummy.get("hp", 0.0))
+	dummy_state = int(dummy.get("state", DummyState.NEUTRAL))
+	dummy_on_ground = bool(dummy.get("on_ground", true))
+	dummy_hitstun_left = int(dummy.get("hitstun_left", 0))
+	dummy_knockdown_left = int(dummy.get("knockdown_left", 0))
+	dummy_slide_left = int(dummy.get("slide_left", 0))
+	dummy_guard = int(dummy.get("guard", GuardPosture.NONE))
+	dummy_blockstun_left = int(dummy.get("blockstun_left", 0))
+	dummy_move_id = String(dummy.get("move_id", ""))
+	dummy_phase = int(dummy.get("phase", PlayerPhase.NEUTRAL))
+	_dummy_move = _move_from_id(dummy_move_id)
+	_dummy_move_frame = int(dummy.get("move_frame", 0))
+	_dummy_hit_once = bool(dummy.get("hit_once", false))
+	_pending_dummy_hit = _move_from_id(String(dummy.get("pending_move_id", "")))
+	_dummy_fresh_reaction = bool(dummy.get("fresh_reaction", false))
+
+	combo_hits = int(combo.get("hits", 0))
+	combo_active = bool(combo.get("active", false))
+	combo_total_damage = float(combo.get("total_damage", 0.0))
+	combo_last_scale = float(combo.get("last_scale", 1.0))
+	combo_last_damage = float(combo.get("last_damage", 0.0))
+	combo_starter_grade = int(combo.get("starter_grade", MoveData.StarterGrade.UNSET))
+	combo_damage_scale = float(combo.get("damage_scale", 1.0))
+	combo_time_scale = float(combo.get("time_scale", 1.0))
+	combo_trajectory_scale = float(combo.get("trajectory_scale", 1.0))
+
+	_current_move = _move_from_id(String(move_state.get("move_id", "")))
+	_move_frame = int(move_state.get("frame", 0))
+	_hit_once_this_move = bool(move_state.get("hit_once", false))
+	_current_segment = int(move_state.get("segment", 0))
+	_segment_hit_done = []
+	for value in move_state.get("segment_hit_done", []):
+		_segment_hit_done.append(bool(value))
+	_pending_hit_segment = int(move_state.get("pending_hit_segment", 0))
+	_move_hit_confirmed = bool(move_state.get("hit_confirmed", false))
+	_hit_confirm_frame = int(move_state.get("hit_confirm_frame", 0))
+	_move_contact_confirmed = bool(move_state.get("contact_confirmed", false))
+	_contact_frame = int(move_state.get("contact_frame", 0))
+	_move_blocked = bool(move_state.get("blocked", false))
+	_move_is_followup = bool(move_state.get("is_followup", false))
+	_pending_hit = _move_from_id(String(move_state.get("pending_hit_id", "")))
+	_move_via_link = bool(move_state.get("via_link", false))
+	_finished_move = _move_from_id(String(move_state.get("finished_move_id", "")))
+	_pending_link_check = bool(move_state.get("pending_link_check", false))
+	_finished_move_hit = bool(move_state.get("finished_move_hit", false))
+	_finished_move_via_entry = bool(move_state.get("finished_move_via_entry", false))
+	_move_via_special_entry = bool(move_state.get("via_special_entry", false))
+	_frame_input = _restore_frame_input(input_state)
+	_key_presses = keys.get("presses", {}).duplicate(true)
+	_key_held = (keys.get("held", []) as Array).duplicate()
+	_buffer_waiting = bool(buffer.get("waiting", false))
+	_buffered_endpoint = int(buffer.get("endpoint", -1))
+	_pending_throw_physics = int(buffer.get("pending_throw_physics", 0))
+	_throw_result_applied = bool(buffer.get("throw_result_applied", false))
+	_buffered_key = String(buffer.get("key", ""))
+	_buffered_move_id = String(buffer.get("move_id", ""))
+	_buffered_at = int(buffer.get("at", 0))
+	_buffered_physics = int(buffer.get("physics", 0))
+	_buffer_consumed_move_id = String(buffer.get("consumed_move_id", ""))
+	_buffer_consumed_frame = int(buffer.get("consumed_frame", 0))
+	_jump_slot_active = bool(jump_slot.get("active", false))
+	_jump_slot_at = int(jump_slot.get("at", 0))
+	_jump_slot_physics = int(jump_slot.get("physics", 0))
+	_jump_slot_axis = int(jump_slot.get("axis", 0))
+	_direction_history = []
+	for entry in direction.get("history", []):
+		_direction_history.append(Vector2i(entry.x, entry.y) if entry is Vector2i else Vector2i(int(entry[0]), int(entry[1])))
+	_last_direction_digit = int(direction.get("last_digit", 5))
+	_cancel_targets = (cancel.get("targets", []) as Array).duplicate()
+	_jump_cancel_followups = (cancel.get("jump_cancel_followups", []) as Array).duplicate()
+	_player_just_landed = bool(cancel.get("just_landed", false))
+	_rekka_window_open = bool(rekka.get("window_open", false))
+	_rekka_contact_frame = int(rekka.get("contact_frame", 0))
+	_rekka_branch = String(rekka.get("branch", ""))
+	_special_entry_open = bool(special.get("open", false))
+	_special_entry_frame = int(special.get("frame", 0))
+	_special_entry_move = _move_from_id(String(special.get("move_id", "")))
+	_frame_index = int(clock.get("frame", 0))
+	_normal_frame_index = int(clock.get("normal_frame", 0))
+	_hitstop_left = int(clock.get("hitstop_left", 0))
+	_hitstop_resume_pending = bool(clock.get("hitstop_resume_pending", false))
+	_player_fresh_stun = bool(flags.get("player_fresh_stun", false))
+	return true
+
+
+func _move_id(move: MoveData) -> String:
+	return move.move_id if move != null else ""
+
+
+func _move_from_id(move_id: String) -> MoveData:
+	return _moves.get(move_id) as MoveData if move_id != "" else null
+
+
+func _clone_frame_input(input: FrameInput) -> Dictionary:
+	return {
+		"move_axis": input.move_axis,
+		"down_held": input.down_held,
+		"up_held": input.up_held,
+		"jump_pressed": input.jump_pressed,
+		"pressed_action_keys": input.pressed_action_keys.duplicate(),
+		"held_action_keys": input.held_action_keys.duplicate(),
+		"dummy_tech_request": input.dummy_tech_request,
+		"dummy_move_request": input.dummy_move_request,
+		"dummy_guard_request": input.dummy_guard_request,
+	}
+
+
+func _restore_frame_input(state: Dictionary) -> FrameInput:
+	var input := FrameInput.new()
+	input.move_axis = int(state.get("move_axis", 0))
+	input.down_held = bool(state.get("down_held", false))
+	input.up_held = bool(state.get("up_held", false))
+	input.jump_pressed = bool(state.get("jump_pressed", false))
+	input.pressed_action_keys = (state.get("pressed_action_keys", []) as Array).duplicate()
+	input.held_action_keys = (state.get("held_action_keys", []) as Array).duplicate()
+	input.dummy_tech_request = bool(state.get("dummy_tech_request", false))
+	input.dummy_move_request = String(state.get("dummy_move_request", ""))
+	input.dummy_guard_request = int(state.get("dummy_guard_request", 0))
+	return input
 
 
 ## 结算一个物理帧，返回该帧产生的战斗事件（按结算发生顺序排列）。

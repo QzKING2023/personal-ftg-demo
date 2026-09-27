@@ -6,6 +6,8 @@ extends SceneTree
 ## 结果，并保持确定性排序。
 ## 运行：godot --headless --path . -s res://tests/test_solver_cycles.gd
 
+const AcceptanceSolverMetrics = preload("res://tests/acceptance_solver_metrics.gd")
+var _metrics := AcceptanceSolverMetrics.new()
 var _failures := 0
 
 
@@ -22,6 +24,7 @@ func _initialize() -> void:
 	_test_cycles_sorted_and_report_deterministic()
 	_test_scope_documents_observation_caps()
 	print("")
+	_metrics.emit("test_solver_cycles")
 	if _failures == 0:
 		print("ALL SOLVER CYCLE TESTS PASSED")
 		quit(0)
@@ -108,7 +111,7 @@ func _test_valid_back_edge_proven_with_replay_materials() -> void:
 	# 回路 5A ↔ 5B 不再被报告为可证明循环，而是以衰减断链上报（无全局上限）。
 	var table := MoveData.default_table()
 	(table["5B"] as MoveData).cancel_targets = ["5D", "5A"]
-	var report := ComboSolver.solve(_options(table))
+	var report := _metrics.solve(_options(table))
 	_check(report.safe and report.cycles.is_empty(),
 		"the valid back edge loop breaks by correction decay instead of being proven (state never recurs: the layers change every hit)")
 	var ba := _find_edge(report, "5B", "5A")
@@ -123,7 +126,7 @@ func _test_valid_back_edge_proven_with_replay_materials() -> void:
 func _test_proof_distinguishes_entry_lap_player_state() -> void:
 	var table := MoveData.default_table()
 	(table["jB"] as MoveData).landing_cancel_targets = ["5D", "5A"]
-	var report := ComboSolver.solve(_options(table))
+	var report := _metrics.solve(_options(table))
 	_check(report.cycles.is_empty(), "an illegal landing seam never produces a recurrence proof")
 	_check(report.edges.any(func(edge): return edge.from_id == "jB" and edge.to_id == "5A" and not edge.valid),
 		"landing back edge is rejected before cycle search; ground recurrence proofs remain independently tested")
@@ -135,7 +138,7 @@ func _test_frame_cap_reports_truncation_not_cycle() -> void:
 	# 也不宣称完整证明。
 	var table := MoveData.default_table()
 	table["5Z"] = _slow_self_loop()
-	var report := ComboSolver.solve(_options(table))
+	var report := _metrics.solve(_options(table))
 	_check(report.cycles.is_empty() and report.safe,
 		"a loop truncated by the frame cap is never reported as a cycle")
 	var note := ""
@@ -181,7 +184,7 @@ func _test_laps_exhausted_reports_incomplete_observation() -> void:
 	_add_probe_airborne(riser, 250, 0.0, 1170.0)
 	riser.cancel_targets = ["5Y"]
 	table["5Y"] = riser
-	var report := ComboSolver.solve(_options(table))
+	var report := _metrics.solve(_options(table))
 	_check(report.cycles.is_empty() and report.safe,
 		"a never-recurring loop is never reported as a cycle even though the chain holds")
 	var note := ""
@@ -207,13 +210,13 @@ func _test_recovery_horizon_truncation_annotated() -> void:
 	_set_probe_horizontal(stunner, 0.0)
 	stunner.cancel_targets = ["5A"]
 	table["5Y"] = stunner
-	var report := ComboSolver.solve(_options(table))
+	var report := _metrics.solve(_options(table))
 	var edge := _find_edge(report, "5Y", "5A")
 	_check(edge != null and edge.valid, "the 5Y -> 5A cancel edge is timing-valid under the pinned geometry")
 	if edge != null:
 		_check(str(ComboSolver.RECOVER_HORIZON) in edge.reason and "截断" in edge.reason,
 			"the edge reason marks the recovery age as a truncated observation, not a measured recovery")
-		var plain := _find_edge(ComboSolver.solve(), "5A", "5B")
+		var plain := _find_edge(_default_solve(), "5A", "5B")
 		_check(plain != null and "截断" not in plain.reason,
 			"a normally observed recovery carries no truncation mark")
 
@@ -226,7 +229,7 @@ func _test_cycle_report_carries_start_and_replay() -> void:
 	# 不再携带已证明循环的起始状态/逐帧回放块（该路径在命中循环下不可达）。
 	var table := MoveData.default_table()
 	(table["5B"] as MoveData).cancel_targets = ["5D", "5A"]
-	var report := ComboSolver.solve(_options(table))
+	var report := _metrics.solve(_options(table))
 	var text := "\n".join(report.to_lines())
 	_check("5A → 5B → 回到 5A" in text, "the structural loop path appears in the report notes")
 	_check("断开" in text, "the loop is reported as broken by the lap simulation")
@@ -238,7 +241,7 @@ func _test_cycles_sorted_and_report_deterministic() -> void:
 	var table := MoveData.default_table()
 	(table["5B"] as MoveData).cancel_targets = ["5D", "5A"]
 	(table["jB"] as MoveData).landing_cancel_targets = ["5D", "5A"]
-	var report := ComboSolver.solve(_options(table))
+	var report := _metrics.solve_reused("cycle-sort", _options(table))
 	_check(report.cycles.is_empty(), "neither back edge is proven: the ground loop decays apart and the landing back edge is excluded")
 	var labels: Array[String] = []
 	for cycle in report.cycles:
@@ -246,14 +249,14 @@ func _test_cycles_sorted_and_report_deterministic() -> void:
 	var sorted_labels := labels.duplicate()
 	sorted_labels.sort()
 	_check(labels == sorted_labels, "cycles are stably sorted by their labels")
-	_check(ComboSolver.solve(_options(table)).to_lines() == report.to_lines(),
+	_check(_metrics.solve_reused("cycle-sort", _options(table)).to_lines() == report.to_lines(),
 		"solving the same table twice yields identical reports, cycle section included")
 
 
 func _test_scope_documents_observation_caps() -> void:
 	# 证明范围声明四个安全上限及其语义：达到上限以截断/未完成观测上报，
 	# 不作为完整证明；空中延迟上限与规格冻结值一致（40 帧）。
-	var report := ComboSolver.solve()
+	var report := _default_solve()
 	_check(str(ComboSolver.MAX_CYCLE_LAPS) in report.scope and str(ComboSolver.MAX_CYCLE_FRAMES) in report.scope,
 		"the scope names the lap and frame caps")
 	_check(str(ComboSolver.RECOVER_HORIZON) in report.scope and "40 帧" in report.scope,
@@ -384,3 +387,6 @@ func _check(condition: bool, label: String) -> void:
 	else:
 		print("FAIL  " + label)
 		_failures += 1
+
+func _default_solve() -> ComboSolver.SolverReport:
+	return _metrics.solve_reused("default")

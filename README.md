@@ -10,6 +10,7 @@
 - [操作与真人试玩记录单](docs/training-guide.md)
 - [招式与行为数据](docs/move-data.md)
 - [Solver 独立入口、帧表与空间范围](docs/solver-guide.md)
+- [武器型刺客角色研究](docs/weapon-assassin-character-research.md)
 - 全量检查：项目目录运行 `./tools/run_acceptance.ps1`（包含脚本错误检查和项目内临时用户目录）。
 
 旧 jB→5D 落地首帧接续已按最新规格移除；历史输入保留作负例。`spatial-valid` 仅为固定间距钉位网格证明，真实击退需独立回放。空中路线48px两侧五击通过，70px两侧仅三击。

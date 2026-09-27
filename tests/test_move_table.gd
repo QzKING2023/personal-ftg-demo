@@ -5,6 +5,8 @@ extends SceneTree
 ## 招式 id、字段、冲突原因）、不静默修正/跳过/回退旧 GameParams。
 ## 运行：godot --headless --path . -s res://tests/test_move_table.gd
 
+const AcceptanceSolverMetrics = preload("res://tests/acceptance_solver_metrics.gd")
+var _metrics := AcceptanceSolverMetrics.new()
 var _failures := 0
 
 
@@ -41,6 +43,7 @@ func _initialize() -> void:
 	_test_cancel_edit_syncs_session_and_solver()
 	_test_solver_refuses_invalid_manifest_with_same_reason()
 	print("")
+	_metrics.emit("test_move_table")
 	if _failures == 0:
 		print("ALL MOVE TABLE TESTS PASSED")
 		quit(0)
@@ -832,11 +835,11 @@ func _test_startup_edit_syncs_session_and_solver() -> void:
 			if event.type == CombatEvent.Type.HIT:
 				session_hit = frame
 	_check(session_hit == 9, "session hit frame follows the edited startup (6 -> 9)")
-	var report := ComboSolver.analyze(moves)
+	var report := _metrics.analyze(moves)
 	var route := _find_route(report, ["5A", "5B", "5D"])
 	_check(route != null and route.hit_frames == [9, 16, 23],
 		"solver report follows the same edited startup (route hit frames 9/16/23; the B chain cancel lands one normal frame after the confirm)")
-	var baseline := ComboSolver.analyze()
+	var baseline := _metrics.analyze()
 	var baseline_route := _find_route(baseline, ["5A", "5B", "5D"])
 	_check(baseline_route != null and baseline_route.hit_frames == [6, 13, 20],
 		"unmodified shared table keeps the baseline route (6/13/20 with the B pairing wait)")
@@ -852,7 +855,7 @@ func _test_damage_edit_syncs_session_and_solver() -> void:
 	## A 起手首击：round0.1(25 × 0.72) = 18.0。
 	_check(absf(session.dummy_hp - (GameParams.DUMMY_MAX_HP - 18.0)) < 0.05,
 		"session damage follows the edited base damage through the A starter scale")
-	var report := ComboSolver.analyze(moves)
+	var report := _metrics.analyze(moves)
 	var route := _find_route(report, ["5A", "5B", "5D"])
 	## 18.0 + round0.1(12 × 0.72×0.90) + round0.1(18 × 0.72×0.90×0.90) = 18.0 + 7.8 + 10.5。
 	_check(route != null and _approx(route.total_damage, 36.3),
@@ -868,7 +871,7 @@ func _test_attribute_edit_syncs_session_and_solver() -> void:
 	var snap := session.debug_snapshot()
 	_check(String(snap["move_attribute"]) == "low",
 		"session diagnostics expose the edited attack attribute of the active move")
-	var report := ComboSolver.analyze(moves)
+	var report := _metrics.analyze(moves)
 	var line := _move_table_line(report, "5A")
 	_check(line != "" and line.contains("low"), "solver move-table summary reflects the edited attribute")
 
@@ -878,7 +881,7 @@ func _test_cancel_edit_syncs_session_and_solver() -> void:
 	(moves["5A"] as MoveData).chain_cancel_targets = []
 	(moves["5A"] as MoveData).chain_cancel_window_frames = -1
 	(moves["5A"] as MoveData).link_targets = []
-	var report := ComboSolver.analyze(moves)
+	var report := _metrics.analyze(moves)
 	_check(_find_edge(report, "5A", "5B") == null, "removing the configured chain cancel and link drops the solver edges")
 	_check(_find_edge(report, "5A", "236C") != null, "the remaining configured special cancel is still analyzed")
 	var session := CombatSession.new(moves)
@@ -900,7 +903,7 @@ func _test_solver_refuses_invalid_manifest_with_same_reason() -> void:
 	_remove_property_line(move_path, "hit_profiles")
 	var load_result := MoveTable.load_manifest(paths["manifest"])
 	_check(not load_result.ok, "invalid table is rejected by the loader")
-	var report := ComboSolver.analyze_manifest(paths["manifest"])
+	var report := _metrics.analyze_manifest(paths["manifest"])
 	_check(report.refused, "solver refuses to analyze the invalid manifest")
 	_check(report.refusal_reason == load_result.first_error(),
 		"solver refusal carries the same observable reason as the loader")

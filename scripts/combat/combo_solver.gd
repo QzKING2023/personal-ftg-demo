@@ -65,6 +65,31 @@ const MAX_ROUTE_DELAY_TRIALS := 64
 ## 上限不会截掉任何可行延迟，枚举是完备的。
 const MAX_AIR_DELAY := 40
 
+## 完整结果缓存只存在当前进程的 Engine metadata 中。缓存值是报告值快照，
+## 不暴露任何 Solver/CombatSession/Resource/compiled 对象；命中时逐字段重建。
+const _RESULT_CACHE_META_KEY := "ftg_demo_combo_solver_result_cache_v1"
+const _REQUEST_SCHEMA_VERSION := 1
+const _REPORT_SNAPSHOT_VERSION := 1
+const _RESULT_CACHE_SEMANTICS_VERSION := "combo-solver-complete-result-v1"
+const _MOVE_VALUE_FIELDS := [
+	"move_id", "move_kind", "stance", "action_key", "requires_crouch", "startup_frames",
+	"active_frames", "recovery_frames", "base_damage", "attack_attribute", "air_attack",
+	"hitbox_size", "hitbox_gap", "hit_profiles", "throw_range", "extra_landing_recovery_frames",
+	"cancel_targets", "cancel_window_frames", "chain_cancel_targets", "chain_cancel_window_frames",
+	"special_cancel_targets", "special_cancel_window_frames", "link_targets", "segments",
+	"special_entry_targets", "special_entry_window_frames", "special_entry_link_targets",
+	"rekka_window_frames", "rekka_b_target", "rekka_c_target", "rekka_only", "starter_grade",
+	"block_freeze_frames", "block_stun_frames", "block_pushback_px_s", "is_finisher",
+	"jump_cancel_targets", "landing_cancel_targets", "direction_derivation", "lenient_command",
+	"input_alternatives", "command_tier", "priority",
+]
+const _SEGMENT_VALUE_FIELDS := ["startup_frames", "active_frames", "base_damage", "hitbox_size", "hitbox_gap", "hit_profiles"]
+const _PROFILE_VALUE_FIELDS := [
+	"target_state", "hit_context", "reaction", "damage_override", "ground_stun_frames",
+	"air_untech_frames", "knockdown_frames", "horizontal_speed_px_s", "upward_speed_px_s",
+	"downward_speed_px_s", "slide_frames",
+]
+
 const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性接续——命中确认取消、链式/必杀取消（接触开放，命中或被防）、jump cancel、显式落地接缝、恢复后的普通连接（目押）与 Rekka 派生（票据 04：首段命中或被防接触起的派生窗口内首个 B/C 新按下立即锁分支 branch-locked，同帧 B+C 固定 ~C 优先、不进入普通投组合等待；派生招式 rekka_only、不参与单键/指令输入选择；派生地空命中资料按 (target_state, hit_context) 精确选择，~C 空中向下击落触地转普通倒地）：前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生与落地接缝都在真实 CombatSession 结算中检验；命中资料与运行时共享同一 (target_state, hit_context) 精确选择：探针木桩不自攻，命中的上下文恒为 normal，缺失目标状态资料的连接按 MISS_NO_PROFILE 断链上报（不回退 grounded/normal 资料），普通倒地期间不可追击；cancel_targets、chain/special_cancel_targets、link_targets、jump_cancel_targets、rekka_b/c_target 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；普通连接边与取消边以不同类型分别报告，连接成立与否由前招完全恢复当帧的缓存消费、目标剩余硬直与 active 重叠重新判定；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（空中无二段跳；木桩浮空只由真实命中按所选 profile 的受身计时与速度重建，空中追击的每次命中都应用其 airborne profile），无命中的时间不会自动续期；OTG、地弹、墙反弹与招式无敌不在本轮支持范围，表达这些能力的字段或标签由 MoveTable 整表拒绝；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、起手等级与三层累计修正、Rekka 分支锁定、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。可读路线按不超过 8 招的简单路径枚举；路线延迟搜索至多验证 64 个延迟向量，全部失败的路线按走得最远的失败如实上报（观测上限而非连段语义，循环证明不受此限）。空间分层：无空间数据时全部路线仅 timing-valid，固定接触位不构成空间证明；提供空间数据（SolverOptions.spatial）后另附 spatial-valid，且只在地面、左右镜像的 48/64/80 px 三组身体中心水平距离上复验，不搜索走位、中立、墙角、推挤、跨身或屏幕边界，配置缺口与时序失败不作空间失败上报。被防分层（票据 03）：链式/必杀边附「被防路径」标注——同一配置边在来源招式被木桩站防/蹲防挡下的探针中验证取消时序；被防是独立接触结果（BLOCKED 不产生命中、不入路线/循环图、不借命中确认或 jump cancel），探针中预期命中帧收到被防结果一律按 blocked 断链上报；Rekka 派生边同样附被防路径标注（首段被防也开放派生窗口），派生自身的被防结果如实入注；被防安全性（指定反击、时机、距离、版边、面向）不在静态证明范围，一律 replay-required；派生首按锁定输入手感与 ~B 交回回合的安全性也属 replay-required，静态报告不下结论。票据 05 扩展：236C 为两段判定（段 1 被防终止整招、挥空续段 2，多段命中按段逐一预测与复验），段 2 命中 grounded 目标进入击飞触地 GROUND_SLIDE（滑行状态、slide 目标资料门、slide 命中分层倍率与状态键均由真实结算承载）；实际 HIT 授予一次性特殊进入资格（SPECIAL_ENTRY 边：仅命中开放、被防不开放，资格在授予招式窗口内消费），经资格起手且实际命中的 D 取得来源限定普通连接（SPECIAL_ENTRY_LINK 边：普通来源同招不取得）；固定钉位网格（48/64/80 px）上段 1 总是先命中，不产生 slide——slide 捞起距离、段间真实可达性（段 1 挥空需 >91px）与 D 后 5B 的真实空间可行性一律 replay-required，静态报告不冒充。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。"
 
 ## 接续边类型：命中确认取消 / 链式取消 / 必杀取消 / jump cancel / 显式落地接续 /
@@ -433,6 +458,49 @@ static func analyze(move_table: Dictionary = {}) -> SolverReport:
 	return ComboSolver.new(table)._analyze()
 
 
+## 完整结果缓存控制。默认开启；开关不参与请求键，只决定是否读取/发布结果。
+static func set_result_cache_enabled(enabled: bool) -> void:
+	_cache_state()["enabled"] = enabled
+
+
+static func result_cache_enabled() -> bool:
+	return bool(_cache_state().get("enabled", true))
+
+
+static func clear_result_cache() -> void:
+	var state := _cache_state()
+	state["entries"] = {}
+	state["hits"] = 0
+	state["misses"] = 0
+	state["bypasses"] = 0
+
+
+static func reset_result_cache_stats() -> void:
+	var state := _cache_state()
+	state["hits"] = 0
+	state["misses"] = 0
+	state["bypasses"] = 0
+
+
+static func result_cache_stats() -> Dictionary:
+	var state := _cache_state()
+	return {
+		"enabled": bool(state.get("enabled", true)),
+		"entries": (state.get("entries", {}) as Dictionary).size(),
+		"hits": int(state.get("hits", 0)),
+		"misses": int(state.get("misses", 0)),
+		"bypasses": int(state.get("bypasses", 0)),
+	}
+
+
+static func _cache_state() -> Dictionary:
+	var state = Engine.get_meta(_RESULT_CACHE_META_KEY) if Engine.has_meta(_RESULT_CACHE_META_KEY) else null
+	if not (state is Dictionary) or not state.has("entries"):
+		state = {"enabled": true, "entries": {}, "hits": 0, "misses": 0, "bypasses": 0}
+		Engine.set_meta(_RESULT_CACHE_META_KEY, state)
+	return state
+
+
 ## 正式入口（issue 19）：接受共享资源表、可选显式起始战斗状态与搜索选项。
 ## 缺省起始状态为地面中立（空输入缓存/方向历史、地面中立木桩、固定探针接触位）；
 ## 默认左右面向分别验证，并以相对输入签名镜像对拍确认两侧结果对称；显式传入
@@ -456,13 +524,34 @@ static func solve(options: SolverOptions = null) -> SolverReport:
 			return _refused_spatial(
 				"首版空间探针只验证地面站位（双方站地）的 48/64/80 px 距离网格，与显式空中起始不匹配",
 				"使用地面起始做空间验证（空中站位的网格不在首版范围）。")
+	var injected := not opts.move_table.is_empty()
 	var table := opts.move_table
 	if table.is_empty():
 		var result := MoveTable.load_manifest(opts.manifest_path)
 		if not result.ok:
 			return _refused_report(result)
 		table = result.moves
+	else:
+		var copied := _clone_move_table(table)
+		if copied["ok"]:
+			table = copied["table"]
 	var facings: Array[int] = opts.facings.duplicate() if not opts.facings.is_empty() else [1, -1]
+	var request := _build_solve_request(options != null, opts, table, injected)
+	var request_text: String = request.get("text", "")
+	var cacheable: bool = bool(request.get("cacheable", false))
+	if cacheable and result_cache_enabled():
+		var state := _cache_state()
+		var entries: Dictionary = state["entries"]
+		var digest: String = request["digest"]
+		if entries.has(digest):
+			var entry = entries[digest]
+			if entry is Dictionary and entry.get("descriptor", "") == request_text:
+				state["hits"] = int(state.get("hits", 0)) + 1
+				return _thaw_report(entry["snapshot"])
+		state["misses"] = int(state.get("misses", 0)) + 1
+	elif result_cache_enabled():
+		var state := _cache_state()
+		state["bypasses"] = int(state.get("bypasses", 0)) + 1
 	var primary := ComboSolver.new(table)._analyze(facings[0], opts.start, true, opts.spatial)
 	var facing_texts: Array[String] = []
 	for facing in facings:
@@ -489,7 +578,424 @@ static func solve(options: SolverOptions = null) -> SolverReport:
 	if facings.size() > 1:
 		primary.summary += "左右面向分别验证%s。" % ("，镜像一致" if primary.mirror_consistent else "，但结果不一致（见注）")
 	primary.spatial_lines = _spatial_report_lines(primary, facings, opts.spatial != null)
+	if cacheable and result_cache_enabled() and not primary.refused:
+		var state := _cache_state()
+		state["entries"][request["digest"]] = {
+			"descriptor": request_text,
+			"snapshot": _freeze_report(primary),
+		}
+		return _thaw_report(state["entries"][request["digest"]]["snapshot"])
 	return primary
+
+
+static func _clone_move_table(table: Dictionary) -> Dictionary:
+	var copy := {}
+	for key in table:
+		var move = table[key]
+		if not (move is MoveData):
+			return {"ok": false, "table": table}
+		copy[key] = MoveTable._fresh_copy(move as MoveData)
+	return {"ok": true, "table": copy}
+
+
+static func _build_solve_request(options_present: bool, opts: SolverOptions, table: Dictionary, injected: bool) -> Dictionary:
+	var effective_facings: Array[int] = opts.facings.duplicate() if not opts.facings.is_empty() else [1, -1]
+	var table_text := _canonical_variant(table)
+	if table_text == "":
+		return {"cacheable": false, "text": "", "digest": ""}
+	var start_value = null
+	if opts.start != null:
+		start_value = {"stance": opts.start.stance, "air_frames": opts.start.air_frames}
+	var spatial_value = null
+	if opts.spatial != null:
+		spatial_value = {"body_size": opts.spatial.body_size}
+	var descriptor := {
+		"request_schema_version": _REQUEST_SCHEMA_VERSION,
+		"report_snapshot_version": _REPORT_SNAPSHOT_VERSION,
+		"entrypoint": "solve",
+		"sort_outputs": true,
+		"options_present": options_present,
+		"table_source": "injected" if injected else "manifest",
+		"injected_nonempty": injected,
+		"table_schema_version": 1,
+		"table_content_digest": _sha256_text(table_text),
+		"manifest_path": opts.manifest_path,
+		"manifest_signature": {"status": "not_used"} if injected else _manifest_signature(opts.manifest_path),
+		"manifest_load_status": "not_used" if injected else "ok",
+		"table": table,
+		"start": {"present": opts.start != null, "value": start_value},
+		"facings": {"raw": opts.facings.duplicate(), "effective": effective_facings},
+		"spatial": {"present": opts.spatial != null, "value": spatial_value},
+		"probe": {
+			"pin_dx": PIN_DX,
+			"spatial_distances": SPATIAL_PROBE_DISTANCES.duplicate(),
+			"runtime_body_size": GameParams.BODY_SIZE,
+		},
+		"limits": {
+			"max_cycle_laps": MAX_CYCLE_LAPS,
+			"max_cycle_frames": MAX_CYCLE_FRAMES,
+			"recover_horizon": RECOVER_HORIZON,
+			"max_route_nodes": MAX_ROUTE_NODES,
+			"max_route_delay_trials": MAX_ROUTE_DELAY_TRIALS,
+			"max_air_delay": MAX_AIR_DELAY,
+			"cancel_window_frames": GameParams.CANCEL_WINDOW_FRAMES,
+			"route_delay_budget": MAX_ROUTE_DELAY_TRIALS,
+		},
+		"engine_version": Engine.get_version_info(),
+		"semantics": _solver_semantics_signature(),
+	}
+	var canonical := _canonical_variant(descriptor)
+	if canonical == "":
+		return {"cacheable": false, "text": "", "digest": ""}
+	return {"cacheable": true, "text": canonical, "digest": _sha256_text(canonical)}
+
+
+static func _manifest_signature(path: String) -> Dictionary:
+	var signature := {"manifest": _file_signature(path), "moves": []}
+	var manifest = ResourceLoader.load(path)
+	if manifest is MoveManifest:
+		for move_path in (manifest as MoveManifest).move_paths:
+			signature["moves"].append({"path": move_path, "file": _file_signature(move_path)})
+	return signature
+
+
+static func _file_signature(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {"exists": false, "digest": ""}
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return {"exists": false, "digest": "read_failed"}
+	return {"exists": true, "digest": _sha256_bytes(file.get_buffer(file.get_length()))}
+
+
+static func _solver_semantics_signature() -> Dictionary:
+	var paths := [
+		"res://scripts/combat/combo_solver.gd",
+		"res://scripts/combat/combat_session.gd",
+		"res://scripts/combat/move_data.gd",
+		"res://scripts/combat/move_segment.gd",
+		"res://scripts/combat/hit_profile.gd",
+		"res://scripts/combat/move_table.gd",
+		"res://scripts/combat/frame_input.gd",
+		"res://scripts/combat/combat_event.gd",
+		"res://scripts/game_params.gd",
+	]
+	var result: Array[Dictionary] = []
+	for path in paths:
+		result.append({"path": path, "file": _file_signature(path)})
+	return {"version": _RESULT_CACHE_SEMANTICS_VERSION, "sources": result}
+
+
+static func _sha256_text(value: String) -> String:
+	return _sha256_bytes(value.to_utf8_buffer())
+
+
+static func _sha256_bytes(value: PackedByteArray) -> String:
+	var hashing := HashingContext.new()
+	hashing.start(HashingContext.HASH_SHA256)
+	hashing.update(value)
+	return hashing.finish().hex_encode()
+
+
+## 版本化、带类型的请求描述编码。字典/数组保留原顺序；不支持的对象返回空串，
+## 由调用方绕过缓存而不是猜测其值。
+static func _canonical_variant(value) -> String:
+	if value == null:
+		return "N;"
+	if value is bool:
+		return "B1:1;" if value else "B1:0;"
+	if value is int:
+		var integer_text := str(value)
+		return "I%d:%s;" % [integer_text.length(), integer_text]
+	if value is float:
+		if is_nan(value) or is_inf(value):
+			return ""
+		var float_text := String.num(value, 17)
+		return "F%d:%s;" % [float_text.length(), float_text]
+	if value is String:
+		var string_bytes: PackedByteArray = value.to_utf8_buffer()
+		return "S%d:%s;" % [string_bytes.size(), value]
+	if value is Vector2:
+		var vector_text := _canonical_variant(value.x) + _canonical_variant(value.y)
+		return "V2:" + vector_text
+	if value is PackedByteArray:
+		return "Y%d:%s;" % [value.size(), value.hex_encode()]
+	if value is Array:
+		var array_text := "A%d:[" % value.size()
+		for item in value:
+			var item_text := _canonical_variant(item)
+			if item_text == "":
+				return ""
+			array_text += item_text
+		return array_text + "];"
+	if value is Dictionary:
+		var dictionary_text := "D%d:[" % value.size()
+		for key in value:
+			var key_text := _canonical_variant(key)
+			var item_text := _canonical_variant(value[key])
+			if key_text == "" or item_text == "":
+				return ""
+			dictionary_text += key_text + item_text
+		return dictionary_text + "];"
+	if value is SolverStartState:
+		return _canonical_variant({"stance": value.stance, "air_frames": value.air_frames})
+	if value is SolverSpatialData:
+		return _canonical_variant({"body_size": value.body_size})
+	if value is MoveData:
+		return _canonical_object(value, "MoveData", _MOVE_VALUE_FIELDS)
+	if value is MoveSegment:
+		return _canonical_object(value, "MoveSegment", _SEGMENT_VALUE_FIELDS)
+	if value is HitProfile:
+		return _canonical_object(value, "HitProfile", _PROFILE_VALUE_FIELDS)
+	return ""
+
+
+static func _canonical_object(value: Object, type_name: String, fields: Array) -> String:
+	var known := {}
+	for field in fields:
+		known[field] = true
+	## Resource metadata is identity/loader state, not a solver value. Any other
+	## exported field means this schema is newer than the cache implementation.
+	for property in value.get_property_list():
+		var name := String(property.get("name", ""))
+		if (int(property.get("usage", 0)) & 2) == 0:
+			continue
+		if name in ["resource_local_to_scene", "resource_name", "resource_path", "script"]:
+			continue
+		if not known.has(name):
+			return ""
+	var result := "O" + type_name + ":"
+	for field in fields:
+		var field_text := _canonical_variant(value.get(field))
+		if field_text == "":
+			return ""
+		result += "K" + str(field.length()) + ":" + field + ";" + field_text
+	return result
+
+
+static func _freeze_report(report: SolverReport) -> Dictionary:
+	var edges: Array = []
+	for edge in report.edges:
+		edges.append(_freeze_edge(edge))
+	var gaps: Array = []
+	for gap in report.gaps:
+		gaps.append(_freeze_edge(gap))
+	var routes: Array = []
+	for route in report.routes:
+		routes.append(_freeze_route(route))
+	var cycles: Array = []
+	for cycle in report.cycles:
+		cycles.append(_freeze_cycle(cycle))
+	return {
+		"safe": report.safe,
+		"summary": report.summary,
+		"scope": report.scope,
+		"edges": edges,
+		"gaps": gaps,
+		"routes": routes,
+		"cycles": cycles,
+		"incomplete_cycle_count": report.incomplete_cycle_count,
+		"notes": report.notes.duplicate(),
+		"refused": report.refused,
+		"refusal_reason": report.refusal_reason,
+		"refusal_advice": report.refusal_advice,
+		"table_lines": report.table_lines.duplicate(),
+		"start_lines": report.start_lines.duplicate(),
+		"first_candidates": report.first_candidates.duplicate(),
+		"binding_lines": report.binding_lines.duplicate(),
+		"spatial_lines": report.spatial_lines.duplicate(),
+		"guide_lines": report.guide_lines.duplicate(),
+		"verified_facings": report.verified_facings.duplicate(),
+		"mirror_consistent": report.mirror_consistent,
+	}
+
+
+static func _freeze_edge(edge: SolverEdge) -> Dictionary:
+	var inputs: Array = []
+	for input in edge.align_inputs:
+		inputs.append(_freeze_input(input))
+	return {
+		"from_id": edge.from_id,
+		"to_id": edge.to_id,
+		"kind": edge.kind,
+		"valid": edge.valid,
+		"reason": edge.reason,
+		"wait_from": edge.wait_from,
+		"wait_to": edge.wait_to,
+		"hit_age": edge.hit_age,
+		"recover_age": edge.recover_age,
+		"recover_truncated": edge.recover_truncated,
+		"align_from": edge.align_from,
+		"align_to": edge.align_to,
+		"align_inputs": inputs,
+		"blocked_valid": edge.blocked_valid,
+		"blocked_reason": edge.blocked_reason,
+	}
+
+
+static func _freeze_route(route: SolverRoute) -> Dictionary:
+	var inputs: Array = []
+	for input in route.inputs:
+		inputs.append(_freeze_input(input))
+	return {
+		"move_ids": route.move_ids.duplicate(),
+		"hit_frames": route.hit_frames.duplicate(),
+		"combo_hits": route.combo_hits,
+		"total_damage": route.total_damage,
+		"note": route.note,
+		"timing_valid": route.timing_valid,
+		"spatial_state": route.spatial_state,
+		"spatial_failures": route.spatial_failures.duplicate(),
+		"inputs": inputs,
+	}
+
+
+static func _freeze_cycle(cycle: SolverCycle) -> Dictionary:
+	var inputs: Array = []
+	for input in cycle.inputs:
+		inputs.append(_freeze_input(input))
+	return {
+		"route": cycle.route.duplicate(),
+		"period_frames": cycle.period_frames,
+		"proven": cycle.proven,
+		"outcome": cycle.outcome,
+		"laps_observed": cycle.laps_observed,
+		"reason": cycle.reason,
+		"start_text": cycle.start_text,
+		"inputs": inputs,
+	}
+
+
+static func _freeze_input(input: ScheduledInput) -> Dictionary:
+	return {
+		"frame": input.frame,
+		"axis": input.axis,
+		"down": input.down,
+		"jump": input.jump,
+		"key": input.key,
+	}
+
+
+static func _thaw_report(snapshot: Dictionary) -> SolverReport:
+	var report := SolverReport.new()
+	report.safe = snapshot.get("safe", true)
+	report.summary = snapshot.get("summary", "")
+	report.scope = snapshot.get("scope", "")
+	report.incomplete_cycle_count = snapshot.get("incomplete_cycle_count", 0)
+	report.refused = snapshot.get("refused", false)
+	report.refusal_reason = snapshot.get("refusal_reason", "")
+	report.refusal_advice = snapshot.get("refusal_advice", "")
+	report.mirror_consistent = snapshot.get("mirror_consistent", true)
+	report.notes = _string_array(snapshot.get("notes", []))
+	report.table_lines = _string_array(snapshot.get("table_lines", []))
+	report.start_lines = _string_array(snapshot.get("start_lines", []))
+	report.first_candidates = _string_array(snapshot.get("first_candidates", []))
+	report.binding_lines = _string_array(snapshot.get("binding_lines", []))
+	report.spatial_lines = _string_array(snapshot.get("spatial_lines", []))
+	report.guide_lines = _string_array(snapshot.get("guide_lines", []))
+	var facings: Array[int] = []
+	for facing in snapshot.get("verified_facings", []):
+		facings.append(int(facing))
+	report.verified_facings = facings
+	var edges: Array[SolverEdge] = []
+	for edge_data in snapshot.get("edges", []):
+		edges.append(_thaw_edge(edge_data))
+	report.edges = edges
+	var gaps: Array[SolverEdge] = []
+	for gap_data in snapshot.get("gaps", []):
+		gaps.append(_thaw_edge(gap_data))
+	report.gaps = gaps
+	var routes: Array[SolverRoute] = []
+	for route_data in snapshot.get("routes", []):
+		routes.append(_thaw_route(route_data))
+	report.routes = routes
+	var cycles: Array[SolverCycle] = []
+	for cycle_data in snapshot.get("cycles", []):
+		cycles.append(_thaw_cycle(cycle_data))
+	report.cycles = cycles
+	return report
+
+
+static func _string_array(values) -> Array[String]:
+	var result: Array[String] = []
+	for value in values:
+		result.append(String(value))
+	return result
+
+
+static func _thaw_edge(data: Dictionary) -> SolverEdge:
+	var edge := SolverEdge.new()
+	edge.from_id = data.get("from_id", "")
+	edge.to_id = data.get("to_id", "")
+	edge.kind = data.get("kind", EdgeKind.CANCEL)
+	edge.valid = data.get("valid", false)
+	edge.reason = data.get("reason", "")
+	edge.wait_from = data.get("wait_from", 0)
+	edge.wait_to = data.get("wait_to", -1)
+	edge.hit_age = data.get("hit_age", -1)
+	edge.recover_age = data.get("recover_age", -1)
+	edge.recover_truncated = data.get("recover_truncated", false)
+	edge.align_from = data.get("align_from", -1)
+	edge.align_to = data.get("align_to", -1)
+	edge.blocked_valid = data.get("blocked_valid", false)
+	edge.blocked_reason = data.get("blocked_reason", "")
+	var inputs: Array[ScheduledInput] = []
+	for input_data in data.get("align_inputs", []):
+		inputs.append(_thaw_input(input_data))
+	edge.align_inputs = inputs
+	return edge
+
+
+static func _thaw_route(data: Dictionary) -> SolverRoute:
+	var route := SolverRoute.new()
+	var move_ids: Array[String] = []
+	for move_id in data.get("move_ids", []):
+		move_ids.append(String(move_id))
+	route.move_ids = move_ids
+	var hit_frames: Array[int] = []
+	for frame in data.get("hit_frames", []):
+		hit_frames.append(int(frame))
+	route.hit_frames = hit_frames
+	route.combo_hits = data.get("combo_hits", 0)
+	route.total_damage = data.get("total_damage", 0.0)
+	route.note = data.get("note", "")
+	route.timing_valid = data.get("timing_valid", false)
+	route.spatial_state = data.get("spatial_state", SolverRoute.SpatialState.UNVERIFIED)
+	route.spatial_failures = _string_array(data.get("spatial_failures", []))
+	var inputs: Array[ScheduledInput] = []
+	for input_data in data.get("inputs", []):
+		inputs.append(_thaw_input(input_data))
+	route.inputs = inputs
+	return route
+
+
+static func _thaw_cycle(data: Dictionary) -> SolverCycle:
+	var cycle := SolverCycle.new()
+	var route: Array[String] = []
+	for move_id in data.get("route", []):
+		route.append(String(move_id))
+	cycle.route = route
+	cycle.period_frames = data.get("period_frames", -1)
+	cycle.proven = data.get("proven", false)
+	cycle.outcome = data.get("outcome", SolverCycle.Outcome.BROKEN)
+	cycle.laps_observed = data.get("laps_observed", 0)
+	cycle.reason = data.get("reason", "")
+	cycle.start_text = data.get("start_text", "")
+	var inputs: Array[ScheduledInput] = []
+	for input_data in data.get("inputs", []):
+		inputs.append(_thaw_input(input_data))
+	cycle.inputs = inputs
+	return cycle
+
+
+static func _thaw_input(data: Dictionary) -> ScheduledInput:
+	var input := ScheduledInput.new()
+	input.frame = data.get("frame", 0)
+	input.axis = data.get("axis", 0)
+	input.down = data.get("down", false)
+	input.jump = data.get("jump", false)
+	input.key = data.get("key", "")
+	return input
 
 
 static func _facing_text(facing: int) -> String:

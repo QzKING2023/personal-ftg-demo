@@ -4,12 +4,14 @@ extends SceneTree
 ## 运行：godot --headless --path . -s res://tests/test_combo_solver.gd
 ## Solver 只用私有 CombatSession 探针；本文件同时打印默认招式表的可读报告供设计者查阅。
 
+const AcceptanceSolverMetrics = preload("res://tests/acceptance_solver_metrics.gd")
+var _metrics := AcceptanceSolverMetrics.new()
 var _failures := 0
 
 
 func _initialize() -> void:
 	print("")
-	for line in ComboSolver.analyze().to_lines():
+	for line in _default_analyze().to_lines():
 		print("  " + line)
 	print("")
 	_test_default_table_reports_ground_route()
@@ -36,6 +38,7 @@ func _initialize() -> void:
 	_test_report_lines_readable()
 	_test_analysis_is_deterministic()
 	print("")
+	_metrics.emit("test_combo_solver")
 	if _failures == 0:
 		print("ALL SOLVER TESTS PASSED")
 		quit(0)
@@ -47,7 +50,7 @@ func _initialize() -> void:
 # --- 测试用例（旧 ftg-combo issue 06：地面接续）---
 
 func _test_default_table_reports_ground_route() -> void:
-	var report := ComboSolver.analyze()
+	var report := _default_analyze()
 	_check(report.safe and report.cycles.is_empty(), "default table reports no valid cycle")
 	_check(report.edges.size() == 36, "default table enumerates 36 edges (15 chain + 8 special + 4 link + 1 jump + 2 air cancels + 1 landing + 2 Rekka derives + 1 ~B link + 1 special D entry + 1 source-limited 5B link; ticket 05 adds the 236C special-entry family and removes the retired 236C jump cancel)")
 	var ab := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
@@ -91,7 +94,7 @@ func _test_numbers_match_runtime_session() -> void:
 				hit_frame = frame
 			elif event.type == CombatEvent.Type.DUMMY_RECOVERED:
 				recover_frame = frame
-	var report := ComboSolver.analyze()
+	var report := _default_analyze()
 	var ab := _find_edge(report, "5A", "5B")
 	_check(hit_frame == 6 and recover_frame == 6 + GameParams.HITSTOP_FRAMES + 9, "runtime 5A hits on frame 6 and naturally recovers after the freeze plus the A-starter-scaled hitstun (floor(14x0.70) = 9)")
 	_check(ab != null and ab.valid and ab.recover_age == recover_frame - hit_frame - GameParams.HITSTOP_FRAMES, "solver recover age (9 normal frames) matches the runtime session minus the frozen frames")
@@ -106,7 +109,7 @@ func _test_injected_valid_back_edge_reports_cycle() -> void:
 	# 自然断链——不设全局命中数上限，也不把衰减断链误报为可证明循环。
 	var table := MoveData.default_table()
 	(table["5B"] as MoveData).cancel_targets = ["5D", "5A"]
-	var report := ComboSolver.analyze(table)
+	var report := _metrics.analyze(table)
 	_check(report.safe and report.cycles.is_empty(), "the decayed-stun loop breaks naturally instead of being proven (corrections change the settlement state every lap)")
 	var ba := _find_edge(report, "5B", "5A")
 	_check(ba != null and ba.valid and ba.hit_age == 5 and ba.recover_age == 11, "back edge 5B -> 5A is itself valid: earliest hit age 5 <= recover age 11")
@@ -131,7 +134,7 @@ func _test_injected_slow_back_edge_not_misreported() -> void:
 	slow.cancel_targets = ["5A"]
 	table["5E"] = slow
 	(table["5B"] as MoveData).cancel_targets = ["5D", "5E"]
-	var report := ComboSolver.analyze(table)
+	var report := _metrics.analyze(table)
 	var be := _find_edge(report, "5B", "5E")
 	_check(be != null and not be.valid, "timeout back edge 5B -> 5E is excluded")
 	if be != null:
@@ -145,7 +148,7 @@ func _test_injected_slow_back_edge_not_misreported() -> void:
 func _test_injected_stance_back_edge_not_misreported() -> void:
 	var table := MoveData.default_table()
 	(table["5B"] as MoveData).cancel_targets = ["5D", "jA"]
-	var report := ComboSolver.analyze(table)
+	var report := _metrics.analyze(table)
 	var edge := _find_edge(report, "5B", "jA")
 	_check(edge != null and not edge.valid, "stance-mismatched back edge 5B -> jA is excluded")
 	if edge != null:
@@ -158,7 +161,7 @@ func _test_finisher_back_edge_not_misreported() -> void:
 	# 仍为收尾的 214D 的结构回边不可行。
 	var table := MoveData.default_table()
 	(table["214D"] as MoveData).cancel_targets = ["5A"]
-	var report := ComboSolver.analyze(table)
+	var report := _metrics.analyze(table)
 	var edge := _find_edge(report, "214D", "5A")
 	_check(edge != null and not edge.valid, "finisher back edge 214D -> 5A is excluded")
 	if edge != null:
@@ -192,7 +195,7 @@ func _test_wait_window_clamped_by_window_and_hitstun() -> void:
 	wide.cancel_window_frames = 2
 	wide.cancel_targets = ["5B"]
 	table["5G"] = wide
-	var report := ComboSolver.analyze(table)
+	var report := _metrics.analyze(table)
 	var fb := _find_edge(report, "5F", "5B")
 	_check(fb != null and not fb.valid, "5F -> 5B is now excluded too: the B pairing wait pushes the earliest hit one frame past the 4-frame stun")
 	if fb != null:
@@ -211,7 +214,7 @@ func _test_wait_window_clamped_by_window_and_hitstun() -> void:
 
 func _test_default_table_air_edges() -> void:
 	# 验收 1：空中姿态取消、jump cancel 配置与显式落地接续都进入接续图，并在真实结算中验证。
-	var report := ComboSolver.analyze()
+	var report := _default_analyze()
 	var jump_6a := _find_edge(report, "6A", "jA", ComboSolver.EdgeKind.JUMP_CANCEL)
 	_check(jump_6a != null and jump_6a.valid, "6A -> jA is a valid jump-cancel edge (5C no longer launches: baseline)")
 	if jump_6a != null:
@@ -232,7 +235,7 @@ func _test_default_table_air_edges() -> void:
 func _test_full_air_route_matches_runtime() -> void:
 	# 验收 2：完整空中路线的合法接续与运行时一致——把 Solver 发现的输入表回放到
 	# 真实 CombatSession（同一几何假设：木桩钉在玩家面前），命中帧/连段数/伤害逐项对拍。
-	var report := ComboSolver.analyze()
+	var report := _default_analyze()
 	var route := _find_route(report, ["5A", "5B", "6A", "jA", "jB", "jD"])
 	_check(route != null, "the full air route 5A -> 5B -> 6A -> Space -> jA -> jB -> jD is reported")
 	if route == null:
@@ -247,7 +250,7 @@ func _test_full_air_route_matches_runtime() -> void:
 
 
 func _test_landing_route_and_critical_frame() -> void:
-	var report := ComboSolver.analyze()
+	var report := _default_analyze()
 	_check(_find_route(report, ["5A", "5B", "6A", "jA", "jB", "5D"]) == null,
 		"forbidden landing-frame route is absent from legal routes")
 	var edge := _find_edge(report, "jB", "5D", ComboSolver.EdgeKind.LANDING_CANCEL)
@@ -262,7 +265,7 @@ func _test_jump_cancel_config_gates() -> void:
 	var table := MoveData.default_table()
 	(table["jA"] as MoveData).jump_cancel_targets = ["jB"]
 	(table["5A"] as MoveData).jump_cancel_targets = ["5B"]
-	var report := ComboSolver.analyze(table)
+	var report := _metrics.analyze(table)
 	var air_jump := _find_edge(report, "jA", "jB", ComboSolver.EdgeKind.JUMP_CANCEL)
 	_check(air_jump != null and not air_jump.valid, "an air move cannot jump-cancel (no double jump; airtime is not refreshable)")
 	if air_jump != null:
@@ -291,7 +294,7 @@ func _test_landing_seam_requires_alignment() -> void:
 	table["jE"] = late
 	(table["jB"] as MoveData).cancel_targets = ["jD", "jE"]
 	MoveData.profile_for(table["jB"], HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL).air_untech_frames = 40
-	var report := ComboSolver.analyze(table)
+	var report := _metrics.analyze(table)
 	var seam := _find_edge(report, "jE", "5D", ComboSolver.EdgeKind.LANDING_CANCEL)
 	_check(seam != null and not seam.valid, "jE -> 5D is excluded: the air move cannot even hit before landing")
 	if seam != null:
@@ -308,7 +311,7 @@ func _test_finite_air_resources_not_renewed() -> void:
 	# 可自动续期——注入 jB -> jA 空中回边只在滞空内成立，逐圈模拟在落地时断链。
 	var table := MoveData.default_table()
 	(table["jB"] as MoveData).cancel_targets = ["jD", "jA"]
-	var report := ComboSolver.analyze(table)
+	var report := _metrics.analyze(table)
 	var back := _find_edge(report, "jB", "jA", ComboSolver.EdgeKind.CANCEL)
 	_check(back != null and back.valid, "the injected jB -> jA air back edge is valid while airborne")
 	_check(report.safe and report.cycles.is_empty(), "the air back edge over finite airtime is never reported as a cycle")
@@ -322,7 +325,7 @@ func _test_finite_air_resources_not_renewed() -> void:
 func _test_injected_landing_back_edge_reports_cycle() -> void:
 	var table := MoveData.default_table()
 	(table["jB"] as MoveData).landing_cancel_targets = ["5D", "5A"]
-	var report := ComboSolver.analyze(table)
+	var report := _metrics.analyze(table)
 	_check(report.safe and report.cycles.is_empty(), "configured landing back edge cannot bypass recovery or prove a cycle")
 	var edge := _find_edge(report, "jB", "5A", ComboSolver.EdgeKind.LANDING_CANCEL)
 	_check(edge != null and not edge.valid, "landing back edge is excluded")
@@ -336,7 +339,7 @@ func _test_crouch_moves_and_low_float() -> void:
 	# 蹲姿招式的按下帧必须携带下方向（ScheduledInput.down），否则会话把同一键
 	# 解析为站立变体；2C 命中后进入 LOW_FLOAT_SWEEP，Solver 的可追击观测覆盖
 	# 到触地转普通倒地为止（timing 层结论，空间仍按声明边界）。
-	var report := ComboSolver.analyze()
+	var report := _default_analyze()
 	var crouch_chain := _find_edge(report, "2A", "2B", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	_check(crouch_chain != null and crouch_chain.valid,
 		"the 2A -> 2B crouch chain is validated by pressing B with the down state held")
@@ -382,7 +385,7 @@ func _test_rekka_derive_edges_and_routes() -> void:
 	# 票据 04：Rekka 派生边在真实结算中验证——首段接触起的派生窗口、首个
 	# B/C 新按下锁分支、派生按键无组合等待、被防接触同样开放派生；
 	# ~B/~C 不出现在首招候选；正例路线 2C > 214C > ~B 计 3 击、~C 收尾。
-	var report := ComboSolver.analyze()
+	var report := _default_analyze()
 	var derive_b := _find_edge(report, "214C", "214C~B", ComboSolver.EdgeKind.REKKA_DERIVE)
 	_check(derive_b != null and derive_b.valid,
 		"the 214C -> 214C~B derivation edge is validated in real settlement")
@@ -422,7 +425,7 @@ func _test_special_entry_edges_and_slide_scope() -> void:
 	# 票据 05：特殊进入边与来源限定连接在真实结算中验证；slide 捞起与段间
 	# 距离明确 replay-required；普通来源 5D 不取得反向 5B；结构性循环只允许
 	# 断链/未完成观测，不产生有效循环证明。
-	var report := ComboSolver.analyze()
+	var report := _default_analyze()
 	var entry := _find_edge(report, "236C", "5D", ComboSolver.EdgeKind.SPECIAL_ENTRY)
 	_check(entry != null and entry.valid, "the 236C -> 5D special entry edge is timing-valid on the pinned grid")
 	if entry != null and entry.valid:
@@ -450,7 +453,7 @@ func _test_blocked_cancel_edge_variants() -> void:
 	# 被防接触变体（票据 03）：链式/必杀边附「被防路径」标注——来源被站防/蹲防
 	# 挡下时取消仍能在窗口内起手；目标自身接触如实入注；来源未声明被防结果的
 	# 注入边默认不可被防；报告显式声明安全性 replay-required。
-	var report := ComboSolver.analyze()
+	var report := _default_analyze()
 	var chain := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	_check(chain != null and chain.blocked_valid, "5A -> 5B has a validated blocked-contact variant (cancelled while the dummy stands guard)")
 	if chain != null and chain.blocked_valid:
@@ -470,7 +473,7 @@ func _test_blocked_cancel_edge_variants() -> void:
 		has_note = has_note or (note.contains("replay-required") and note.contains("被防"))
 	_check(has_note, "the report notes declare block safety conclusions replay-required")
 	var unblockable_table := _blocked_probe_table(false)
-	var unblockable_report := ComboSolver.analyze(unblockable_table)
+	var unblockable_report := _metrics.analyze(unblockable_table)
 	var unblockable := _find_edge(unblockable_report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	_check(unblockable != null and not unblockable.blocked_valid and unblockable.blocked_reason.contains("未声明被防结果"),
 		"an injected source without declared block result denies the blocked variant (default deny, no global fallback)")
@@ -479,7 +482,7 @@ func _test_blocked_cancel_edge_variants() -> void:
 func _test_blocked_contact_not_treated_as_hit() -> void:
 	# 被防不产生命中：被防路径标注不改变路线图——路线的 combo_hits 只统计 HIT；
 	# 被防变体成立的边不因此出现以被防为起点的「路线」。
-	var report := ComboSolver.analyze()
+	var report := _default_analyze()
 	for route in report.routes:
 		_check(route.combo_hits == route.hit_frames.size(),
 			"every route counts exactly its HIT events (blocked contacts never inflate hit counts)")
@@ -503,7 +506,7 @@ func _blocked_probe_table(blockable: bool) -> Dictionary:
 func _test_solver_claims_only_configured_connections() -> void:
 	# 验收 5：Solver 只主张招式数据配置过的连接——边集等于配置关系集，
 	# 空中段只能经配置的 jump cancel 进入，路线只从地面普通动作键起手。
-	var report := ComboSolver.analyze()
+	var report := _default_analyze()
 	## 配置关系集 = 声明的取消/连接边：6 条链式、3 条必杀、4 条普通连接
 	## （5A→5B、5B→5C、5B→5D、5C→5D）、2 条 jump cancel、2 条空中取消、1 条落地接续。
 	var pairs := [
@@ -563,17 +566,17 @@ func _test_solver_does_not_modify_runtime_state() -> void:
 	for i in range(5):
 		session.step(FrameInput.new())
 	var before := _snapshot_session(session)
-	ComboSolver.analyze()
+	_default_analyze()
 	var table := MoveData.default_table()
 	(table["5B"] as MoveData).cancel_targets = ["5D", "5A"]
-	ComboSolver.analyze(table)
+	_metrics.analyze(table)
 	var after := _snapshot_session(session)
 	_check(before == after, "running the solver leaves every observable field of a live session untouched")
 	_check(session.player_move_id == "5A" and session.combo_active and session.combo_hits == 1, "the live session is still inside its 5A hit-confirmed combo, unbothered by probes")
 
 
 func _test_report_lines_readable() -> void:
-	var report := ComboSolver.analyze()
+	var report := _default_analyze()
 	var lines := report.to_lines()
 	var text := "\n".join(lines)
 	_check(lines.size() >= 8, "report has enough lines (summary/scope/edges/routes/cycles sections)")
@@ -585,8 +588,8 @@ func _test_report_lines_readable() -> void:
 
 
 func _test_analysis_is_deterministic() -> void:
-	var first := ComboSolver.analyze()
-	var second := ComboSolver.analyze()
+	var first := _default_analyze()
+	var second := _default_analyze()
 	var signature := func(report: ComboSolver.SolverReport) -> String:
 		var parts: Array[String] = []
 		for edge in report.edges:
@@ -792,3 +795,7 @@ func _check(condition: bool, label: String) -> void:
 	else:
 		print("FAIL  " + label)
 		_failures += 1
+
+func _default_analyze() -> ComboSolver.SolverReport:
+	return _metrics.analyze_reused("default")
+

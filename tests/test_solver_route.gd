@@ -6,6 +6,8 @@ extends SceneTree
 ## 失败原因可区分；缺口枚举保持稳定排序、确定性与运行时隔离。
 ## 运行：godot --headless --path . -s res://tests/test_solver_route.gd
 
+const AcceptanceSolverMetrics = preload("res://tests/acceptance_solver_metrics.gd")
+var _metrics := AcceptanceSolverMetrics.new()
 var _failures := 0
 
 
@@ -23,6 +25,7 @@ func _initialize() -> void:
 	_test_recovery_and_tech_reasons_stay_distinct()
 	_test_gaps_sorted_deterministic_and_isolated()
 	print("")
+	_metrics.emit("test_solver_route")
 	if _failures == 0:
 		print("ALL SOLVER ROUTE TESTS PASSED")
 		quit(0)
@@ -35,7 +38,7 @@ func _initialize() -> void:
 
 
 func _test_default_table_reports_config_gaps() -> void:
-	var report := ComboSolver.solve()
+	var report := _default_solve()
 	var cancel_gap := _find_gap(report, "5A", "5D", ComboSolver.EdgeKind.CANCEL)
 	_check(cancel_gap != null, "5A → 5D is reported as a cancel config gap (timing holds, cancel_targets lacks it)")
 	if cancel_gap != null:
@@ -63,7 +66,7 @@ func _test_default_table_reports_config_gaps() -> void:
 
 
 func _test_gaps_are_never_claimed_as_legal() -> void:
-	var report := ComboSolver.solve()
+	var report := _default_solve()
 	_check(report.edges.size() == 36, "gap enumeration leaves the configured edge set untouched (36 edges after ticket 05 adds the special D entry and the source-limited 5B link, minus the retired 236C jump cancel)")
 	for edge in report.edges:
 		_check(not (edge.from_id == "5A" and edge.to_id == "5D"),
@@ -100,7 +103,7 @@ func _test_timing_invalid_or_structural_pairs_not_gaps() -> void:
 	slow.active_frames = 2
 	slow.recovery_frames = 8
 	table["5H"] = slow
-	var report := ComboSolver.solve(_options(table))
+	var report := _metrics.solve(_options(table))
 	_check(_find_gap(report, "5F", "5H", ComboSolver.EdgeKind.CANCEL) == null,
 		"a pair whose hit lands after dummy recovery is not a gap")
 	_check(_find_gap(report, "5F", "5A", ComboSolver.EdgeKind.CANCEL) == null,
@@ -117,7 +120,7 @@ func _test_gap_becomes_valid_edge_once_configured() -> void:
 	var table := MoveData.default_table()
 	(table["5A"] as MoveData).cancel_targets = ["5B", "236C", "5D"]
 	var before := (table["5A"] as MoveData).cancel_targets.duplicate()
-	var report := ComboSolver.solve(_options(table))
+	var report := _metrics.solve(_options(table))
 	var edge := _find_edge(report, "5A", "5D", ComboSolver.EdgeKind.CANCEL)
 	_check(edge != null and edge.valid, "configuring the gap turns 5A → 5D into a valid edge")
 	_check(_find_gap(report, "5A", "5D", ComboSolver.EdgeKind.CANCEL) == null,
@@ -130,12 +133,12 @@ func _test_gap_becomes_valid_edge_once_configured() -> void:
 
 
 func _test_landing_gap_from_direct_jump_entry() -> void:
-	var report := ComboSolver.solve()
+	var report := _default_solve()
 	_check(_find_gap(report, "jA", "5D", ComboSolver.EdgeKind.LANDING_CANCEL) == null,
 		"landing recovery is a rule restriction, not a missing configuration")
 	var table := MoveData.default_table()
 	(table["jA"] as MoveData).landing_cancel_targets = ["5D"]
-	var configured := ComboSolver.solve(_options(table))
+	var configured := _metrics.solve(_options(table))
 	var edge := _find_edge(configured, "jA", "5D", ComboSolver.EdgeKind.LANDING_CANCEL)
 	_check(edge != null and not edge.valid and edge.align_inputs.is_empty(),
 		"adding a direct-entry landing target still cannot bypass recovery")
@@ -144,7 +147,7 @@ func _test_landing_gap_from_direct_jump_entry() -> void:
 func _test_pairing_wait_landing_target_not_a_gap() -> void:
 	# 诚实缺口：B/C 是投组合成员键，落地帧前的按下要吃 3f 组合等待，落地恢复
 	# 锁定使消费不可达——时序不成立的落地对不报告为缺口。
-	var report := ComboSolver.solve()
+	var report := _default_solve()
 	_check(_find_gap(report, "jA", "5B", ComboSolver.EdgeKind.LANDING_CANCEL) == null,
 		"a B-target landing seam whose pairing wait eats the landing frame is not a gap")
 
@@ -153,7 +156,7 @@ func _test_pairing_wait_landing_target_not_a_gap() -> void:
 
 
 func _test_binding_and_variant_lines() -> void:
-	var report := ComboSolver.solve()
+	var report := _default_solve()
 	var text := "\n".join(report.binding_lines)
 	var lines := "\n".join(report.to_lines())
 	_check("输入绑定" in lines and "variant" in lines, "the report has a binding/variant section")
@@ -176,7 +179,7 @@ func _test_binding_and_variant_lines() -> void:
 	super_move.command_tier = MoveData.CommandTier.SUPER
 	super_move.priority = 2
 	table["632146D"] = super_move
-	var enriched := ComboSolver.solve(_options(table))
+	var enriched := _metrics.solve(_options(table))
 	var enriched_text := "\n".join(enriched.binding_lines)
 	_check("623A｜U 键（A）｜variant 623（宽松，3 步，窗口 30 帧）：验证成立" in enriched_text,
 		"the lenient 623 variant is labeled lenient and verified")
@@ -197,7 +200,7 @@ func _test_inexpressible_variant_reported() -> void:
 	odd.command_tier = MoveData.CommandTier.SUPER
 	odd.priority = 2
 	table["9D9D"] = odd
-	var report := ComboSolver.solve(_options(table))
+	var report := _metrics.solve(_options(table))
 	var text := "\n".join(report.binding_lines)
 	_check("variant 999" in text and "不可表达" in text,
 		"an alternative whose direction steps cannot be expressed is reported as inexpressible")
@@ -220,7 +223,7 @@ func _test_whiff_reason_distinguishable() -> void:
 	table["5V"] = whiffy_two
 	(table["5A"] as MoveData).cancel_targets = ["5W"]
 	(table["5B"] as MoveData).cancel_targets = ["5D", "214D", "5V"]
-	var report := ComboSolver.solve(_options(table))
+	var report := _metrics.solve(_options(table))
 	var edge := _find_edge(report, "5A", "5W", ComboSolver.EdgeKind.CANCEL)
 	_check(edge != null and not edge.valid, "the whiffed target edge is excluded")
 	if edge != null:
@@ -246,7 +249,7 @@ func _test_recovery_and_tech_reasons_stay_distinct() -> void:
 	slow.recovery_frames = 8
 	table["5H"] = slow
 	(table["5A"] as MoveData).cancel_targets = ["5H"]
-	var report := ComboSolver.solve(_options(table))
+	var report := _metrics.solve(_options(table))
 	var edge := _find_edge(report, "5A", "5H", ComboSolver.EdgeKind.CANCEL)
 	_check(edge != null and not edge.valid, "the slow-target edge is excluded")
 	if edge != null:
@@ -258,7 +261,7 @@ func _test_recovery_and_tech_reasons_stay_distinct() -> void:
 
 
 func _test_gaps_sorted_deterministic_and_isolated() -> void:
-	var first := ComboSolver.solve()
+	var first := _default_solve()
 	var keys: Array[String] = []
 	for gap in first.gaps:
 		keys.append("%s|%s|%d" % [gap.from_id, gap.to_id, gap.kind])
@@ -266,7 +269,7 @@ func _test_gaps_sorted_deterministic_and_isolated() -> void:
 	sorted_keys.sort()
 	_check(keys == sorted_keys, "gaps are stably sorted by from → to → kind")
 	_check(first.mirror_consistent, "gap enumeration stays mirror-consistent across both facings")
-	_check(ComboSolver.solve().to_lines() == first.to_lines(),
+	_check(_default_solve().to_lines() == first.to_lines(),
 		"solving twice yields identical reports, gaps included")
 	# 运行时隔离：缺口探针同样不触碰活动会话。
 	var session := CombatSession.new()
@@ -275,7 +278,7 @@ func _test_gaps_sorted_deterministic_and_isolated() -> void:
 	for i in range(5):
 		session.step(FrameInput.new())
 	var before := _snapshot_session(session)
-	ComboSolver.solve()
+	_default_solve()
 	var after := _snapshot_session(session)
 	_check(before == after, "running solve() with gap enumeration leaves a live session untouched")
 	_check(session.player_move_id == "5A" and session.combo_hits == 1,
@@ -437,3 +440,7 @@ func _check(condition: bool, label: String) -> void:
 	else:
 		print("FAIL  " + label)
 		_failures += 1
+
+func _default_solve() -> ComboSolver.SolverReport:
+	return _metrics.solve_reused("default")
+

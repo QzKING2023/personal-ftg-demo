@@ -32,6 +32,8 @@ const KEYBOARD_STANDINGS := {
 ## 单次回放的物理帧观测上限（自然受身 + 落地 + 余量）。
 const OBSERVE_HORIZON := 420
 
+const AcceptanceSolverMetrics = preload("res://tests/acceptance_solver_metrics.gd")
+var _metrics := AcceptanceSolverMetrics.new()
 var _failures := 0
 ## 回放记录（起始面向/站位/逐帧输入/命中帧/连段数/总伤害），跑完统一打印并断言完整。
 var _records: Array[String] = []
@@ -43,7 +45,7 @@ func _initialize() -> void:
 
 func _run_tests() -> void:
 	print("")
-	var plain := ComboSolver.solve()
+	var plain := _metrics.solve()
 	_test_pinned_replay_reproduces_solver_results(plain)
 	_test_rejected_landing_replay(plain)
 	_test_replay_boundary_variants(plain)
@@ -54,6 +56,7 @@ func _run_tests() -> void:
 	for line in _records:
 		print(line)
 	print("")
+	_metrics.emit("test_replay_acceptance")
 	if _failures == 0:
 		print("ALL REPLAY ACCEPTANCE TESTS PASSED")
 		quit(0)
@@ -222,7 +225,7 @@ func _test_timing_spatial_layering_and_whiff_replay(plain: ComboSolver.SolverRep
 		"the guide states its frame tables are laid out at the fixed %d px contact" % ComboSolver.PIN_DX)
 
 	# 提供空间数据：默认表路线 spatial-valid，48/64/80 px 钉位复验逐档重现。
-	var spatial := ComboSolver.solve(_spatial_options())
+	var spatial := _metrics.solve(_spatial_options())
 	var air := _find_route(spatial, AIR_ROUTE)
 	if air == null:
 		_check(false, "the spatial run reports the air route")
@@ -252,7 +255,7 @@ func _test_timing_spatial_layering_and_whiff_replay(plain: ComboSolver.SolverRep
 	## 5A 在 80 px 自身脱靶（边界相邻）：以 5B（远缘 69 px）为来源，80 px 上
 	## 来源命中、5R（远缘 48 px）挥空——短 reach 空间失败由回放证实。
 	(short_table["5B"] as MoveData).cancel_targets.append("5R")
-	var short_report := ComboSolver.solve(_spatial_options(short_table))
+	var short_report := _metrics.solve(_spatial_options(short_table))
 	var short_route := _find_route(short_report, ["5B", "5R"])
 	if short_route == null:
 		_check(false, "the short-reach injected table reports the 5B → 5R route")

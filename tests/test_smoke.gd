@@ -6,6 +6,8 @@ extends SceneTree
 ## 因此测试挂在一帧 process_frame 之后执行；集成测试用 physics_frame 推进物理帧，
 ## 用 Input.action_press / parse_input_event 注入输入，结束时调用 quit()。
 
+const AcceptanceSolverMetrics = preload("res://tests/acceptance_solver_metrics.gd")
+var _metrics := AcceptanceSolverMetrics.new()
 var _failures := 0
 
 
@@ -37,6 +39,7 @@ func _run_tests() -> void:
 	await _test_main_refuses_invalid_manifest()
 	await _test_reset(main)
 	print("")
+	_metrics.emit("test_smoke")
 	if _failures == 0:
 		print("ALL TESTS PASSED")
 		quit(0)
@@ -795,7 +798,7 @@ func _test_main_refuses_invalid_manifest() -> void:
 	var hint: Label = refused.get_node_or_null("Hint")
 	_check(hint != null and hint.text.contains("base_damage") and hint.text.contains("拒绝"),
 		"hint label shows the refusal and the offending field")
-	var report := ComboSolver.analyze_manifest("user://smoke_bad_manifest.tres")
+	var report := _metrics.analyze_manifest("user://smoke_bad_manifest.tres")
 	_check(report.refused and report.refusal_reason == table_error,
 		"solver refuses the same table for the same observable reason")
 	# 拒绝状态不产生会话事件：场景仍可安全迭代（重置流程不受影响）。
