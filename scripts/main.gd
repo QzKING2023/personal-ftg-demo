@@ -72,6 +72,12 @@ func _physics_process(_delta: float) -> void:
 			_last_state_note = "向下击落触地 → 普通倒地"
 		if event.type == CombatEvent.Type.SLIDE_STARTED:
 			_last_state_note = "击飞触地 → 地面滑行（%d 帧，可被 5D 捞起）" % session.dummy_slide_left
+		if event.type == CombatEvent.Type.CHARGE_COMMITTED:
+			_last_state_note = "蓄力提交 %s → %s（按住 %d 帧%s）" % [
+				event.charge_from_move_id, event.charge_to_move_id, event.charge_age,
+				"，阈值自动触发" if event.charged else "，松开走普通版"]
+		if event.type == CombatEvent.Type.SWITCHED_SIDES:
+			_last_state_note = "换边：命中穿越，下一帧面向 %s" % ("→" if event.direction == 1 else "←")
 		if event.type == CombatEvent.Type.ATTACK_BLOCKED:
 			_last_state_note = "攻击被%s挡下（被防硬直 %d）" % [
 				_guard_posture_text(event.guard_posture), session.dummy_blockstun_left]
@@ -271,9 +277,23 @@ func _update_debug_line() -> void:
 	var attribute := String(snap["move_attribute"])
 	if attribute != "":
 		attribute = " 属性" + attribute
-	_debug_line.text = "诊断 帧%d 面向%s %s 防御%s 招式%s%s 缓存%s 跳槽%s 按住%s 投窗%s%s 方向%s 取消%s 派生%s" % [
-		int(snap["frame"]), facing_text, posture, guard_text, move_text, attribute, buffer_text, jump_text,
-		held_text, throw_text, pending_text, sequence, cancels, derive_text,
+	# 蓄力与换边观测（票据 06）：蓄力龄/蓄力版、锁定动作方向、穿越许可与墙截断。
+	var charge_text := "—"
+	if int(snap["charge_age"]) >= 0:
+		charge_text = "龄%d" % int(snap["charge_age"])
+	elif bool(snap["charged_active"]):
+		charge_text = "蓄力版"
+	var motion_text := "—"
+	var move_direction := int(snap["move_direction"])
+	if move_direction != 0:
+		motion_text = "%s%s%s" % [
+			"→" if move_direction == 1 else "←",
+			"·穿越" if bool(snap["cross_ok"]) else "",
+			"·墙截" if bool(snap["motion_wall_clamped"]) else "",
+		]
+	_debug_line.text = "诊断 帧%d 面向%s %s 防御%s 招式%s%s 蓄力%s 位移%s 缓存%s 跳槽%s 按住%s 投窗%s%s 方向%s 取消%s 派生%s" % [
+		int(snap["frame"]), facing_text, posture, guard_text, move_text, attribute, charge_text, motion_text,
+		buffer_text, jump_text, held_text, throw_text, pending_text, sequence, cancels, derive_text,
 	]
 
 

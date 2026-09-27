@@ -1,6 +1,6 @@
 # 招式与行为数据
 
-训练场和 Solver 读取 `data/move_manifest.tres` 引用的 `data/moves/*.tres`。当前为 10 个打击招式加 1 个普通投。身份由 `move_id` 定义，文件名不是身份。修改后重新运行进程；核心字段缺失、负帧数、非法枚举/引用/并列优先级/非法命中资料组合都会整表拒绝。
+训练场和 Solver 读取 `data/move_manifest.tres` 引用的 `data/moves/*.tres`。当前为 17 个打击招式（含蓄力版 5[D]）加 1 个普通投。身份由 `move_id` 定义，文件名不是身份。修改后重新运行进程；核心字段缺失、负帧数、非法枚举/引用/并列优先级/非法命中资料组合都会整表拒绝。
 
 | 招式 | startup/active/recovery | 基础伤害 | 命中资料 | 配置接续 |
 | --- | --- | --- | --- |
@@ -9,7 +9,8 @@
 | 5C | 6/5/16 | 14 | grounded n 浮空 | jump cancel → jA |
 | 6A | 8/6/20 | 16 | grounded n/c 浮空 | jump cancel → jA（6+A 专用击飞入口） |
 | 236C | 6/5/18 | 18 | grounded n 浮空 | jump cancel → jA |
-| 5D | 5/7/15 | 18 | grounded n 地面硬直 | 收尾 |
+| 5D | 5/7/15 | 18 | grounded n 地面硬直 | 收尾（票据 06 起另有计划位移 72px 与动作内蓄力） |
+| 5[D] | 7/4/22 | 20 | 与 5D 同三组资料（TUNING_INITIAL 镜像） | 仅由 5D 蓄力提交起手（charge_only）；来源限定 5B 目押同 5D |
 | 214D | 7/5/20 | 22 | grounded n/c 普通倒地 | 收尾 |
 | jA | 4/6/10 | 8 | grounded n 地面硬直；airborne n 浮空 | jB |
 | jB | 4/6/12 | 12 | grounded n 地面硬直；airborne n 浮空 | jD；历史落地目标 5D 被当前规则排除 |
@@ -20,7 +21,7 @@
 
 打击接受帧是 F1，第一命中在接受帧 + startup；I/K 的组合等待另计。BC 的帧 5 为投发生点，未拆投结果到帧 15 才应用，不能用打击首 active 的公式推导它。
 
-必填通用字段：`move_id`、`move_kind`、`stance`、`action_key`、三个帧窗口、`cancel_window_frames`、`priority`。打击还需 `base_damage`（非负）、`attack_attribute`、`air_attack`、命中框/间距、至少一个合法 `HitProfile`，以及被防结果三字段（2026-09-25 票据 03）：`block_freeze_frames`（被防停顿，双方冻结的物理帧数）、`block_stun_frames`（被防硬直，防守方停顿后不可行动的正常帧数）、`block_pushback_px_s`（被防推退，停顿后施加给双方的水平速度）——三项逐招显式声明、整表齐备，投技不得声明；程序注入表未声明时该招不可被防（默认禁止，无全局回退参数）。投需 `throw_range`，不走单键绑定，也不得声明命中资料。旧 `hit_result`/`hitstun_frames`/`knockback`/`knockback_up` 字段已删除，不存在回退。当前全部打击的被防初值为 8/9 帧、45px/s（frame-data v0.5 TUNING_INITIAL）。
+必填通用字段：`move_id`、`move_kind`、`stance`、`action_key`、三个帧窗口、`cancel_window_frames`、`priority`。计划位移与动作内蓄力（票据 06）：`motion_x_px`/`motion_y_px`（两轴成对声明或成对未声明，NAN 为未声明；active 帧按累计比例推进、命中框沿本帧轨迹扫掠、正式位置经版边/身体约束后提交）、`charge_threshold_frames` + `charge_move_id`（按住动作键至阈值的正常帧数与蓄力版目标，达阈值自动提交、松开走普通版）与 `charge_only`（蓄力版唯一入口，不参与单键/指令选择、不得出现在任何接续目标中；入口唯一、不得链式蓄力）。打击还需 `base_damage`（非负）、`attack_attribute`、`air_attack`、命中框/间距、至少一个合法 `HitProfile`，以及被防结果三字段（2026-09-25 票据 03）：`block_freeze_frames`（被防停顿，双方冻结的物理帧数）、`block_stun_frames`（被防硬直，防守方停顿后不可行动的正常帧数）、`block_pushback_px_s`（被防推退，停顿后施加给双方的水平速度）——三项逐招显式声明、整表齐备，投技不得声明；程序注入表未声明时该招不可被防（默认禁止，无全局回退参数）。投需 `throw_range`，不走单键绑定，也不得声明命中资料。旧 `hit_result`/`hitstun_frames`/`knockback`/`knockback_up` 字段已删除，不存在回退。当前全部打击的被防初值为 8/9 帧、45px/s（frame-data v0.5 TUNING_INITIAL）。
 
 `cancel_targets` / `jump_cancel_targets` 只是必要条件，仍须姿态、命中确认、取消年龄和目标可追击同时成立。`landing_cancel_targets` 保留旧资源读取和排除诊断，不能绕过落地恢复；恢复后的普通连接尚未进入 Solver 搜索。`extra_landing_recovery_frames` 叠加在空技默认一次 +1f 之上，不延长 active。方向串、替代串、严格/宽松、指令层级和 priority 共同决定识别结果；三步串窗口为 30 个正常帧，窗口含首帧。
 

@@ -265,6 +265,35 @@ var _move_via_special_entry := false
 var _finished_move_hit := false
 var _finished_move_via_entry := false
 
+# --- 蓄力、计划位移与换边（票据 06，I-01..I-03 / M-01..M-04）---
+## 本招启动时锁定的动作轨迹世界方向（±1；0 = 无进行中招式）。当前招式的
+## hitbox、位移与扫掠方向贯穿本招不反向；player_facing 每帧在运动结算后按
+## 横向关系另行更新，两者互不重解释。
+var _move_direction := 0
+## 动作内蓄力：自本招启动起按住动作键的正常帧计数（停顿帧不计；松开的帧
+## 不积攒）。提交后冻结，仅供观测。
+var _charge_age := 0
+## 蓄力分支是否已提交：未提交且仍按住时 active 边界延长 startup，达阈值自动
+## 提交蓄力版，松开提交普通版（提交帧钟回卷至提交版的 active_from）。
+var _charge_committed := false
+## 本招位移的身体穿越许可（M-02）：实际 HIT 授予，仅限本动作的位移段；被防、
+## 挥空、缺失资料不授予。招式结束或被打断即清零，不传给下一招。
+var _cross_ok := false
+## 本招计划位移是否被版边截断（观测标记：墙截断不换边由位置自然表达）。
+var _motion_wall_clamped := false
+## 本帧计划位移（M-01：输入后、命中判定前生成，命中读取计划姿态；运动阶段
+## 提交并清零。冻结帧不生成）。
+var _planned_step := Vector2.ZERO
+## 计划位移累计锚点（首个位移帧的正式位置）：累计目标按比例自锚点推算，
+## 逐帧步长=目标-当前，避免逐帧累加的浮点漂移。
+var _motion_anchor_x := 0.0
+var _motion_anchor_y := 0.0
+## 已提交计划位移的 active 帧数（累计分布分子）。
+var _motion_frames_done := 0
+## 方向候选参考面向（M-04）：方向历史为空（无进行中候选）时重锁帧首面向；
+## 候选进行中保持首次输入时锁定的相对面向，不因换边重解释后续方向段。
+var _direction_ref_facing := 1
+
 
 func _init(move_table: Dictionary = {}) -> void:
 	## 空表默认加载共享 manifest（训练场与 Solver 同一份已校验数据）；
@@ -380,6 +409,8 @@ func reset_to_initial_state() -> void:
 	_move_via_special_entry = false
 	_finished_move_hit = false
 	_finished_move_via_entry = false
+	_reset_move_tracking()
+	_direction_ref_facing = 1
 
 
 ## Capture the complete mutable execution state. MoveData resources are kept in
@@ -415,6 +446,9 @@ func clone_state() -> Dictionary:
 			"jump_direction": _jump_direction,
 			"dash_left": player_dash_left,
 			"dash_direction": _dash_direction,
+			"direction_ref_facing": _direction_ref_facing,
+			"move_direction": _move_direction,
+			"planned_step": _planned_step,
 		},
 		"dummy": {
 			"position": dummy_position,
@@ -465,6 +499,12 @@ func clone_state() -> Dictionary:
 			"finished_move_hit": _finished_move_hit,
 			"finished_move_via_entry": _finished_move_via_entry,
 			"via_special_entry": _move_via_special_entry,
+			"charge_age": _charge_age,
+			"charge_committed": _charge_committed,
+			"cross_ok": _cross_ok,
+			"motion_wall_clamped": _motion_wall_clamped,
+			"motion_frames_done": _motion_frames_done,
+			"motion_anchor": Vector2(_motion_anchor_x, _motion_anchor_y),
 		},
 		"input": _clone_frame_input(_frame_input),
 		"keys": {
@@ -576,6 +616,9 @@ func restore_state(state: Dictionary) -> bool:
 	_jump_direction = int(player.get("jump_direction", 0))
 	player_dash_left = int(player.get("dash_left", 0))
 	_dash_direction = int(player.get("dash_direction", 0))
+	_direction_ref_facing = int(player.get("direction_ref_facing", 1))
+	_move_direction = int(player.get("move_direction", 0))
+	_planned_step = player.get("planned_step", Vector2.ZERO)
 
 	dummy_position = dummy.get("position", Vector2.ZERO)
 	dummy_velocity = dummy.get("velocity", Vector2.ZERO)
@@ -626,6 +669,14 @@ func restore_state(state: Dictionary) -> bool:
 	_finished_move_hit = bool(move_state.get("finished_move_hit", false))
 	_finished_move_via_entry = bool(move_state.get("finished_move_via_entry", false))
 	_move_via_special_entry = bool(move_state.get("via_special_entry", false))
+	_charge_age = int(move_state.get("charge_age", 0))
+	_charge_committed = bool(move_state.get("charge_committed", false))
+	_cross_ok = bool(move_state.get("cross_ok", false))
+	_motion_wall_clamped = bool(move_state.get("motion_wall_clamped", false))
+	_motion_frames_done = int(move_state.get("motion_frames_done", 0))
+	var motion_anchor: Vector2 = move_state.get("motion_anchor", Vector2.ZERO)
+	_motion_anchor_x = motion_anchor.x
+	_motion_anchor_y = motion_anchor.y
 	_frame_input = _restore_frame_input(input_state)
 	_key_presses = keys.get("presses", {}).duplicate(true)
 	_key_held = (keys.get("held", []) as Array).duplicate()
@@ -719,6 +770,7 @@ func step(input: FrameInput) -> Array[CombatEvent]:
 	_normal_frame_index += 1
 	_player_just_landed = false
 	_phase_input(events)
+	_phase_plan_motion()
 	_phase_hit_detection()
 	_phase_apply_hits(events)
 	_phase_motion(events)
@@ -735,13 +787,30 @@ func hitstop_active() -> bool:
 
 ## 当前招式当前判定段的命中框（世界坐标）；没有进行中的打击招式时返回空矩形
 ## （投技无命中框）。判定阶段与非判定阶段共用同一几何，是否生效由 player_phase
-## 决定；多段招式按当前段声明取段命中框（票据 05）。
+## 决定；多段招式按当前段声明取段命中框（票据 05）。方向取本招启动时锁定的
+## 动作方向（M-04：跨身当帧面向更新不影响本招 hitbox）。声明计划位移的招式
+## 在 active 帧返回当前姿态到本帧计划姿态的扫掠覆盖（M-03：轴对齐平移的扫掠
+## 区域恰为两姿态矩形的包络，无细分采样误差；startup/recovery 步长为零不扫掠）。
 func player_attack_rect() -> Rect2:
 	if _current_move == null or not _current_move.is_strike():
 		return Rect2()
 	var size := _current_move.segment_hitbox_size(_current_segment)
-	var center := player_position + Vector2(player_facing * _current_move.segment_hitbox_offset(_current_segment), 0.0)
-	return Rect2(center - size * 0.5, size)
+	var center := player_position + Vector2(_attack_direction() * _current_move.segment_hitbox_offset(_current_segment), 0.0)
+	var rect := Rect2(center - size * 0.5, size)
+	if _planned_step == Vector2.ZERO:
+		return rect
+	var near := rect.position
+	var far := rect.position + rect.size
+	var moved_near := near + _planned_step
+	var moved_far := far + _planned_step
+	return Rect2(Vector2(minf(near.x, moved_near.x), minf(near.y, moved_near.y)),
+		Vector2(maxf(far.x, moved_far.x), maxf(far.y, moved_far.y)) - Vector2(minf(near.x, moved_near.x), minf(near.y, moved_near.y)))
+
+
+## 攻击方向：进行中招式用启动时锁定的动作轨迹方向，否则用当前面向
+## （命中应用、击退与事件方向共用同一口径）。
+func _attack_direction() -> int:
+	return _move_direction if _current_move != null and _move_direction != 0 else player_facing
 
 
 ## 木桩当前招式的命中框（世界坐标，朝玩家一侧）；没有进行中的招式时返回空矩形。
@@ -825,6 +894,13 @@ func debug_snapshot() -> Dictionary:
 		"rekka_window_left": (maxi(0, _current_move.rekka_window_frames - (_normal_frame_index - _rekka_contact_frame))
 			if _rekka_window_active() else -1),
 		"velocity": player_velocity,
+		"charge_age": (_charge_age if _current_move != null and _current_move.is_chargeable() and not _charge_committed else -1),
+		"charged_active": (_current_move != null and _current_move.charge_only),
+		"move_direction": _move_direction,
+		"direction_ref_facing": _direction_ref_facing,
+		"cross_ok": _cross_ok,
+		"motion_wall_clamped": _motion_wall_clamped,
+		"planned_step": _planned_step,
 	}
 
 
@@ -839,9 +915,11 @@ func debug_snapshot() -> Dictionary:
 ## - 动作键原始按下记录只在与新按下配对（≤3 物理帧）时影响结算，等待中的候选
 ##   与投意图经缓存/投字段入快照；按住集合是输入历史的确定函数，入快照。
 ## - 方向候选（指令锁定）由方向历史 + 姿态 + 招式表在识别时确定派生，历史
-##   （年龄化）与姿态入快照即覆盖，不重复入快照。
-## - 横向位置不入快照：Solver 探针把木桩钉在玩家面向侧固定间距，横向几何是
-##   探针假设（见 ComboSolver 证明范围）；纵向位置与速度是真实结算量，入快照。
+##   （年龄化）与姿态入快照即覆盖，不重复入快照。参考面向（候选锁定的相对
+##   面向，票据 06 M-04）影响后续段的折算，入快照。
+## - 横向位置（票据 06 起）入快照：D 系计划位移使双方横向几何成为真实结算量
+##   （后续命中框接触与版边截断都依赖它）；Solver 探针的钉位是几何接触假设，
+##   位置仍在每帧结算后如实入键。
 func settlement_state() -> Dictionary:
 	var buffer_age := -1
 	if _buffered_key != "":
@@ -895,6 +973,15 @@ func settlement_state() -> Dictionary:
 		"facing": player_facing,
 		"velocity": player_velocity,
 		"position_y": player_position.y,
+		"position_x": player_position.x,
+		"dummy_position_x": dummy_position.x,
+		"direction_ref_facing": _direction_ref_facing,
+		# 蓄力、计划位移与换边（票据 06）：动作方向、蓄力年龄/开闭、穿越许可与
+		# 横向位置影响未来结算（命中几何、身体约束、版边截断、面向更新）。
+		"move_direction": _move_direction,
+		"charge_age": _charge_age,
+		"charge_open": (_current_move != null and _current_move.is_chargeable() and not _charge_committed),
+		"cross_ok": _cross_ok,
 		# 落地和 jump 标记
 		"prejump_left": player_prejump_left,
 		"landing_recovery_left": player_landing_recovery_left,
@@ -976,6 +1063,11 @@ func _phase_input(events: Array[CombatEvent]) -> void:
 		_clear_buffer()
 	if _jump_slot_active and _normal_frame_index - _jump_slot_at >= GameParams.ACTION_BUFFER_FRAMES:
 		_jump_slot_active = false
+	## 方向候选参考面向（票据 06，M-04）：默认每帧重锁帧首面向；存在已开始、
+	## 未完成的 214/236 指令候选时保持首次输入时锁定的相对面向，换边不重解释
+	## 候选的后续方向段。
+	if not _command_candidate_active():
+		_direction_ref_facing = player_facing
 	_record_direction()
 	_record_action_key_events()
 	## Rekka 派生仲裁（I-04）先于普通投组合：派生窗口内的 B/C 新按下立即锁分支
@@ -1316,16 +1408,72 @@ func _record_direction() -> void:
 
 
 func _direction_digit() -> int:
-	## 面向相对的小键盘方向（输入阶段先于运动，用翻转前的面向折算）：
-	## 前6/后4/下2/上8及斜向1/3/7/9；上下中和，无输入为5。
+	## 参考面向相对的小键盘方向（输入阶段先于运动，用翻转前的面向折算；
+	## 候选进行中参考 _direction_ref_facing——首次输入时锁定，不被换边重解释，
+	## 票据 06 M-04）：前6/后4/下2/上8及斜向1/3/7/9；上下中和，无输入为5。
 	var horizontal := 0
-	if _frame_input.move_axis == player_facing:
+	if _frame_input.move_axis == _direction_ref_facing:
 		horizontal = 1
-	elif _frame_input.move_axis == -player_facing:
+	elif _frame_input.move_axis == -_direction_ref_facing:
 		horizontal = -1
 	var up := _frame_input.up_held or _frame_input.jump_pressed
 	var vertical := int(up) - int(_frame_input.down_held)
 	return 5 + horizontal + 3 * vertical
+
+
+## 是否存在已开始、未完成的指令候选（票据 06，M-04）：方向段（过滤中立 5，
+## 与识别器同口径）的某个后缀与表内某指令变体的前 k 段按谓词严格连续匹配
+##（k ≥ 1 且 k < 变体段数）。此时新方向段按候选首次输入时锁定的相对面向
+## 折算，不被换边重解释；无候选的普通移动/蹲防方向照常按当前面向折算。
+## 宽松指令的段间跳跃不参与本判定（当前表内指令均为严格记法，连续匹配与
+## 真实识别一致）。
+func _command_candidate_active() -> bool:
+	var segments := _direction_segments()
+	if segments.is_empty():
+		return false
+	for move_id in _moves:
+		var move := _moves[move_id] as MoveData
+		if move == null or not move.is_strike() or not _has_direction_notation(move):
+			continue
+		if move.rekka_only or move.charge_only:
+			continue
+		for notation in _move_notations(move):
+			var digits := notation.substr(0, notation.length() - 1)
+			for start in range(segments.size()):
+				var matched := 0
+				while matched < digits.length() and start + matched < segments.size():
+					var want := int(digits[matched])
+					var got: int = segments[start + matched].x
+					if move.lenient_command:
+						if not _lenient_set(want).has(got):
+							break
+					elif got != want:
+						break
+					matched += 1
+				if matched > 0 and matched < digits.length() \
+						and start + matched == segments.size():
+					return true
+	return false
+
+
+func _phase_plan_motion() -> void:
+	## 1.5 计划位移（票据 06，M-01）：声明位移的招式在每个 active 帧生成本帧
+	##     计划步长——累计目标按"锚点 + 总位移 × 已完成比例"推算，逐帧步长取
+	##     目标与当前位置之差（墙/身体截断造成的落后在后续帧追赶，不重置锚点）。
+	##     计划只供命中判定读取，正式位置在运动阶段提交；冻结帧不生成。
+	_planned_step = Vector2.ZERO
+	if _current_move == null or not _current_move.has_motion():
+		return
+	if player_phase != PlayerPhase.ACTIVE:
+		return
+	if _motion_frames_done == 0:
+		_motion_anchor_x = player_position.x
+		_motion_anchor_y = player_position.y
+	var total := _current_move.total_active_frames()
+	var done := _motion_frames_done + 1
+	var target_x := _motion_anchor_x + _move_direction * _current_move.motion_x_px * float(done) / float(total)
+	var target_y := _motion_anchor_y + _current_move.motion_y_px * float(done) / float(total)
+	_planned_step = Vector2(target_x - player_position.x, target_y - player_position.y)
 
 
 func _phase_hit_detection() -> void:
@@ -1374,7 +1522,7 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 	if profile == null:
 		## 缺失不回退：不借用 grounded/normal 资料（或其他段的资料），不造成伤害、
 		## 不改变受击状态、不刷新倒地/滑行计时，也不取得命中确认或取消资格。
-		events.append(CombatEvent.hit_miss(player_facing, _pending_hit_segment + 1))
+		events.append(CombatEvent.hit_miss(_attack_direction(), _pending_hit_segment + 1))
 		_pending_hit = null
 		return
 	if not combo_active or dummy_state == DummyState.NEUTRAL:
@@ -1438,7 +1586,7 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 	dummy_blockstun_left = 0
 	## 木桩受击打断其进行中的攻击（本帧已捕获的连接仍按互换命中结算）。
 	_clear_dummy_move()
-	dummy_velocity.x = player_facing * roundf(profile.horizontal_speed_px_s * combo_trajectory_scale)
+	dummy_velocity.x = _attack_direction() * roundf(profile.horizontal_speed_px_s * combo_trajectory_scale)
 	if profile.reaction == HitProfile.Reaction.LAUNCH or profile.reaction == HitProfile.Reaction.LOW_FLOAT_SWEEP \
 			or profile.reaction == HitProfile.Reaction.LOW_FLOAT_TO_SLIDE:
 		## 浮空、低浮空与击飞触地滑行命中必定重起跳：即使木桩仍在上一击的微浮中
@@ -1453,13 +1601,17 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 	_contact_frame = _normal_frame_index
 	_move_blocked = false
 	_open_rekka_window(move)
+	## 身体穿越许可（票据 06，M-02）：实际 HIT 授予本动作位移段的穿越资格——
+	## 被防、挥空、缺失资料不授予；许可随本招结束清零，不传给下一招。
+	if move.has_motion():
+		_cross_ok = true
 	## 特殊进入资格授予（票据 05，I-05）：实际 HIT 当下取得（被防、挥空、缺失
 	## profile 都不授予）；多段招式每段命中各自授予并重置窗口。
 	if not move.special_entry_targets.is_empty():
 		_special_entry_open = true
 		_special_entry_frame = _normal_frame_index
 		_special_entry_move = move
-	events.append(CombatEvent.hit(combo_last_damage, player_facing, combo_hits,
+	events.append(CombatEvent.hit(combo_last_damage, _attack_direction(), combo_hits,
 		context == HitProfile.HitContext.COUNTER, _pending_hit_segment + 1))
 	## 命中帧完成命中与受击应用后开始 Hitstop：冻结后续 8 个物理帧（双方动作、
 	## 位置、速度、受击、落地与受身计时暂停；物理帧号照常递增，输入仍被采样记录）。
@@ -1597,10 +1749,10 @@ func _apply_player_blocked(move: MoveData, events: Array[CombatEvent]) -> void:
 	_open_rekka_window(move)
 	dummy_blockstun_left = move.block_stun_frames
 	_dummy_fresh_reaction = true
-	dummy_velocity.x = player_facing * move.block_pushback_px_s
-	player_velocity.x = -player_facing * move.block_pushback_px_s
+	dummy_velocity.x = _attack_direction() * move.block_pushback_px_s
+	player_velocity.x = -_attack_direction() * move.block_pushback_px_s
 	_hitstop_left = move.block_freeze_frames
-	events.append(CombatEvent.attack_blocked(player_facing, dummy_guard,
+	events.append(CombatEvent.attack_blocked(_attack_direction(), dummy_guard,
 		move.block_freeze_frames, move.block_stun_frames, move.block_pushback_px_s, _pending_hit_segment + 1))
 	if move.block_freeze_frames > 0:
 		events.append(CombatEvent.hitstop_started())
@@ -1613,7 +1765,7 @@ func _phase_motion(events: Array[CombatEvent]) -> void:
 	## 身体重叠与木桩自然受身；招式帧计数也在本阶段末尾推进。
 	_motion_player(events)
 	_motion_dummy(events)
-	_update_free_action_facing()
+	_update_facing_after_motion(events)
 	_resolve_body_overlap()
 	_advance_move(events)
 	_advance_dummy_move()
@@ -1992,6 +2144,32 @@ func _motion_player(events: Array[CombatEvent]) -> void:
 					_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
 	else:
 		player_on_ground = false
+	if _planned_step != Vector2.ZERO:
+		## 计划位移提交（票据 06，M-01）：速度积分与落地之后提交本帧计划步长
+		##（先版边截断，再身体穿越约束），与普通运动共用同一运动阶段收尾。
+		_commit_planned_step()
+
+
+func _commit_planned_step() -> void:
+	## 提交本帧计划位移：正式位置在此改变（M-01 步骤 3）。版边截断优先——被
+	## 墙截断的位移照常结算命中但不换边（实际终点未越过目标）；随后按 M-02 处
+	## 理身体约束：无命中穿越许可（被防/挥空/缺失资料）时位移不得越过目标到
+	## 另一侧，垂直重叠时截在移动前所在侧的身体边界；有许可但终点仍与目标
+	## 重叠（轨迹不足以到达另一侧合法位置）时同样保留原侧。
+	var target := player_position + _planned_step
+	_planned_step = Vector2.ZERO
+	_motion_frames_done += 1
+	var clamped_x := clampf(target.x, GameParams.stage_left_limit(), GameParams.stage_right_limit())
+	if not is_equal_approx(clamped_x, target.x):
+		_motion_wall_clamped = true
+	target.x = clamped_x
+	if absf(target.y - dummy_position.y) < GameParams.BODY_SIZE.y:
+		var origin_side := 1.0 if player_position.x >= dummy_position.x else -1.0
+		var dx := target.x - dummy_position.x
+		if absf(dx) < GameParams.BODY_SIZE.x or (signf(dx) != origin_side and not _cross_ok):
+			target.x = clampf(dummy_position.x + GameParams.BODY_SIZE.x * origin_side,
+				GameParams.stage_left_limit(), GameParams.stage_right_limit())
+	player_position = target
 
 
 func _can_jump_cancel() -> bool:
@@ -2152,22 +2330,19 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 	_dummy_fresh_reaction = false
 
 
-## 地面自由行动（中立/移动/蹲下；出招、受击/防御硬直与空中除外）时每帧面向
-## 木桩：在双方运动与位置更新后、身体重叠推出前重新指向，本帧的面向变化从下
-## 一物理帧的方向折算生效；后退不翻面，与木桩横向重合时保持当前面向。出招、
-## 受击硬直、倒地处理和空中阶段不进入本函数，保持进入该阶段时的面向；防御
-## 硬直与受击硬直同口径冻结。冲刺期间面向锁定在启动时的值（issue 18），冲刺
-## 结束后的首个地面自由行动帧由本函数重新面向木桩。
-func _update_free_action_facing() -> void:
-	if player_phase != PlayerPhase.NEUTRAL or not player_on_ground:
-		return
-	if _player_stunned():
-		return
-	if player_dash_left > 0:
-		return
+## 面向更新（票据 06，M-04）：每个正常物理帧在计划位移提交与身体约束之后，
+## 按玩家与木桩的真实横向关系朝向木桩；横向重合保持上一帧面向。换边命中
+## 当帧已按锁定动作方向完成攻击与位移，面向翻转自下一物理帧的输入折算与
+## 新招式起手生效；当前招式的 hitbox/位移/扫掠方向由 _move_direction 锁定，
+## 不受本更新影响。已开始的方向候选经 _direction_ref_facing 保持首次相对
+## 面向，不被翻转重解释。
+func _update_facing_after_motion(events: Array[CombatEvent]) -> void:
 	if is_equal_approx(dummy_position.x, player_position.x):
 		return
-	player_facing = 1 if dummy_position.x > player_position.x else -1
+	var facing := 1 if dummy_position.x > player_position.x else -1
+	if facing != player_facing:
+		player_facing = facing
+		events.append(CombatEvent.switched_sides(facing))
 
 
 ## 玩家与木桩身体不互相穿透：垂直重叠时把玩家沿水平方向推出木桩（木桩不动）。
@@ -2188,8 +2363,23 @@ func _advance_move(events: Array[CombatEvent]) -> void:
 	## 招式帧计数在运动阶段末尾推进。招式在消费阶段起手，起手帧即第 1 帧。
 	## 多段招式按段窗口推导阶段（票据 05）：段间隔算后续段的前摇，只有各段
 	## active 窗口内是判定帧。
+	## 动作内蓄力（票据 06，I-01..I-03）：可蓄力招式每次推进都先按本帧按住
+	## 与否累计蓄力年龄（自启动起的正常帧计龄；停顿帧不进入本函数，松开的帧
+	## 不积攒）；推进将首次进入 active 时仲裁——按住且未满阈值延长 startup
+	##（帧钟停在 active_from-1），达阈值自动提交蓄力版、松开提交普通版，提交
+	## 后帧钟回卷至提交版的 active_from，提交版完整走自己声明的 active/recovery。
 	if _current_move == null:
 		return
+	if _current_move.is_chargeable() and not _charge_committed:
+		var held := _frame_input.held_action_keys.has(_current_move.action_key)
+		if held:
+			_charge_age += 1
+		if _move_frame >= _current_move.active_from() - 1:
+			if held and _charge_age < _current_move.charge_threshold_frames:
+				## 仍按住且未满阈值：帧钟停在 active_from-1，阶段保持 startup。
+				return
+			_commit_charge(held, events)
+			return
 	var was_active := player_phase == PlayerPhase.ACTIVE
 	_move_frame += 1
 	_current_segment = _current_move.segment_index_for_frame(_move_frame)
@@ -2210,6 +2400,31 @@ func _advance_move(events: Array[CombatEvent]) -> void:
 						_current_move.move_id))
 			else:
 				_finish_move(events)
+
+
+## 蓄力分支提交（票据 06，I-02/I-03）：达阈值（held=true 且年龄满）提交蓄力版
+## 资源，否则提交普通版。提交是同一次动作的换轨，不是新起手——来源标记
+##（特殊进入/普通连接）、命中与取消状态保持；帧钟回卷至提交版的 active_from，
+## 下一物理帧起按提交版 hitbox/伤害/位移/后摇结算。
+func _commit_charge(charged: bool, events: Array[CombatEvent]) -> void:
+	_charge_committed = true
+	var from_id := _current_move.move_id
+	if charged:
+		var target := _moves.get(_current_move.charge_move_id) as MoveData
+		if target != null:
+			_current_move = target
+			player_move_id = target.move_id
+			_current_segment = 0
+			_segment_hit_done.clear()
+			for i in target.segment_count():
+				_segment_hit_done.append(false)
+		else:
+			## 蓄力目标不在表内只可能来自未经校验的注入表——如实按普通版
+			## 提交（charged=false），不谎报蓄力结果。
+			charged = false
+	_move_frame = _current_move.active_from()
+	player_phase = PlayerPhase.ACTIVE
+	events.append(CombatEvent.charge_committed(from_id, _current_move.move_id, _charge_age, charged))
 
 
 func _finish_move(events: Array[CombatEvent]) -> void:
@@ -2346,6 +2561,10 @@ func _start_move(move_id: String, move: MoveData, is_followup: bool) -> void:
 	## 新招式接管：前招的 Rekka 派生窗口随招式结束（派生起手路径在调用前已
 	## 自行关闭窗口，此处兜底其它起手来源）。
 	_clear_rekka_window()
+	## 动作轨迹方向与位移/蓄力跟踪（票据 06，M-01/M-04）：方向在启动时锁定并
+	## 贯穿本招；蓄力年龄自本招起算；穿越许可与墙截断标记逐招清零。
+	_reset_move_tracking()
+	_move_direction = player_facing
 	player_phase = PlayerPhase.STARTUP
 	## 招式阶段替换姿态：出招期间不蹲不防，收招后按输入重解析。
 	_clear_posture()
@@ -2373,8 +2592,23 @@ func _clear_current_move() -> void:
 	## （未消费的资格不能跨招式补发）。
 	_clear_rekka_window()
 	_close_special_entry()
+	## 轨迹方向、蓄力与位移跟踪随本招结束；穿越许可不传给下一招（M-02）。
+	_reset_move_tracking()
 	player_move_id = ""
 	player_phase = PlayerPhase.NEUTRAL
+
+
+## 蓄力/位移/穿越的逐招跟踪统一清零（启动、清招与重置共用同一口径）。
+func _reset_move_tracking() -> void:
+	_move_direction = 0
+	_charge_age = 0
+	_charge_committed = false
+	_cross_ok = false
+	_motion_wall_clamped = false
+	_motion_frames_done = 0
+	_motion_anchor_x = 0.0
+	_motion_anchor_y = 0.0
+	_planned_step = Vector2.ZERO
 
 
 func _close_special_entry() -> void:
@@ -2418,8 +2652,9 @@ func _select_move_for_key(action_key: String, stance: MoveData.Stance, anchor_fr
 		var move := _moves[move_id] as MoveData
 		if move == null or move.stance != stance or not move.is_strike() or move.action_key != action_key:
 			continue
-		## Rekka 派生招式只经派生仲裁器起手（票据 04）：不参与单键/指令输入选择。
-		if move.rekka_only:
+		## Rekka 派生与蓄力版只经各自仲裁起手（票据 04/06）：不参与单键/指令
+		## 输入选择。
+		if move.rekka_only or move.charge_only:
 			continue
 		## 蹲姿限定按当帧输入状态判定（下方向 ∈ {1,2,3}，斜下含）：持续按住下
 		## 连续按键不依赖方向历史重新建段——与蹲姿的可观察输入一致。
@@ -2559,7 +2794,7 @@ func _direction_lock_entries() -> Array[Dictionary]:
 		var move := _moves[move_id] as MoveData
 		if move == null or move.stance != _current_stance() or not move.is_strike() or not _has_direction_notation(move):
 			continue
-		if move.rekka_only:
+		if move.rekka_only or move.charge_only:
 			continue
 		var candidate := _best_valid_candidate(move, _normal_frame_index, segments)
 		if candidate.is_empty():

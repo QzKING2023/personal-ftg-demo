@@ -1,0 +1,36 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+PASS  snapshots really sit at different physical frames (3 vs 8)
+PASS  settlement state normalizes absolute frame counters into relative ages (equal at matching phases)
+PASS  settlement state distinguishes player facing
+PASS  settlement state distinguishes jump-slot age (jump flag participates in the key)
+PASS  settlement state distinguishes direction-history ages (candidates derive from them)
+PASS  the valid back edge loop breaks by correction decay instead of being proven (state never recurs: the layers change every hit)
+PASS  the back edge itself is still timing-valid
+PASS  the structural loop is reported as broken in the lap simulation (hitstun decay, no global hit cap)
+PASS  an illegal landing seam never produces a recurrence proof
+PASS  landing back edge is rejected before cycle search; ground recurrence proofs remain independently tested
+PASS  a loop truncated by the frame cap is never reported as a cycle
+PASS  the truncated loop is reported as an observation truncation naming the cap
+PASS  the truncation note does not claim a complete proof and does not misreport a chain break
+PASS  the summary counts the truncated structural loop without claiming a detected cycle
+PASS  a never-recurring loop is never reported as a cycle even though the chain holds
+PASS  the laps-exhausted loop is reported as an incomplete observation, not a proof
+PASS  the incomplete-observation note does not misreport a chain break
+PASS  the self edge itself is timing-valid (the cap limits the loop proof, not the edge)
+PASS  the 5Y -> 5A cancel edge is timing-valid under the pinned geometry
+PASS  the edge reason marks the recovery age as a truncated observation, not a measured recovery
+PASS  a normally observed recovery carries no truncation mark
+PASS  the structural loop path appears in the report notes
+PASS  the loop is reported as broken by the lap simulation
+PASS  no replay block is fabricated without a proven cycle
+PASS  neither back edge is proven: the ground loop decays apart and the landing back edge is excluded
+PASS  cycles are stably sorted by their labels
+PASS  solving the same table twice yields identical reports, cycle section included
+PASS  the scope names the lap and frame caps
+PASS  the scope names the recovery-horizon and air-delay caps (40 frames per the frozen spec)
+PASS  the scope states that reaching a cap is reported as truncation, never a complete proof
+
+ACCEPTANCE_SOLVER_METRICS_JSON={"calls":10,"combo_cache":{"bypasses":10,"enabled":true,"entries":0,"hits":0,"misses":0},"elapsed_ms":1719145.97,"reports":[{"calls":1,"fingerprint":"0d53595e698ba22cbc218acb2ccf1add97511175625329d7052a367668bbf865","keys":["solve-4"]},{"calls":1,"fingerprint":"40ae5114fad3e7b9a140e1e9158c976809fe0cc63fc339dada64ced6d3ed0b22","keys":["solve-2"]},{"calls":2,"fingerprint":"70cb84f6fa6afff1e4303443050337d1b0827ed3404e6c01b90cefc91d8045ed","keys":["solve-8","solve-9"]},{"calls":1,"fingerprint":"9fc097c8aa3be95de91c86f64e4c98ad2a80855f1c862cb03ff6ab262ab50435","keys":["solve-5"]},{"calls":2,"fingerprint":"d1c197a359eca557e8779a03abdd3066f75a26605cf078a917238234c7ab7bac","keys":["solve-1","solve-7"]},{"calls":2,"fingerprint":"d95cc2260676730c917884efc31ac4b39542ea7f83aab3b12424db085525fff2","keys":["solve-6","solve-10"]},{"calls":1,"fingerprint":"e46b1a4971b29d3b4d06aa9db90ac2fd7ab4d364771eecc728c7ea0763f53228","keys":["solve-3"]}],"reuse_enabled":false,"reuse_hit_rate":0.0,"reuse_hits":0,"test":"test_solver_cycles","underlying_calls":10,"unique_reports":7}
+ALL SOLVER CYCLE TESTS PASSED

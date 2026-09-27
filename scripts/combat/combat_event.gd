@@ -23,6 +23,8 @@ enum Type {
 	REKKA_BRANCH_LOCKED, ## Rekka 派生窗口内第一个 B/C 新按下锁定分支（见 rekka_branch/rekka_move_id；票据 04）
 	SPIKE_LANDED,      ## 向下击落触地：同帧转普通倒地（票据 04）
 	SLIDE_STARTED,     ## 击飞触地转地面滑行：进入 GROUND_SLIDE 可追击窗口（票据 05；计时自下一正常帧倒数）
+	CHARGE_COMMITTED,  ## 动作内蓄力分支提交：active 边界处按住年龄/松键判定为普通版或蓄力版（见 charge_* 字段；票据 06）
+	SWITCHED_SIDES,    ## 换边：面向按玩家与木桩真实横向关系翻转（新面向见 direction；票据 06，下一物理帧起生效）
 }
 
 ## 连段结束原因：收尾、取消窗口关闭、招式收招未接续、木桩自然受身/恢复、
@@ -91,6 +93,12 @@ var rekka_move_id := ""
 ## 本次接触来自多段招式的第几段（1 基；单段招式恒为 1），仅 HIT/HIT_MISS/
 ## ATTACK_BLOCKED 使用（票据 05：两段判定的可观察段标识）。
 var move_segment := 1
+## 蓄力提交（票据 06）：提交前招式 id、提交后招式 id、按住正常帧年龄与是否
+## 蓄力版，仅 CHARGE_COMMITTED 使用。
+var charge_from_move_id := ""
+var charge_to_move_id := ""
+var charge_age := 0
+var charged := false
 
 
 static func hit(damage: float, direction: int, combo_hits: int, is_counter := false, move_segment := 1) -> CombatEvent:
@@ -230,4 +238,25 @@ static func spike_landed() -> CombatEvent:
 static func slide_started() -> CombatEvent:
 	var event := CombatEvent.new()
 	event.type = Type.SLIDE_STARTED
+	return event
+
+
+## 动作内蓄力提交（票据 06）：age 为提交时按住的正常帧年龄；charged=false 表示
+## 松键/未满阈值的普通版提交（含延迟后摇的普通提交）。
+static func charge_committed(from_move_id: String, to_move_id: String, age: int, charged: bool) -> CombatEvent:
+	var event := CombatEvent.new()
+	event.type = Type.CHARGE_COMMITTED
+	event.charge_from_move_id = from_move_id
+	event.charge_to_move_id = to_move_id
+	event.charge_age = age
+	event.charged = charged
+	return event
+
+
+## 换边（票据 06，M-04）：本帧运动与碰撞结算后面向按真实横向关系翻转；
+## 当帧攻击已按锁定动作方向完成，新面向自下一物理帧的输入折算生效。
+static func switched_sides(direction: int) -> CombatEvent:
+	var event := CombatEvent.new()
+	event.type = Type.SWITCHED_SIDES
+	event.direction = direction
 	return event

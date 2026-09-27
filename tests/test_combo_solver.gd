@@ -52,7 +52,7 @@ func _initialize() -> void:
 func _test_default_table_reports_ground_route() -> void:
 	var report := _default_analyze()
 	_check(report.safe and report.cycles.is_empty(), "default table reports no valid cycle")
-	_check(report.edges.size() == 36, "default table enumerates 36 edges (15 chain + 8 special + 4 link + 1 jump + 2 air cancels + 1 landing + 2 Rekka derives + 1 ~B link + 1 special D entry + 1 source-limited 5B link; ticket 05 adds the 236C special-entry family and removes the retired 236C jump cancel)")
+	_check(report.edges.size() == 43, "default table enumerates 43 edges (ticket 05 基线 36：15 chain + 8 special + 4 link + 1 jump + 2 air cancels + 1 landing + 2 Rekka derives + 1 ~B link + 1 special D entry + 1 source-limited 5B link；ticket 06 增 6 条蓄力变体（236C 特殊进入 + 5B/5C 链式与目押 → 5[D]）+ 1 条 5[D] → 5B 来源限定出边)")
 	var ab := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	_check(ab != null and ab.valid, "5A -> 5B is a valid chain continuation")
 	if ab != null:
@@ -532,6 +532,13 @@ func _test_solver_claims_only_configured_connections() -> void:
 		["jB", "5D", ComboSolver.EdgeKind.LANDING_CANCEL],
 		["236C", "5D", ComboSolver.EdgeKind.SPECIAL_ENTRY],
 		["5D", "5B", ComboSolver.EdgeKind.SPECIAL_ENTRY_LINK],
+		## 票据 06：目标声明蓄力的接缝另枚举蓄力变体（to=5[D]），以及 5[D]
+		## 自身的来源限定出边。
+		["236C", "5[D]", ComboSolver.EdgeKind.SPECIAL_ENTRY],
+		["5B", "5[D]", ComboSolver.EdgeKind.CHAIN_CANCEL], ["5C", "5[D]", ComboSolver.EdgeKind.CHAIN_CANCEL],
+		["5B", "5[D]", ComboSolver.EdgeKind.NORMAL_LINK], ["5C", "5[D]", ComboSolver.EdgeKind.NORMAL_LINK],
+		["jB", "5[D]", ComboSolver.EdgeKind.LANDING_CANCEL],
+		["5[D]", "5B", ComboSolver.EdgeKind.SPECIAL_ENTRY_LINK],
 	]
 	_check(report.edges.size() == pairs.size(), "the default report enumerates exactly the configured continuation relations")
 	var reported := {}

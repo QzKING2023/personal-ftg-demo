@@ -82,6 +82,7 @@ const _MOVE_VALUE_FIELDS := [
 	"block_freeze_frames", "block_stun_frames", "block_pushback_px_s", "is_finisher",
 	"jump_cancel_targets", "landing_cancel_targets", "direction_derivation", "lenient_command",
 	"input_alternatives", "command_tier", "priority",
+	"motion_x_px", "motion_y_px", "charge_threshold_frames", "charge_move_id", "charge_only",
 ]
 const _SEGMENT_VALUE_FIELDS := ["startup_frames", "active_frames", "base_damage", "hitbox_size", "hitbox_gap", "hit_profiles"]
 const _PROFILE_VALUE_FIELDS := [
@@ -90,7 +91,7 @@ const _PROFILE_VALUE_FIELDS := [
 	"downward_speed_px_s", "slide_frames",
 ]
 
-const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性接续——命中确认取消、链式/必杀取消（接触开放，命中或被防）、jump cancel、显式落地接缝、恢复后的普通连接（目押）与 Rekka 派生（票据 04：首段命中或被防接触起的派生窗口内首个 B/C 新按下立即锁分支 branch-locked，同帧 B+C 固定 ~C 优先、不进入普通投组合等待；派生招式 rekka_only、不参与单键/指令输入选择；派生地空命中资料按 (target_state, hit_context) 精确选择，~C 空中向下击落触地转普通倒地）：前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生与落地接缝都在真实 CombatSession 结算中检验；命中资料与运行时共享同一 (target_state, hit_context) 精确选择：探针木桩不自攻，命中的上下文恒为 normal，缺失目标状态资料的连接按 MISS_NO_PROFILE 断链上报（不回退 grounded/normal 资料），普通倒地期间不可追击；cancel_targets、chain/special_cancel_targets、link_targets、jump_cancel_targets、rekka_b/c_target 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；普通连接边与取消边以不同类型分别报告，连接成立与否由前招完全恢复当帧的缓存消费、目标剩余硬直与 active 重叠重新判定；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（空中无二段跳；木桩浮空只由真实命中按所选 profile 的受身计时与速度重建，空中追击的每次命中都应用其 airborne profile），无命中的时间不会自动续期；OTG、地弹、墙反弹与招式无敌不在本轮支持范围，表达这些能力的字段或标签由 MoveTable 整表拒绝；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、起手等级与三层累计修正、Rekka 分支锁定、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。可读路线按不超过 8 招的简单路径枚举；路线延迟搜索至多验证 64 个延迟向量，全部失败的路线按走得最远的失败如实上报（观测上限而非连段语义，循环证明不受此限）。空间分层：无空间数据时全部路线仅 timing-valid，固定接触位不构成空间证明；提供空间数据（SolverOptions.spatial）后另附 spatial-valid，且只在地面、左右镜像的 48/64/80 px 三组身体中心水平距离上复验，不搜索走位、中立、墙角、推挤、跨身或屏幕边界，配置缺口与时序失败不作空间失败上报。被防分层（票据 03）：链式/必杀边附「被防路径」标注——同一配置边在来源招式被木桩站防/蹲防挡下的探针中验证取消时序；被防是独立接触结果（BLOCKED 不产生命中、不入路线/循环图、不借命中确认或 jump cancel），探针中预期命中帧收到被防结果一律按 blocked 断链上报；Rekka 派生边同样附被防路径标注（首段被防也开放派生窗口），派生自身的被防结果如实入注；被防安全性（指定反击、时机、距离、版边、面向）不在静态证明范围，一律 replay-required；派生首按锁定输入手感与 ~B 交回回合的安全性也属 replay-required，静态报告不下结论。票据 05 扩展：236C 为两段判定（段 1 被防终止整招、挥空续段 2，多段命中按段逐一预测与复验），段 2 命中 grounded 目标进入击飞触地 GROUND_SLIDE（滑行状态、slide 目标资料门、slide 命中分层倍率与状态键均由真实结算承载）；实际 HIT 授予一次性特殊进入资格（SPECIAL_ENTRY 边：仅命中开放、被防不开放，资格在授予招式窗口内消费），经资格起手且实际命中的 D 取得来源限定普通连接（SPECIAL_ENTRY_LINK 边：普通来源同招不取得）；固定钉位网格（48/64/80 px）上段 1 总是先命中，不产生 slide——slide 捞起距离、段间真实可达性（段 1 挥空需 >91px）与 D 后 5B 的真实空间可行性一律 replay-required，静态报告不冒充。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。"
+const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性接续——命中确认取消、链式/必杀取消（接触开放，命中或被防）、jump cancel、显式落地接缝、恢复后的普通连接（目押）与 Rekka 派生（票据 04：首段命中或被防接触起的派生窗口内首个 B/C 新按下立即锁分支 branch-locked，同帧 B+C 固定 ~C 优先、不进入普通投组合等待；派生招式 rekka_only、不参与单键/指令输入选择；派生地空命中资料按 (target_state, hit_context) 精确选择，~C 空中向下击落触地转普通倒地）：前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生与落地接缝都在真实 CombatSession 结算中检验；命中资料与运行时共享同一 (target_state, hit_context) 精确选择：探针木桩不自攻，命中的上下文恒为 normal，缺失目标状态资料的连接按 MISS_NO_PROFILE 断链上报（不回退 grounded/normal 资料），普通倒地期间不可追击；cancel_targets、chain/special_cancel_targets、link_targets、jump_cancel_targets、rekka_b/c_target 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；普通连接边与取消边以不同类型分别报告，连接成立与否由前招完全恢复当帧的缓存消费、目标剩余硬直与 active 重叠重新判定；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（空中无二段跳；木桩浮空只由真实命中按所选 profile 的受身计时与速度重建，空中追击的每次命中都应用其 airborne profile），无命中的时间不会自动续期；OTG、地弹、墙反弹与招式无敌不在本轮支持范围，表达这些能力的字段或标签由 MoveTable 整表拒绝；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、起手等级与三层累计修正、Rekka 分支锁定、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。可读路线按不超过 8 招的简单路径枚举；路线延迟搜索至多验证 64 个延迟向量，全部失败的路线按走得最远的失败如实上报（观测上限而非连段语义，循环证明不受此限）。空间分层：无空间数据时全部路线仅 timing-valid，固定接触位不构成空间证明；提供空间数据（SolverOptions.spatial）后另附 spatial-valid，且只在地面、左右镜像的 48/64/80 px 三组身体中心水平距离上复验，不搜索走位、中立、墙角、推挤、跨身或屏幕边界，配置缺口与时序失败不作空间失败上报。被防分层（票据 03）：链式/必杀边附「被防路径」标注——同一配置边在来源招式被木桩站防/蹲防挡下的探针中验证取消时序；被防是独立接触结果（BLOCKED 不产生命中、不入路线/循环图、不借命中确认或 jump cancel），探针中预期命中帧收到被防结果一律按 blocked 断链上报；Rekka 派生边同样附被防路径标注（首段被防也开放派生窗口），派生自身的被防结果如实入注；被防安全性（指定反击、时机、距离、版边、面向）不在静态证明范围，一律 replay-required；派生首按锁定输入手感与 ~B 交回回合的安全性也属 replay-required，静态报告不下结论。票据 05 扩展：236C 为两段判定（段 1 被防终止整招、挥空续段 2，多段命中按段逐一预测与复验），段 2 命中 grounded 目标进入击飞触地 GROUND_SLIDE（滑行状态、slide 目标资料门、slide 命中分层倍率与状态键均由真实结算承载）；实际 HIT 授予一次性特殊进入资格（SPECIAL_ENTRY 边：仅命中开放、被防不开放，资格在授予招式窗口内消费），经资格起手且实际命中的 D 取得来源限定普通连接（SPECIAL_ENTRY_LINK 边：普通来源同招不取得）；固定钉位网格（48/64/80 px）上段 1 总是先命中，不产生 slide——slide 捞起距离、段间真实可达性（段 1 挥空需 >91px）与 D 后 5B 的真实空间可行性一律 replay-required，静态报告不冒充。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。票据 06 扩展：D 系计划位移由资源声明（motion_x/y_px），active 帧按累计比例推进、命中框沿本帧轨迹做确定性扫掠覆盖（轴对齐包络，无细分采样误差），正式位置经版边与身体约束后在运动阶段提交；动作内蓄力（charge_threshold_frames）在目标声明蓄力的接缝上另验证蓄力变体边（CHARGED：按下后按住至阈值自动提交 charge_only 目标，与普通提交共用同一起手时序与换边规则）；实际 HIT 才开放本次位移对身体的目标穿越（被防/挥空/墙截断截在原侧），只有实际终点合法越过另一侧才换边，命中当帧按锁定动作方向结算攻击与击退，下一物理帧起面向按真实横向关系更新，已开始的 214/236 方向候选锁定首次相对面向不被重解释；循环状态键自票据 06 起纳入双方横向位置、动作方向、蓄力年龄与穿越许可（位移使横向几何成为真实结算量）；固定钉位网格上的蓄力边结论仍是 timing/spatial 假设下的验证——真实穿越、墙边截断、版边与双面向换边及换边后镜像继续输入一律 replay-required，静态报告不冒充空间证明。"
 
 ## 接续边类型：命中确认取消 / 链式取消 / 必杀取消 / jump cancel / 显式落地接续 /
 ## 普通连接（目押）。链式与必杀按接触开放（命中或被防），命中确认、jump cancel
@@ -116,9 +117,18 @@ class ScheduledInput extends RefCounted:
 	var down := false
 	var jump := false
 	var key := ""
+	## 持有不重按的动作键（票据 06 蓄力）：不产生新按下事件，只进入按住集合——
+	## 蓄力年龄按住帧累计，重按会刷新单键缓存反而干扰消费。
+	var held_key := ""
 
 	func to_frame_input() -> FrameInput:
-		return FrameInput.make(axis, jump, key, down)
+		var input := FrameInput.make(axis, jump, key, down)
+		if held_key != "":
+			var held: Array[String] = [held_key]
+			if key != "" and key != held_key:
+				held.append(key)
+			input.held_action_keys = held
+		return input
 
 
 ## 接续链中的一段：某招式如何被按出来。触发点决定按键帧——
@@ -138,6 +148,10 @@ class ChainLink extends RefCounted:
 	## Rekka 派生按键（票据 04）：按下调起派生（无组合等待），按下当帧即 F1；
 	## 普通取消按键的 B/C 组合等待 +3 模型不适用。
 	var rekka := false
+	## 蓄力版目标（票据 06）：目标为 charge_only 时唯一入口是按住动作键至
+	## 阈值自动提交——编译时按下帧后持续按住（不重按），预期命中按有效前摇
+	##（max(前摇-1, 阈值)+1）推算。
+	var charged := false
 	## 来源限定连接的入口描述（票据 05）：该链经何种起手进入（solo 起手或规范
 	## 取消入口）——仅用于报告文案，不参与编译。
 	var via_text := ""
@@ -186,9 +200,12 @@ class SolverEdge extends RefCounted:
 	## 中的取消时序验证。被防不是 HIT——该变体只作标注，不进入路线/循环图。
 	var blocked_valid := false
 	var blocked_reason := ""
+	## 蓄力变体（票据 06）：目标声明蓄力的边除普通提交外另验证按住至阈值的
+	## 蓄力版提交（to = charge_move_id 指向的 charge_only 招式）。
+	var charged := false
 
 	func label() -> String:
-		return "%s → %s" % [from_id, to_id]
+		return "%s → %s%s" % [from_id, to_id, "（蓄力）" if charged else ""]
 
 	func kind_text() -> String:
 		match kind:
@@ -708,7 +725,11 @@ static func _canonical_variant(value) -> String:
 		var integer_text := str(value)
 		return "I%d:%s;" % [integer_text.length(), integer_text]
 	if value is float:
-		if is_nan(value) or is_inf(value):
+		if is_nan(value):
+			## NaN 是“未声明”哨兵（票据 06 motion 字段），不是不支持的对象：
+			## 确定性编码，避免整键退化为空串而绕过缓存。
+			return "Fnan;"
+		if is_inf(value):
 			return ""
 		var float_text := String.num(value, 17)
 		return "F%d:%s;" % [float_text.length(), float_text]
@@ -830,6 +851,7 @@ static func _freeze_edge(edge: SolverEdge) -> Dictionary:
 		"align_inputs": inputs,
 		"blocked_valid": edge.blocked_valid,
 		"blocked_reason": edge.blocked_reason,
+		"charged": edge.charged,
 	}
 
 
@@ -873,6 +895,7 @@ static func _freeze_input(input: ScheduledInput) -> Dictionary:
 		"down": input.down,
 		"jump": input.jump,
 		"key": input.key,
+		"held_key": input.held_key,
 	}
 
 
@@ -939,6 +962,7 @@ static func _thaw_edge(data: Dictionary) -> SolverEdge:
 	edge.align_to = data.get("align_to", -1)
 	edge.blocked_valid = data.get("blocked_valid", false)
 	edge.blocked_reason = data.get("blocked_reason", "")
+	edge.charged = data.get("charged", false)
 	var inputs: Array[ScheduledInput] = []
 	for input_data in data.get("align_inputs", []):
 		inputs.append(_thaw_input(input_data))
@@ -995,6 +1019,7 @@ static func _thaw_input(data: Dictionary) -> ScheduledInput:
 	input.down = data.get("down", false)
 	input.jump = data.get("jump", false)
 	input.key = data.get("key", "")
+	input.held_key = data.get("held_key", "")
 	return input
 
 
@@ -1247,7 +1272,22 @@ func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false
 					var key := "%s|%s" % [from_id, to_id]
 					if not edge_kinds.has(key):
 						edge_kinds[key] = kind
-	_enumerate_gaps(contexts, timing_cache, report)
+				## 蓄力变体（票据 06）：目标声明蓄力时，同一接缝另验证按住至阈值
+				## 的蓄力版提交（to 换为 charge_only 目标，独立成边、独立验证）。
+				var pair_to := _table.get(to_id) as MoveData
+				if pair_to != null and pair_to.is_chargeable() and _table.has(pair_to.charge_move_id):
+					var charged_edge := _build_edge(from_id, pair_to.charge_move_id, kind, contexts, timing_cache)
+					report.edges.append(charged_edge)
+					if charged_edge.valid:
+						if not valid_adj.has(from_id):
+							valid_adj[from_id] = [] as Array[String]
+						var charged_targets: Array[String] = valid_adj[from_id]
+						if not charged_targets.has(pair_to.charge_move_id):
+							charged_targets.append(pair_to.charge_move_id)
+							var charged_key := "%s|%s" % [from_id, pair_to.charge_move_id]
+							if not edge_kinds.has(charged_key):
+								edge_kinds[charged_key] = kind
+		_enumerate_gaps(contexts, timing_cache, report)
 	if report.edges.any(func(edge: SolverEdge) -> bool: return edge.blocked_valid):
 		report.notes.append("被防取消边只在固定探针姿态下验证取消时序（被防是独立接触结果，不产生命中，不入路线/循环图）；被防安全性（指定反击招式、时机、距离、版中/版边与左右面向）必须真实空间回放（replay-required），静态报告不下安全结论")
 	## 图的路线起点：起始姿态下单键可起手、无方向派生的打击招式（按表内顺序，确定性枚举）。
@@ -1728,7 +1768,7 @@ func _build_contexts() -> Dictionary:
 			if contexts.has(move_id):
 				continue
 			var move := _table[move_id] as MoveData
-			if move == null or (_start_key_for(move_id) == "" and not move.rekka_only):
+			if move == null or (_start_key_for(move_id) == "" and not move.rekka_only and not move.charge_only):
 				continue
 			var links := _context_via_jump(move_id, contexts)
 			if links.is_empty():
@@ -1737,10 +1777,48 @@ func _build_contexts() -> Dictionary:
 				links = _context_via_landing(move_id, contexts)
 			if links.is_empty():
 				links = _context_via_rekka(move_id, contexts)
+			if links.is_empty():
+				links = _context_via_charge(move_id, contexts)
 			if not links.is_empty():
 				contexts[move_id] = links
 				grew = true
 	return contexts
+
+
+## 蓄力版目标的上下文（票据 06）：复用普通版的入口链，把其中起手普通版的
+## 链接换成蓄力链接（同键按下 + 按住至阈值）——蓄力提交是唯一入口。
+func _context_via_charge(move_id: String, contexts: Dictionary) -> Array[ChainLink]:
+	var target := _table[move_id] as MoveData
+	if target == null or not target.charge_only:
+		return []
+	var base := _charge_base_of(move_id)
+	if base == null or not contexts.has(base.move_id):
+		return []
+	var links := _cloned_context_links(contexts[base.move_id])
+	for i in range(links.size()):
+		if links[i].move_id != base.move_id:
+			continue
+		var charged_link := _clone_charged_link(links[i])
+		charged_link.move_id = move_id
+		links[i] = charged_link
+		break
+	return links
+
+
+## 蓄力链接的完整克隆（改写 charged 标记前必须新建实例——上下文里的链接
+## 可能与普通版上下文共享引用，原地改写会污染）。
+func _clone_charged_link(link: ChainLink) -> ChainLink:
+	var charged := ChainLink.new()
+	charged.move_id = link.move_id
+	charged.key = link.key
+	charged.feed = link.feed
+	charged.trigger = link.trigger
+	charged.wait = link.wait
+	charged.press_space = link.press_space
+	charged.rekka = link.rekka
+	charged.charged = true
+	charged.via_text = link.via_text
+	return charged
 
 
 ## Rekka 派生目标的上下文（票据 04）：复用首段的规范入口链，追加派生按键
@@ -1842,6 +1920,14 @@ func _rekka_targets_of(move: MoveData) -> Array[String]:
 func _links_for_edge(from_id: String, to_id: String, kind: EdgeKind) -> Array[ChainLink]:
 	var links: Array[ChainLink] = []
 	var key := _start_key_for(to_id)
+	## 蓄力版目标（票据 06）：唯一入口是按住动作键至阈值自动提交——目标为
+	## charge_only 的链接一律按蓄力编译；按下时序与普通版同键同模型（来源
+	## 声明、组合等待与恢复窗口都按普通版翻译）。
+	var to_move := _table.get(to_id) as MoveData
+	var charged_target := to_move != null and to_move.charge_only
+	var timing_target := to_move if not charged_target else _charge_base_of(to_id)
+	if charged_target:
+		key = timing_target.action_key
 	match kind:
 		EdgeKind.JUMP_CANCEL:
 			var space_link := ChainLink.new()
@@ -1867,7 +1953,8 @@ func _links_for_edge(from_id: String, to_id: String, kind: EdgeKind) -> Array[Ch
 			link_link.key = key
 			link_link.feed = _feed_for(to_id)
 			link_link.trigger = ChainLink.Trigger.PREV_HIT
-			link_link.wait = _link_press_wait(_table[from_id] as MoveData, _table[to_id] as MoveData)
+			link_link.wait = _link_press_wait(_table[from_id] as MoveData, timing_target)
+			link_link.charged = charged_target
 			links.append(link_link)
 		EdgeKind.REKKA_DERIVE:
 			## 派生按键安排在接触后的第一个正常帧（接触当帧窗口尚未在输入阶段
@@ -1887,7 +1974,8 @@ func _links_for_edge(from_id: String, to_id: String, kind: EdgeKind) -> Array[Ch
 			entry_link.key = key
 			entry_link.feed = _feed_for(to_id)
 			entry_link.trigger = ChainLink.Trigger.PREV_HIT
-			entry_link.wait = _link_press_wait(_table[from_id] as MoveData, _table[to_id] as MoveData)
+			entry_link.wait = _link_press_wait(_table[from_id] as MoveData, timing_target)
+			entry_link.charged = charged_target
 			links.append(entry_link)
 		_:
 			var cancel_link := ChainLink.new()
@@ -1895,6 +1983,7 @@ func _links_for_edge(from_id: String, to_id: String, kind: EdgeKind) -> Array[Ch
 			cancel_link.key = key
 			cancel_link.feed = _feed_for(to_id)
 			cancel_link.trigger = ChainLink.Trigger.PREV_HIT
+			cancel_link.charged = charged_target
 			links.append(cancel_link)
 	return links
 
@@ -1909,6 +1998,13 @@ func _build_edge(from_id: String, to_id: String, kind: EdgeKind, contexts: Dicti
 	if to_move == null:
 		edge.reason = "目标招式不在招式表中"
 		return edge
+	## 蓄力变体（票据 06）：to 为 charge_only 时声明字段的检查按普通版翻译
+	##（表内声明的是普通版 id），链接由 _links_for_edge 自动按蓄力编译。
+	edge.charged = to_move.charge_only
+	if to_move.charge_only and _charge_base_of(to_id) == null:
+		edge.reason = "蓄力版缺少普通版来源（charge_move_id 入口），不能作为接续目标"
+		return edge
+	var declared_target := to_id if not to_move.charge_only else _charge_base_of(to_id).move_id
 	match kind:
 		EdgeKind.CANCEL, EdgeKind.CHAIN_CANCEL, EdgeKind.SPECIAL_CANCEL:
 			if to_move.stance != from_move.stance:
@@ -1942,16 +2038,16 @@ func _build_edge(from_id: String, to_id: String, kind: EdgeKind, contexts: Dicti
 	if from_move.is_finisher:
 		edge.reason = "收尾招式命中即结束连段，不开放命中确认取消"
 		return edge
-	if kind != EdgeKind.REKKA_DERIVE and _start_key_for(to_id) == "":
+	if kind != EdgeKind.REKKA_DERIVE and not to_move.charge_only and _start_key_for(to_id) == "":
 		edge.reason = "目标无法由动作键起手，超出本 Solver 的输入表达范围"
 		return edge
 	if kind == EdgeKind.REKKA_DERIVE and not to_move.rekka_only:
 		edge.reason = "派生目标未声明 rekka_only，不能作为 Rekka 分支（配置校验缺口）"
 		return edge
-	if kind == EdgeKind.SPECIAL_ENTRY and from_move.special_entry_targets.is_empty():
+	if kind == EdgeKind.SPECIAL_ENTRY and not from_move.special_entry_targets.has(declared_target):
 		edge.reason = "来源招式未声明特殊进入目标（来源资格是运行时硬约束，补配 special_entry_targets 后才成为合法边）"
 		return edge
-	if kind == EdgeKind.SPECIAL_ENTRY_LINK and not from_move.special_entry_link_targets.has(to_id):
+	if kind == EdgeKind.SPECIAL_ENTRY_LINK and not from_move.special_entry_link_targets.has(declared_target):
 		edge.reason = "来源限定连接边未声明：普通来源起手的 %s 不取得该目押（不构成全局反向取消）" % from_id
 		return edge
 	var context: Array[ChainLink] = contexts.get(from_id, [] as Array[ChainLink])
@@ -2006,9 +2102,12 @@ func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache
 			## 等待档需窗口容纳 +3 等待）；下限为 0——w=0 总是可用档。
 			var key_wait := _single_key_wait(to_move.action_key)
 			edge.wait_to = maxi(0, mini(window_frames - key_wait,
-				edge.recover_age - to_move.startup_frames - key_wait))
+				edge.recover_age - _effective_startup_frames(to_move) - key_wait))
 		var prefix := ""
-		if kind == EdgeKind.REKKA_DERIVE:
+		if edge.charged:
+			prefix = "（蓄力提交：按下后按住 %d 帧至阈值自动提交，有效前摇 %d 帧）" % [
+				_charge_base_of(edge.to_id).charge_threshold_frames, _effective_startup_frames(to_move)]
+		elif kind == EdgeKind.REKKA_DERIVE:
 			prefix = "（Rekka 派生：首段接触起首个 %s 新按下立即锁分支 branch-locked，同帧 B+C 固定 ~C 优先；派生按键无组合等待）" % to_move.action_key
 		elif to_move.direction_derivation != "":
 			prefix = "（方向派生 %s：取消帧前喂入方向序列）" % to_move.direction_derivation
@@ -2017,7 +2116,7 @@ func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache
 		elif from_move.stance == MoveData.Stance.AIR:
 			prefix = "（空中取消）"
 		edge.reason = "%s有效等待 0–%d 帧 + 目标前摇 %d 帧：最早命中在命中确认后第 %d 帧，不晚于木桩恢复（第 %d 帧），余量 %d 帧%s" % [
-			prefix, edge.wait_to, to_move.startup_frames, edge.hit_age, edge.recover_age, edge.recover_age - edge.hit_age,
+			prefix, edge.wait_to, _effective_startup_frames(to_move), edge.hit_age, edge.recover_age, edge.recover_age - edge.hit_age,
 			_recover_truncation_note(edge.recover_truncated),
 		]
 		return
@@ -2139,11 +2238,20 @@ func _fill_special_entry_link_edge(edge: SolverEdge, contexts: Dictionary, timin
 ## 按键链收尾。候选链自带 via_text 描述入口方式。
 func _special_entry_context_candidates(move_id: String, contexts: Dictionary) -> Array[Array]:
 	var result: Array[Array] = []
+	var declared_entry_id := move_id
+	var move := _table.get(move_id) as MoveData
+	if move != null and move.charge_only:
+		## 蓄力版目标（票据 06）：表内声明的是普通版 id——授予检查按普通版
+		## 翻译，尾链仍按蓄力编译。
+		var charge_base := _charge_base_of(move_id)
+		if charge_base == null:
+			return result
+		declared_entry_id = charge_base.move_id
 	for granter_id in _table:
 		var granter := _table[granter_id] as MoveData
 		if granter == null or granter.special_entry_targets.is_empty():
 			continue
-		if not (granter.special_entry_targets as Array[String]).has(move_id):
+		if not (granter.special_entry_targets as Array[String]).has(declared_entry_id):
 			continue
 		var start_key := _start_key_for(granter_id)
 		if start_key != "":
@@ -2353,7 +2461,7 @@ func _fill_link_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache: 
 		edge.wait_from = press_wait
 		edge.wait_to = press_wait
 		edge.reason = "普通连接（目押）：命中确认后第 %d 帧按下（组合等待 %d 帧），前招完全恢复当帧消费缓存，目标于第 %d 帧命中（恢复 + 前摇 %d 帧）；取消接缝不参与，命中以目标剩余硬直与 active 重叠另行判定" % [
-			press_wait, _single_key_wait(to_move.action_key), edge.hit_age, to_move.startup_frames,
+			press_wait, _single_key_wait(to_move.action_key), edge.hit_age, _effective_startup_frames(to_move),
 		]
 		return
 	var last_end: int = run["ended_reasons"][run["ended_reasons"].size() - 1] if not run["ended_reasons"].is_empty() else -1
@@ -2703,7 +2811,19 @@ func _compile_chain(links: Array[ChainLink]) -> Dictionary:
 			else:
 				## 其余场景按下时不再有停顿在身前，+3 物理帧等待全额计入正常帧。
 				start_delay = key_wait
-			last_hit = press + start_delay + move.startup_frames
+			## 蓄力版链接（票据 06）：按下帧起持续按住（不重按）至提交帧——
+			## 按住帧覆盖组合等待与延长 startup，恰好到达 max(前摇-1, 阈值)；
+			## 提交后首个判定帧 = 有效前摇（_effective_startup_frames）。
+			var startup_frames := move.startup_frames
+			if link.charged:
+				var charge_base := _charge_base_of(link.move_id)
+				if charge_base == null:
+					return {}
+				var extend_to := maxi(charge_base.startup_frames - 1, charge_base.charge_threshold_frames)
+				for hold_frame in range(press + 1, press + start_delay + extend_to + 1):
+					_merge_held(inputs, hold_frame, link.key)
+				startup_frames = extend_to + 1
+			last_hit = press + start_delay + startup_frames
 			hit_frames.append(last_hit)
 			hit_moves.append(link.move_id)
 			## 多段招式（票据 05）：钉位网格上每段都按自身 active 首帧命中，逐段
@@ -2724,8 +2844,20 @@ func _compile_chain(links: Array[ChainLink]) -> Dictionary:
 		scheduled.down = spec["down"]
 		scheduled.jump = spec["jump"]
 		scheduled.key = spec["key"]
+		scheduled.held_key = spec.get("held", "")
 		specs.append(scheduled)
 	return { "inputs": specs, "hit_frames": hit_frames, "hit_moves": hit_moves, "jump_frame": jump_frame, "land_frame": land_frame }
+
+
+## 蓄力按住帧（票据 06）：不与新按下冲突——只写入按住键，轴/下方向/跳跃照常
+## 与其他输入合并；同帧另一键的新按下照常保留。
+func _merge_held(inputs: Dictionary, frame: int, held_key: String) -> void:
+	if not inputs.has(frame):
+		inputs[frame] = { "axis": 0, "down": false, "jump": false, "key": "", "held": held_key }
+		return
+	var spec: Dictionary = inputs[frame]
+	if spec.get("held", "") == "":
+		spec["held"] = held_key
 
 
 func _merge_input(inputs: Dictionary, frame: int, axis: int, down: bool, jump: bool, key: String) -> bool:
@@ -2939,6 +3071,8 @@ func _cloned_context_links(context: Array[ChainLink]) -> Array[ChainLink]:
 	for link in context:
 		if link.trigger == ChainLink.Trigger.PREV_HIT and _is_air_move_link(link):
 			links.append(_clone_link_with_wait(link, link.wait))
+		elif link.charged:
+			links.append(_clone_charged_link(link))
 		else:
 			links.append(link)
 	return links
@@ -3296,7 +3430,7 @@ func _is_plain_start_id(move_id: String) -> bool:
 	var move := _table.get(move_id) as MoveData
 	if move == null or move.stance != _start_stance() or move.direction_derivation != "":
 		return false
-	if move.rekka_only:
+	if move.rekka_only or move.charge_only:
 		return false
 	return move.is_strike() and move.action_key != ""
 
@@ -3310,6 +3444,27 @@ func _single_key_wait(key: String) -> int:
 	return 0
 
 
+## 蓄力版的普通版来源（票据 06）：charge_move_id 指向本招的那个招式；表中
+## 至多一个（MoveTable 校验入口唯一）。
+func _charge_base_of(move_id: String) -> MoveData:
+	for id in _table:
+		var move := _table[id] as MoveData
+		if move != null and move.charge_move_id == move_id:
+			return move
+	return null
+
+
+## 蓄力版的有效前摇：active 边界延长至 max(前摇-1, 阈值)，首个判定帧在其后
+##（提交帧回卷至提交版 active_from）。普通版为声明前摇本身。
+func _effective_startup_frames(move: MoveData) -> int:
+	var base := _charge_base_of(move.move_id)
+	if base == null:
+		return move.startup_frames
+	## 运行时在普通版（正在执行的招式）的 active 边界仲裁——前摇取普通版，
+	## 不读蓄力版自身的 startup（两者当前相同，口径以普通版为准）。
+	return maxi(base.startup_frames - 1, base.charge_threshold_frames) + 1
+
+
 ## 招式的起手动作键：取招式数据声明的输入绑定（issue 11 起绑定是数据字段）；
 ## 空中方向派生在运行时按锁定面向生效（issue 12），但 Solver 首版不调度空中
 ## 派生的方向喂入（喂入仅地面），故带派生的空中招式不可单键起手；投技不可单键起手。
@@ -3319,6 +3474,9 @@ func _start_key_for(move_id: String) -> String:
 		return ""
 	if move.rekka_only:
 		## Rekka 派生招式只经派生仲裁器起手（票据 04），不是单键/指令起手目标。
+		return ""
+	if move.charge_only:
+		## 蓄力版只经按住至阈值的提交起手（票据 06），不是单键/指令起手目标。
 		return ""
 	if move.stance == MoveData.Stance.AIR and move.direction_derivation != "":
 		return ""

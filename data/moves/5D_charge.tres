@@ -1,0 +1,72 @@
+[gd_resource type="Resource" script_class="MoveData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/move_data.gd" id="1_smfx0"]
+[ext_resource type="Script" path="res://scripts/combat/hit_profile.gd" id="2_hitprofile"]
+
+[sub_resource type="Resource" id="HitProfile_5d_charge_normal"]
+script = ExtResource("2_hitprofile")
+target_state = 1
+hit_context = 1
+reaction = 1
+ground_stun_frames = 14
+horizontal_speed_px_s = 320.0
+upward_speed_px_s = 0.0
+
+[sub_resource type="Resource" id="HitProfile_5d_charge_airborne_normal"]
+script = ExtResource("2_hitprofile")
+target_state = 2
+hit_context = 1
+reaction = 2
+air_untech_frames = 32
+horizontal_speed_px_s = 80.0
+upward_speed_px_s = 170.0
+
+[sub_resource type="Resource" id="HitProfile_5d_charge_slide_normal"]
+script = ExtResource("2_hitprofile")
+target_state = 3
+hit_context = 1
+reaction = 2
+air_untech_frames = 32
+horizontal_speed_px_s = 60.0
+upward_speed_px_s = 170.0
+
+[resource]
+script = ExtResource("1_smfx0")
+move_id = "5[D]"
+move_kind = 1
+stance = 1
+action_key = "D"
+startup_frames = 7
+active_frames = 4
+recovery_frames = 22
+base_damage = 20
+attack_attribute = 2
+air_attack = false
+hitbox_size = Vector2(70, 28)
+hitbox_gap = 4.0
+hit_profiles = Array[Resource]([SubResource("HitProfile_5d_charge_normal"), SubResource("HitProfile_5d_charge_airborne_normal"), SubResource("HitProfile_5d_charge_slide_normal")])
+throw_range = -1.0
+extra_landing_recovery_frames = 0
+cancel_targets = Array[String]([])
+cancel_window_frames = 8
+chain_cancel_targets = Array[String]([])
+chain_cancel_window_frames = -1
+special_cancel_targets = Array[String]([])
+special_cancel_window_frames = -1
+link_targets = Array[String]([])
+special_entry_targets = Array[String]([])
+special_entry_window_frames = -1
+special_entry_link_targets = Array[String](["5B"])
+starter_grade = 4
+motion_x_px = 120.0
+motion_y_px = 0.0
+charge_only = true
+block_freeze_frames = 8
+block_stun_frames = 9
+block_pushback_px_s = 45.0
+is_finisher = false
+jump_cancel_targets = Array[String]([])
+landing_cancel_targets = Array[String]([])
+direction_derivation = ""
+input_alternatives = Array[String]([])
+priority = 1

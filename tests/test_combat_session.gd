@@ -350,11 +350,11 @@ func _test_direction_folding_uses_frame_start_facing() -> void:
 
 
 func _test_turn_keeps_direction_history() -> void:
-	# 转身不清空方向历史，也不按新面向重解释旧段（spec「转身前历史」seam）：
-	# 序列中途木桩换侧使面向翻转，旧段保持录入时的相对数字，新面向只用于
-	# 之后的采样——跨转身仍组成同一指令。
-	# 1) 地面版：面向 +1 输入 2、3 后木桩换到左侧；换侧后的首个运动帧面向翻
-	#    为 -1，再下一帧世界左按新面向记 6——历史保持 236 并识别 236C。
+	# 转身不清空方向历史，已开始的指令候选锁定首次相对面向（票据 06 M-04）：
+	# 序列中途木桩换侧使面向翻转，旧段保持录入时的相对数字，候选的后续段仍
+	# 按锁定面向折算——换边后用原面向前向完成指令；新面向前向不构成候选段。
+	# 1) 地面版：面向 +1 输入 2、3 后木桩换到左侧；候选进行中参考面向锁定 +1，
+	#    再下一帧世界右按锁定面向记 6——历史保持 236 并识别 236C。
 	var turn := CombatSession.new()
 	turn.dummy_position = turn.player_position + Vector2(70, 0)
 	turn.step(FrameInput.make(0, false, "", true))
@@ -362,7 +362,7 @@ func _test_turn_keeps_direction_history() -> void:
 	turn.dummy_position = Vector2(turn.player_position.x - 70.0, GameParams.ground_stand_y())
 	turn.step(FrameInput.new())
 	_check(turn.player_facing == -1, "facing turned toward the moved dummy before the command ends")
-	turn.step(FrameInput.make(-1, false, "C"))
+	turn.step(FrameInput.make(1, false, "C"))
 	## C 的组合等待（issue 17 表内含投）：配对窗口末帧（+3f）按单键处理，
 	## 识别锚点仍是按下帧——跨转身历史照常消费。
 	_run_neutral(turn, 3)
@@ -370,9 +370,21 @@ func _test_turn_keeps_direction_history() -> void:
 	_check(turn.player_move_id == "236C", "the command completed across the turn still recognizes 236C")
 	var turn_hits := _run_neutral(turn, 30)
 	_check(turn_hits == 2, "the cross-turn 236C executes and hits with both segments")
+	# 1b) 负例：换边后按新面向前向（世界左）不构成候选段——折为 4，236 断链，
+	#     不以新面向重解释已开始的候选。
+	var wrong := CombatSession.new()
+	wrong.dummy_position = wrong.player_position + Vector2(70, 0)
+	wrong.step(FrameInput.make(0, false, "", true))
+	wrong.step(FrameInput.make(1, false, "", true))
+	wrong.dummy_position = Vector2(wrong.player_position.x - 70.0, GameParams.ground_stand_y())
+	wrong.step(FrameInput.new())
+	wrong.step(FrameInput.make(-1, false, "C"))
+	_run_neutral(wrong, 4)
+	_check(String(wrong.debug_snapshot()["direction_sequence"]) == "234", "the new-facing forward folds as 4 and breaks the started candidate")
+	_check(wrong.player_move_id != "236C", "the candidate is not reinterpreted with the new facing")
 	# 2) 空跳落地版：跳跃后段按面向 +1 录得 2、3（保持方向窗口内），落地帧前
-	#    木桩已在左侧——落地完成重新面向 -1，下一帧世界左记 6 并按 C：
-	#    旧 2/3 不清空、不反转，跨落地转身组成 236C。
+	#    木桩已在左侧——落地完成面向翻 -1，但候选锁定面向仍为 +1，下一帧世界
+	#    右按锁定面向记 6 并按 C：旧 2/3 不清空、不反转，跨落地转身组成 236C。
 	var land := CombatSession.new()
 	land.dummy_position = Vector2(900.0, GameParams.ground_stand_y())
 	land.step(FrameInput.make(0, true))
@@ -388,9 +400,9 @@ func _test_turn_keeps_direction_history() -> void:
 	_check(land.player_on_ground, "the empty jump lands before the command ends")
 	_check(land.player_facing == -1, "landing re-faces the dummy now on the left")
 	_check(String(land.debug_snapshot()["direction_sequence"]) == "23", "the air-recorded 2 and 3 survive the landing turn")
-	land.step(FrameInput.make(-1, false, "C"))
+	land.step(FrameInput.make(1, false, "C"))
 	_run_neutral(land, 3)
-	_check(land.player_move_id == "236C", "the post-landing 6 completes 236C from the kept history")
+	_check(land.player_move_id == "236C", "the post-landing world-right 6 completes 236C under the locked candidate facing")
 
 
 func _test_qcf_qcb_work_in_both_facings() -> void:
@@ -521,41 +533,48 @@ func _test_air_direction_derivation_resolves_by_locked_facing() -> void:
 
 
 func _test_phase_locked_facing_and_crossing() -> void:
-	# 阶段面向锁定（issue 12）：出招与空中阶段保持进入阶段时的面向；空中越过
-	# 木桩不自动转身；落地完成后（回到地面自由行动）重新面向木桩。
-	# 1) 地面出招期间木桩换到另一侧：整招面向不变，收招回到自由行动后翻转。
+	# 面向与攻击方向（票据 06 M-04 修订 issue 12 旧规则）：面向每个物理帧在
+	# 运动结算后按横向关系更新；当前招式的攻击方向锁定在启动面向，不因换边
+	# 反向；空中越桩同样翻转面向，落地后保持朝向木桩。
+	# 1) 地面出招期间木桩换到另一侧：面向翻转，但本招 hitbox 仍朝启动方向。
 	var ground_move := CombatSession.new()
 	ground_move.dummy_position = Vector2(900.0, GameParams.ground_stand_y())
 	ground_move.step(FrameInput.make(0, false, "A"))
+	var attack_dir_locked := ground_move.player_attack_rect().position.x > ground_move.player_position.x
 	ground_move.dummy_position = Vector2(50.0, GameParams.ground_stand_y())
-	var move_facing_locked := true
+	var move_facing_flipped := false
 	for i in range(18):
 		ground_move.step(FrameInput.new())
-		move_facing_locked = move_facing_locked and ground_move.player_facing == 1
-	_check(move_facing_locked, "facing stays locked for the whole ground move while the dummy changes sides")
+		move_facing_flipped = move_facing_flipped or ground_move.player_facing == -1
+		if ground_move.player_move_id != "":
+			attack_dir_locked = attack_dir_locked and ground_move.player_attack_rect().position.x > ground_move.player_position.x
+	_check(move_facing_flipped, "facing follows the dummy's side change during the ground move (M-04)")
+	_check(attack_dir_locked, "the move's attack direction stays locked to its startup facing")
 	ground_move.step(FrameInput.new())
 	_check(ground_move.player_facing == -1, "free action re-faces the dummy after the move recovers")
 	# 2) 空中越过木桩（显式中间状态：升空中、向前水平速度、面向 +1、木桩在
-	#    前下方；高度取在身体垂直重叠带之上，越过木桩横向位置后面向不变，
-	#    落地完成后重新面向木桩。
+	#    前下方；高度取在身体垂直重叠带之上）：越过横向位置后的下一帧面向
+	#    翻转（M-04：空中不锁死面向）；起跳水平速度不受翻转影响。
 	var crossing := CombatSession.new()
 	crossing.dummy_position = crossing.player_position + Vector2(100.0, 0.0)
 	crossing.player_on_ground = false
 	crossing.player_velocity = Vector2(1000.0, 0.0)
 	crossing.player_position.y -= 100.0
 	var crossed := false
-	var air_facing_locked := true
+	var facing_flipped_after_cross := false
 	var landed_facing := 0
 	for i in range(60):
 		crossing.step(FrameInput.new())
 		if not crossing.player_on_ground:
-			air_facing_locked = air_facing_locked and crossing.player_facing == 1
-			crossed = crossed or crossing.player_position.x > crossing.dummy_position.x
+			if crossing.player_position.x > crossing.dummy_position.x:
+				if crossed and crossing.player_facing == -1:
+					facing_flipped_after_cross = true
+				crossed = true
 		else:
 			landed_facing = crossing.player_facing
 			break
 	_check(crossed, "the player sails past the dummy's horizontal position mid-air")
-	_check(air_facing_locked, "crossing the dummy mid-air never flips the takeoff facing")
+	_check(facing_flipped_after_cross, "crossing the dummy mid-air flips the facing on the next frame (M-04)")
 	_check(landed_facing == -1, "after landing the player re-faces the dummy left behind")
 
 
@@ -5547,13 +5566,14 @@ func _test_slide_pickup_requires_explicit_slide_profile() -> void:
 
 func _test_slide_survives_whiffed_pickup() -> void:
 	# 挥空后原轨迹继续（路线 R-01 拒绝例）：注入更大的段 2 水平击退使木桩滑出
-	# 5D 判定范围——挥空的 5D 完全无接触，滑行按原时间线走完；有 D 与无 D 的
+	# 5D 判定范围——挥空的 5D 完全无接触（票据 06 起 5D 突进 72px 会追近约
+	# 1.5 个身位，注入击退须相应加大），滑行按原时间线走完；有 D 与无 D 的
 	# 两次运行恢复帧一致。
 	var make_run := func(press_d: bool) -> int:
 		var table := MoveData.default_table()
 		var seg2 := (table["236C"] as MoveData).segments[0]
 		var grounded := seg2.profile_for(HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)
-		grounded.horizontal_speed_px_s = 400.0
+		grounded.horizontal_speed_px_s = 600.0
 		var run := CombatSession.new(table)
 		run.dummy_position = run.player_position + Vector2(93, 0)
 		var recover_frame := -1

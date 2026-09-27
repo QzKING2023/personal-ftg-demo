@@ -134,6 +134,22 @@ enum StarterGrade {
 @export var rekka_only := false
 ## 起手等级：首次实际 HIT 锁定；打击招式必须显式声明，未声明整表拒绝。
 @export var starter_grade: StarterGrade = StarterGrade.UNSET
+## 计划位移（票据 06，M-01/M-03）：本招全部 active 帧累计到达的目标位移（px；
+## x 沿招式启动时锁定的动作方向为正，y 按 Godot 向下为正）。active 帧每帧按
+## 累计比例推进：命中判定读取本帧计划姿态并做起点到计划的确定性扫掠覆盖，
+## 正式位置在运动阶段经版边/身体约束后提交；startup/recovery 不产生位移与
+## 扫掠。NAN = 未声明；两轴必须成对声明或成对未声明。
+@export var motion_x_px := NAN
+@export var motion_y_px := NAN
+## 动作内蓄力（票据 06，I-01/I-02/I-03）：本招真正启动后按住动作键的正常
+## 物理帧阈值；达到阈值自动提交为 charge_move_id 声明的蓄力版（同一次动作
+## 的另一提交结果，不等待松键；阈值前按普通版既定时序处理，Hitstop 不计龄）。
+## -1 = 不可蓄力。
+@export var charge_threshold_frames := -1
+@export var charge_move_id := ""
+## 仅由蓄力提交起手的招式：不参与单键/指令输入选择，也不得出现在任何取消、
+## 连接或派生目标列表中（蓄力提交是唯一入口，票据 06）。
+@export var charge_only := false
 ## 被防结果（票据 03，D-02/D-03）：被防是独立于命中资料的接触结果，三项逐招显式
 ## 声明；未声明（哨兵）= 本招不可被防——默认禁止，不回退全局参数。投技不得声明。
 @export var block_freeze_frames := -1   ## 被防停顿：双方动作/运动冻结的物理帧数（允许 0）。
@@ -262,6 +278,24 @@ func segment_index_for_frame(frame: int) -> int:
 		if frame <= segment_active_to(i):
 			return i
 	return segment_count() - 1
+
+
+## 是否声明计划位移（票据 06）：两轴成对声明才有效（校验拒绝只声明一轴）。
+func has_motion() -> bool:
+	return not is_nan(motion_x_px) and not is_nan(motion_y_px)
+
+
+## 全部判定段的 active 帧总数：计划位移按累计比例分布在这些帧上。
+func total_active_frames() -> int:
+	var total := active_frames
+	for segment in segments:
+		total += segment.active_frames
+	return total
+
+
+## 是否可蓄力（票据 06）：阈值与目标成对声明。
+func is_chargeable() -> bool:
+	return charge_threshold_frames > 0 and charge_move_id != ""
 
 
 ## 按 (target_state, hit_context) 精确查找命中资料（运行时与 Combo Solver 共用的

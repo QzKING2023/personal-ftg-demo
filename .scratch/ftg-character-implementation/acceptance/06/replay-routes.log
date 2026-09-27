@@ -1,0 +1,118 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+=== R1 中板 236C>5[D] 蓄力穿越 | 面向 1 | 起始间距 50 px ===
+  F13  R1 HIT seg1 伤8.0 第1击 方向1 玩家x=240.7 木桩x=290.8
+  F30  R1 CHARGE_COMMITTED 5D→5[D] 按住8帧 蓄力版
+  F31  R1 HIT seg1 伤18.0 第2击 方向1 玩家x=244.9 木桩x=294.0
+  F42  R1 SWITCHED_SIDES 新面向-1 玩家x=360.7 木桩x=296.4（下一帧生效）
+  PASS  R1 蓄力提交发生（F30）
+  PASS  R1 真实穿越换边（F42）
+  PASS  R1 玩家终点越过木桩（dx=63.1）
+  PASS  R1 回放结束面向翻转（-1）
+  PASS  R1 换边当帧面向已按新关系更新
+  命中帧 [13, 31] · 蓄力 F30 · 换边 F42 · 终点 玩家x=360.7 木桩x=297.6
+
+=== R1 中板 236C>5[D] 蓄力穿越 | 面向 -1 | 起始间距 50 px ===
+  F13  R1 HIT seg1 伤8.0 第1击 方向-1 玩家x=239.3 木桩x=189.2
+  F30  R1 CHARGE_COMMITTED 5D→5[D] 按住8帧 蓄力版
+  F31  R1 HIT seg1 伤18.0 第2击 方向-1 玩家x=235.1 木桩x=186.0
+  F42  R1 SWITCHED_SIDES 新面向1 玩家x=119.3 木桩x=183.6（下一帧生效）
+  PASS  R1 蓄力提交发生（F30）
+  PASS  R1 真实穿越换边（F42）
+  PASS  R1 玩家终点越过木桩（dx=-63.1）
+  PASS  R1 回放结束面向翻转（1）
+  PASS  R1 换边当帧面向已按新关系更新
+  命中帧 [13, 31] · 蓄力 F30 · 换边 F42 · 终点 玩家x=119.3 木桩x=182.4
+
+=== R2 换边后指令解释 | 面向 1 ===
+  PASS  R2 前段穿越换边成立（F42）
+  F52  R2a HIT seg1 伤8.0 第1击 方向-1 玩家x=360.7 木桩x=296.8
+  F65  R2a HIT seg2 伤10.8 第2击 方向-1 玩家x=360.7 木桩x=294.4
+  PASS  R2a 换边后新候选按新面向折算，236C 起手（236C）
+  PASS  R2b 前段穿越换边成立（F42，提前段在 F17-18）
+  PASS  R2b 提前搓招的 2、3 已录入（23）
+  PASS  R2b 新面向前向不完成锁定候选（起手=5[D]）
+
+=== R2 换边后指令解释 | 面向 -1 ===
+  PASS  R2 前段穿越换边成立（F42）
+  F52  R2a HIT seg1 伤8.0 第1击 方向1 玩家x=119.3 木桩x=183.2
+  F65  R2a HIT seg2 伤10.8 第2击 方向1 玩家x=119.3 木桩x=185.6
+  PASS  R2a 换边后新候选按新面向折算，236C 起手（236C）
+  PASS  R2b 前段穿越换边成立（F42，提前段在 F17-18）
+  PASS  R2b 提前搓招的 2、3 已录入（23）
+  PASS  R2b 新面向前向不完成锁定候选（起手=5[D]）
+
+=== R3 airborne 236C 段2(空中资料)>5[D] | 面向 1 | 起始间距 50 px ===
+  F13  R3 HIT seg1 伤8.0 第1击 方向1 玩家x=240.7 木桩x=290.8
+  F26  R3 HIT seg2 伤10.8 第2击 方向1 玩家x=240.7 木桩x=293.2
+  F42  R3 CHARGE_COMMITTED 5D→5[D] 按住8帧 蓄力版
+  F43  R3 HIT seg1 伤16.2 第3击 方向1 玩家x=245.8 木桩x=294.8
+  F54  R3 SWITCHED_SIDES 新面向-1 玩家x=360.7 木桩x=297.0（下一帧生效）
+  PASS  R3 段 2 命中空中目标（F26，airborne 延长资料）
+  PASS  R3 蓄力 5[D] 捞起空中目标（F43）
+  PASS  R3 蓄力 5[D] 对空中目标同样穿越换边（F54）
+
+=== R3 airborne 236C 段2(空中资料)>5[D] | 面向 -1 | 起始间距 50 px ===
+  F13  R3 HIT seg1 伤8.0 第1击 方向-1 玩家x=239.3 木桩x=189.2
+  F26  R3 HIT seg2 伤10.8 第2击 方向-1 玩家x=239.3 木桩x=186.8
+  F42  R3 CHARGE_COMMITTED 5D→5[D] 按住8帧 蓄力版
+  F43  R3 HIT seg1 伤16.2 第3击 方向-1 玩家x=234.2 木桩x=185.2
+  F54  R3 SWITCHED_SIDES 新面向1 玩家x=119.3 木桩x=183.0（下一帧生效）
+  PASS  R3 段 2 命中空中目标（F26，airborne 延长资料）
+  PASS  R3 蓄力 5[D] 捞起空中目标（F43）
+  PASS  R3 蓄力 5[D] 对空中目标同样穿越换边（F54）
+
+=== R4 236C(段1挥空)>段2>slide>5[D] 蓄力捞起 | 面向 1 | 起始间距 93 px ===
+  F18  R4 HIT seg2 伤12.0 第1击 方向1 玩家x=240.7 木桩x=334.5
+  F36  R4 SLIDE_STARTED 滑行剩17 木桩x=341.4
+  F38  R4 CHARGE_COMMITTED 5D→5[D] 按住8帧 蓄力版
+  F39  R4 HIT seg1 伤18.4 第2击 方向1 玩家x=270.7 木桩x=342.2
+  PASS  R4 段 2 击飞触地进入 GROUND_SLIDE（F36）
+  PASS  R4 蓄力 5[D] 以 slide 资料捞起（F39，伤 18.4，slide 倍率）
+  蓄力捞起后 玩家x=295.4 木桩x=344.0 换边=false
+
+=== R5 版边普通 5D 墙截断 | 面向 1 | 玩家x=852.0 ===
+  F7   R5 CHARGE_COMMITTED 5D→5D 按住0帧 普通版
+  F8   R5 HIT seg1 伤18.0 第1击 方向1 玩家x=864.0 木桩x=912.0
+  PASS  R5 版边 5D 命中照常（F8）
+  PASS  R5 墙截断可观察
+  PASS  R5 墙截断不换边（面向 1）
+  PASS  R5 不越界（终点 864.0 / 墙 912.0）
+
+=== R5 版边普通 5D 墙截断 | 面向 -1 | 玩家x=108.0 ===
+  F7   R5 CHARGE_COMMITTED 5D→5D 按住0帧 普通版
+  F8   R5 HIT seg1 伤18.0 第1击 方向-1 玩家x=96.0 木桩x=48.0
+  PASS  R5 版边 5D 命中照常（F8）
+  PASS  R5 墙截断可观察
+  PASS  R5 墙截断不换边（面向 -1）
+  PASS  R5 不越界（终点 96.0 / 墙 48.0）
+
+=== R6 挥空轨迹继续 | 面向 1 ===
+  PASS  R6 挥空 5D 全程位移 72px（72.0）
+  PASS  R6 挥空 5[D] 全程位移 120px（120.0）
+
+=== R7 被防不穿越 | 面向 1 | 起始间距 70 px ===
+  F7   R7 CHARGE_COMMITTED 5D→5D 按住0帧 普通版
+  F8   R7 ATTACK_BLOCKED 姿态1 玩家x=258.0 木桩x=310.2
+  PASS  R7 站防挡下 5D（F8）
+  PASS  R7 被防不换边
+  PASS  R7 被防停在原侧身体边界（dx=-48.0）
+
+=== R8 手动 665B/665C | 面向 1 ===
+  PASS  R8 66 前冲触发（F3，键 B）
+  PASS  R8 冲刺结束后 5B 起手（F23）
+  PASS  R8 5B 命中（F29）
+  PASS  R8 66 前冲触发（F3，键 C）
+  PASS  R8 冲刺结束后 5C 起手（F23）
+  PASS  R8 5C 命中（F31）
+
+=== R8 手动 665B/665C | 面向 -1 ===
+  PASS  R8 66 前冲触发（F3，键 B）
+  PASS  R8 冲刺结束后 5B 起手（F23）
+  PASS  R8 5B 命中（F29）
+  PASS  R8 66 前冲触发（F3，键 C）
+  PASS  R8 冲刺结束后 5C 起手（F23）
+  PASS  R8 5C 命中（F31）
+
+
+ALL REPLAY 06 CHECKS PASSED

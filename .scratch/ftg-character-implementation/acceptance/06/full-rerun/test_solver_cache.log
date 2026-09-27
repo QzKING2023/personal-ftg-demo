@@ -1,0 +1,20 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PASS: cache disabled/enabled reports are structurally identical
+PASS: the first enabled request records one cache miss
+PASS: cache hit returns a new SolverReport
+PASS: cache hit preserves the complete report
+PASS: mutating one report does not mutate the other
+PASS: mutating one report edge does not mutate the other
+PASS: mutating a returned report does not poison the cached snapshot
+PASS: repeated identical requests record cache hits
+PASS: ground and explicit air starts do not share a cache entry
+PASS: timing and spatial requests do not share a cache entry
+PASS: single-facing and dual-facing requests do not share a cache entry
+PASS: different injected table contents do not share a cache entry
+PASS: editing a resource invalidates the prior cache entry
+PASS: same label with a different start state must not reuse the earlier result
+PASS: wrapper calls return independent reports; caller mutation is not observable
+PASS: wrapper reports zero label reuse and reuse disabled
+
+ALL SOLVER CACHE TESTS PASSED

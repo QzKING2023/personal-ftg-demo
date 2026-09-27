@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="MoveData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/hit_profile.gd" id="1_ct8ej"]
+[ext_resource type="Script" path="res://scripts/combat/move_data.gd" id="2_5pi2p"]
+[ext_resource type="Script" path="res://scripts/combat/move_segment.gd" id="3_7msyj"]
+
+[sub_resource type="Resource" id="Resource_pvbgc"]
+script = ExtResource("1_ct8ej")
+target_state = 1
+hit_context = 1
+reaction = 1
+ground_stun_frames = 14
+horizontal_speed_px_s = 160.0
+upward_speed_px_s = 0.0
+
+[sub_resource type="Resource" id="Resource_0nnd5"]
+script = ExtResource("1_ct8ej")
+target_state = 1
+hit_context = 2
+reaction = 1
+ground_stun_frames = 18
+horizontal_speed_px_s = 160.0
+upward_speed_px_s = 0.0
+
+[resource]
+script = ExtResource("2_5pi2p")
+move_id = "5A"
+move_kind = 1
+stance = 1
+action_key = "A"
+startup_frames = 5
+active_frames = 4
+recovery_frames = 10
+attack_attribute = 2
+hitbox_size = Vector2(30, 24)
+hitbox_gap = 2.0
+hit_profiles = Array[ExtResource("1_ct8ej")]([SubResource("Resource_pvbgc"), SubResource("Resource_0nnd5")])
+cancel_window_frames = 8
+chain_cancel_targets = Array[String](["5B", "2B"])
+chain_cancel_window_frames = 3
+special_cancel_targets = Array[String](["236C", "214C"])
+special_cancel_window_frames = 5
+link_targets = Array[String](["5B"])
+starter_grade = 1
+motion_x_px = nan
+motion_y_px = nan
+block_freeze_frames = 8
+block_stun_frames = 9
+block_pushback_px_s = 45.0
+priority = 1

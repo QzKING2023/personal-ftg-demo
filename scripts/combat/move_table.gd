@@ -242,6 +242,50 @@ static func _validate_move(move: MoveData, errors: Array[String]) -> void:
 			errors.append("[%s] %s: rekka_only — 矛盾：派生招式不参与单键/指令输入选择，不声明方向记法" % [
 				source, id_label,
 			])
+	# 计划位移（票据 06，M-01/M-03）：两轴成对声明或成对未声明；普通投不位移。
+	if is_nan(move.motion_x_px) != is_nan(move.motion_y_px):
+		errors.append("[%s] %s: motion_x_px/motion_y_px — 矛盾：计划位移两轴必须成对声明或成对未声明" % [
+			source, id_label,
+		])
+	if move.has_motion() and not move.is_strike():
+		errors.append("[%s] %s: motion_x_px — 矛盾：普通投不声明计划位移" % [
+			source, id_label,
+		])
+	# 动作内蓄力（票据 06，I-01/I-02）：阈值与目标成对声明；蓄力版不得再声明
+	# 蓄力（不链式蓄力）；charge_only 限定打击招式且不参与输入选择。
+	if move.charge_threshold_frames >= 0 and move.charge_move_id == "":
+		errors.append("[%s] %s: charge_threshold_frames — 矛盾：声明蓄力阈值却未声明蓄力目标（当前 %d）" % [
+			source, id_label, move.charge_threshold_frames,
+		])
+	if move.charge_threshold_frames < 0 and move.charge_move_id != "":
+		errors.append("[%s] %s: charge_move_id — 矛盾：声明蓄力目标却未声明蓄力阈值" % [
+			source, id_label,
+		])
+	if move.charge_threshold_frames == 0:
+		errors.append("[%s] %s: charge_threshold_frames — 矛盾：蓄力阈值须至少 1 帧（当前 0）" % [
+			source, id_label,
+		])
+	if move.charge_threshold_frames > 0 and not move.is_strike():
+		errors.append("[%s] %s: charge_threshold_frames — 矛盾：普通投不做动作内蓄力" % [
+			source, id_label,
+		])
+	if move.charge_only:
+		if not move.is_strike():
+			errors.append("[%s] %s: charge_only — 矛盾：蓄力限定只属于打击招式" % [
+				source, id_label,
+			])
+		if move.charge_threshold_frames > 0 or move.charge_move_id != "":
+			errors.append("[%s] %s: charge_only — 矛盾：招式不能既是蓄力版又声明自己的蓄力（不链式蓄力）" % [
+				source, id_label,
+			])
+		if move.direction_derivation != "" or not move.input_alternatives.is_empty():
+			errors.append("[%s] %s: charge_only — 矛盾：蓄力版不参与单键/指令输入选择，不声明方向记法" % [
+				source, id_label,
+			])
+		if move.rekka_only:
+			errors.append("[%s] %s: charge_only — 矛盾：招式不能既是蓄力版又是 Rekka 派生（入口必须唯一）" % [
+				source, id_label,
+			])
 
 
 static func _validate_strike_fields(move: MoveData, source: String, id_label: String, errors: Array[String]) -> void:
@@ -611,8 +655,9 @@ static func _validate_cross_move(move_list: Array, errors: Array[String]) -> voi
 		# 层级进入并列键、方向记法不再进入：超必杀与必杀可同键同优先级共存（由
 		# 指令分层解析），而不同记法（如宽松 623 与严格 236）可能同时命中同一输入，
 		# 同层同优先级时无稳定顺序，一并拒绝、不按表序猜测。
-		# rekka_only 派生招式不参与输入选择，不进入并列键（票据 04）。
-		if typed.is_strike() and typed.action_key != "" and not typed.rekka_only:
+		# rekka_only 派生与 charge_only 蓄力版不参与输入选择，不进入并列键
+		#（票据 04/06）。
+		if typed.is_strike() and typed.action_key != "" and not typed.rekka_only and not typed.charge_only:
 			var key := "%d|%s|%d|%d" % [
 				typed.stance, typed.action_key, typed.command_tier, typed.priority,
 			]
@@ -638,6 +683,10 @@ static func _validate_cross_move(move_list: Array, errors: Array[String]) -> voi
 					])
 				elif _is_rekka_only_move(move_list, target):
 					errors.append("[%s] %s: %s — 跨招式非法引用：\"%s\" 是 rekka_only 派生招式，只能经 Rekka 派生窗口起手" % [
+						source, typed.move_id, field, target,
+					])
+				elif _is_charge_only_move(move_list, target):
+					errors.append("[%s] %s: %s — 跨招式非法引用：\"%s\" 是 charge_only 蓄力版，只能经蓄力提交起手" % [
 						source, typed.move_id, field, target,
 					])
 		# 特殊进入目标（票据 05）：与来源同姿态（取消不跨姿态），且目标自身仍按
@@ -673,6 +722,46 @@ static func _validate_cross_move(move_list: Array, errors: Array[String]) -> voi
 				errors.append("[%s] %s: %s — 矛盾：派生目标 \"%s\" 与首段姿态不一致（派生不跨姿态）" % [
 					source, typed.move_id, field, target_id,
 				])
+	# 动作内蓄力目标（票据 06，I-01/I-02）：蓄力版存在、限定 charge_only、与普通
+	# 版同姿态同输入绑定（同一次动作的两个提交结果）；每个蓄力版恰被一个普通版
+	# 引用（孤儿蓄力版属于死数据，整表拒绝）。
+	var charge_refs := {}
+	for move in move_list:
+		var typed := move as MoveData
+		var source := typed.resource_path if typed.resource_path != "" else PROGRAMMATIC_SOURCE
+		if typed.charge_move_id == "":
+			continue
+		var target := _find_move(move_list, typed.charge_move_id)
+		if target == null:
+			errors.append("[%s] %s: charge_move_id — 跨招式非法引用：\"%s\" 不在招式表中" % [
+				source, typed.move_id, typed.charge_move_id,
+			])
+			continue
+		if not target.charge_only:
+			errors.append("[%s] %s: charge_move_id — 矛盾：蓄力目标 \"%s\" 未声明 charge_only（蓄力提交是唯一入口）" % [
+				source, typed.move_id, typed.charge_move_id,
+			])
+		if target.action_key != typed.action_key:
+			errors.append("[%s] %s: charge_move_id — 矛盾：蓄力目标 \"%s\" 的输入绑定须与普通版一致（当前 \"%s\" vs \"%s\"）" % [
+				source, typed.move_id, typed.charge_move_id, typed.action_key, target.action_key,
+			])
+		if target.stance != typed.stance:
+			errors.append("[%s] %s: charge_move_id — 矛盾：蓄力目标 \"%s\" 与普通版姿态不一致（蓄力不跨姿态）" % [
+				source, typed.move_id, typed.charge_move_id,
+			])
+		if charge_refs.has(typed.charge_move_id):
+			errors.append("[%s] 跨招式冲突: charge_move_id — 蓄力版 \"%s\" 被 %s 与 %s 同时引用（入口必须唯一）" % [
+				source, typed.charge_move_id, charge_refs[typed.charge_move_id], typed.move_id,
+			])
+		else:
+			charge_refs[typed.charge_move_id] = typed.move_id
+	for move in move_list:
+		var typed := move as MoveData
+		var source := typed.resource_path if typed.resource_path != "" else PROGRAMMATIC_SOURCE
+		if typed.charge_only and not charge_refs.has(typed.move_id):
+			errors.append("[%s] %s: charge_only — 矛盾：蓄力版未被任何普通版的 charge_move_id 引用（死数据）" % [
+				source, typed.move_id,
+			])
 
 
 static func _has_move_id(move_list: Array, move_id: String) -> bool:
@@ -692,6 +781,11 @@ static func _find_move(move_list: Array, move_id: String) -> MoveData:
 static func _is_rekka_only_move(move_list: Array, move_id: String) -> bool:
 	var move := _find_move(move_list, move_id)
 	return move != null and move.rekka_only
+
+
+static func _is_charge_only_move(move_list: Array, move_id: String) -> bool:
+	var move := _find_move(move_list, move_id)
+	return move != null and move.charge_only
 
 
 static func _enum_in_range(value: int, low: int, high: int) -> bool:
