@@ -1,0 +1,55 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+PASS  solve() without arguments analyzes the shared manifest
+PASS  start lines document the default ground-neutral start with empty buffer and direction history
+PASS  start lines document the neutral dummy and the fixed probe contact position
+PASS  the default run verifies right then left facing
+PASS  both facings yield mirrored results on the default table
+PASS  a note records the successful facing-mirror verification
+PASS  start lines list both verified facings
+PASS  the facings option restricts verification to the requested facing
+PASS  a single-facing run makes no mirror claim
+PASS  a single-facing run lists only its own facing
+PASS  first-move candidates enumerate the executable ground moves (standing and crouch) in stable id order (ticket 04 adds 214C; ticket 07 adds 2D and the 6D derivation)
+PASS  derivative candidates spell out the direction notation and the real key
+PASS  air moves and the B+C throw never enumerate as first moves from the ground start
+PASS  air moves and the B+C throw never enumerate as first moves from the ground start
+PASS  air moves and the B+C throw never enumerate as first moves from the ground start
+PASS  air moves and the B+C throw never enumerate as first moves from the ground start
+PASS  every reported route starts from an executable ground move — air moves only enter via configured jump cancel
+PASS  the guide covers both facings
+PASS  each facing header maps forward/back onto the real direction keys
+PASS  the 5A → 5B → 5D route has an operation guide
+PASS  guide presses use the real action keys U/I/J at the scheduled frames
+PASS  the guide states the wait frames between presses
+PASS  a valid 236C-entry route has an operation guide with the quarter-circle fold
+PASS  the right-facing guide folds 236 into the real keys S, S+D, D
+PASS  the left-facing guide mirrors the physical direction keys for the same relative input
+PASS  an explicitly provided air start enumerates only the currently executable air moves (jC delivered with ticket 07)
+PASS  start lines describe the explicitly provided air state and its probe prologue
+PASS  the air chain jA → jB → jD is verified from the explicit air start
+PASS  air route hits on frames 5/10/14 measured from the first air frame
+PASS  air route counts 3 hits for 25.3 corrected damage (jA is an A starter: 5.8 + 7.8 + 11.7)
+PASS  the explicit-state route still carries frame-by-frame replay inputs
+PASS  the air-start guide documents the Space prologue its route frames are measured from
+PASS  the landing seam is not claimed as valid from an explicit air start
+PASS  the exclusion reason names the recovery lock regardless of starting stance
+PASS  an air start at or beyond the airtime is refused with a locatable reason
+PASS  the refused start state produces no candidates, routes or edges
+PASS  edges are stably sorted by from → to → kind
+PASS  routes are stably sorted by their labels
+PASS  solving the same table twice yields identical reports, guide included
+PASS  running solve() leaves every observable field of a live session untouched
+PASS  the live session is still inside its 5A hit-confirmed combo, unbothered by probes
+PASS  solve() refuses the invalid manifest instead of analyzing it
+PASS  the refusal reason is exactly the shared loader's reason (the training ground shows the same)
+PASS  a refused report claims no candidates, routes or cycles
+PASS  the edited table still yields the 5A → 5B edge
+PASS  editing the shared move's startup moves the timing report (earliest hit age 7 → 5)
+PASS  the edge reason quotes the edited startup value
+PASS  the default manifest still reports the untouched baseline
+PASS  the guide's action-key map matches the training ground layout
+
+ACCEPTANCE_SOLVER_METRICS_JSON={"calls":19,"combo_cache":{"bypasses":0,"enabled":true,"entries":4,"hits":13,"misses":4},"elapsed_ms":853710.745,"reports":[{"calls":1,"fingerprint":"21b141233979f714f2c0d314609e76c235c69513b3f0de1f8143ff230d93ce81","keys":["solve-3"]},{"calls":10,"fingerprint":"2f231e0c375fa0484bd6a8339bdcc12ae7c4155cf575891605b529d8cb23bc41","keys":["solve-1","solve-2","solve-4","solve-5","solve-6","solve-12","solve-13","solve-14","solve-15","solve-19"]},{"calls":1,"fingerprint":"3f92d42b763e55e0f0138e5e9e94570c5bf42989a3aa88c0763d43e4d829ac1b","keys":["solve-18"]},{"calls":5,"fingerprint":"9ef0c9291970ca616de6867f4c1d1ce7248daae9402dcc2a1b7f19ad651047c0","keys":["solve-7","solve-8","solve-9","solve-10","solve-16"]},{"calls":1,"fingerprint":"9ff2ccb5ff83a14bb59943ec5a6b1d7156eaaf66c0e8798e821496156dcac0d3","keys":["solve-17"]},{"calls":1,"fingerprint":"e54bedb5a9f930701f9f96f66a7a3aa0b3a68fa0388dfaecdbe14454d02b4c96","keys":["solve-11"]}],"reuse_enabled":false,"reuse_hit_rate":0.0,"reuse_hits":0,"test":"test_solver_entry","underlying_calls":19,"unique_reports":6}
+ALL SOLVER ENTRY TESTS PASSED

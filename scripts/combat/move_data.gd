@@ -84,6 +84,16 @@ enum StarterGrade {
 @export var air_attack := false
 ## 命中框尺寸（以角色中心为原点）。
 @export var hitbox_size := Vector2.ZERO
+## 跳跃起跳之外的空中出口（票据 07）：本招（地面招式）实际 HIT 后，命中确认
+## 取消窗口内因自身声明位移真实离地时，可直接按空中姿态起手的空中招式 id 列表
+##（如 6D/2D → jA/jB/jC）。不额外制造特殊低跳：出口只借用本招运动造成的真实
+## 滞空，被防、挥空、缺失 profile 不开放；落地后资格作废。窗口沿用
+## cancel_window_frames，不另设窗口。
+@export var air_exit_targets: Array[String] = []
+## 命中框垂直偏移（px，正为向下、负为向上；0 = 以角色中心垂直居中）。
+## 表达对空/对地判定的真实垂直范围（如 2D 的高位拦截框）；与水平 gap 正交，
+## 扫掠覆盖同样按本偏移后的命中框计算。
+@export var hitbox_y_offset_px := 0.0
 ## 命中框与身体前缘的间隙。
 @export var hitbox_gap := -1.0
 ## 内嵌上下文命中资料：唯一键 (target_state, hit_context)，打击招式至少一个

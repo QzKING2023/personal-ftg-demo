@@ -795,7 +795,9 @@ func player_attack_rect() -> Rect2:
 	if _current_move == null or not _current_move.is_strike():
 		return Rect2()
 	var size := _current_move.segment_hitbox_size(_current_segment)
-	var center := player_position + Vector2(_attack_direction() * _current_move.segment_hitbox_offset(_current_segment), 0.0)
+	var center := player_position + Vector2(
+		_attack_direction() * _current_move.segment_hitbox_offset(_current_segment),
+		_current_move.hitbox_y_offset_px)
 	var rect := Rect2(center - size * 0.5, size)
 	if _planned_step == Vector2.ZERO:
 		return rect
@@ -818,7 +820,7 @@ func dummy_attack_rect() -> Rect2:
 	if _dummy_move == null:
 		return Rect2()
 	var facing := _dummy_attack_direction()
-	var center := dummy_position + Vector2(facing * _dummy_move.hitbox_offset(), 0.0)
+	var center := dummy_position + Vector2(facing * _dummy_move.hitbox_offset(), _dummy_move.hitbox_y_offset_px)
 	return Rect2(center - _dummy_move.hitbox_size * 0.5, _dummy_move.hitbox_size)
 
 
@@ -901,6 +903,10 @@ func debug_snapshot() -> Dictionary:
 		"cross_ok": _cross_ok,
 		"motion_wall_clamped": _motion_wall_clamped,
 		"planned_step": _planned_step,
+		"air_exit_open": (_current_move != null and not _current_move.air_exit_targets.is_empty()
+			and not player_on_ground and _cancel_window_open()),
+		"hitbox_y_offset": (_current_move.hitbox_y_offset_px if _current_move != null else 0.0),
+		"dummy_air_height_px": maxf(0.0, GameParams.ground_stand_y() - dummy_position.y),
 	}
 
 
@@ -1791,6 +1797,12 @@ func _phase_cancel() -> void:
 				[_current_move.special_cancel_targets, _current_move.special_cancel_window_frames]]:
 			if age <= pair[1]:
 				_append_stance_matching_targets(pair[0], _current_move.stance)
+		## 空中出口（票据 07）：声明 air_exit_targets 的地面招式在实际 HIT 后，若
+		## 本招计划位移已使玩家真实离地，开放空中姿态起手的目标（沿用命中确认窗口；
+		## 被防接触不开本分支——_append_stance_matching_targets 按玩家当前姿态过滤，
+		## 着地时目标自然不匹配）。
+		if age <= _current_move.cancel_window_frames and not player_on_ground:
+			_append_stance_matching_targets(_current_move.air_exit_targets, MoveData.Stance.AIR)
 		## 特殊进入资格（票据 05，I-05）：仅实际 HIT 授予，不开放于被防接触；
 		## 资格属于授予招式且仍在自身消费窗口内时开放其声明目标（如 236C → 5D）。
 		if _special_entry_live():
@@ -2170,6 +2182,10 @@ func _commit_planned_step() -> void:
 			target.x = clampf(dummy_position.x + GameParams.BODY_SIZE.x * origin_side,
 				GameParams.stage_left_limit(), GameParams.stage_right_limit())
 	player_position = target
+	## 计划位移造成的真实离地（票据 07）：声明向上位移的招式（6D/2D）在位移提交
+	## 当帧真实转为空中姿态——后续帧自然受重力回落；这不是姿态瞬移，空中出口、
+	## 空中姿态解析与有限滞空都以此真实状态为前提。
+	player_on_ground = player_position.y >= GameParams.ground_stand_y()
 
 
 func _can_jump_cancel() -> bool:

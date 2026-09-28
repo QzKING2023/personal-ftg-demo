@@ -58,7 +58,7 @@ func _test_default_manifest_loads_shared_table() -> void:
 	var result := MoveTable.load_default()
 	_check(result.ok, "default manifest loads and validates")
 	_check(result.errors.is_empty(), "default manifest reports no errors")
-	var expected_ids := ["5A", "2A", "5B", "2B", "5C", "2C", "6A", "236C", "214C", "214C~B", "214C~C", "jA", "jB", "jD", "5D", "5[D]", "214D", "BC"]
+	var expected_ids := ["5A", "2A", "5B", "2B", "5C", "2C", "6A", "236C", "214C", "214C~B", "214C~C", "jA", "jB", "jC", "jD", "5D", "5[D]", "6D", "2D", "214D", "BC"]
 	_check(result.moves.keys() == expected_ids, "table preserves manifest order and ids (stable enumeration)")
 	for move_id in expected_ids:
 		var move := result.moves[move_id] as MoveData
@@ -72,7 +72,8 @@ func _test_default_table_entries_match_manifest() -> void:
 		"5A": [5, 4, 10, 8], "2A": [5, 4, 10, 8], "5B": [6, 5, 12, 12], "2B": [7, 5, 12, 11],
 		"5C": [8, 5, 16, 16], "2C": [9, 3, 18, 14], "236C": [6, 2, 22, 8],
 		"5D": [7, 4, 18, 18], "214D": [7, 5, 20, 22],
-		"jA": [4, 6, 10, 8], "jB": [4, 6, 12, 12], "jD": [4, 7, 14, 20],
+		"jA": [4, 6, 10, 8], "jB": [4, 6, 12, 12], "jC": [7, 5, 14, 14], "jD": [4, 7, 14, 20],
+		"6D": [9, 4, 20, 18], "2D": [8, 4, 18, 17],
 		"BC": [5, 11, 10, -1],
 	}
 	for move_id in expected:
@@ -132,9 +133,10 @@ func _test_default_table_entries_match_manifest() -> void:
 		"2A chains within the A system and into the B system per the matrix")
 	_check(two_b.chain_cancel_targets == ["5C", "2C", "6A"],
 		"2B chains into the C system and 6A per the matrix")
-	_check(two_c.chain_cancel_targets.is_empty() and two_c.special_cancel_targets == ["214C"]
+	_check(two_c.chain_cancel_targets == ["6D", "2D"] and two_c.chain_cancel_window_frames == 3
+		and two_c.special_cancel_targets == ["214C"]
 		and two_c.link_targets.is_empty(),
-		"2C declares no chain edges; its 214C special cancel edge arrived with ticket 04")
+		"2C declares its 6D/2D air-chase chain edges (ticket 07) and the 214C special cancel from ticket 04")
 	var sweep := MoveData.profile_for(two_c, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)
 	_check(sweep != null and sweep.reaction == HitProfile.Reaction.LOW_FLOAT_SWEEP
 		and sweep.air_untech_frames == 20 and sweep.upward_speed_px_s == 120.0
@@ -145,6 +147,33 @@ func _test_default_table_entries_match_manifest() -> void:
 	_check(MoveData.profile_for(two_c, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.COUNTER) != null
 		and two_c.starter_grade == MoveData.StarterGrade.C,
 		"2C declares its counter pair and the C starter grade")
+	# 票据 07：6A 唯一专用击飞入口（jump cancel 开 jA/jB/jC）；jA/jB/jC 空中普通链；
+	# 6D/2D 对空限定（无 grounded 键）、计划位移真实上升、命中后空中出口。
+	var six_a := result.moves["6A"] as MoveData
+	_check(six_a.jump_cancel_targets == ["jA", "jB", "jC"],
+		"6A declares jump cancel into the delivered air normals (jA/jB/jC)")
+	var ja := result.moves["jA"] as MoveData
+	var jb := result.moves["jB"] as MoveData
+	var jc := result.moves["jC"] as MoveData
+	_check(ja.cancel_targets == ["jB", "jC"] and jb.cancel_targets == ["jC", "jD"]
+		and jc.cancel_targets.is_empty(),
+		"the air normals chain jA > jB > jC (jC's D-family exits arrive with tickets 08/09)")
+	var six_d := result.moves["6D"] as MoveData
+	var two_d := result.moves["2D"] as MoveData
+	_check(six_d.direction_derivation == "6D" and two_d.requires_crouch,
+		"6D derives from 6+D and 2D requires the crouch stance at input")
+	_check(six_d.motion_x_px == 88.0 and six_d.motion_y_px == -48.0
+		and two_d.motion_x_px == 0.0 and two_d.motion_y_px == -64.0,
+		"6D/2D declare their planned motion (diagonal rise / vertical rise)")
+	_check(MoveData.profile_for(six_d, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL) == null
+		and MoveData.profile_for(two_d, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL) == null
+		and MoveData.profile_for(six_d, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL) != null
+		and MoveData.profile_for(two_d, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL) != null,
+		"6D/2D declare airborne-only profiles: grounded targets report no-profile, never a fallback")
+	_check(six_d.air_exit_targets == ["jA", "jB", "jC"] and two_d.air_exit_targets == ["jA", "jB", "jC"],
+		"6D/2D declare their air exits into the delivered air normals")
+	_check(two_d.hitbox_y_offset_px == -70.0 and six_d.hitbox_y_offset_px == 0.0,
+		"2D declares the raised vertical hitbox while 6D stays centered")
 	var grades := {
 		"5A": MoveData.StarterGrade.A, "2A": MoveData.StarterGrade.A,
 		"5B": MoveData.StarterGrade.B, "2B": MoveData.StarterGrade.B,

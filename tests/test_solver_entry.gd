@@ -83,8 +83,8 @@ func _test_first_candidates_ground_only_sorted() -> void:
 	var ids: Array[String] = []
 	for line in report.first_candidates:
 		ids.append(line.split("｜")[0])
-	_check(ids == ["214C", "214D", "236C", "2A", "2B", "2C", "5A", "5B", "5C", "5D", "6A"],
-		"first-move candidates enumerate the executable ground moves (standing and crouch) in stable id order (ticket 04 adds the 214C opener)")
+	_check(ids == ["214C", "214D", "236C", "2A", "2B", "2C", "2D", "5A", "5B", "5C", "5D", "6A", "6D"],
+		"first-move candidates enumerate the executable ground moves (standing and crouch) in stable id order (ticket 04 adds 214C; ticket 07 adds 2D and the 6D derivation)")
 	var text := "\n".join(report.first_candidates)
 	_check("方向 236 + K 键" in text and "方向 214 + J 键" in text and "方向 214 + K 键" in text,
 		"derivative candidates spell out the direction notation and the real key")
@@ -161,8 +161,8 @@ func _test_explicit_air_start_switches_candidates() -> void:
 	var ids: Array[String] = []
 	for line in report.first_candidates:
 		ids.append(line.split("｜")[0])
-	_check(ids == ["jA", "jB", "jD"],
-		"an explicitly provided air start enumerates only the currently executable air moves")
+	_check(ids == ["jA", "jB", "jC", "jD"],
+		"an explicitly provided air start enumerates only the currently executable air moves (jC delivered with ticket 07)")
 	var text := "\n".join(report.start_lines)
 	_check("空中" in text and "第 1 个空中帧" in text,
 		"start lines describe the explicitly provided air state and its probe prologue")

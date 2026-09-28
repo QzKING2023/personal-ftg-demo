@@ -52,7 +52,7 @@ func _initialize() -> void:
 func _test_default_table_reports_ground_route() -> void:
 	var report := _default_analyze()
 	_check(report.safe and report.cycles.is_empty(), "default table reports no valid cycle")
-	_check(report.edges.size() == 43, "default table enumerates 43 edges (ticket 05 基线 36：15 chain + 8 special + 4 link + 1 jump + 2 air cancels + 1 landing + 2 Rekka derives + 1 ~B link + 1 special D entry + 1 source-limited 5B link；ticket 06 增 6 条蓄力变体（236C 特殊进入 + 5B/5C 链式与目押 → 5[D]）+ 1 条 5[D] → 5B 来源限定出边)")
+	_check(report.edges.size() == 55, "default table enumerates 55 edges (ticket 05 基线 36：15 chain + 8 special + 4 link + 1 jump + 2 air cancels + 1 landing + 2 Rekka derives + 1 ~B link + 1 special D entry + 1 source-limited 5B link；ticket 06 增 7 条（6 蓄力变体 + 5[D]→5B 来源限定）；ticket 07 增 12 条：6A jc jB/jC（2 jump）+ jA/jB→jC（2 空中取消）+ 2C→6D/2D（2 链式）+ 6D/2D→jA/jB/jC（6 空中出口）)")
 	var ab := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	_check(ab != null and ab.valid, "5A -> 5B is a valid chain continuation")
 	if ab != null:
@@ -374,11 +374,16 @@ func _test_crouch_moves_and_low_float() -> void:
 	if truncated != null:
 		_check(not truncated.timing_valid and "断开" in truncated.note,
 			"the truncated 2A -> 2B entry (2C too slow behind the A-starter-decayed 2B stun) is honestly reported as broken")
-	# 2C 唯一声明出边是 214C 必杀取消（票据 04 接通）：报告不得发明其他接续。
+	# 2C 的有效出边只有声明的 214C 必杀取消（票据 04）与 6D 链式（票据 07；
+	# 2D 链式在钉位下按高度失配挥空排除）：报告不得发明其他接续。
 	for edge in report.edges:
 		if edge.from_id == "2C" and edge.valid:
-			_check(edge.to_id == "214C" and edge.kind == ComboSolver.EdgeKind.SPECIAL_CANCEL,
-				"the only valid continuation out of 2C is the declared 214C special cancel (ticket 04)")
+			_check((edge.to_id == "214C" and edge.kind == ComboSolver.EdgeKind.SPECIAL_CANCEL)
+				or (edge.to_id == "6D" and edge.kind == ComboSolver.EdgeKind.CHAIN_CANCEL),
+				"the only valid continuations out of 2C are the declared 214C special cancel and the 6D air-chase chain")
+		if edge.from_id == "2C" and edge.to_id == "2D":
+			_check(not edge.valid and edge.kind == ComboSolver.EdgeKind.CHAIN_CANCEL,
+				"the 2C -> 2D chain stays excluded (raised hitbox whiffs over the pinned low float)")
 
 
 func _test_rekka_derive_edges_and_routes() -> void:
@@ -539,6 +544,15 @@ func _test_solver_claims_only_configured_connections() -> void:
 		["5B", "5[D]", ComboSolver.EdgeKind.NORMAL_LINK], ["5C", "5[D]", ComboSolver.EdgeKind.NORMAL_LINK],
 		["jB", "5[D]", ComboSolver.EdgeKind.LANDING_CANCEL],
 		["5[D]", "5B", ComboSolver.EdgeKind.SPECIAL_ENTRY_LINK],
+		## 票据 07：6A 的 jump cancel 扩展到 jB/jC，jA/jB 接 jC，2C 链式进入
+		## 6D/2D，6D/2D 的空中出口（air_exit_targets）。
+		["6A", "jB", ComboSolver.EdgeKind.JUMP_CANCEL], ["6A", "jC", ComboSolver.EdgeKind.JUMP_CANCEL],
+		["jA", "jC", ComboSolver.EdgeKind.CANCEL], ["jB", "jC", ComboSolver.EdgeKind.CANCEL],
+		["2C", "6D", ComboSolver.EdgeKind.CHAIN_CANCEL], ["2C", "2D", ComboSolver.EdgeKind.CHAIN_CANCEL],
+		["6D", "jA", ComboSolver.EdgeKind.AIR_EXIT], ["6D", "jB", ComboSolver.EdgeKind.AIR_EXIT],
+		["6D", "jC", ComboSolver.EdgeKind.AIR_EXIT],
+		["2D", "jA", ComboSolver.EdgeKind.AIR_EXIT], ["2D", "jB", ComboSolver.EdgeKind.AIR_EXIT],
+		["2D", "jC", ComboSolver.EdgeKind.AIR_EXIT],
 	]
 	_check(report.edges.size() == pairs.size(), "the default report enumerates exactly the configured continuation relations")
 	var reported := {}

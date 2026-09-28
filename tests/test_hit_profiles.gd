@@ -98,7 +98,7 @@ func _test_shared_table_samples_declared() -> void:
 		"6A grounded counter is a LAUNCH variant observable from normal")
 	_check(MoveData.profile_for(six_a, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL) == null,
 		"6A leaves the airborne profile undeclared (unmatched when targeted airborne)")
-	_check(six_a.jump_cancel_targets == ["jA"], "6A declares its jump cancel target jA")
+	_check(six_a.jump_cancel_targets == ["jA", "jB", "jC"], "6A declares its jump cancel targets into the delivered air normals (ticket 07)")
 	_check((table["5A"] as MoveData).chain_cancel_targets.has("5B"), "5A chains into 5B (ground chain confirm)")
 	var d := table["214D"] as MoveData
 	var d_normal := MoveData.profile_for(d, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)

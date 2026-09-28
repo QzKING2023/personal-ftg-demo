@@ -173,13 +173,18 @@ static func _validate_move(move: MoveData, errors: Array[String]) -> void:
 				["special_cancel_targets", move.special_cancel_targets],
 				["link_targets", move.link_targets],
 				["special_entry_targets", move.special_entry_targets],
-				["special_entry_link_targets", move.special_entry_link_targets]]:
+				["special_entry_link_targets", move.special_entry_link_targets],
+				["air_exit_targets", move.air_exit_targets]]:
 			var field: String = pair[0]
 			var targets: Array[String] = pair[1]
 			if not targets.is_empty():
 				errors.append("[%s] %s: %s — 矛盾：收尾招式不开放取消或普通连接" % [source, id_label, field])
 	if move.stance == MoveData.Stance.AIR and not move.jump_cancel_targets.is_empty():
 		errors.append("[%s] %s: jump_cancel_targets — 矛盾：jump cancel 只能配置在地面招式上" % [
+			source, id_label,
+		])
+	if move.stance == MoveData.Stance.AIR and not move.air_exit_targets.is_empty():
+		errors.append("[%s] %s: air_exit_targets — 矛盾：空中出口只配置在地面招式上（出口借用地面招式位移造成的真实离地，空中招式无此接缝）" % [
 			source, id_label,
 		])
 	if move.stance == MoveData.Stance.GROUND and not move.landing_cancel_targets.is_empty():
@@ -673,7 +678,8 @@ static func _validate_cross_move(move_list: Array, errors: Array[String]) -> voi
 				["special_cancel_targets", typed.special_cancel_targets],
 				["link_targets", typed.link_targets],
 				["special_entry_targets", typed.special_entry_targets],
-				["special_entry_link_targets", typed.special_entry_link_targets]]:
+				["special_entry_link_targets", typed.special_entry_link_targets],
+				["air_exit_targets", typed.air_exit_targets]]:
 			var field: String = pair[0]
 			var targets: Array[String] = pair[1]
 			for target in targets:
@@ -695,6 +701,14 @@ static func _validate_cross_move(move_list: Array, errors: Array[String]) -> voi
 			var entry_target := _find_move(move_list, target_id)
 			if entry_target != null and entry_target.stance != typed.stance:
 				errors.append("[%s] %s: special_entry_targets — 矛盾：特殊进入目标 \"%s\" 与来源姿态不一致（不跨姿态）" % [
+					source, typed.move_id, target_id,
+				])
+		# 空中出口目标（票据 07）：地面招式的出口目标必须是空中招式（出口只在
+		# 本招位移真实离地后开放空中姿态起手）。
+		for target_id in typed.air_exit_targets:
+			var exit_target := _find_move(move_list, target_id)
+			if exit_target != null and exit_target.stance != MoveData.Stance.AIR:
+				errors.append("[%s] %s: air_exit_targets — 矛盾：空中出口目标 \"%s\" 不是空中招式（出口按空中姿态起手，不指向地面目标）" % [
 					source, typed.move_id, target_id,
 				])
 		# Rekka 首段目标的存在性、派生限定、分支键与姿态一致性（票据 04）。

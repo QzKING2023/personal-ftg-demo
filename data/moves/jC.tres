@@ -1,0 +1,81 @@
+[gd_resource type="Resource" script_class="MoveData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/move_data.gd" id="1_jc"]
+[ext_resource type="Script" path="res://scripts/combat/hit_profile.gd" id="2_hitprofile"]
+
+[sub_resource type="Resource" id="HitProfile_jc_grounded"]
+script = ExtResource("2_hitprofile")
+target_state = 1
+hit_context = 1
+reaction = 1
+ground_stun_frames = 12
+horizontal_speed_px_s = 100.0
+upward_speed_px_s = 0.0
+
+[sub_resource type="Resource" id="HitProfile_jc_grounded_counter"]
+script = ExtResource("2_hitprofile")
+target_state = 1
+hit_context = 2
+reaction = 1
+ground_stun_frames = 16
+horizontal_speed_px_s = 100.0
+upward_speed_px_s = 0.0
+
+[sub_resource type="Resource" id="HitProfile_jc_airborne"]
+script = ExtResource("2_hitprofile")
+target_state = 2
+hit_context = 1
+reaction = 2
+air_untech_frames = 20
+horizontal_speed_px_s = 100.0
+upward_speed_px_s = 60.0
+
+[sub_resource type="Resource" id="HitProfile_jc_airborne_counter"]
+script = ExtResource("2_hitprofile")
+target_state = 2
+hit_context = 2
+reaction = 2
+air_untech_frames = 26
+horizontal_speed_px_s = 100.0
+upward_speed_px_s = 60.0
+
+[resource]
+script = ExtResource("1_jc")
+move_id = "jC"
+move_kind = 1
+stance = 2
+action_key = "C"
+startup_frames = 7
+active_frames = 5
+recovery_frames = 14
+base_damage = 14
+attack_attribute = 2
+air_attack = true
+hitbox_size = Vector2(48, 30)
+hitbox_gap = 4.0
+hit_profiles = Array[Resource]([SubResource("HitProfile_jc_grounded"), SubResource("HitProfile_jc_grounded_counter"), SubResource("HitProfile_jc_airborne"), SubResource("HitProfile_jc_airborne_counter")])
+throw_range = -1.0
+extra_landing_recovery_frames = 0
+cancel_targets = Array[String]([])
+cancel_window_frames = 8
+chain_cancel_targets = Array[String]([])
+chain_cancel_window_frames = -1
+special_cancel_targets = Array[String]([])
+special_cancel_window_frames = -1
+link_targets = Array[String]([])
+special_entry_targets = Array[String]([])
+special_entry_window_frames = -1
+special_entry_link_targets = Array[String]([])
+starter_grade = 3
+motion_x_px = 4.0
+motion_y_px = 0.0
+block_freeze_frames = 8
+block_stun_frames = 9
+block_pushback_px_s = 45.0
+is_finisher = false
+air_exit_targets = Array[String]([])
+jump_cancel_targets = Array[String]([])
+landing_cancel_targets = Array[String]([])
+direction_derivation = ""
+input_alternatives = Array[String]([])
+priority = 1

@@ -2152,7 +2152,7 @@ func _test_same_frame_hit_landing_and_landing_followup() -> void:
 			critical_state_ok = session.player_move_id == "" and session.player_on_ground \
 				and session.combo_hits == 4 and not session.combo_active \
 				and session.dummy_state == CombatSession.DummyState.AIR_HITSTUN \
-				and not session.dummy_on_ground and session.dummy_hitstun_left == 6
+				and not session.dummy_on_ground and session.dummy_hitstun_left == 11
 	_check(jB_in_progress_before_landing, "route reaches the critical frame with jB airborne and one frame from landing")
 	_check(hit_frames == [9, 23, 69, 82], "jB hits exactly on the landing frame, then recovery blocks the landing followup")
 	_check(critical_events.size() == 3 and critical_events[0].type == CombatEvent.Type.HIT \

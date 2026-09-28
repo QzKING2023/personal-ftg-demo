@@ -1,21 +1,27 @@
 # 招式与行为数据
 
-训练场和 Solver 读取 `data/move_manifest.tres` 引用的 `data/moves/*.tres`。当前为 17 个打击招式（含蓄力版 5[D]）加 1 个普通投。身份由 `move_id` 定义，文件名不是身份。修改后重新运行进程；核心字段缺失、负帧数、非法枚举/引用/并列优先级/非法命中资料组合都会整表拒绝。
+训练场和 Solver 读取 `data/move_manifest.tres` 引用的 `data/moves/*.tres`。当前为 20 个打击招式（含蓄力版 5[D]）加 1 个普通投。身份由 `move_id` 定义，文件名不是身份。修改后重新运行进程；核心字段缺失、负帧数、非法枚举/引用/并列优先级/非法命中资料组合都会整表拒绝。
 
 | 招式 | startup/active/recovery | 基础伤害 | 命中资料 | 配置接续 |
 | --- | --- | --- | --- |
 | 5A | 5/7/13 | 10 | grounded n/c 地面硬直 | 5B、236C、6A |
 | 5B | 4/6/13 | 12 | grounded n 地面硬直 | 5D、214D |
 | 5C | 6/5/16 | 14 | grounded n 浮空 | jump cancel → jA |
-| 6A | 8/6/20 | 16 | grounded n/c 浮空 | jump cancel → jA（6+A 专用击飞入口） |
+| 6A | 8/6/20 | 16 | grounded n/c 浮空 | jump cancel → jA/jB/jC（6+A 专用击飞入口，仅实际 HIT） |
+| 6D | 9/4/20 | 18 | airborne n/c 浮空（无 grounded 键：对地一律 MISS_NO_PROFILE） | 计划位移 88/−48：active 帧真实上升离地；实际 HIT 后空中出口 → jA/jB/jC（命中确认窗口内按空中姿态起手） |
+| 2D | 8/4/18 | 17 | airborne n/c 浮空（无 grounded 键） | 计划位移 0/−64 垂直上升；命中框垂直偏移 −70px（高位拦截：低浮空目标垂直不重叠即挥空）；空中出口同 6D |
+| 2C | 9/3/18 | 14 | grounded n/c 低浮空扫倒（LOW_FLOAT_SWEEP，触地转普通倒地） | 链式 6D/2D；必杀 214C |
 | 236C | 6/5/18 | 18 | grounded n 浮空 | jump cancel → jA |
 | 5D | 5/7/15 | 18 | grounded n 地面硬直 | 收尾（票据 06 起另有计划位移 72px 与动作内蓄力） |
 | 5[D] | 7/4/22 | 20 | 与 5D 同三组资料（TUNING_INITIAL 镜像） | 仅由 5D 蓄力提交起手（charge_only）；来源限定 5B 目押同 5D |
 | 214D | 7/5/20 | 22 | grounded n/c 普通倒地 | 收尾 |
-| jA | 4/6/10 | 8 | grounded n 地面硬直；airborne n 浮空 | jB |
-| jB | 4/6/12 | 12 | grounded n 地面硬直；airborne n 浮空 | jD；历史落地目标 5D 被当前规则排除 |
+| jA | 4/6/10 | 8 | grounded n 地面硬直；airborne n 浮空 | jB、jC |
+| jB | 4/6/12 | 12 | grounded n 地面硬直；airborne n 浮空（untech 20，票据 07 对齐普通空中硬直初值） | jC、jD；历史落地目标 5D 被当前规则排除 |
+| jC | 7/5/14 | 14 | grounded n/c 地面硬直；airborne n/c 浮空 | 无出边（j5D/j6D/j2D/j214D 随票据 08/09 接入） |
 | jD | 4/7/14 | 20 | grounded n 地面硬直；airborne n 浮空 | 收尾 |
 | BC | 5/11/10 | 无伤害 | 无（投结果参数在 GameParams） | 投距 64px；投帧 1–15 可由木桩请求拆投 |
+
+表中未列出的 2A/2B/214C 系等行及 5A/5B/5C 的帧数沿用历史样例、未随票据 01–06 全量复检（资源为准，阶段 9 联合验收统一同步）；票据 07 涉及的 6A/2C/jA/jB/jC/6D/2D 行为当前资源事实。
 
 命中资料（ADR-0003）：每个打击招式内嵌 `HitProfile[]`，唯一键 `(target_state, hit_context)`；运行时与 Solver 先按目标状态（grounded/airborne）再按命中上下文（normal/counter）精确匹配，缺失即 MISS_NO_PROFILE，不回退、不借用。反应只有三种：GROUND_HITSTUN（仅 grounded，`ground_stun_frames` + 水平速度，垂直必须显式 0）、LAUNCH（`air_untech_frames` + 水平速度 + 必须 >0 的垂直初速度）、GROUND_KNOCKDOWN（仅 grounded，`knockdown_frames`，进入即结束连段且倒地期间不可命中）。声明某状态的 counter 必须同时声明该状态的 normal。profile 可用 `damage_override` 覆盖本招 `base_damage`（-1 表示沿用），counter 变体的伤害差异由此表达。Counter Hit 上下文只在目标自身招式的 startup/recovery 窗口成立，命中一次即消耗。表中 n/c 数值为暂定样例，最终调校属 D 轮。
 

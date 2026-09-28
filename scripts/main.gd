@@ -315,6 +315,9 @@ func _update_dummy_status() -> void:
 		state_text = "击飞触地前（%d→滑行%d）" % [session.dummy_hitstun_left, session.dummy_slide_left]
 	elif session.dummy_state == CombatSession.DummyState.GROUND_SLIDE:
 		state_text = "地面滑行（%d）" % session.dummy_slide_left
+	if not session.dummy_on_ground:
+		# 空中高度（票据 07）：对空判定与高度失配的可观察口径（0.0 为贴地）。
+		state_text += "·空中%.1fpx" % maxf(0.0, GameParams.ground_stand_y() - session.dummy_position.y)
 	if session.dummy_guard != CombatSession.GuardPosture.NONE:
 		state_text += "·%s" % _guard_posture_text(session.dummy_guard)
 		if session.dummy_blockstun_left > 0:

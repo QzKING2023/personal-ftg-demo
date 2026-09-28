@@ -45,6 +45,7 @@ const _GAP_CONFIG_FIELDS := {
 	EdgeKind.NORMAL_LINK: {"field": "link_targets", "seam": "普通连接"},
 	EdgeKind.SPECIAL_ENTRY: {"field": "special_entry_targets", "seam": "特殊进入（来源资格）"},
 	EdgeKind.SPECIAL_ENTRY_LINK: {"field": "special_entry_link_targets", "seam": "来源限定普通连接"},
+	EdgeKind.AIR_EXIT: {"field": "air_exit_targets", "seam": "空中出口"},
 }
 ## 逐圈模拟的观测上限（圈数/帧数）。达到上限时以截断/未完成观测上报，不把它
 ## 当作完整证明（issue 21）；上限只限制观测，不是连段语义的一部分。
@@ -83,6 +84,7 @@ const _MOVE_VALUE_FIELDS := [
 	"jump_cancel_targets", "landing_cancel_targets", "direction_derivation", "lenient_command",
 	"input_alternatives", "command_tier", "priority",
 	"motion_x_px", "motion_y_px", "charge_threshold_frames", "charge_move_id", "charge_only",
+	"air_exit_targets", "hitbox_y_offset_px",
 ]
 const _SEGMENT_VALUE_FIELDS := ["startup_frames", "active_frames", "base_damage", "hitbox_size", "hitbox_gap", "hit_profiles"]
 const _PROFILE_VALUE_FIELDS := [
@@ -91,7 +93,7 @@ const _PROFILE_VALUE_FIELDS := [
 	"downward_speed_px_s", "slide_frames",
 ]
 
-const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性接续——命中确认取消、链式/必杀取消（接触开放，命中或被防）、jump cancel、显式落地接缝、恢复后的普通连接（目押）与 Rekka 派生（票据 04：首段命中或被防接触起的派生窗口内首个 B/C 新按下立即锁分支 branch-locked，同帧 B+C 固定 ~C 优先、不进入普通投组合等待；派生招式 rekka_only、不参与单键/指令输入选择；派生地空命中资料按 (target_state, hit_context) 精确选择，~C 空中向下击落触地转普通倒地）：前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生与落地接缝都在真实 CombatSession 结算中检验；命中资料与运行时共享同一 (target_state, hit_context) 精确选择：探针木桩不自攻，命中的上下文恒为 normal，缺失目标状态资料的连接按 MISS_NO_PROFILE 断链上报（不回退 grounded/normal 资料），普通倒地期间不可追击；cancel_targets、chain/special_cancel_targets、link_targets、jump_cancel_targets、rekka_b/c_target 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；普通连接边与取消边以不同类型分别报告，连接成立与否由前招完全恢复当帧的缓存消费、目标剩余硬直与 active 重叠重新判定；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（空中无二段跳；木桩浮空只由真实命中按所选 profile 的受身计时与速度重建，空中追击的每次命中都应用其 airborne profile），无命中的时间不会自动续期；OTG、地弹、墙反弹与招式无敌不在本轮支持范围，表达这些能力的字段或标签由 MoveTable 整表拒绝；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、起手等级与三层累计修正、Rekka 分支锁定、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。可读路线按不超过 8 招的简单路径枚举；路线延迟搜索至多验证 64 个延迟向量，全部失败的路线按走得最远的失败如实上报（观测上限而非连段语义，循环证明不受此限）。空间分层：无空间数据时全部路线仅 timing-valid，固定接触位不构成空间证明；提供空间数据（SolverOptions.spatial）后另附 spatial-valid，且只在地面、左右镜像的 48/64/80 px 三组身体中心水平距离上复验，不搜索走位、中立、墙角、推挤、跨身或屏幕边界，配置缺口与时序失败不作空间失败上报。被防分层（票据 03）：链式/必杀边附「被防路径」标注——同一配置边在来源招式被木桩站防/蹲防挡下的探针中验证取消时序；被防是独立接触结果（BLOCKED 不产生命中、不入路线/循环图、不借命中确认或 jump cancel），探针中预期命中帧收到被防结果一律按 blocked 断链上报；Rekka 派生边同样附被防路径标注（首段被防也开放派生窗口），派生自身的被防结果如实入注；被防安全性（指定反击、时机、距离、版边、面向）不在静态证明范围，一律 replay-required；派生首按锁定输入手感与 ~B 交回回合的安全性也属 replay-required，静态报告不下结论。票据 05 扩展：236C 为两段判定（段 1 被防终止整招、挥空续段 2，多段命中按段逐一预测与复验），段 2 命中 grounded 目标进入击飞触地 GROUND_SLIDE（滑行状态、slide 目标资料门、slide 命中分层倍率与状态键均由真实结算承载）；实际 HIT 授予一次性特殊进入资格（SPECIAL_ENTRY 边：仅命中开放、被防不开放，资格在授予招式窗口内消费），经资格起手且实际命中的 D 取得来源限定普通连接（SPECIAL_ENTRY_LINK 边：普通来源同招不取得）；固定钉位网格（48/64/80 px）上段 1 总是先命中，不产生 slide——slide 捞起距离、段间真实可达性（段 1 挥空需 >91px）与 D 后 5B 的真实空间可行性一律 replay-required，静态报告不冒充。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。票据 06 扩展：D 系计划位移由资源声明（motion_x/y_px），active 帧按累计比例推进、命中框沿本帧轨迹做确定性扫掠覆盖（轴对齐包络，无细分采样误差），正式位置经版边与身体约束后在运动阶段提交；动作内蓄力（charge_threshold_frames）在目标声明蓄力的接缝上另验证蓄力变体边（CHARGED：按下后按住至阈值自动提交 charge_only 目标，与普通提交共用同一起手时序与换边规则）；实际 HIT 才开放本次位移对身体的目标穿越（被防/挥空/墙截断截在原侧），只有实际终点合法越过另一侧才换边，命中当帧按锁定动作方向结算攻击与击退，下一物理帧起面向按真实横向关系更新，已开始的 214/236 方向候选锁定首次相对面向不被重解释；循环状态键自票据 06 起纳入双方横向位置、动作方向、蓄力年龄与穿越许可（位移使横向几何成为真实结算量）；固定钉位网格上的蓄力边结论仍是 timing/spatial 假设下的验证——真实穿越、墙边截断、版边与双面向换边及换边后镜像继续输入一律 replay-required，静态报告不冒充空间证明。"
+const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性接续——命中确认取消、链式/必杀取消（接触开放，命中或被防）、jump cancel、显式落地接缝、恢复后的普通连接（目押）与 Rekka 派生（票据 04：首段命中或被防接触起的派生窗口内首个 B/C 新按下立即锁分支 branch-locked，同帧 B+C 固定 ~C 优先、不进入普通投组合等待；派生招式 rekka_only、不参与单键/指令输入选择；派生地空命中资料按 (target_state, hit_context) 精确选择，~C 空中向下击落触地转普通倒地）：前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生与落地接缝都在真实 CombatSession 结算中检验；命中资料与运行时共享同一 (target_state, hit_context) 精确选择：探针木桩不自攻，命中的上下文恒为 normal，缺失目标状态资料的连接按 MISS_NO_PROFILE 断链上报（不回退 grounded/normal 资料），普通倒地期间不可追击；cancel_targets、chain/special_cancel_targets、link_targets、jump_cancel_targets、rekka_b/c_target 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；普通连接边与取消边以不同类型分别报告，连接成立与否由前招完全恢复当帧的缓存消费、目标剩余硬直与 active 重叠重新判定；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（空中无二段跳；木桩浮空只由真实命中按所选 profile 的受身计时与速度重建，空中追击的每次命中都应用其 airborne profile），无命中的时间不会自动续期；OTG、地弹、墙反弹与招式无敌不在本轮支持范围，表达这些能力的字段或标签由 MoveTable 整表拒绝；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、起手等级与三层累计修正、Rekka 分支锁定、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。可读路线按不超过 8 招的简单路径枚举；路线延迟搜索至多验证 64 个延迟向量，全部失败的路线按走得最远的失败如实上报（观测上限而非连段语义，循环证明不受此限）。空间分层：无空间数据时全部路线仅 timing-valid，固定接触位不构成空间证明；提供空间数据（SolverOptions.spatial）后另附 spatial-valid，且只在地面、左右镜像的 48/64/80 px 三组身体中心水平距离上复验，不搜索走位、中立、墙角、推挤、跨身或屏幕边界，配置缺口与时序失败不作空间失败上报。被防分层（票据 03）：链式/必杀边附「被防路径」标注——同一配置边在来源招式被木桩站防/蹲防挡下的探针中验证取消时序；被防是独立接触结果（BLOCKED 不产生命中、不入路线/循环图、不借命中确认或 jump cancel），探针中预期命中帧收到被防结果一律按 blocked 断链上报；Rekka 派生边同样附被防路径标注（首段被防也开放派生窗口），派生自身的被防结果如实入注；被防安全性（指定反击、时机、距离、版边、面向）不在静态证明范围，一律 replay-required；派生首按锁定输入手感与 ~B 交回回合的安全性也属 replay-required，静态报告不下结论。票据 05 扩展：236C 为两段判定（段 1 被防终止整招、挥空续段 2，多段命中按段逐一预测与复验），段 2 命中 grounded 目标进入击飞触地 GROUND_SLIDE（滑行状态、slide 目标资料门、slide 命中分层倍率与状态键均由真实结算承载）；实际 HIT 授予一次性特殊进入资格（SPECIAL_ENTRY 边：仅命中开放、被防不开放，资格在授予招式窗口内消费），经资格起手且实际命中的 D 取得来源限定普通连接（SPECIAL_ENTRY_LINK 边：普通来源同招不取得）；固定钉位网格（48/64/80 px）上段 1 总是先命中，不产生 slide——slide 捞起距离、段间真实可达性（段 1 挥空需 >91px）与 D 后 5B 的真实空间可行性一律 replay-required，静态报告不冒充。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。票据 06 扩展：D 系计划位移由资源声明（motion_x/y_px），active 帧按累计比例推进、命中框沿本帧轨迹做确定性扫掠覆盖（轴对齐包络，无细分采样误差），正式位置经版边与身体约束后在运动阶段提交；动作内蓄力（charge_threshold_frames）在目标声明蓄力的接缝上另验证蓄力变体边（CHARGED：按下后按住至阈值自动提交 charge_only 目标，与普通提交共用同一起手时序与换边规则）；实际 HIT 才开放本次位移对身体的目标穿越（被防/挥空/墙截断截在原侧），只有实际终点合法越过另一侧才换边，命中当帧按锁定动作方向结算攻击与击退，下一物理帧起面向按真实横向关系更新，已开始的 214/236 方向候选锁定首次相对面向不被重解释；循环状态键自票据 06 起纳入双方横向位置、动作方向、蓄力年龄与穿越许可（位移使横向几何成为真实结算量）；固定钉位网格上的蓄力边结论仍是 timing/spatial 假设下的验证——真实穿越、墙边截断、版边与双面向换边及换边后镜像继续输入一律 replay-required，静态报告不冒充空间证明。票据 07 扩展：6A 是唯一专用地面击飞入口，jump cancel 开放 jA/jB/jC（命中确认窗口内 Space 起跳、真实 pre-jump 与滞空，落地未接续即作废）；6D/2D 为对空限定地面招式——无 grounded 资料（对地一律 MISS_NO_PROFILE，不回退），计划位移使攻击者 active 帧真实离地（姿态转换非瞬移），实际 HIT 后经 AIR_EXIT 边在命中确认窗口内按空中姿态起手 jA/jB/jC（被防/挥空不开放；空中出口按键在停顿中按已离地姿态采样）；hitbox_y_offset_px 表达真实垂直判定范围（2D 高位拦截框对低浮空目标垂直不重叠即挥空）；对空限定前招的命中依赖浮空目标——AIR_EXIT 边的钉位探针经使前招实际命中的接续上下文验证（如 2C 链式进入 6D 打低浮空），固定站位 spatial-valid 不等于真实空中距离证明；出口后的滞空仍按物理回落（无二段跳、切招不续期），6D 穿越与 2D 垂直判定的真实空间结论一律 replay-required。"
 
 ## 接续边类型：命中确认取消 / 链式取消 / 必杀取消 / jump cancel / 显式落地接续 /
 ## 普通连接（目押）。链式与必杀按接触开放（命中或被防），命中确认、jump cancel
@@ -107,6 +109,7 @@ enum EdgeKind {
 	REKKA_DERIVE,    ## rekka_b/c_target：首段命中或被防接触起的派生窗口内首个 B/C 新按下锁分支起手（票据 04）
 	SPECIAL_ENTRY,   ## special_entry_targets：实际 HIT 授予的一次性来源资格在其窗口内取消进入（票据 05，仅命中开放，被防不开放）
 	SPECIAL_ENTRY_LINK, ## special_entry_link_targets：仅经来源资格起手且实际命中的招式开放的普通连接（票据 05，来源限定目押）
+	AIR_EXIT,        ## air_exit_targets：地面招式实际 HIT 且本招计划位移真实离地后，命中确认窗口内按空中姿态起手（票据 07，仅命中开放）
 }
 
 
@@ -225,6 +228,8 @@ class SolverEdge extends RefCounted:
 				return "特殊进入"
 			EdgeKind.SPECIAL_ENTRY_LINK:
 				return "来源限定连接"
+			EdgeKind.AIR_EXIT:
+				return "空中出口"
 		return "取消"
 
 
@@ -1254,6 +1259,7 @@ func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false
 			[EdgeKind.REKKA_DERIVE, _rekka_targets_of(from_move)],
 			[EdgeKind.SPECIAL_ENTRY, from_move.special_entry_targets],
 			[EdgeKind.SPECIAL_ENTRY_LINK, from_move.special_entry_link_targets],
+			[EdgeKind.AIR_EXIT, from_move.air_exit_targets],
 		]
 		for pair in kinds_and_targets:
 			var kind: EdgeKind = pair[0]
@@ -1268,7 +1274,8 @@ func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false
 						targets.append(to_id)
 					# 同一 (from, to) 配置了多种接续时，路线/循环按首先验证成立的接缝出链：
 					# 枚举顺序固定为 命中确认取消 > 链式 > 必杀 > jump cancel > 落地接续 >
-					# 普通连接 > Rekka 派生 > 特殊进入 > 来源限定连接，确定性且优先中断性取消。
+					# 普通连接 > Rekka 派生 > 特殊进入 > 来源限定连接 > 空中出口，确定性且
+					# 优先中断性取消。
 					var key := "%s|%s" % [from_id, to_id]
 					if not edge_kinds.has(key):
 						edge_kinds[key] = kind
@@ -1442,7 +1449,8 @@ func _enumerate_gaps(contexts: Dictionary, timing_cache: Dictionary, report: Sol
 					if not (from_move.get(same_stance) as Array[String]).has(to_id):
 						kinds.append(_field_gap_kind(same_stance))
 			if from_move.stance == MoveData.Stance.GROUND and to_move.stance == MoveData.Stance.AIR \
-					and not (from_move.jump_cancel_targets as Array[String]).has(to_id):
+					and not (from_move.jump_cancel_targets as Array[String]).has(to_id) \
+					and not (from_move.air_exit_targets as Array[String]).has(to_id):
 				kinds.append(EdgeKind.JUMP_CANCEL)
 			if from_move.stance == MoveData.Stance.AIR and to_move.stance == MoveData.Stance.GROUND \
 					and not (from_move.landing_cancel_targets as Array[String]).has(to_id):
@@ -1779,6 +1787,8 @@ func _build_contexts() -> Dictionary:
 				links = _context_via_rekka(move_id, contexts)
 			if links.is_empty():
 				links = _context_via_charge(move_id, contexts)
+			if links.is_empty():
+				links = _context_via_air_exit(move_id, contexts)
 			if not links.is_empty():
 				contexts[move_id] = links
 				grew = true
@@ -1803,6 +1813,28 @@ func _context_via_charge(move_id: String, contexts: Dictionary) -> Array[ChainLi
 		links[i] = charged_link
 		break
 	return links
+
+
+## 空中出口目标的上下文（票据 07）：复用声明 air_exit 的地面前招的可达链并
+## 追加出口按键链——该前招须有真实向上位移（出口只在离地后开放）。
+func _context_via_air_exit(move_id: String, contexts: Dictionary) -> Array[ChainLink]:
+	var target := _table[move_id] as MoveData
+	if target == null or target.stance != MoveData.Stance.AIR:
+		return []
+	for source_id in _table:
+		var source := _table[source_id] as MoveData
+		if source == null or source.stance != MoveData.Stance.GROUND:
+			continue
+		if not (source.air_exit_targets as Array[String]).has(move_id):
+			continue
+		if not source.has_motion() or source.motion_y_px >= 0.0:
+			continue
+		if not contexts.has(source_id):
+			continue
+		var links: Array[ChainLink] = (contexts[source_id] as Array[ChainLink]).duplicate()
+		links.append_array(_links_for_edge(source_id, move_id, EdgeKind.AIR_EXIT))
+		return links
+	return []
 
 
 ## 蓄力链接的完整克隆（改写 charged 标记前必须新建实例——上下文里的链接
@@ -1977,6 +2009,16 @@ func _links_for_edge(from_id: String, to_id: String, kind: EdgeKind) -> Array[Ch
 			entry_link.wait = _link_press_wait(_table[from_id] as MoveData, timing_target)
 			entry_link.charged = charged_target
 			links.append(entry_link)
+		EdgeKind.AIR_EXIT:
+			## 空中出口按键安排在命中后第 1 帧（停顿中采样，姿态已因位移离地转
+			## AIR，缓存按空中姿态解析；恢复首个正常帧消费——与 Rekka 派生同一
+			## 按下模型）。出口不喂方向（空中招式无地面记法）。
+			var exit_link := ChainLink.new()
+			exit_link.move_id = to_id
+			exit_link.key = key
+			exit_link.trigger = ChainLink.Trigger.PREV_HIT
+			exit_link.wait = 1
+			links.append(exit_link)
 		_:
 			var cancel_link := ChainLink.new()
 			cancel_link.move_id = to_id
@@ -2035,6 +2077,16 @@ func _build_edge(from_id: String, to_id: String, kind: EdgeKind, contexts: Dicti
 			# 在缺口探针中同样拒绝，不能宣称补配置就能绕过着地惩罚。
 			edge.reason = "落地恢复首帧及空技恢复全程不可取消；空中招式落地作废，显式 landing_cancel_targets 不能绕过状态锁"
 			return edge
+		EdgeKind.AIR_EXIT:
+			if from_move.stance != MoveData.Stance.GROUND:
+				edge.reason = "空中出口只属于地面招式（%s 是空中招式）——出口借用地面招式位移造成的真实离地" % from_id
+				return edge
+			if to_move.stance != MoveData.Stance.AIR:
+				edge.reason = "空中出口目标必须是空中招式（出口按空中姿态起手；%s 是地面招式）" % to_id
+				return edge
+			if not from_move.has_motion() or from_move.motion_y_px >= 0.0:
+				edge.reason = "空中出口前招未声明向上计划位移（motion_y_px < 0）：没有真实上升就没有离地与空中姿态，出口不成立"
+				return edge
 	if from_move.is_finisher:
 		edge.reason = "收尾招式命中即结束连段，不开放命中确认取消"
 		return edge
@@ -2065,6 +2117,8 @@ func _build_edge(from_id: String, to_id: String, kind: EdgeKind, contexts: Dicti
 			_fill_special_entry_edge(edge, context, timing_cache, gap_mode)
 		EdgeKind.SPECIAL_ENTRY_LINK:
 			_fill_special_entry_link_edge(edge, contexts, timing_cache)
+		EdgeKind.AIR_EXIT:
+			_fill_air_exit_edge(edge, contexts, timing_cache)
 		_:
 			_fill_cancel_edge(edge, context, timing_cache, kind)
 	if kind == EdgeKind.CHAIN_CANCEL or kind == EdgeKind.SPECIAL_CANCEL or kind == EdgeKind.REKKA_DERIVE:
@@ -2103,6 +2157,10 @@ func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache
 			var key_wait := _single_key_wait(to_move.action_key)
 			edge.wait_to = maxi(0, mini(window_frames - key_wait,
 				edge.recover_age - _effective_startup_frames(to_move) - key_wait))
+			if kind == EdgeKind.AIR_EXIT:
+				## 空中出口的按键必须晚于命中帧：命中当帧输入阶段先于位移提交，
+				## 姿态仍是地面——w=0 的按下按地面姿态解析，不构成出口。
+				edge.wait_from = maxi(1, edge.wait_from)
 		var prefix := ""
 		if edge.charged:
 			prefix = "（蓄力提交：按下后按住 %d 帧至阈值自动提交，有效前摇 %d 帧）" % [
@@ -2275,6 +2333,63 @@ func _entry_tail(granter_id: String, move_id: String, via_text: String) -> Array
 	var tail := _links_for_edge(granter_id, move_id, EdgeKind.SPECIAL_ENTRY)
 	(tail[0] as ChainLink).via_text = via_text
 	return tail
+
+
+## 空中出口边（票据 07）：对空限定前招在固定钉位（木桩地面）下的 solo 上下文
+## 必然 MISS_NO_PROFILE——出口的真实成立依赖「前招命中一个浮空目标」。逐候选
+## 构造前招可达且实际命中的上下文：规范入口在前（表序），其后各声明接续边进入
+## 前招的来源（如 2C 链式进入 6D），首个验证成立者作准；缓存独立（不同上下文的
+## 命中时刻不同）。
+func _fill_air_exit_edge(edge: SolverEdge, contexts: Dictionary, timing_cache: Dictionary) -> void:
+	var candidates := _air_exit_context_candidates(edge.from_id, contexts)
+	if candidates.is_empty():
+		edge.reason = "无法构造到达 %s 且其能实际命中的合法上下文（对空限定前招在地面钉位下无命中，空中出口无从开放）" % edge.from_id
+		return
+	for context in candidates:
+		_fill_cancel_edge(edge, context, {}, EdgeKind.AIR_EXIT)
+		if edge.valid:
+			var to_move := _table[edge.to_id] as MoveData
+			var via_text := (context[context.size() - 1] as ChainLink).via_text
+			var via_note := "对空限定前招的命中依赖浮空目标，"
+			if via_text != "":
+				via_note = "对空限定前招的命中依赖浮空目标——钉位探针经 %s 进入，" % via_text
+			edge.reason = "（空中出口：实际 HIT 且计划位移真实离地后，命中确认窗口内按空中姿态起手 %s；%s垂直判定范围、真实穿越与真实空中距离一律 replay-required）%s" % [
+				to_move.move_id, via_note, edge.reason,
+			]
+			return
+	## 全部候选失败：对空限定前招在钉位探针内无法命中（挥空或时序），出口的
+	## 真实成立依赖浮空目标——如实排除，正例由保留真实高度的回放承担。
+	edge.reason = "（空中出口：前招 %s 在钉位探针内无法实际命中——对空限定资料依赖浮空目标，出口正例属 replay-required）%s" % [edge.from_id, edge.reason]
+
+
+## 空中出口前招的上下文候选：规范入口在前；其后按表序追加每个声明接续边指向
+## 前招且前招可实际命中的来源（链式/必杀/命中确认取消/特殊进入）。候选链自带
+## via_text 描述入口方式。
+func _air_exit_context_candidates(move_id: String, contexts: Dictionary) -> Array[Array]:
+	var result: Array[Array] = []
+	if contexts.has(move_id):
+		var canonical: Array[ChainLink] = _cloned_context_links(contexts[move_id])
+		(canonical[canonical.size() - 1] as ChainLink).via_text = "规范入口直接起手"
+		result.append(canonical)
+	for source_id in _table:
+		if source_id == move_id or not contexts.has(source_id):
+			continue
+		var source := _table[source_id] as MoveData
+		if source == null:
+			continue
+		for pair in [[EdgeKind.CHAIN_CANCEL, source.chain_cancel_targets],
+				[EdgeKind.SPECIAL_CANCEL, source.special_cancel_targets],
+				[EdgeKind.CANCEL, source.cancel_targets],
+				[EdgeKind.SPECIAL_ENTRY, source.special_entry_targets]]:
+			var kind: EdgeKind = pair[0]
+			if not (pair[1] as Array[String]).has(move_id):
+				continue
+			var links: Array[ChainLink] = _cloned_context_links(contexts[source_id])
+			var tail := _links_for_edge(source_id, move_id, kind)
+			(tail[0] as ChainLink).via_text = "经 %s 取消进入（%s）" % [source_id, _GAP_CONFIG_FIELDS[kind]["seam"]]
+			links.append_array(tail)
+			result.append(links)
+	return result
 
 
 func _grade_letter(grade: MoveData.StarterGrade) -> String:
