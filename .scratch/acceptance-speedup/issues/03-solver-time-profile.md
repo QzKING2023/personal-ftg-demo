@@ -1,6 +1,6 @@
 # 03: Solver 耗时 profile 插桩
 
-Status: ready-for-agent
+Status: implemented
 Parent: [spec.md](../spec.md)
 Blocked by: 无,可与 01/02 并行(不同文件)
 
@@ -16,11 +16,11 @@ Blocked by: 无,可与 01/02 并行(不同文件)
 
 ## Acceptance criteria
 
-- [ ] metrics 输出扩展:至少四类耗时 + 总计,随现有 solver metrics 口径输出(或并行的独立 metrics 行),编排器可透传进 summary。
-- [ ] 分类口径明确:哪些调用点计入哪类,写进本票 Comments(例如尾部发现/空间复验/镜像对拍归"其他"还是单列,以实际代码结构定,但必须无遗漏、不重复计)。
-- [ ] 零语义影响:定向 test job(test_combo_solver、test_solver_route)插桩前后 fingerprint 与断言计数相等。
-- [ ] 默认表的 profile 报告归档(重请求逐个列出分类耗时与占比),供 04 验收引用、05 触发判定引用。
-- [ ] 插桩常开(不是调试开关):验收常规输出就带分类耗时,后续票据的前后对比才有统一口径。
+- [x] metrics 输出扩展:至少四类耗时 + 总计,随现有 solver metrics 口径输出(或并行的独立 metrics 行),编排器可透传进 summary。
+- [x] 分类口径明确:哪些调用点计入哪类,写进本票 Comments(例如尾部发现/空间复验/镜像对拍归"其他"还是单列,以实际代码结构定,但必须无遗漏、不重复计)。
+- [x] 零语义影响:定向 test job(test_combo_solver、test_solver_route)插桩前后 fingerprint 与断言计数相等。
+- [x] 默认表的 profile 报告归档(重请求逐个列出分类耗时与占比),供 04 验收引用、05 触发判定引用。
+- [x] 插桩常开(不是调试开关):验收常规输出就带分类耗时,后续票据的前后对比才有统一口径。
 
 ## Blocked by
 
@@ -41,3 +41,19 @@ Blocked by: 无,可与 01/02 并行(不同文件)
 5. **other 其他**:请求总耗时 − 四类 = `_build_contexts` 入口上下文构建、`_binding_variant_lines` 变体行回放(:1623,唯一不在四类作用域内的 `_run_schedule` 调用点,归其他)、报告构建/排序/摘要行、镜像对拍外壳与缓存 freeze/thaw。
 
 每类同时输出 `_runs` 计数(该类最内层作用域内发生的 `_run_schedule` 次数)。计数是确定性的(同一搜索同一计数),可作前后等价证据;`*_ms` 是墙钟测量,与 seconds/solver_elapsed_ms 同类,进差分比对排除集(compare_summaries.py DEFAULT_EXCLUDE 扩 6 个键名)。
+
+### 交付与证据(2026-09-30)
+
+实现随 d425814 入库(combo_solver.gd 插桩 + `last_request_profile()`;acceptance_solver_metrics.gd 的 `profiles`/`profile_totals`;两 runner 提取 `solver_profile`;compare_summaries 排除集扩键;ADR-0006 修订记录)。本票 scratch 证据目录:`.scratch/acceptance-speedup/profile-03/`。
+
+**等价门(零语义影响)**:`compare_jobs.py` 对插桩前后同 job 日志比对确定性字段——
+- test_solver_route:exit 0=0、script_errors 0=0、PASS 2339=2339、8 个 fingerprint 逐一相等 → PASS。
+- test_combo_solver:exit 1=1、script_errors 4=4、PASS 3711=3711、11 个 fingerprint 逐一相等 → PASS。前后各有 3 条相同 FAIL(票据 08 边基线 71 条后测试未同步:55 边断言、jD 收束、配置关系断言)——与本票无关,前后逐字节相同(02 会话全量基线同样被它阻塞)。
+- runner 对称性:gate-03(复刻 difftest-01 子集对拍)PASS,`solver_profile` 两 runner 逐字段相等。
+
+**profile 结论(04 验收引用 / 05 触发判定引用)**:报告 [profile-report.md](../profile-03/profile-report.md) + 定向 job 逐请求分解 [profile-jobs.md](../profile-03/profile-jobs.md):
+- solve-default 双面向 1,169s:delay_leaf **97.4%**(351,196 叶,≈3.2ms/叶);route_walk 2.1%、gap_enum 0.3%、edge_probe 0.2%、other ≈0。
+- analyze-default 564s:同构(97.3%,175,598 叶 = 一半,与镜像结构吻合)。
+- 定向 job 同占比:combo 26 个重请求、route 8 个重请求,每个均 97% delay_leaf,最高单请求 835s/281,731 叶与 1,059s/351,196 叶。
+- **票据 04(`_delay_dfs` 前缀恢复)正中 97% 大头;票据 05 触发条件(边探测或路线重放占大头)不成立**——除非 04 落地后剩余大头转移,不开调度记忆化追加票。
+- 复现:`profile_runner.gd`(默认表)、`before-run.sh`/`after-run.sh` + `compare_jobs.py`(等价门)、`render_report.py`(job 分解渲染)。

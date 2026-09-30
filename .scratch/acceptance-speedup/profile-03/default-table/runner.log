@@ -1,0 +1,4 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+SOLVER_PROFILE_JSON={"cycles":0,"edges":71,"gaps":389,"mirror_consistent":true,"profile":{"delay_leaf_ms":1138954.682,"delay_leaf_runs":351196,"edge_probe_ms":2464.555,"edge_probe_runs":822,"gap_enum_ms":3728.216,"gap_enum_runs":1576,"other_ms":247.068,"other_runs":10,"route_walk_ms":24070.277,"route_walk_runs":0,"total_ms":1169464.798},"refused":false,"request":"solve-default","routes":1753}
+SOLVER_PROFILE_JSON={"cycles":0,"edges":71,"gaps":389,"profile":{"delay_leaf_ms":548769.125,"delay_leaf_runs":175598,"edge_probe_ms":1460.552,"edge_probe_runs":411,"gap_enum_ms":2265.503,"gap_enum_runs":788,"other_ms":28.723,"other_runs":5,"route_walk_ms":11691.621,"route_walk_runs":0,"total_ms":564215.524},"refused":false,"request":"analyze-default","routes":1753}

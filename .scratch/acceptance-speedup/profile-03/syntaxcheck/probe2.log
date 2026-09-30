@@ -1,0 +1,6 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+refused=false edges=26 gaps=25 routes=3
+PROFILE_PROBE_JSON={"delay_leaf_ms":2.261,"delay_leaf_runs":4,"edge_probe_ms":6.468,"edge_probe_runs":6,"gap_enum_ms":106.635,"gap_enum_runs":59,"other_ms":7.69,"other_runs":1,"route_walk_ms":0.188,"route_walk_runs":0,"total_ms":123.242}
+solve refused=false mirror=true notes=2
+SOLVE_PROFILE_PROBE_JSON={"delay_leaf_ms":5.377,"delay_leaf_runs":8,"edge_probe_ms":14.031,"edge_probe_runs":12,"gap_enum_ms":252.623,"gap_enum_runs":118,"other_ms":18.62,"other_runs":2,"route_walk_ms":0.371,"route_walk_runs":0,"total_ms":291.022}
