@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""Acceptance orchestrator, serial mode.
+"""Acceptance orchestrator (serial and parallel modes).
 
 Output-contract clone of tools/run_acceptance.ps1 (kept as differential baseline
 and fallback): same job set and canonical order, same per-job APPDATA isolation,
 same failure predicate, same summary.json schema and runner.status.txt contract.
 
-Parallel fan-out is ticket 02; --jobs is accepted but must stay 1 here.
+Parallel mode (ticket 02): the import job runs alone first (it writes the shared
+import-cache directory), then the remaining jobs fan out over a thread pool with
+--concurrency workers (default 8). Summary.json always reports jobs in canonical
+order regardless of completion order; stdout emits one compact JSON line per job
+completion in completion order (each line carries its job name).
+
 Log capture differs mechanically: PS `*>` writes UTF-16LE while we capture raw
 engine stdout (UTF-8); the diff gate compares parsed count fields, not bytes.
 """
@@ -17,6 +22,7 @@ import re
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 DEFAULT_ENGINE = "D:/Godot/Godot_v4.5.1-stable_mono_win64_console.exe"
@@ -135,32 +141,55 @@ def write_json(path: Path, payload) -> None:
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description="Serial acceptance orchestrator (PS runner parity).")
+    parser = argparse.ArgumentParser(description="Acceptance orchestrator (PS runner parity, parallel fan-out).")
     parser.add_argument("--engine", default=DEFAULT_ENGINE)
     parser.add_argument("--output", default=DEFAULT_OUTPUT)
-    parser.add_argument("--jobs", type=int, default=1,
-                        help="parallel fan-out; only 1 (serial) is implemented in this ticket")
+    parser.add_argument("--concurrency", "--jobs", dest="concurrency", type=int, default=8,
+                        help="parallel fan-out for test jobs after the import barrier (default 8)")
+    parser.add_argument("--serial", action="store_true",
+                        help="force serial mode (equivalent to --concurrency 1; overrides --concurrency)")
     parser.add_argument("--cache", default=None,
-                        help="persistent solver cache path (placeholder, ticket 03)")
+                        help="persistent solver cache path (placeholder, ticket 06)")
     parser.add_argument("--no-reuse", action="store_true",
                         help="baseline mode: pass --acceptance-no-reuse to test jobs")
     args = parser.parse_args(argv)
-    if args.jobs != 1:
-        parser.error("--jobs other than 1 (parallel fan-out) is ticket 02, not implemented yet")
+    if args.serial:
+        args.concurrency = 1
+    if args.concurrency < 1:
+        parser.error("--concurrency must be >= 1")
     if args.cache:
-        print("warning: --cache is a placeholder (ticket 03), ignored", file=sys.stderr)
+        print("warning: --cache is a placeholder (ticket 06), ignored", file=sys.stderr)
 
     project_root = Path(__file__).resolve().parent.parent
     log_root = Path(os.path.abspath(str(project_root / args.output)))
     log_root.mkdir(parents=True, exist_ok=True)
 
     jobs = discover_jobs(project_root)
-    results = []
-    for job in jobs:
-        row = run_job(job, args.engine, project_root, log_root, args.no_reuse)
-        results.append(row)
+    results = [None] * len(jobs)
+
+    def record(index: int, row: dict) -> None:
+        # Main-thread only (serial loop or the as_completed loop), so the print
+        # and the progressive summary write need no lock.
+        results[index] = row
         print(json.dumps(row, separators=(",", ":")), flush=True)
-        write_json(log_root / "summary.json", results)
+        write_json(log_root / "summary.json", [r for r in results if r is not None])
+
+    # Import barrier: the import job writes the shared import-cache directory,
+    # so it must exit before any concurrent test job starts (ticket 02).
+    record(0, run_job(jobs[0], args.engine, project_root, log_root, args.no_reuse))
+
+    remaining = list(enumerate(jobs[1:], start=1))
+    if args.concurrency == 1:
+        for index, job in remaining:
+            record(index, run_job(job, args.engine, project_root, log_root, args.no_reuse))
+    else:
+        with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
+            futures = {
+                pool.submit(run_job, job, args.engine, project_root, log_root, args.no_reuse): index
+                for index, job in remaining
+            }
+            for future in as_completed(futures):
+                record(futures[future], future.result())
 
     total_calls = sum(r["solver_calls"] for r in results)
     total_reuse_hits = sum(r["solver_reuse_hits"] for r in results)

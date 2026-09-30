@@ -1,0 +1,162 @@
+﻿{
+    "mode":  "acceptance-reuse",
+    "total_seconds":  27.37,
+    "total_assertions":  184,
+    "total_solver_calls":  1,
+    "total_solver_underlying_calls":  1,
+    "total_solver_reuse_hits":  0,
+    "solver_reuse_hit_rate":  0,
+    "tests":  [
+                  {
+                      "test":  "import",
+                      "exit":  0,
+                      "script_errors":  0,
+                      "pass_lines":  0,
+                      "assertions":  0,
+                      "seconds":  4.73,
+                      "solver_calls":  0,
+                      "solver_underlying_calls":  0,
+                      "solver_reuse_hits":  0,
+                      "solver_reuse_hit_rate":  0,
+                      "solver_elapsed_ms":  0,
+                      "combo_cache":  {
+
+                                      },
+                      "solver_profile":  {
+
+                                         },
+                      "report_fingerprints":  {
+
+                                              },
+                      "appdata":  "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\difftest-02\\run\\runtime-import"
+                  },
+                  {
+                      "test":  "test_crouch_stationary",
+                      "exit":  0,
+                      "script_errors":  0,
+                      "pass_lines":  45,
+                      "assertions":  45,
+                      "seconds":  0.69,
+                      "solver_calls":  0,
+                      "solver_underlying_calls":  0,
+                      "solver_reuse_hits":  0,
+                      "solver_reuse_hit_rate":  0,
+                      "solver_elapsed_ms":  0,
+                      "combo_cache":  {
+
+                                      },
+                      "solver_profile":  {
+
+                                         },
+                      "report_fingerprints":  {
+
+                                              },
+                      "appdata":  "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\difftest-02\\run\\runtime-test_crouch_stationary"
+                  },
+                  {
+                      "test":  "test_smoke",
+                      "exit":  0,
+                      "script_errors":  0,
+                      "pass_lines":  123,
+                      "assertions":  123,
+                      "seconds":  18.05,
+                      "solver_calls":  1,
+                      "solver_underlying_calls":  1,
+                      "solver_reuse_hits":  0,
+                      "solver_reuse_hit_rate":  0,
+                      "solver_elapsed_ms":  0.575,
+                      "combo_cache":  {
+                                          "bypasses":  0,
+                                          "enabled":  true,
+                                          "entries":  0,
+                                          "hits":  0,
+                                          "misses":  0
+                                      },
+                      "solver_profile":  {
+                                             "delay_leaf_ms":  0.0,
+                                             "delay_leaf_runs":  0,
+                                             "edge_probe_ms":  0.0,
+                                             "edge_probe_runs":  0,
+                                             "gap_enum_ms":  0.0,
+                                             "gap_enum_runs":  0,
+                                             "other_ms":  0.641,
+                                             "other_runs":  0,
+                                             "requests":  1,
+                                             "route_walk_ms":  0.0,
+                                             "route_walk_runs":  0,
+                                             "total_ms":  0.641
+                                         },
+                      "report_fingerprints":  "118561462e2e522db5087dc10dbe80ab2b46145cad8af6d1deeb51a05c2e9ed3",
+                      "appdata":  "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\difftest-02\\run\\runtime-test_smoke"
+                  },
+                  {
+                      "test":  "test_solver_cache",
+                      "exit":  0,
+                      "script_errors":  0,
+                      "pass_lines":  16,
+                      "assertions":  16,
+                      "seconds":  0.69,
+                      "solver_calls":  0,
+                      "solver_underlying_calls":  0,
+                      "solver_reuse_hits":  0,
+                      "solver_reuse_hit_rate":  0,
+                      "solver_elapsed_ms":  0,
+                      "combo_cache":  {
+
+                                      },
+                      "solver_profile":  {
+
+                                         },
+                      "report_fingerprints":  {
+
+                                              },
+                      "appdata":  "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\difftest-02\\run\\runtime-test_solver_cache"
+                  },
+                  {
+                      "test":  "diagnose_inputs",
+                      "exit":  0,
+                      "script_errors":  0,
+                      "pass_lines":  0,
+                      "assertions":  0,
+                      "seconds":  0.58,
+                      "solver_calls":  0,
+                      "solver_underlying_calls":  0,
+                      "solver_reuse_hits":  0,
+                      "solver_reuse_hit_rate":  0,
+                      "solver_elapsed_ms":  0,
+                      "combo_cache":  {
+
+                                      },
+                      "solver_profile":  {
+
+                                         },
+                      "report_fingerprints":  {
+
+                                              },
+                      "appdata":  "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\difftest-02\\run\\runtime-diagnose_inputs"
+                  },
+                  {
+                      "test":  "main-smoke",
+                      "exit":  0,
+                      "script_errors":  0,
+                      "pass_lines":  0,
+                      "assertions":  0,
+                      "seconds":  2.63,
+                      "solver_calls":  0,
+                      "solver_underlying_calls":  0,
+                      "solver_reuse_hits":  0,
+                      "solver_reuse_hit_rate":  0,
+                      "solver_elapsed_ms":  0,
+                      "combo_cache":  {
+
+                                      },
+                      "solver_profile":  {
+
+                                         },
+                      "report_fingerprints":  {
+
+                                              },
+                      "appdata":  "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\difftest-02\\run\\runtime-main-smoke"
+                  }
+              ]
+}

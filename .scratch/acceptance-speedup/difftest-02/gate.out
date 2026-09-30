@@ -1,0 +1,12 @@
+== building subset tree (keep: test_smoke test_crouch_stationary test_solver_cache)
+== running ps
+ps: wall=28s longest_job=18.04s exit=0
+== running py-serial
+py-serial: wall=29s longest_job=18.12s exit=0
+== running py-parallel
+py-parallel: wall=24s longest_job=18.7s exit=0
+== comparing summaries
+gate.sh: line 75: read_ps_exit: command not found
+gate.sh: line 76: read_spy_exit: command not found
+gate.sh: line 77: read_ppr_exit: command not found
+gate.sh: line 81: read_ps_exit: unbound variable
