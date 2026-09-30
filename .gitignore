@@ -21,6 +21,9 @@ mono_crash.*.json
 .zcode/
 skills-lock.json
 
+# Python 工具缓存
+__pycache__/
+
 # 系统文件
 .DS_Store
 Thumbs.db

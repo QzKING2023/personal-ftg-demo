@@ -1,0 +1,6 @@
+== building subset tree (keep: test_smoke test_crouch_stationary test_solver_cache)
+== running ps (serial)
+== running py (serial)
+== comparing summaries
+ps.exit=0 py.exit=0 status.ps=[exit=0] status.py=[exit=0]
+GATE PASS
