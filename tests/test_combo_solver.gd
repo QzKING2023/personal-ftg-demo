@@ -52,7 +52,7 @@ func _initialize() -> void:
 func _test_default_table_reports_ground_route() -> void:
 	var report := _default_analyze()
 	_check(report.safe and report.cycles.is_empty(), "default table reports no valid cycle")
-	_check(report.edges.size() == 55, "default table enumerates 55 edges (ticket 05 基线 36：15 chain + 8 special + 4 link + 1 jump + 2 air cancels + 1 landing + 2 Rekka derives + 1 ~B link + 1 special D entry + 1 source-limited 5B link；ticket 06 增 7 条（6 蓄力变体 + 5[D]→5B 来源限定）；ticket 07 增 12 条：6A jc jB/jC（2 jump）+ jA/jB→jC（2 空中取消）+ 2C→6D/2D（2 链式）+ 6D/2D→jA/jB/jC（6 空中出口）)")
+	_check(report.edges.size() == 71, "default table enumerates 71 edges (ticket 05 基线 36：15 chain + 8 special + 4 link + 1 jump + 2 air cancels + 1 landing + 2 Rekka derives + 1 ~B link + 1 special D entry + 1 source-limited 5B link；ticket 06 增 7 条（6 蓄力变体 + 5[D]→5B 来源限定）；ticket 07 增 12 条：6A jc jB/jC（2 jump）+ jA/jB→jC（2 空中取消）+ 2C→6D/2D（2 链式）+ 6D/2D→jA/jB/jC（6 空中出口）；ticket 08 净增 16 条：空中 D 系相关边 17 条（jA/jB/jC→三新招取消 9、6D/2D→三新招出口 6、j2D→214C 命中落地取消 1、j6D→5B 空技延迟连接 1），其中 jB→j5D 迁自旧 jB→jD 边)")
 	var ab := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	_check(ab != null and ab.valid, "5A -> 5B is a valid chain continuation")
 	if ab != null:
@@ -237,7 +237,7 @@ func _test_full_air_route_matches_runtime() -> void:
 	# 真实 CombatSession（同一几何假设：木桩钉在玩家面前），命中帧/连段数/伤害逐项对拍。
 	var report := _default_analyze()
 	var route := _find_route(report, ["5A", "5B", "6A", "jA", "jB", "j5D"])
-	_check(route != null, "the full air route 5A -> 5B -> 6A -> Space -> jA -> jB -> jD is reported")
+	_check(route != null, "the full air route 5A -> 5B -> 6A -> Space -> jA -> jB -> j5D is reported")
 	if route == null:
 		return
 	_check(route.hit_frames == [6, 13, 21, 30, 35, 41], "air route hits on frames 6/13/21/30/35/41 (w=0 cancels with the B pairing wait, earliest air press after pre-jump, j5D startup 6)")
@@ -246,7 +246,7 @@ func _test_full_air_route_matches_runtime() -> void:
 	_check(replay.hit_frames == route.hit_frames, "replaying the solver schedule on a fresh CombatSession reproduces every hit frame")
 	_check(replay.combo_hits == 6 and _approx(replay.total_damage, route.total_damage), "replay matches combo count and decayed damage")
 	_check(replay.air_hits_all_airborne, "every air-segment hit lands while the player is airborne")
-	_check(replay.end_reasons == [CombatEvent.ComboEndReason.FINISHER], "the route ends only on the jD finisher hit")
+	_check(replay.end_reasons == [], "the route's final hit opens no combo-end event (ticket 08: 收束不设 is_finisher，终局经取消窗关闭发生在路线观测窗口之后)")
 
 
 func _test_landing_route_and_critical_frame() -> void:
@@ -553,6 +553,21 @@ func _test_solver_claims_only_configured_connections() -> void:
 		["6D", "jC", ComboSolver.EdgeKind.AIR_EXIT],
 		["2D", "jA", ComboSolver.EdgeKind.AIR_EXIT], ["2D", "jB", ComboSolver.EdgeKind.AIR_EXIT],
 		["2D", "jC", ComboSolver.EdgeKind.AIR_EXIT],
+		## 票据 08：空中 D 系（j5D 水平收束、j6D 斜下速降、j2D 垂直带落地）入表。
+		## jA/jB/jC 的空中取消扩展到三新招（jB 的旧 jD 边迁为 j5D），6D/2D 的
+		## 空中出口同样扩至三新招（2D 侧枚举但 valid=false，边仍入表），j6D 的
+		## 空技延迟连接与 j2D 的命中落地取消资格。
+		["jA", "j5D", ComboSolver.EdgeKind.CANCEL], ["jA", "j6D", ComboSolver.EdgeKind.CANCEL],
+		["jA", "j2D", ComboSolver.EdgeKind.CANCEL],
+		["jB", "j6D", ComboSolver.EdgeKind.CANCEL], ["jB", "j2D", ComboSolver.EdgeKind.CANCEL],
+		["jC", "j5D", ComboSolver.EdgeKind.CANCEL], ["jC", "j6D", ComboSolver.EdgeKind.CANCEL],
+		["jC", "j2D", ComboSolver.EdgeKind.CANCEL],
+		["6D", "j5D", ComboSolver.EdgeKind.AIR_EXIT], ["6D", "j6D", ComboSolver.EdgeKind.AIR_EXIT],
+		["6D", "j2D", ComboSolver.EdgeKind.AIR_EXIT],
+		["2D", "j5D", ComboSolver.EdgeKind.AIR_EXIT], ["2D", "j6D", ComboSolver.EdgeKind.AIR_EXIT],
+		["2D", "j2D", ComboSolver.EdgeKind.AIR_EXIT],
+		["j6D", "5B", ComboSolver.EdgeKind.NORMAL_LINK],
+		["j2D", "214C", ComboSolver.EdgeKind.HIT_LANDING_CANCEL],
 	]
 	_check(report.edges.size() == pairs.size(), "the default report enumerates exactly the configured continuation relations")
 	var reported := {}
