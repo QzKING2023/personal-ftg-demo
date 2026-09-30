@@ -58,7 +58,7 @@ func _test_default_manifest_loads_shared_table() -> void:
 	var result := MoveTable.load_default()
 	_check(result.ok, "default manifest loads and validates")
 	_check(result.errors.is_empty(), "default manifest reports no errors")
-	var expected_ids := ["5A", "2A", "5B", "2B", "5C", "2C", "6A", "236C", "214C", "214C~B", "214C~C", "jA", "jB", "jC", "jD", "5D", "5[D]", "6D", "2D", "214D", "BC"]
+	var expected_ids := ["5A", "2A", "5B", "2B", "5C", "2C", "6A", "236C", "214C", "214C~B", "214C~C", "jA", "jB", "jC", "j5D", "j6D", "j2D", "5D", "5[D]", "6D", "2D", "214D", "BC"]
 	_check(result.moves.keys() == expected_ids, "table preserves manifest order and ids (stable enumeration)")
 	for move_id in expected_ids:
 		var move := result.moves[move_id] as MoveData
@@ -72,7 +72,8 @@ func _test_default_table_entries_match_manifest() -> void:
 		"5A": [5, 4, 10, 8], "2A": [5, 4, 10, 8], "5B": [6, 5, 12, 12], "2B": [7, 5, 12, 11],
 		"5C": [8, 5, 16, 16], "2C": [9, 3, 18, 14], "236C": [6, 2, 22, 8],
 		"5D": [7, 4, 18, 18], "214D": [7, 5, 20, 22],
-		"jA": [4, 6, 10, 8], "jB": [4, 6, 12, 12], "jC": [7, 5, 14, 14], "jD": [4, 7, 14, 20],
+		"jA": [4, 6, 10, 8], "jB": [4, 6, 12, 12], "jC": [7, 5, 14, 14],
+		"j5D": [6, 4, 16, 16], "j6D": [7, 4, 18, 17], "j2D": [8, 4, 20, 18],
 		"6D": [9, 4, 20, 18], "2D": [8, 4, 18, 17],
 		"BC": [5, 11, 10, -1],
 	}
@@ -98,8 +99,10 @@ func _test_default_table_entries_match_manifest() -> void:
 		"236C segment 2 grounded hit launches into a ground slide (LOW_FLOAT_TO_SLIDE)")
 	_check(launcher.special_entry_targets == ["5D"] and launcher.special_entry_window_frames == 16,
 		"236C declares its special D entry qualification with the 16f window")
-	var air := result.moves["jD"] as MoveData
-	_check(air.stance == MoveData.Stance.AIR and air.is_finisher, "jD is an air finisher")
+	var j2d_entry := result.moves["j2D"] as MoveData
+	_check(j2d_entry.stance == MoveData.Stance.AIR and j2d_entry.hit_landing_cancel_targets == ["214C"]
+		and j2d_entry.hit_landing_cancel_window_frames > 0,
+		"j2D is the air move carrying the 214C hit-landing cancel qualification")
 	# 阶段 3 新职责：5C 是普通地面重攻击（不再是专用 launcher，无 jump cancel），
 	# 5D 不再是收尾；四招显式声明起手等级、链式/必杀取消与普通连接边。
 	var five_c := result.moves["5C"] as MoveData
@@ -155,9 +158,10 @@ func _test_default_table_entries_match_manifest() -> void:
 	var ja := result.moves["jA"] as MoveData
 	var jb := result.moves["jB"] as MoveData
 	var jc := result.moves["jC"] as MoveData
-	_check(ja.cancel_targets == ["jB", "jC"] and jb.cancel_targets == ["jC", "jD"]
-		and jc.cancel_targets.is_empty(),
-		"the air normals chain jA > jB > jC (jC's D-family exits arrive with tickets 08/09)")
+	_check(ja.cancel_targets == ["jB", "jC", "j5D", "j6D", "j2D"]
+		and jb.cancel_targets == ["jC", "j5D", "j6D", "j2D"]
+		and jc.cancel_targets == ["j5D", "j6D", "j2D"],
+		"the air normals cancel into the air D series (j214D exits arrive with ticket 09)")
 	var six_d := result.moves["6D"] as MoveData
 	var two_d := result.moves["2D"] as MoveData
 	_check(six_d.direction_derivation == "6D" and two_d.requires_crouch,
@@ -170,8 +174,9 @@ func _test_default_table_entries_match_manifest() -> void:
 		and MoveData.profile_for(six_d, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL) != null
 		and MoveData.profile_for(two_d, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL) != null,
 		"6D/2D declare airborne-only profiles: grounded targets report no-profile, never a fallback")
-	_check(six_d.air_exit_targets == ["jA", "jB", "jC"] and two_d.air_exit_targets == ["jA", "jB", "jC"],
-		"6D/2D declare their air exits into the delivered air normals")
+	_check(six_d.air_exit_targets == ["jA", "jB", "jC", "j5D", "j6D", "j2D"]
+		and two_d.air_exit_targets == ["jA", "jB", "jC", "j5D", "j6D", "j2D"],
+		"6D/2D declare their air exits into the delivered air moves (normals + ticket 08 air D series; j214D arrives with ticket 09)")
 	_check(two_d.hitbox_y_offset_px == -70.0 and six_d.hitbox_y_offset_px == 0.0,
 		"2D declares the raised vertical hitbox while 6D stays centered")
 	var grades := {

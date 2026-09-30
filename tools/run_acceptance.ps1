@@ -51,6 +51,7 @@ try {
             solver_reuse_hit_rate=if ($metrics) {[double]$metrics.reuse_hit_rate} else {0.0}
             solver_elapsed_ms=if ($metrics) {[double]$metrics.elapsed_ms} else {0.0}
             combo_cache=if ($metrics) {$metrics.combo_cache} else {@{}}
+            solver_profile=if ($metrics) {$metrics.profile_totals} else {@{}}
             report_fingerprints=if ($metrics) {@($metrics.reports | ForEach-Object {[string]$_.fingerprint})} else {@()}
             appdata=$runtime
         }

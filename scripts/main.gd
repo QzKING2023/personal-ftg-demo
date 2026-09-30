@@ -291,9 +291,21 @@ func _update_debug_line() -> void:
 			"·穿越" if bool(snap["cross_ok"]) else "",
 			"·墙截" if bool(snap["motion_wall_clamped"]) else "",
 		]
-	_debug_line.text = "诊断 帧%d 面向%s %s 防御%s 招式%s%s 蓄力%s 位移%s 缓存%s 跳槽%s 按住%s 投窗%s%s 方向%s 取消%s 派生%s" % [
+	# 空技落地接缝（票据 08）：j2D 命中落地取消资格（含专用输入年龄与落地确认）
+	# 与 j6D 延迟普通连接挂起的可观察口径。
+	var landing_seam_text := "—"
+	if bool(snap["hit_landing_cancel_open"]):
+		landing_seam_text = "落地取消"
+		if int(snap["hit_landing_input_age"]) >= 0:
+			landing_seam_text += "·%s龄%d" % [String(snap["hit_landing_input_move_id"]), int(snap["hit_landing_input_age"])]
+		if bool(snap["hit_landing_landed"]):
+			landing_seam_text += "·已落地"
+	elif bool(snap["air_link_pending"]):
+		landing_seam_text = "待目押"
+	_debug_line.text = "诊断 帧%d 面向%s %s 防御%s 招式%s%s 蓄力%s 位移%s 缓存%s 跳槽%s 按住%s 投窗%s%s 方向%s 取消%s 派生%s 接缝%s" % [
 		int(snap["frame"]), facing_text, posture, guard_text, move_text, attribute, charge_text, motion_text,
 		buffer_text, jump_text, held_text, throw_text, pending_text, sequence, cancels, derive_text,
+		landing_seam_text,
 	]
 
 

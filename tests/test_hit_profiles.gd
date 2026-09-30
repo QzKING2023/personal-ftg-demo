@@ -113,7 +113,7 @@ func _test_shared_table_samples_declared() -> void:
 		var move := table[move_id] as MoveData
 		_check(MoveData.profile_for(move, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL) != null,
 			"%s keeps an explicitly migrated grounded normal profile" % move_id)
-	for move_id in ["jA", "jB", "jD"]:
+	for move_id in ["jA", "jB", "j5D"]:
 		var move := table[move_id] as MoveData
 		_check(MoveData.profile_for(move, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL) != null,
 			"%s declares an airborne normal profile for air pursuit routes" % move_id)
@@ -631,9 +631,9 @@ func _test_player_side_uses_profile_selection() -> void:
 func _test_profile_edits_sync_session_and_solver() -> void:
 	var table := MoveData.default_table()
 	var report := _metrics.solve(_options(table))
-	var route := _find_route(report, ["5A", "5B", "6A", "jA", "jB", "jD"])
+	var route := _find_route(report, ["5A", "5B", "6A", "jA", "jB", "j5D"])
 	_check(route != null and route.timing_valid,
-		"the solver walks the 5A → 5B → 6A (chain cancels) → jump cancel → jA → jB → jD route on the shared table")
+		"the solver walks the 5A → 5B → 6A (chain cancels) → jump cancel → jA → jB → j5D route on the shared table")
 	if route == null:
 		return
 	var replay := _replay_inputs(route.inputs, table)
@@ -645,7 +645,7 @@ func _test_profile_edits_sync_session_and_solver() -> void:
 	six_normal.damage_override = 25
 	six_normal.horizontal_speed_px_s = 90.0
 	var edited_report := _metrics.solve(_options(table))
-	var edited_route := _find_route(edited_report, ["5A", "5B", "6A", "jA", "jB", "jD"])
+	var edited_route := _find_route(edited_report, ["5A", "5B", "6A", "jA", "jB", "j5D"])
 	## 6A 现为路线第三击：伤害层 0.72×0.9²=0.5832 → (25−16)×0.5832 ≈ 5.2。
 	_check(edited_route != null and _approx(edited_route.total_damage, base_damage + 5.3),
 		"editing the 6A normal profile raises the solver route total by (25-16)*0.5832 with per-hit rounding")
@@ -656,7 +656,7 @@ func _test_profile_edits_sync_session_and_solver() -> void:
 		HitProfile.TargetState.GROUNDED, HitProfile.HitContext.COUNTER)
 	six_counter.damage_override = 40
 	var counter_report := _metrics.solve(_options(table))
-	var counter_route := _find_route(counter_report, ["5A", "5B", "6A", "jA", "jB", "jD"])
+	var counter_route := _find_route(counter_report, ["5A", "5B", "6A", "jA", "jB", "j5D"])
 	_check(counter_route != null and _approx(counter_route.total_damage, edited_route.total_damage),
 		"counter-profile edits never leak into the solver's normal-context routes (no fallback)")
 

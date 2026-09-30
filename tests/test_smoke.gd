@@ -597,10 +597,17 @@ func _test_full_air_route_keyboard(main: Node2D, session: CombatSession) -> void
 				break
 		route_hits += 1
 		_check(got_hit, "air route key %s lands as combo hit %d" % [key.to_upper(), 3 + route_hits])
-	_check(route_hits == 3 and session.combo_hits == 6 and not session.combo_active, "jD finishes the air route at six hits and ends the combo")
+	## 票据 08：空中收尾是 j5D（无 FINISHER 标记）——连段在取消窗关闭时结束。
+	var combo_closed := false
+	for i in 30:
+		await physics_frame
+		if session.combo_hits == 6 and not session.combo_active:
+			combo_closed = true
+			break
+	_check(route_hits == 3 and combo_closed, "j5D closes the air route at six hits (the combo ends via the cancel-window close after the closer)")
 	_check(saw_air_posture, "status display shows the airborne posture during the route")
 	_check(status.text.contains("连段 6"), "status display shows the six-hit combo")
-	_check(_approx_hp(session.dummy_hp, GameParams.DUMMY_MAX_HP - 41.3), "route damage totals 41.3 through the three-layer corrections")
+	_check(_approx_hp(session.dummy_hp, GameParams.DUMMY_MAX_HP - 39.6), "route damage totals 39.6 through the three-layer corrections (j5D base 16, ticket 08)")
 	var settled := false
 	for i in 90:
 		await physics_frame
@@ -669,7 +676,7 @@ func _test_air_derivation_keyboard(facing: int) -> void:
 	# 配置的空中方向派生走真实训练场输入路径（issue 12）：临时合法 manifest =
 	# 共享 9 招 + 空中派生 j214D（AIR + 214 + D）。前跳后 S → S+A → A → J 在空中
 	# 识别并起手 j214D；木桩在射程外——成功出招但未命中可区分。
-	var air_qcb := (MoveData.default_table()["jD"] as MoveData).duplicate()
+	var air_qcb := (MoveData.default_table()["j5D"] as MoveData).duplicate()
 	air_qcb.move_id = "j214D"
 	air_qcb.direction_derivation = "214D"
 	air_qcb.command_tier = MoveData.CommandTier.SPECIAL

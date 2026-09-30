@@ -265,6 +265,29 @@ var _move_via_special_entry := false
 var _finished_move_hit := false
 var _finished_move_via_entry := false
 
+# --- 空技落地接缝（票据 08，L-01 / j6D 普通落地连接）---
+## 命中落地取消资格：声明 hit_landing_cancel_targets 的空中招式（j2D）在实际
+## HIT 的命中应用阶段授予一次；被防、挥空、缺失 profile 不授予。资格绑定本次
+## 连段与当前目标——连段结束即清除；落地事件确认后的首个可行动帧消费（例外
+## 仅对声明的目标开放，跳过其余空技恢复，不改变落地首帧统一锁）。
+var _hit_landing_open := false
+## 授予资格的招式（窗口与目标列表的唯一来源）。
+var _hit_landing_move: MoveData = null
+## 资格开放期间记录的目标输入（专用槽）：-1 = 尚无输入。正常帧时钟计龄，
+## Hitstop 不增龄（停顿中按下按恢复首个正常帧起算，与动作缓存同一口径）；
+## 最新输入覆盖旧输入。命中前的按下不记录——预存输入不得自动补发。
+var _hit_landing_input_at := -1
+## 已记录的目标招式 id（消费时按合法接续起手）。
+var _hit_landing_input_move_id := ""
+## 资格落地确认帧（物理帧号；-1 = 尚未落地）。落地当帧不消费（首帧锁），
+## 之后的第一个到达消费阶段的正常帧尝试一次性消费，失败即资格失效。
+var _hit_landing_landed_frame := -1
+## 空技延迟普通连接挂起：声明了 link_targets 的空招在空中收招或被落地截断时
+## 不结束连段，连接评估推迟到攻击者完全落地恢复后的首个合法帧——按缓存消费、
+## 目标剩余硬直、姿态与 active 重叠重新判定（与地面普通连接同一口径，不借用
+## j2D 例外、不跳过落地首帧锁）。
+var _pending_air_link := false
+
 # --- 蓄力、计划位移与换边（票据 06，I-01..I-03 / M-01..M-04）---
 ## 本招启动时锁定的动作轨迹世界方向（±1；0 = 无进行中招式）。当前招式的
 ## hitbox、位移与扫掠方向贯穿本招不反向；player_facing 每帧在运动结算后按
@@ -409,6 +432,12 @@ func reset_to_initial_state() -> void:
 	_move_via_special_entry = false
 	_finished_move_hit = false
 	_finished_move_via_entry = false
+	_hit_landing_open = false
+	_hit_landing_move = null
+	_hit_landing_input_at = -1
+	_hit_landing_input_move_id = ""
+	_hit_landing_landed_frame = -1
+	_pending_air_link = false
 	_reset_move_tracking()
 	_direction_ref_facing = 1
 
@@ -498,6 +527,12 @@ func clone_state() -> Dictionary:
 			"pending_link_check": _pending_link_check,
 			"finished_move_hit": _finished_move_hit,
 			"finished_move_via_entry": _finished_move_via_entry,
+			"pending_air_link": _pending_air_link,
+			"hit_landing_open": _hit_landing_open,
+			"hit_landing_move_id": _move_id(_hit_landing_move),
+			"hit_landing_input_at": _hit_landing_input_at,
+			"hit_landing_input_move_id": _hit_landing_input_move_id,
+			"hit_landing_landed_frame": _hit_landing_landed_frame,
 			"via_special_entry": _move_via_special_entry,
 			"charge_age": _charge_age,
 			"charge_committed": _charge_committed,
@@ -593,6 +628,8 @@ func restore_state(state: Dictionary) -> bool:
 		String(dummy.get("pending_move_id", "")), String(move_state.get("move_id", "")),
 		String(move_state.get("pending_hit_id", "")), String(move_state.get("finished_move_id", "")),
 		String(special.get("move_id", "")), String(buffer.get("move_id", "")),
+		String(move_state.get("hit_landing_move_id", "")),
+		String(move_state.get("hit_landing_input_move_id", "")),
 		state_throw_id,
 	]
 	for id in ids:
@@ -668,6 +705,12 @@ func restore_state(state: Dictionary) -> bool:
 	_pending_link_check = bool(move_state.get("pending_link_check", false))
 	_finished_move_hit = bool(move_state.get("finished_move_hit", false))
 	_finished_move_via_entry = bool(move_state.get("finished_move_via_entry", false))
+	_pending_air_link = bool(move_state.get("pending_air_link", false))
+	_hit_landing_open = bool(move_state.get("hit_landing_open", false))
+	_hit_landing_move = _move_from_id(String(move_state.get("hit_landing_move_id", "")))
+	_hit_landing_input_at = int(move_state.get("hit_landing_input_at", -1))
+	_hit_landing_input_move_id = String(move_state.get("hit_landing_input_move_id", ""))
+	_hit_landing_landed_frame = int(move_state.get("hit_landing_landed_frame", -1))
 	_move_via_special_entry = bool(move_state.get("via_special_entry", false))
 	_charge_age = int(move_state.get("charge_age", 0))
 	_charge_committed = bool(move_state.get("charge_committed", false))
@@ -907,6 +950,11 @@ func debug_snapshot() -> Dictionary:
 			and not player_on_ground and _cancel_window_open()),
 		"hitbox_y_offset": (_current_move.hitbox_y_offset_px if _current_move != null else 0.0),
 		"dummy_air_height_px": maxf(0.0, GameParams.ground_stand_y() - dummy_position.y),
+		"hit_landing_cancel_open": _hit_landing_open,
+		"hit_landing_input_age": (maxi(0, _normal_frame_index - _hit_landing_input_at) if _hit_landing_input_at >= 0 else -1),
+		"hit_landing_input_move_id": _hit_landing_input_move_id,
+		"hit_landing_landed": _hit_landing_landed_frame >= 0,
+		"air_link_pending": _pending_air_link,
 	}
 
 
@@ -1024,6 +1072,16 @@ func settlement_state() -> Dictionary:
 		# 普通连接边，是真实结算量（授予招式由 move_id 表达）。
 		"special_entry_open": _special_entry_open,
 		"special_entry_age": (_normal_frame_index - _special_entry_frame if _special_entry_open else -1),
+		# 空技落地接缝（票据 08）：j2D 命中落地取消资格（授予招式、专用输入年龄、
+		# 落地确认）与 j6D 延迟普通连接挂起（含收招快照标记）影响后续起手资格，
+		# 是真实结算量——帧号换算为年龄/布尔，纯调试帧号不入键。
+		"hit_landing_open": _hit_landing_open,
+		"hit_landing_move_id": _move_id(_hit_landing_move),
+		"hit_landing_input_age": (_normal_frame_index - _hit_landing_input_at if _hit_landing_input_at >= 0 else -1),
+		"hit_landing_input_move_id": _hit_landing_input_move_id,
+		"hit_landing_landed": _hit_landing_landed_frame >= 0,
+		"pending_air_link": _pending_air_link,
+		"air_link_move_id": (_move_id(_finished_move) if _pending_air_link else ""),
 		# 木桩姿态/阶段、受击计时与速度（滑行计时影响追击窗口与自然恢复时点）
 		"dummy_state": dummy_state,
 		"dummy_on_ground": dummy_on_ground,
@@ -1102,6 +1160,20 @@ func _phase_input(events: Array[CombatEvent]) -> void:
 		_buffer_waiting = false
 		if _buffered_move_id != "" and _buffered_endpoint >= 0:
 			_consume_direction_history_through(_buffered_endpoint)
+	## 命中落地取消的专用输入记录（票据 08，L-01）：资格开放期间的按下额外按
+	## 地面姿态解析——空中按 C 的常规选招只会命中空技，承载不了 214 这类地面
+	## 指令。仲裁先于 B+C 组合等待（与 Rekka 派生同口径）；只有解析结果落在
+	## 授予招式声明的目标内才记录，命中前（资格未开）的按下不记录，预存输入
+	## 不得自动补发。方向历史按识别终点消费（与常规选招同一规则）。
+	if _hit_landing_open and _hit_landing_move != null and not rekka_consumed \
+			and _frame_input.action_key != "":
+		var landing_selected := _select_move_for_key(_frame_input.action_key, MoveData.Stance.GROUND, input_stamp)
+		var landing_selected_id := String(landing_selected["move_id"])
+		if _hit_landing_move.hit_landing_cancel_targets.has(landing_selected_id):
+			_hit_landing_input_move_id = landing_selected_id
+			_hit_landing_input_at = input_stamp
+			if int(landing_selected["endpoint"]) >= 0:
+				_consume_direction_history_through(int(landing_selected["endpoint"]))
 	## 跳跃输入槽独立记录：Space+下中和，不触发跳跃；按下即冻结
 	## 当帧世界水平跳向；最新按下覆盖旧请求，按住不重复。
 	if _frame_input.jump_pressed and not _frame_input.down_held:
@@ -1617,6 +1689,15 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 		_special_entry_open = true
 		_special_entry_frame = _normal_frame_index
 		_special_entry_move = move
+	## 命中落地取消资格授予（票据 08，L-01）：实际 HIT 当下取得，绑定本次连段
+	## 与当前目标；被防、挥空、缺失 profile 不授予。资格跨过授予招式的落地截断
+	## 存活，落地事件确认后的首个可行动帧一次性消费（见 _try_consume_hit_landing）。
+	if not move.hit_landing_cancel_targets.is_empty() and move.stance == MoveData.Stance.AIR:
+		_hit_landing_open = true
+		_hit_landing_move = move
+		_hit_landing_input_at = -1
+		_hit_landing_input_move_id = ""
+		_hit_landing_landed_frame = -1
 	events.append(CombatEvent.hit(combo_last_damage, _attack_direction(), combo_hits,
 		context == HitProfile.HitContext.COUNTER, _pending_hit_segment + 1))
 	## 命中帧完成命中与受击应用后开始 Hitstop：冻结后续 8 个物理帧（双方动作、
@@ -1853,6 +1934,8 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 	_evaluate_throw_tech(events)
 	_apply_throw_result(events)
 	_resolve_pending_link(events)
+	_resolve_air_link(events)
+	_try_consume_hit_landing(events)
 	var action := _buffer_action_candidate()
 	if not action.is_empty() and _jump_slot_ready():
 		if _jump_slot_physics > _buffered_physics:
@@ -1863,20 +1946,29 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 		_consume_action_candidate(action)
 	elif _jump_slot_ready():
 		_consume_jump()
-	## 空中招式落地：滞留地面姿态的空中招式作废
-	## （空中路线不因落地延续），连段以收招未接续结束。
+	## 空中招式落地：滞留地面姿态的空中招式作废（空中路线不因落地延续，剩余
+	## active 不延续到落地后）。声明了普通连接边（j6D）或命中落地资格开放
+	## （j2D，L-01）的空招把连段存续推迟到落地接缝，其余以收招未接续结束。
 	if _current_move != null and _current_move.stance == MoveData.Stance.AIR and player_on_ground:
-		_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
+		if _air_move_defers_end(_current_move):
+			_pending_air_link = _pending_air_link or (combo_active and not _current_move.link_targets.is_empty())
+			_finished_move = _current_move
+			_finished_move_hit = _move_hit_confirmed
+			_finished_move_via_entry = _move_via_special_entry
+		else:
+			_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
 		_clear_current_move()
 	## 命中确认取消窗口关闭且没有接续时连段结束；木桩受击处理不受影响。
 	## 窗口年龄按正常战斗帧计：Hitstop 之后关闭帧相应后移。声明了普通连接边的
 	## 招式不在此结束——连接评估保留到完全恢复后的首个合法帧（I-06）。特殊进入
 	## 资格仍在消费窗口内（票据 05：命中当下取得、Hitstop 与 slide 期间保留），
-	## 或本招经资格起手且声明了来源限定连接边时，同样推迟到窗口关闭/完全恢复。
+	## 本招经资格起手且声明了来源限定连接边，或命中落地资格开放（票据 08：j2D
+	## 的落地消费在落地接缝结算）时，同样推迟到窗口关闭/完全恢复/落地。
 	if _current_move != null and _move_hit_confirmed and combo_active \
 			and _current_move.link_targets.is_empty() \
 			and not _special_entry_live() \
 			and not (_move_via_special_entry and not _current_move.special_entry_link_targets.is_empty()) \
+			and not _hit_landing_open \
 			and _normal_frame_index - _hit_confirm_frame > _current_move.cancel_window_frames:
 		_report_undeclared_link_gap(_current_move, events)
 		_end_combo(CombatEvent.ComboEndReason.CANCEL_WINDOW_CLOSED, events)
@@ -1901,6 +1993,84 @@ func _resolve_pending_link(events: Array[CombatEvent]) -> void:
 	_clear_buffer()
 	_finished_move = null
 	_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
+
+
+## 空技收招/落地截断是否把连段存续推迟到落地接缝（票据 08）：命中落地资格
+## 开放时（j2D 实际 HIT，L-01），或声明了普通连接边且连段仍活跃时（j6D）。
+## 挥空且无连接边的空招照常在截断/收招帧结束连段——空技落地恢复仍全程承担。
+func _air_move_defers_end(move: MoveData) -> bool:
+	if move.stance != MoveData.Stance.AIR:
+		return false
+	if _hit_landing_open and _hit_landing_move == move:
+		return true
+	return combo_active and not move.link_targets.is_empty()
+
+
+## 空技延迟普通连接消费（票据 08：j6D）：攻击者完全落地恢复后的首个合法帧
+## 按缓存消费声明目标——与地面普通连接同一口径（合法接续起手、不产生取消
+## 年龄、不跳过落地首帧锁），目标剩余硬直、姿态与 active 重叠重新判定；
+## 无可消费候选时按目押失败/配置缺口报告并结束连段。
+func _resolve_air_link(events: Array[CombatEvent]) -> void:
+	if not _pending_air_link:
+		return
+	if _current_move != null or not player_on_ground or _player_stunned():
+		return
+	if not _independent_start_allowed():
+		return
+	_pending_air_link = false
+	var finished := _finished_move
+	_finished_move = null
+	if _link_candidate_available(finished):
+		var target := _moves.get(_buffered_move_id) as MoveData
+		_start_move(_buffered_move_id, target, true)
+		_move_via_link = true
+		_note_buffer_consumed(_buffered_move_id)
+		_clear_buffer()
+		return
+	if _link_declared_but_gated(finished):
+		events.append(CombatEvent.link_failed(_link_fail_reason(_moves.get(_buffered_move_id) as MoveData), _buffered_move_id))
+		_clear_buffer()
+	else:
+		_report_undeclared_link_gap(finished, events)
+	_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
+
+
+## j2D 命中落地取消的一次性消费（票据 08，L-01）：落地事件确认后的首个到达
+## 消费阶段的正常帧尝试——落地首帧统一锁保持（落地当帧不消费），例外仅对
+## 授予招式声明的目标开放并跳过其余空技恢复（其他输入仍按普通落地恢复门）。
+## 输入未记录、窗口过期、连段已结束或木桩不可追击时资格就地失效，连段按
+## 收招未接续结束；消费成功则目标以合法接续起手并清除资格。
+func _try_consume_hit_landing(events: Array[CombatEvent]) -> void:
+	if not _hit_landing_open:
+		return
+	if _hit_landing_landed_frame < 0 or _frame_index <= _hit_landing_landed_frame:
+		return
+	var consumed := false
+	if _hit_landing_input_at >= 0 and _hit_landing_move != null and combo_active \
+			and _dummy_pursuable() and not _player_stunned() and _current_move == null:
+		var age := _normal_frame_index - _hit_landing_input_at
+		if age >= 0 and age <= _hit_landing_move.hit_landing_cancel_window_frames:
+			var target_id := _hit_landing_input_move_id
+			var target := _moves.get(target_id) as MoveData
+			if target != null and _stance_matches(target):
+				consumed = true
+				_close_hit_landing()
+				_start_move(target_id, target, true)
+				_note_buffer_consumed(target_id)
+				## 同一输入不再作为独立起手补发：专用槽与常规缓存一并清空。
+				_clear_buffer()
+	if not consumed:
+		_close_hit_landing()
+		_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
+
+
+## 清除命中落地取消资格与专用输入槽（消费、失效或连段结束共用）。
+func _close_hit_landing() -> void:
+	_hit_landing_open = false
+	_hit_landing_move = null
+	_hit_landing_input_at = -1
+	_hit_landing_input_move_id = ""
+	_hit_landing_landed_frame = -1
 
 
 func _buffer_action_candidate() -> Dictionary:
@@ -2141,25 +2311,39 @@ func _motion_player(events: Array[CombatEvent]) -> void:
 		player_position.y = GameParams.ground_stand_y()
 		if player_velocity.y > 0.0:
 			player_velocity.y = 0.0
-		var just_landed := not player_on_ground
-		player_on_ground = true
-		_player_just_landed = just_landed
-		if just_landed:
-			_begin_landing_recovery()
-			## 落地恢复首帧统一不可蹲/不可防御：当帧钳掉空中姿态，下一帧起按
-			## 落地恢复门重解析（空跳第 2、3 帧恢复，空技恢复全程关闭）。
-			_clear_posture()
-			if not _jump_cancel_followups.is_empty():
-				# jump cancel 后落地仍未接续空中追击：追击资格作废，连段以收招未接续结束。
-				_jump_cancel_followups.clear()
-				if combo_active and _current_move == null:
-					_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
+		if not player_on_ground:
+			_handle_landing(events)
 	else:
 		player_on_ground = false
 	if _planned_step != Vector2.ZERO:
 		## 计划位移提交（票据 06，M-01）：速度积分与落地之后提交本帧计划步长
 		##（先版边截断，再身体穿越约束），与普通运动共用同一运动阶段收尾。
+		var grounded_before_commit := player_on_ground
 		_commit_planned_step()
+		if not grounded_before_commit and player_on_ground:
+			## 计划位移造成的真实落地（票据 08：j6D/j2D 的向下位移段）与速度积分
+			## 落地同一处理——首帧锁、落地恢复与落地接缝确认不因位移来源而绕过。
+			_handle_landing(events)
+
+
+## 落地结算（速度积分与计划位移两个入口共用）：落地首帧统一锁（不可蹲/不可
+## 防御/不可行动）、落地恢复计数、jump cancel 追击资格作废与空技落地接缝的
+## 落地确认（票据 08）。
+func _handle_landing(events: Array[CombatEvent]) -> void:
+	player_on_ground = true
+	player_velocity.y = 0.0
+	_player_just_landed = true
+	_begin_landing_recovery()
+	_clear_posture()
+	if not _jump_cancel_followups.is_empty():
+		# jump cancel 后落地仍未接续空中追击：追击资格作废，连段以收招未接续结束。
+		_jump_cancel_followups.clear()
+		if combo_active and _current_move == null:
+			_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
+	if _hit_landing_open:
+		## 落地事件确认（L-01）：落地当帧记录但不消费——首帧锁之后的第一个到达
+		## 消费阶段的正常帧尝试一次性消费。
+		_hit_landing_landed_frame = _frame_index
 
 
 func _commit_planned_step() -> void:
@@ -2175,6 +2359,9 @@ func _commit_planned_step() -> void:
 	if not is_equal_approx(clamped_x, target.x):
 		_motion_wall_clamped = true
 	target.x = clamped_x
+	## 向下的计划位移段（票据 08：j2D/j6D）不越过地面——钳到站地高度，
+	## 是否构成落地由 _motion_player 的落地结算判定。
+	target.y = minf(target.y, GameParams.ground_stand_y())
 	if absf(target.y - dummy_position.y) < GameParams.BODY_SIZE.y:
 		var origin_side := 1.0 if player_position.x >= dummy_position.x else -1.0
 		var dx := target.x - dummy_position.x
@@ -2453,6 +2640,13 @@ func _finish_move(events: Array[CombatEvent]) -> void:
 	## （票据 05：5D → 5B 只对经特殊进入起手且实际命中的 D 开放）。
 	_finished_move_hit = _move_hit_confirmed
 	_finished_move_via_entry = _move_via_special_entry
+	## 空技落地接缝（票据 08）：空中收招时地面连接姿态尚未成立——声明了普通
+	## 连接边（或命中落地资格开放）的空招把连段存续与连接评估推迟到落地恢复
+	## 完成后的首个合法帧（_resolve_air_link / _try_consume_hit_landing）。
+	if _current_move.stance == MoveData.Stance.AIR and _air_move_defers_end(_current_move):
+		_pending_air_link = not _current_move.link_targets.is_empty()
+		_clear_current_move()
+		return
 	_pending_link_check = _link_candidate_available(_current_move)
 	if _pending_link_check:
 		_clear_current_move()
@@ -2568,6 +2762,10 @@ func _start_move(move_id: String, move: MoveData, is_followup: bool) -> void:
 	_move_blocked = false
 	_move_is_followup = is_followup
 	_move_via_link = false
+	## 新招式起手即取代前招的空技落地接缝（票据 08）：延迟连接挂起与收招
+	## 快照随接缝终结——资格（若有）由自身的消费/失效路径管理。
+	_pending_air_link = false
+	_finished_move = null
 	## 特殊进入消费（票据 05，I-05）：资格开放中且本招是其声明目标时，本招经
 	## 来源资格起手——消费资格（一次性），标记来源限定普通连接边可用。
 	_move_via_special_entry = _special_entry_open and _special_entry_move != null \
@@ -2864,12 +3062,16 @@ func _end_combo(reason: CombatEvent.ComboEndReason, events: Array[CombatEvent]) 
 		return
 	combo_active = false
 	## 连段结束清除起手等级与三层累计修正（自然恢复/普通倒地/收尾同口径）；
-	## 下一段连段首击重新锁定。特殊进入资格绑定本次连段，随之清除（I-05.3）。
+	## 下一段连段首击重新锁定。特殊进入资格绑定本次连段，随之清除（I-05.3）；
+	## 命中落地资格与空技延迟连接同样绑定本次连段（票据 08，L-01）。
 	combo_starter_grade = MoveData.StarterGrade.UNSET
 	combo_damage_scale = 1.0
 	combo_time_scale = 1.0
 	combo_trajectory_scale = 1.0
 	_close_special_entry()
+	_close_hit_landing()
+	_pending_air_link = false
+	_finished_move = null
 	events.append(CombatEvent.combo_ended(reason))
 
 

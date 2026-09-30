@@ -88,7 +88,7 @@ func _test_first_candidates_ground_only_sorted() -> void:
 	var text := "\n".join(report.first_candidates)
 	_check("方向 236 + K 键" in text and "方向 214 + J 键" in text and "方向 214 + K 键" in text,
 		"derivative candidates spell out the direction notation and the real key")
-	for air_or_throw in ["jA", "jB", "jD", "BC"]:
+	for air_or_throw in ["jA", "jB", "jC", "j5D", "j6D", "j2D", "BC"]:
 		_check(not ids.has(air_or_throw),
 			"air moves and the B+C throw never enumerate as first moves from the ground start")
 
@@ -161,8 +161,8 @@ func _test_explicit_air_start_switches_candidates() -> void:
 	var ids: Array[String] = []
 	for line in report.first_candidates:
 		ids.append(line.split("｜")[0])
-	_check(ids == ["jA", "jB", "jC", "jD"],
-		"an explicitly provided air start enumerates only the currently executable air moves (jC delivered with ticket 07)")
+	_check(ids == ["jA", "jB", "jC", "j5D", "j6D", "j2D"],
+		"an explicitly provided air start enumerates only the currently executable air moves (jC delivered with ticket 07; the air D series arrives with ticket 08 — j6D/j2D carry 6D/2D notations)")
 	var text := "\n".join(report.start_lines)
 	_check("空中" in text and "第 1 个空中帧" in text,
 		"start lines describe the explicitly provided air state and its probe prologue")
@@ -170,13 +170,13 @@ func _test_explicit_air_start_switches_candidates() -> void:
 
 func _test_explicit_air_start_reports_air_route() -> void:
 	var report := _explicit_air_solve()
-	var route := _find_route(report, ["jA", "jB", "jD"])
-	_check(route != null, "the air chain jA → jB → jD is verified from the explicit air start")
+	var route := _find_route(report, ["jA", "jB", "j5D"])
+	_check(route != null, "the air chain jA → jB → j5D is verified from the explicit air start")
 	if route != null:
-		_check(route.hit_frames == [5, 10, 14],
-			"air route hits on frames 5/10/14 measured from the first air frame")
-		_check(route.combo_hits == 3 and _approx(route.total_damage, 25.3),
-			"air route counts 3 hits for 25.3 corrected damage (jA is an A starter: 5.8 + 7.8 + 11.7)")
+		_check(route.hit_frames == [5, 10, 16],
+			"air route hits on frames 5/10/16 measured from the first air frame (j5D startup 6, ticket 08 replaces jD)")
+		_check(route.combo_hits == 3 and _approx(route.total_damage, 22.9),
+			"air route counts 3 hits for 22.9 corrected damage (jA is an A starter: 5.8 + 7.8 + 9.3)")
 		_check(not route.inputs.is_empty(), "the explicit-state route still carries frame-by-frame replay inputs")
 
 

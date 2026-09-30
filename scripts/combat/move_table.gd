@@ -221,6 +221,24 @@ static func _validate_move(move: MoveData, errors: Array[String]) -> void:
 			errors.append("[%s] %s: %s — 矛盾：没有特殊进入目标却声明了窗口（当前 %d，空列表须保持未声明 -1）" % [
 				source, id_label, window_field, window,
 			])
+	# 命中落地取消（票据 08，L-01）：目标与窗口成对声明；只属于空中打击招式。
+	if not move.hit_landing_cancel_targets.is_empty() and move.hit_landing_cancel_window_frames < 0:
+		errors.append("[%s] %s: hit_landing_cancel_window_frames — 矛盾：声明 %d 个命中落地取消目标却未声明窗口（当前 %d）" % [
+			source, id_label, move.hit_landing_cancel_targets.size(), move.hit_landing_cancel_window_frames,
+		])
+	if move.hit_landing_cancel_targets.is_empty() and move.hit_landing_cancel_window_frames >= 0:
+		errors.append("[%s] %s: hit_landing_cancel_window_frames — 矛盾：没有命中落地取消目标却声明了窗口（当前 %d，空列表须保持未声明 -1）" % [
+			source, id_label, move.hit_landing_cancel_window_frames,
+		])
+	if not move.hit_landing_cancel_targets.is_empty():
+		if move.stance != MoveData.Stance.AIR:
+			errors.append("[%s] %s: hit_landing_cancel_targets — 矛盾：命中落地取消只属于空中招式（当前姿态 %d）" % [
+				source, id_label, move.stance,
+			])
+		if not move.is_strike():
+			errors.append("[%s] %s: hit_landing_cancel_targets — 矛盾：普通投不声明命中落地取消" % [
+				source, id_label,
+			])
 	# Rekka 派生字段组合（票据 04，I-04/S-07）。
 	if move.rekka_window_frames >= 0 and move.rekka_b_target == "" and move.rekka_c_target == "":
 		errors.append("[%s] %s: rekka_window_frames — 矛盾：声明派生窗口却未声明任何 B/C 分支目标" % [
@@ -679,7 +697,8 @@ static func _validate_cross_move(move_list: Array, errors: Array[String]) -> voi
 				["link_targets", typed.link_targets],
 				["special_entry_targets", typed.special_entry_targets],
 				["special_entry_link_targets", typed.special_entry_link_targets],
-				["air_exit_targets", typed.air_exit_targets]]:
+				["air_exit_targets", typed.air_exit_targets],
+				["hit_landing_cancel_targets", typed.hit_landing_cancel_targets]]:
 			var field: String = pair[0]
 			var targets: Array[String] = pair[1]
 			for target in targets:
@@ -695,6 +714,14 @@ static func _validate_cross_move(move_list: Array, errors: Array[String]) -> voi
 					errors.append("[%s] %s: %s — 跨招式非法引用：\"%s\" 是 charge_only 蓄力版，只能经蓄力提交起手" % [
 						source, typed.move_id, field, target,
 					])
+		# 命中落地取消目标（票据 08，L-01）：取消按地面姿态起手，目标必须是地面
+		# 招式（与空中出口的镜像约束）。
+		for target_id in typed.hit_landing_cancel_targets:
+			var landing_target := _find_move(move_list, target_id)
+			if landing_target != null and landing_target.stance != MoveData.Stance.GROUND:
+				errors.append("[%s] %s: hit_landing_cancel_targets — 矛盾：命中落地取消目标 \"%s\" 不是地面招式（落地后按地面姿态起手，不指向空中目标）" % [
+					source, typed.move_id, target_id,
+				])
 		# 特殊进入目标（票据 05）：与来源同姿态（取消不跨姿态），且目标自身仍按
 		# 普通招式结算——资源只声明入口资格，不创建特殊招式身份。
 		for target_id in typed.special_entry_targets:
@@ -819,6 +846,8 @@ static func _fresh_copy(move: MoveData) -> MoveData:
 	copy.link_targets = move.link_targets.duplicate()
 	copy.special_entry_targets = move.special_entry_targets.duplicate()
 	copy.special_entry_link_targets = move.special_entry_link_targets.duplicate()
+	copy.air_exit_targets = move.air_exit_targets.duplicate()
+	copy.hit_landing_cancel_targets = move.hit_landing_cancel_targets.duplicate()
 	copy.input_alternatives = move.input_alternatives.duplicate()
 	var profiles: Array[HitProfile] = []
 	for profile in move.hit_profiles:

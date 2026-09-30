@@ -175,6 +175,16 @@ enum StarterGrade {
 ## 最新规则禁止落地首帧及空技恢复期间取消；声明此字段不能绕过恢复锁。
 ## 恢复后的普通连接尚未纳入 Solver 搜索，不能由此字段推断为合法连段。
 @export var landing_cancel_targets: Array[String] = []
+## 命中落地取消（票据 08，L-01）：空中招式实际 HIT 授予的一次性专用资格允许
+## 在落地后取消进入的地面招式 id（如 j2D → 214C）。被防、挥空、缺失 profile
+## 不授予；目标输入可在 Hitstop 中缓存（专用槽、正常帧计龄），落地首帧仍锁定，
+## 落地事件后的首个可行动帧消费并清除资格——例外仅对本声明目标开放，跳过其余
+## 空技恢复，不扩大到其他输入或其他空技。只能声明在空中招式上，目标必须是
+## 地面招式。
+@export var hit_landing_cancel_targets: Array[String] = []
+## 命中落地取消的输入缓存年龄窗口（含两端，正常帧计龄，Hitstop 不计）：
+## 声明 hit_landing_cancel_targets 时必须声明；空列表必须保持未声明（-1）。
+@export var hit_landing_cancel_window_frames := -1
 ## 方向派生记法："236C" 表示方向序列 236 + 动作键 C；空串为无方向要求的普通招式。
 ## 按下动作键时按指令规则匹配方向历史；识别成功即消费终点及之前的全部历史。
 @export var direction_derivation := ""

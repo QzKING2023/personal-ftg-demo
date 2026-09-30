@@ -11,6 +11,7 @@ var _underlying_calls := 0
 var _reuse_hits := 0
 var _elapsed_ms := 0.0
 var _fingerprints: Dictionary = {}
+var _profiles: Array = []
 var _reuse_enabled := false
 
 
@@ -63,6 +64,8 @@ func emit(test_name: String) -> void:
 		"reuse_enabled": _reuse_enabled,
 		"combo_cache": ComboSolver.result_cache_stats(),
 		"reports": fingerprints,
+		"profiles": _profiles,
+		"profile_totals": _profile_totals(),
 	}))
 
 
@@ -94,6 +97,27 @@ func _record(key: String, report: ComboSolver.SolverReport) -> void:
 		_fingerprints[fingerprint] = {"fingerprint": fingerprint, "calls": 0, "keys": []}
 	_fingerprints[fingerprint]["calls"] += 1
 	_fingerprints[fingerprint]["keys"].append(key)
+	var profile := ComboSolver.last_request_profile()
+	profile["key"] = key
+	profile["fingerprint"] = fingerprint
+	_profiles.append(profile)
+
+
+## 每请求耗时分解的测试级汇总：*_ms 为墙钟测量（比对时排除），
+## *_runs 与 requests 是确定性计数（可比）。
+func _profile_totals() -> Dictionary:
+	var totals := {
+		"requests": _profiles.size(),
+		"total_ms": 0.0, "delay_leaf_ms": 0.0, "edge_probe_ms": 0.0,
+		"gap_enum_ms": 0.0, "route_walk_ms": 0.0, "other_ms": 0.0,
+		"delay_leaf_runs": 0, "edge_probe_runs": 0, "gap_enum_runs": 0,
+		"route_walk_runs": 0, "other_runs": 0,
+	}
+	for profile in _profiles:
+		for field in totals.keys():
+			if field != "requests" and profile.has(field):
+				totals[field] += profile[field]
+	return totals
 
 
 func _fingerprint(report: ComboSolver.SolverReport) -> String:

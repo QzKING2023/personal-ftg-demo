@@ -74,7 +74,7 @@ func _initialize() -> void:
 	_test_cached_jump_direction_seam()
 	_test_jump_cancel_landing_without_pursuit_ends_combo()
 	_test_neutral_jump_jA_cannot_pursue()
-	_test_full_air_route_5A_5B_6A_jA_jB_jD()
+	_test_full_air_route_5A_5B_6A_jA_jB_j5D()
 	_test_same_frame_hit_landing_and_landing_followup()
 	_test_landing_seam_only_opens_on_the_landing_frame()
 	_test_landing_does_not_grant_normal_cancels()
@@ -2066,14 +2066,16 @@ func _test_neutral_jump_jA_cannot_pursue() -> void:
 	_check(session.combo_hits == 1, "combo count stays at the launcher hit")
 
 
-func _test_full_air_route_5A_5B_6A_jA_jB_jD() -> void:
+func _test_full_air_route_5A_5B_6A_jA_jB_j5D() -> void:
 	# 完整空中路线（票据 05 起 launcher 为 6A）：5A → 5B（链式取消）→ 6A（链式
-	# 取消）→ Space jump cancel → jA → jB → jD 空中收尾。六次命中依次计入连段
-	# 并按三层修正递减；每次命中后的 8 帧停顿顺延后续物理帧。
-	# 编排（贴身 64 px）：5A F4 起手、F9 命中；B@F6 于 F9 消费 → 5B F1=F9、F23
-	# 命中；6+A@F19 于 F23 消费 → 6A F1=F23、F39 命中；停顿 F40–F47、F48 Space
-	# （恢复首帧）→ F52 离地；jA@F65 → F69 命中（恰在浮空受身前刷新）；B@F70
-	# （停顿内）→ F78 消费 → jB F82 命中；D@F83 → F91 消费 → jD F95 命中收尾。
+	# 取消）→ Space jump cancel → jA → jB → j5D 空中收束（票据 08：jD 迁移为
+	# 空中 D 系，无后续边；命中后连段按落地截断/取消窗关闭结束，不再有
+	# FINISHER 语义）。六次命中依次计入连段并按三层修正递减；每次命中后的
+	# 8 帧停顿顺延后续物理帧。编排（贴身 64 px）：5A F4 起手、F9 命中；B@F6 于
+	# F9 消费 → 5B F1=F9、F23 命中；6+A@F19 于 F23 消费 → 6A F1=F23、F39 命中；
+	# 停顿 F40–F47、F48 Space（恢复首帧）→ F52 离地；jA@F65 → F69 命中（恰在
+	# 浮空受身前刷新）；B@F70（停顿内）→ F78 消费 → jB F82 命中；D@F83 → F91
+	# 消费 → j5D F97 命中收束。
 	var session := CombatSession.new()
 	session.dummy_position = session.player_position + Vector2(64, 0)
 	var hit_frames: Array[int] = []
@@ -2097,12 +2099,12 @@ func _test_full_air_route_5A_5B_6A_jA_jB_jD() -> void:
 				end_reasons.append(event.combo_end_reason)
 			elif event.type == CombatEvent.Type.DUMMY_RECOVERED:
 				recovered_frames.append(frame)
-	_check(hit_frames == [9, 23, 39, 69, 82, 95], "route lands all six hits on the scheduled frames")
-	_check(move_ids.has("jA") and move_ids.has("jB") and move_ids.has("jD"), "route chains jA -> jB -> jD via hit-confirm cancels after the 6A jump cancel")
-	_check(end_frames == [95] and end_reasons == [CombatEvent.ComboEndReason.FINISHER], "air finisher ends the route at six hits")
+	_check(hit_frames == [9, 23, 39, 69, 82, 97], "route lands all six hits on the scheduled frames")
+	_check(move_ids.has("jA") and move_ids.has("jB") and move_ids.has("j5D"), "route chains jA -> jB -> j5D via hit-confirm cancels after the 6A jump cancel")
+	_check(end_frames == [114] and end_reasons == [CombatEvent.ComboEndReason.CANCEL_WINDOW_CLOSED], "j5D carries no follow-up edges: the cancel window closes (F114) before the attacker lands, ending the route")
 	_check(session.combo_hits == 6 and not session.combo_active, "combo counts all six hits and stops there")
-	_check(_approx(session.combo_total_damage, 41.3), "route damage accumulates the three-layer values (5.8+7.8+9.3+4.2+5.7+8.5)")
-	_check(recovered_frames == [118] and session.dummy_state == CombatSession.DummyState.NEUTRAL, "dummy completes its knockdown handling with one natural recovery after the finisher")
+	_check(_approx(session.combo_total_damage, 39.6), "route damage accumulates the three-layer values (5.8+7.8+9.3+4.2+5.7+6.8)")
+	_check(recovered_frames == [119] and session.dummy_state == CombatSession.DummyState.NEUTRAL, "dummy completes its own recovery handling once after the closer")
 
 func _test_same_frame_hit_landing_and_landing_followup() -> void:
 	var session := CombatSession.new(_seam_table())
@@ -2159,7 +2161,7 @@ func _test_same_frame_hit_landing_and_landing_followup() -> void:
 		and critical_events[1].type == CombatEvent.Type.HITSTOP_STARTED,
 		"the critical frame emits the hit then the hitstop-start boundary: hit refreshed hitstun before landing ticked it")
 	_check(critical_state_ok, "same-frame order is hit refresh -> landing -> cancel -> consume: recovery blocks buffered D")
-	_check(not "jD" in move_ids, "the buffered D is never consumed as the air finisher on the landing frame")
+	_check(not "j5D" in move_ids, "the buffered D is never consumed as an air D move on the landing frame")
 	_check(end_frames == [82] and end_reasons == [CombatEvent.ComboEndReason.MOVE_RECOVERED], "landing truncates jB and ends the route")
 	_check(_approx(session.combo_total_damage, 28.5), "route damage stops at the four corrected hits (5.8+11.7+4.7+6.3) without the forbidden followup")
 	_check(recovered_frames == [107] and session.dummy_state == CombatSession.DummyState.NEUTRAL, "dummy completes its knockdown handling after the final air hit")
@@ -2227,6 +2229,9 @@ func _test_landing_does_not_grant_normal_cancels() -> void:
 	# jA F50 起手、F54 命中（恰在浮空受身边界；停顿 F55–F62 内按 D 只进缓存），
 	# 落地 F69 断连（早于取消窗关闭 F71），D 过期作废。
 	var table := MoveData.default_table()
+	# 票据 08 起 jA 配置了到空中 D 系的取消边；本测试的命题是「未配置接续的
+	# 空技落地不授予取消」——隔离注入表清空 jA 的取消目标，保持原前提。
+	(table["jA"] as MoveData).cancel_targets = [] as Array[String]
 	var profile := MoveData.profile_for(table["6A"], HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)
 	profile.air_untech_frames = 40
 	profile.upward_speed_px_s = 622.0
@@ -2266,7 +2271,7 @@ func _test_landing_does_not_grant_normal_cancels() -> void:
 	_check(hitstun_at_jA_hit == 10, "jA hit refreshes the time-scaled hitstun (floor(12×0.90×0.94)) before natural recovery takes it")
 	_check(end_frames == [69] and end_reasons == [CombatEvent.ComboEndReason.MOVE_RECOVERED], "combo ends on the landing frame as an unrecovered air move")
 	_check(player_neutral_after_landing, "the landed air move is cleared and the player is neutral again")
-	_check(not "5D" in move_ids and not "jD" in move_ids, "buffered D is never consumed: landing grants no cancel to an unconfigured move")
+	_check(not "5D" in move_ids and not "j5D" in move_ids, "buffered D is never consumed as a cancel: landing grants no cancel to an air D move")
 	_check(session.combo_hits == 2 and not session.combo_active, "combo stops at two hits")
 	_check(recovered_frames == [85] and session.dummy_state == CombatSession.DummyState.NEUTRAL, "dummy finishes its own knockdown handling regardless of the combo end")
 

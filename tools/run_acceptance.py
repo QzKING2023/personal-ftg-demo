@@ -121,6 +121,7 @@ def run_job(job: dict, engine: str, project_root: Path, log_root: Path, no_reuse
         "solver_reuse_hit_rate": _float0((metrics or {}).get("reuse_hit_rate")),
         "solver_elapsed_ms": _float0((metrics or {}).get("elapsed_ms")),
         "combo_cache": metrics.get("combo_cache") if metrics else {},
+        "solver_profile": (metrics or {}).get("profile_totals") or {},
         "report_fingerprints": [str(v) if (v := r.get("fingerprint")) is not None else "" for r in reports],
         "appdata": str(runtime),
     }

@@ -223,7 +223,7 @@ func _s6_air_direction_sequence() -> void:
 	var move_ids: Array = run["move_ids"]
 	_expect(not move_ids.has("jC") and not move_ids.has("236C") and not move_ids.has("214D"),
 		"S6: 空中按 K 不起手任何招式（无 jC 配置，现状）")
-	_expect(move_ids.has("jD"), "S6: 空中按 J 回落解析为 jD（共享表未配置空中派生，现状记录）")
+	_expect(move_ids.has("j5D"), "S6: 空中按 J（无方向）回落解析为 j5D（票据 08：空中 D 系无派生变体，j6D/j2D 需 6/2 方向段）")
 	_note("S6 分类：空中方向序列按锁定面向记录；未配置空中派生时回落无派生招式，属数据配置而非能力缺口")
 
 

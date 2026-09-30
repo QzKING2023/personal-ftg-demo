@@ -7,3 +7,5 @@
 曾考虑并否决：语义削减（上述）；标签级结果复用（曾因不完整键与共享可变报告被回滚，获批形态是带 descriptor 全等校验的完整请求缓存）。
 
 修订（2026-09-30，票据 01 落地时）：差分 oracle 的排除字段从 `seconds` 扩为 `seconds`/`total_seconds`/`solver_elapsed_ms` 三个——三者同为墙钟测量，同一 runner 两次运行也不相等，不扩则门自身不稳定；计数与 fingerprint 等全部其余字段仍逐字段相等。
+
+修订（2026-09-30，票据 03 落地时）：Solver 耗时分解插桩常开并透传进 summary（`solver_profile` 的 `total_ms`/`delay_leaf_ms`/`edge_probe_ms`/`gap_enum_ms`/`route_walk_ms`/`other_ms`），六个键与 `seconds` 同为墙钟测量，进同一排除集；其 `*_runs` 计数是确定性搜索形状量，保持逐字段相等。插桩本身零语义影响（只读墙钟、不改任何搜索行为与报告内容），归类为机械等价纪律下的观测手段而非提速变换。

@@ -14,7 +14,11 @@ import sys
 
 # `seconds`/`total_seconds`/`solver_elapsed_ms` are wall-clock measurements:
 # two runs of the SAME runner produce different values, so gates exclude them.
-DEFAULT_EXCLUDE = ("seconds", "total_seconds", "solver_elapsed_ms")
+# Solver profile *_ms fields (ticket 03 instrumentation) are the same class of
+# wall-clock measurements; the *_runs counts stay comparable.
+DEFAULT_EXCLUDE = ("seconds", "total_seconds", "solver_elapsed_ms",
+                   "total_ms", "delay_leaf_ms", "edge_probe_ms",
+                   "gap_enum_ms", "route_walk_ms", "other_ms")
 
 
 def load(path: str):

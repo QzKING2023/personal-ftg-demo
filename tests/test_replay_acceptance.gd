@@ -20,8 +20,8 @@ extends SceneTree
 
 const GROUND_ROUTE := ["5A", "5B", "5D"]
 ## 旧派生代表 5B→214D 已废弃；新基线派生代表为 5B 必杀取消 236C 的空中路线。
-const DERIVATIVE_ROUTE := ["5B", "6A", "jA", "jB", "jD"]
-const AIR_ROUTE := ["5A", "5B", "6A", "jA", "jB", "jD"]
+const DERIVATIVE_ROUTE := ["5B", "6A", "jA", "jB", "j5D"]
+const AIR_ROUTE := ["5A", "5B", "6A", "jA", "jB", "j5D"]
 const LANDING_ROUTE := ["5A", "5B", "6A", "jA", "jB", "5D"]
 ## 训练场键盘回放的站位（真实击退物理）：地面/派生用固定接触位 70 px；
 ## 空中/落地用空间网格的 48 px 贴身档——真实击退下 70 px 起手的空中后段会

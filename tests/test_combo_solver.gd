@@ -224,8 +224,8 @@ func _test_default_table_air_edges() -> void:
 	_check(air_cancel != null and air_cancel.valid, "jA -> jB is a valid air cancel")
 	if air_cancel != null:
 		_check(air_cancel.valid and air_cancel.hit_age == 5 and air_cancel.wait_to == 3, "jA -> jB hits at age 5 (resume age 1 + startup 4); the time-decayed dummy recovery binds the wait range to 0-3")
-	var air_finisher := _find_edge(report, "jB", "jD", ComboSolver.EdgeKind.CANCEL)
-	_check(air_finisher != null and air_finisher.valid and air_finisher.hit_age == 4, "jB -> jD is a valid air cancel into the finisher")
+	var air_finisher := _find_edge(report, "jB", "j5D", ComboSolver.EdgeKind.CANCEL)
+	_check(air_finisher != null and air_finisher.valid and air_finisher.hit_age == 6, "jB -> j5D is a valid air cancel into the closer (startup 6)")
 	var landing := _find_edge(report, "jB", "5D", ComboSolver.EdgeKind.LANDING_CANCEL)
 	_check(landing != null and not landing.valid, "jB -> 5D is excluded by the landing recovery lock")
 	if landing != null:
@@ -236,12 +236,12 @@ func _test_full_air_route_matches_runtime() -> void:
 	# 验收 2：完整空中路线的合法接续与运行时一致——把 Solver 发现的输入表回放到
 	# 真实 CombatSession（同一几何假设：木桩钉在玩家面前），命中帧/连段数/伤害逐项对拍。
 	var report := _default_analyze()
-	var route := _find_route(report, ["5A", "5B", "6A", "jA", "jB", "jD"])
+	var route := _find_route(report, ["5A", "5B", "6A", "jA", "jB", "j5D"])
 	_check(route != null, "the full air route 5A -> 5B -> 6A -> Space -> jA -> jB -> jD is reported")
 	if route == null:
 		return
-	_check(route.hit_frames == [6, 13, 21, 30, 35, 39], "air route hits on frames 6/13/21/30/35/39 (w=0 cancels with the B pairing wait, earliest air press after pre-jump)")
-	_check(route.combo_hits == 6 and _approx(route.total_damage, 41.3), "air route counts 6 hits for 41.3 total (three-layer corrections), matching the runtime air-route test")
+	_check(route.hit_frames == [6, 13, 21, 30, 35, 41], "air route hits on frames 6/13/21/30/35/41 (w=0 cancels with the B pairing wait, earliest air press after pre-jump, j5D startup 6)")
+	_check(route.combo_hits == 6 and _approx(route.total_damage, 39.6), "air route counts 6 hits for 39.6 total (three-layer corrections, j5D base 16), matching the runtime air-route test")
 	var replay := _replay_inputs(route.inputs, route.hit_frames[route.hit_frames.size() - 1])
 	_check(replay.hit_frames == route.hit_frames, "replaying the solver schedule on a fresh CombatSession reproduces every hit frame")
 	_check(replay.combo_hits == 6 and _approx(replay.total_damage, route.total_damage), "replay matches combo count and decayed damage")
@@ -292,7 +292,7 @@ func _test_landing_seam_requires_alignment() -> void:
 	_add_probe_airborne(late, GameParams.HITSTUN_FRAMES, 0.0, 40.0)
 	late.landing_cancel_targets = ["5D"]
 	table["jE"] = late
-	(table["jB"] as MoveData).cancel_targets = ["jD", "jE"]
+	(table["jB"] as MoveData).cancel_targets = ["j5D", "jE"]
 	MoveData.profile_for(table["jB"], HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL).air_untech_frames = 40
 	var report := _metrics.analyze(table)
 	var seam := _find_edge(report, "jE", "5D", ComboSolver.EdgeKind.LANDING_CANCEL)
@@ -310,7 +310,7 @@ func _test_finite_air_resources_not_renewed() -> void:
 	# 验收 3：有限滞空资源（玩家 40 帧滞空、木桩浮空不被普通命中刷新）不会被当作
 	# 可自动续期——注入 jB -> jA 空中回边只在滞空内成立，逐圈模拟在落地时断链。
 	var table := MoveData.default_table()
-	(table["jB"] as MoveData).cancel_targets = ["jD", "jA"]
+	(table["jB"] as MoveData).cancel_targets = ["j5D", "jA"]
 	var report := _metrics.analyze(table)
 	var back := _find_edge(report, "jB", "jA", ComboSolver.EdgeKind.CANCEL)
 	_check(back != null and back.valid, "the injected jB -> jA air back edge is valid while airborne")
@@ -329,7 +329,7 @@ func _test_injected_landing_back_edge_reports_cycle() -> void:
 	_check(report.safe and report.cycles.is_empty(), "configured landing back edge cannot bypass recovery or prove a cycle")
 	var edge := _find_edge(report, "jB", "5A", ComboSolver.EdgeKind.LANDING_CANCEL)
 	_check(edge != null and not edge.valid, "landing back edge is excluded")
-	var finite := _find_route(report, ["5A", "5B", "6A", "jA", "jB", "jD"])
+	var finite := _find_route(report, ["5A", "5B", "6A", "jA", "jB", "j5D"])
 	_check(finite != null and finite.combo_hits == 6, "finite air route remains available (six hits after the 6A launcher migration)")
 
 
@@ -533,7 +533,7 @@ func _test_solver_claims_only_configured_connections() -> void:
 		["5A", "5B", ComboSolver.EdgeKind.NORMAL_LINK], ["5B", "5C", ComboSolver.EdgeKind.NORMAL_LINK],
 		["5B", "5D", ComboSolver.EdgeKind.NORMAL_LINK], ["5C", "5D", ComboSolver.EdgeKind.NORMAL_LINK],
 		["6A", "jA", ComboSolver.EdgeKind.JUMP_CANCEL],
-		["jA", "jB", ComboSolver.EdgeKind.CANCEL], ["jB", "jD", ComboSolver.EdgeKind.CANCEL],
+		["jA", "jB", ComboSolver.EdgeKind.CANCEL], ["jB", "j5D", ComboSolver.EdgeKind.CANCEL],
 		["jB", "5D", ComboSolver.EdgeKind.LANDING_CANCEL],
 		["236C", "5D", ComboSolver.EdgeKind.SPECIAL_ENTRY],
 		["5D", "5B", ComboSolver.EdgeKind.SPECIAL_ENTRY_LINK],
