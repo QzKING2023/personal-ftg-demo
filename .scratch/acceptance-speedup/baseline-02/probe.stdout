@@ -1,0 +1,22 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PROBE edges=71 routes=1753
+PROBE edge jA->j5D kind=CANCEL valid=true
+PROBE edge jA->j6D kind=CANCEL valid=true
+PROBE edge jA->j2D kind=CANCEL valid=true
+PROBE edge jB->j5D kind=CANCEL valid=true
+PROBE edge jB->j6D kind=CANCEL valid=true
+PROBE edge jB->j2D kind=CANCEL valid=true
+PROBE edge jC->j5D kind=CANCEL valid=true
+PROBE edge jC->j6D kind=CANCEL valid=true
+PROBE edge jC->j2D kind=CANCEL valid=true
+PROBE edge j6D->5B kind=NORMAL_LINK valid=true
+PROBE edge j2D->214C kind=HIT_LANDING_CANCEL valid=true
+PROBE edge 6D->j5D kind=AIR_EXIT valid=true
+PROBE edge 6D->j6D kind=AIR_EXIT valid=true
+PROBE edge 6D->j2D kind=AIR_EXIT valid=true
+PROBE edge 2D->j5D kind=AIR_EXIT valid=false
+PROBE edge 2D->j6D kind=AIR_EXIT valid=false
+PROBE edge 2D->j2D kind=AIR_EXIT valid=false
+PROBE route_found=true
+PROBE end_reasons=[] hit_frames=[6, 13, 21, 30, 35, 41] combo_hits=6 total_damage=39.6

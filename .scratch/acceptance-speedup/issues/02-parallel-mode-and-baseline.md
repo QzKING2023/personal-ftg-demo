@@ -41,7 +41,20 @@ Blocked by: 01
 - 开发与验收并行时留意:默认并发 8 占 8 逻辑核(机器 24 逻辑核),`--concurrency` 可下调留核;重 Solver job 并行时留意内存峰值(31.5GB 物理内存)。
 - **全量基线运行期间工作树不得改动**——此后所有差分门对着它;基线树状态 = commit d425814 + 本票编排器提交。
 
-### 待办(过夜后)
+### 基线前置:08 测试期望债的发现与修复(2026-09-30)
+
+- **发现**:03 的 before-run(真实树真实测试)暴露 `test_combo_solver` 3 条 FAIL——边计数 55(08 后实为 71)、空中路线终局 `[FINISHER]`(j5D 不设终结技)、pairs 配置关系清单缺 08 的 16 条。03 等价门已把它定性为"票据 08 边基线 71 条后测试未同步的既有债,与插桩无关"(dd756fe);在唯一串行全量基线发射前必须修绿,否则红灯烧进基线、08 修完树变基线作废。
+- **权威值实测**:`baseline-02/probe_expectations.gd` 以测试同代码路径(analyze_reused("default") + 逐字复制的 _replay_inputs/_step_logical)实测:edges=71、routes=1753、空中 D 相关边 17 条(jA/jB/jC→三新招取消 9 全 valid;6D→三新招 AIR_EXIT 3 valid;2D→三新招 AIR_EXIT 3 枚举但 invalid;j6D→5B NORMAL_LINK;j2D→214C HIT_LANDING_CANCEL)、路线 5A→5B→6A→jA→jB→j5D 回放 end_reasons=[]。与 test_solver_route 已通过的 71 期望互证。
+- **修复**(commit bd7a0be):边计数 55→71(净增 16 = 17 − 旧 jB→jD 迁移)、pairs 清单 +16、终局期望 `[FINISHER]`→`[]`(08 设计裁量"收束不设 is_finisher,终局经取消窗关闭在观测窗口之后")。
+- **时序**:等 03 的 before/after 引擎全部退出(15:12)后才改文件——避免跨会话污染其验收;修复后单 job 定向验证(`baseline-02/verify-fix.sh`,编排器同口径)全绿才发射基线。
+
+### 修复验证与基线发射(2026-09-30 晚)
+
+- **定向验证全绿**:`baseline-02/verify-fix/summary.txt`——单 job 裸机 3h55m,PASS=3714 / FAIL=0 / exit=0(= 03 before 基线 3711 PASS + 3 条修复转绿,算术吻合);三条修复断言(71 边、combo-end 开放、pairs 配置关系)逐条 PASS;metrics calls=27。
+- **串行全量基线已发射**:19:10:46(pid 见 launch.log),`--serial` 全量 21 job,输出 `baseline-02/serial-full/`,stdout 逐 job 行判活。预计 12-16h(test_combo_solver 单 job 裸机即 3h55m),明晨完成。
+- **基线运行期间(至归档完成)工作树冻结**:任何会话不得改动战斗脚本、测试、招式数据——基线是唯一串行全量,树变即作废。
+
+### 待办(基线完成后)
 
 - 串行全量基线归档:`.scratch/acceptance-speedup/baseline-02/serial-full/`(summary.json、runner.status.txt、编排器 stdout、总耗时)。
-- 并行全量差分门 + 墙钟/最长 job 实测记录,两项落 Comments 后收票。
+- 并行全量差分门(`--concurrency 8` 全量 vs 基线,compare_summaries 逐字段)+ 并行墙钟与最长 job 实测记录,两项落 Comments 后收票。

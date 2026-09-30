@@ -1,0 +1,9 @@
+verify-fix 摘要(2026-09-30 15:15-19:10,裸机单 job,编排器同口径)
+PASS=3714 FAIL=0 exit=0
+ACCEPTANCE_SOLVER_METRICS_JSON={"calls":27,"combo_cache":{"bypasses":0,"enabled":true,"entries":0,"hits":0,"misses":0},"
+ALL SOLVER TESTS PASSED
+
+关键修复断言:
+PASS  default table enumerates 71 edges (ticket 05 基线 36：15 chain + 8 spec
+PASS  the route's final hit opens no combo-end event (ticket 08: 收束不设 is
+PASS  the default report enumerates exactly the configured continuation relation
