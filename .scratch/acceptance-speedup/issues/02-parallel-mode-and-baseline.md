@@ -18,7 +18,7 @@ Blocked by: 01
 - [x] 并发默认 8、`--concurrency` 可调;等待池满员补位,不按完成序写 summary(保持规范 job 序)。
 - [ ] 串行全量基线:一次后台过夜运行完成,summary、状态文件、总耗时归档到本票的 scratch 验收目录。
 - [ ] 并行差分门:并行全量 vs 串行基线,summary 除 `seconds` 外逐字段相等(含各 job 的 solver metrics、fingerprint 集合、退出码、script_errors)。
-- [ ] 记录并行墙钟与最长 job 耗时(预期墙钟 ≈ 最长 job + 栅栏时间);若与预期量级不符,先解释再收票。
+- [x] 记录并行墙钟与最长 job 耗时(预期墙钟 ≈ 最长 job + 栅栏时间);若与预期量级不符,先解释再收票。(2026-10-01 实测:墙钟 16337s = 最长 job 16330.45s + import 栅栏 6.6s,完全吻合,见 Comments)
 - [x] 操作注意写进 Comments:并行期间不得按进程名批量杀 Godot(会误杀并行实例);开发与验收并行时留意核数与共享目录。
 
 ## Blocked by
@@ -70,7 +70,15 @@ Blocked by: 01
 - 树冻结直至双跑归档;CPU 争用只影响墙钟(seats 计字段),不影响比对字段。
 - 预计:并行 ~15:00-17:00(最长 job test_combo_solver 裸机 3.9h + 8 路争用),串行深夜 ~00:30-02:00(attempt1 为 12.76h)。差分门待双跑完成(明日晨或深夜会话)。
 
+### 并行全量完成:全绿(2026-10-01 16:00:42,差分门未过不收票)
+
+- 完成时刻 16:00:42(launch 11:28:25 + 16337s,与 `parallel-full/test_combo_solver.log` 末次写入时刻吻合),`runner.status.txt` = `exit=0`。
+- **21/21 job 全绿**(逐 job exit=0、script_errors=0);mode=acceptance-reuse;total_assertions=19257;total_seconds(各 job 秒数和)=54049.64。
+- **墙钟实测 4h32m17s = 16337s**;最长 job `test_combo_solver` 16330.45s + import 栅栏 6.6s = 16337.05s——**墙钟 ≈ 最长 job + 栅栏时间,量级与预期完全一致**(池调度开销 ≈ 0)。
+- 争用注记:与串行基线同机并发,CPU 争用抬高了计时字段(combo_solver 16330s vs attempt1 裸机串行 14017s,约 +17%);计时字段全在差分门排除集(seconds/total_seconds/*_ms),不影响逐字段比对。争用下并行墙钟仍为 attempt1 串行 12.76h 的 2.8x(4.54h)——仅为形态验证,≤1h 终证属票据 07 口径。
+- **票据不收**:串行基线仍在飞(16:12 时 5/21,正在 test_combo_solver);AC#4 差分门须双跑归档后用 compare_summaries 逐字段执行,过门后才收票。
+
 ### 待办(基线完成后)
 
 - 串行全量基线(第二跑,`serial-full/`)归档:summary.json、runner.status.txt、编排器 stdout、总耗时。
-- 并行全量差分门(`--concurrency 8` 全量 vs 基线,compare_summaries 逐字段)+ 并行墙钟与最长 job 实测记录,两项落 Comments 后收票。
+- 并行全量差分门(`--concurrency 8` 全量 vs 基线,compare_summaries 逐字段)——并行侧数据已就绪(`parallel-full/`),待串行侧完成后执行,过门后收票。
