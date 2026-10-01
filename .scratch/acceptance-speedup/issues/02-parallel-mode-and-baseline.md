@@ -64,6 +64,12 @@ Blocked by: 01
 - 修复(commit 4b900d9)+ 定向验证全绿(`verify-fix2/`,编排器同口径):test_solver_entry 53/0、test_replay_acceptance 123/0(`ALL REPLAY ACCEPTANCE TESTS PASSED`)。
 - 注意:显式空中起始三击链消失是 j5D 帧数的数据后果(非回归)——若设计上要恢复,属 08 会话的 j5D 帧数据决策,与本票无关。
 
+### 基线第二跑 + 并行全量并发发射(2026-10-01 11:27/11:28,方案 A)
+
+- 串行 `serial-full/`(pid 见 launch.log,11:27:50)+ 并行 `parallel-full/`(pid 见 parallel-launch.log,11:28:25,--concurrency 8)同机并发。两 run 的 import job 错开 ~35s(并发 import 写 `.godot` 不在已验证范围;串行 import 完成后才发射并行,此后双方对共享目录只读——探针已证)。
+- 树冻结直至双跑归档;CPU 争用只影响墙钟(seats 计字段),不影响比对字段。
+- 预计:并行 ~15:00-17:00(最长 job test_combo_solver 裸机 3.9h + 8 路争用),串行深夜 ~00:30-02:00(attempt1 为 12.76h)。差分门待双跑完成(明日晨或深夜会话)。
+
 ### 待办(基线完成后)
 
 - 串行全量基线(第二跑,`serial-full/`)归档:summary.json、runner.status.txt、编排器 stdout、总耗时。
