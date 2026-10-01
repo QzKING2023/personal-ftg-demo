@@ -1,0 +1,19 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PROBE first_candidates_count=6
+PROBE cand j2D｜方向 2 + J 键（D）
+PROBE cand j5D｜J 键（D）
+PROBE cand j6D｜方向 6 + J 键（D）
+PROBE cand jA｜U 键（A）
+PROBE cand jB｜I 键（B）
+PROBE cand jC｜K 键（C）
+PROBE route_jA_jB_j5D NOT_FOUND
+PROBE route_jA_jB_only hit_frames=[] combo_hits=0 damage=0.0 inputs=0 timing_valid=false
+PROBE route_jA_jB_note 路线在第 3 招后断开（第 3 次命中前连段结束（木桩自然受身）），路线在此截断
+PROBE routes_total=5 routes_with_hits=2
+PROBE hit_route ["jA", "j6D"] hits=[5, 12] combo=2
+PROBE all_route ["j5D"] hits=[7] combo=1 timing=true
+PROBE all_route ["jA", "j2D"] hits=[] combo=0 timing=false
+PROBE all_route ["jA", "j6D"] hits=[5, 12] combo=2 timing=true
+PROBE all_route ["jA", "jB"] hits=[] combo=0 timing=false
+PROBE all_route ["jB", "j2D"] hits=[] combo=0 timing=false

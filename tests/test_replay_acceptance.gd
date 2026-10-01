@@ -431,7 +431,7 @@ func _settle(session: CombatSession) -> void:
 
 func _test_replay_records_complete() -> void:
 	_check(_records.size() >= 10, "the replay records cover the representative routes (pinned both facings + keyboard + spatial)")
-	_check(_records.any(func(line: String) -> bool: return line.contains("5B → 6A → jA → jB → jD｜面向 -1") and line.contains("6[A]")),
+	_check(_records.any(func(line: String) -> bool: return line.contains("5B → 6A → jA → jB → j5D｜面向 -1") and line.contains("6[A]")),
 		"left-facing replay records mirror physical keys while retaining the relative forward fold")
 	for line in _records:
 		var complete := true

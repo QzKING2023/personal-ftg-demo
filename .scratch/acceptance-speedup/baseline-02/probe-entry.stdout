@@ -1,0 +1,11 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PROBE first_candidates_count=6
+PROBE cand j2D｜方向 2 + J 键（D）
+PROBE cand j5D｜J 键（D）
+PROBE cand j6D｜方向 6 + J 键（D）
+PROBE cand jA｜U 键（A）
+PROBE cand jB｜I 键（B）
+PROBE cand jC｜K 键（C）
+PROBE route_jA_jB_j5D NOT_FOUND
+PROBE route_jA_jB ["jA", "jB"]

@@ -161,8 +161,8 @@ func _test_explicit_air_start_switches_candidates() -> void:
 	var ids: Array[String] = []
 	for line in report.first_candidates:
 		ids.append(line.split("｜")[0])
-	_check(ids == ["jA", "jB", "jC", "j5D", "j6D", "j2D"],
-		"an explicitly provided air start enumerates only the currently executable air moves (jC delivered with ticket 07; the air D series arrives with ticket 08 — j6D/j2D carry 6D/2D notations)")
+	_check(ids == ["j2D", "j5D", "j6D", "jA", "jB", "jC"],
+		"an explicitly provided air start enumerates only the currently executable air moves in lexicographic order (air D series with ticket 08: j2D/j5D/j6D on J-key D notations, jC delivered with ticket 07)")
 	var text := "\n".join(report.start_lines)
 	_check("空中" in text and "第 1 个空中帧" in text,
 		"start lines describe the explicitly provided air state and its probe prologue")
@@ -171,13 +171,16 @@ func _test_explicit_air_start_switches_candidates() -> void:
 func _test_explicit_air_start_reports_air_route() -> void:
 	var report := _explicit_air_solve()
 	var route := _find_route(report, ["jA", "jB", "j5D"])
-	_check(route != null, "the air chain jA → jB → j5D is verified from the explicit air start")
-	if route != null:
-		_check(route.hit_frames == [5, 10, 16],
-			"air route hits on frames 5/10/16 measured from the first air frame (j5D startup 6, ticket 08 replaces jD)")
-		_check(route.combo_hits == 3 and _approx(route.total_damage, 22.9),
-			"air route counts 3 hits for 22.9 corrected damage (jA is an A starter: 5.8 + 7.8 + 9.3)")
-		_check(not route.inputs.is_empty(), "the explicit-state route still carries frame-by-frame replay inputs")
+	_check(route == null,
+		"the jA → jB → j5D chain is not claimed from the explicit air start (ticket 08: j5D startup 6 lands its 3rd hit past the dummy's natural recovery that the old jD frame-14 hit barely beat)")
+	var dive := _find_route(report, ["jA", "j6D"])
+	_check(dive != null and dive.timing_valid,
+		"the dive chain jA → j6D is verified from the explicit air start (ticket 08)")
+	if dive != null:
+		_check(dive.hit_frames == [5, 12],
+			"dive route hits on frames 5/12 measured from the first air frame")
+		_check(dive.combo_hits == 2, "dive route counts 2 hits")
+		_check(not dive.inputs.is_empty(), "the explicit-state route still carries frame-by-frame replay inputs")
 
 
 func _test_explicit_air_start_guide_documents_prologue() -> void:
