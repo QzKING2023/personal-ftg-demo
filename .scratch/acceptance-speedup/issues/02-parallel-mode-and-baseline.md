@@ -1,6 +1,6 @@
 # 02: 并行模式与串行全量基线
 
-Status: in-progress(2026-09-30:并行实现+子集门+探针已交付;全量串行基线与并行差分门为余项)
+Status: implemented(2026-10-02:串行全量基线归档 + 并行差分门 PASS,全部验收项勾完)
 Parent: [spec.md](../spec.md)
 Blocked by: 01
 
@@ -16,8 +16,8 @@ Blocked by: 01
 
 - [x] import 先行栅栏:import job 退出后测试 job 才启动;测试 job 对共享目录只读的假设用"两个并发实例实跑一次"经验验证(结果记录在 Comments)。
 - [x] 并发默认 8、`--concurrency` 可调;等待池满员补位,不按完成序写 summary(保持规范 job 序)。
-- [ ] 串行全量基线:一次后台过夜运行完成,summary、状态文件、总耗时归档到本票的 scratch 验收目录。
-- [ ] 并行差分门:并行全量 vs 串行基线,summary 除 `seconds` 外逐字段相等(含各 job 的 solver metrics、fingerprint 集合、退出码、script_errors)。
+- [x] 串行全量基线:一次后台过夜运行完成,summary、状态文件、总耗时归档到本票的 scratch 验收目录。(2026-10-01 11:27:50 → 10-02 01:23:39,墙钟 13:55:49=50149s,21/21 全绿,已入库)
+- [x] 并行差分门:并行全量 vs 串行基线,summary 除 `seconds` 外逐字段相等(含各 job 的 solver metrics、fingerprint 集合、退出码、script_errors)。(2026-10-02 compare_summaries PASS:默认计时排除集 + `appdata`;total_assertions 双侧同为 19257)
 - [x] 记录并行墙钟与最长 job 耗时(预期墙钟 ≈ 最长 job + 栅栏时间);若与预期量级不符,先解释再收票。(2026-10-01 实测:墙钟 16337s = 最长 job 16330.45s + import 栅栏 6.6s,完全吻合,见 Comments)
 - [x] 操作注意写进 Comments:并行期间不得按进程名批量杀 Godot(会误杀并行实例);开发与验收并行时留意核数与共享目录。
 
@@ -78,7 +78,9 @@ Blocked by: 01
 - 争用注记:与串行基线同机并发,CPU 争用抬高了计时字段(combo_solver 16330s vs attempt1 裸机串行 14017s,约 +17%);计时字段全在差分门排除集(seconds/total_seconds/*_ms),不影响逐字段比对。争用下并行墙钟仍为 attempt1 串行 12.76h 的 2.8x(4.54h)——仅为形态验证,≤1h 终证属票据 07 口径。
 - **票据不收**:串行基线仍在飞(16:12 时 5/21,正在 test_combo_solver);AC#4 差分门须双跑归档后用 compare_summaries 逐字段执行,过门后才收票。
 
-### 待办(基线完成后)
+### 串行基线归档 + 并行差分门 PASS,票据收尾(2026-10-02)
 
-- 串行全量基线(第二跑,`serial-full/`)归档:summary.json、runner.status.txt、编排器 stdout、总耗时。
-- 并行全量差分门(`--concurrency 8` 全量 vs 基线,compare_summaries 逐字段)——并行侧数据已就绪(`parallel-full/`),待串行侧完成后执行,过门后收票。
+- **串行全量基线(第二跑)完成并归档**:2026-10-01 11:27:50 → 10-02 01:23:39,墙钟 **13:55:49 = 50149s**(与 total_seconds 50149.14 一致——串行墙钟 = 各 job 之和);21/21 job 全绿(逐 job exit=0、script_errors=0),runner exit=0,mode=acceptance-reuse,total_assertions=19257,最长 job test_combo_solver 16637.27s。summary.json、runner.status.txt、编排器 stdout(serial-full.stdout)已入库;此后所有差分门(_delay_dfs、缓存、终证)对着这份基线比,不再跑第二遍串行全量。
+- **并行差分门 PASS**(证据 `diff-parallel-vs-serial.txt`,gate_exit=0):`compare_summaries.py serial-full/summary.json parallel-full/summary.json --exclude appdata`——除默认计时排除集(seconds/total_seconds/*_ms)外加 `appdata`(per-job APPDATA 路径是 `--output` 目录的工件;两跑并发必须异目录,非行为字段,`--exclude` 正为此设计)。**逐字段相等覆盖**:各 job 退出码、script_errors、pass_lines、assertions、**report_fingerprints(SHA-256 指纹集合)**、solver_calls/underlying_calls/reuse_hits/hit_rate、combo_cache、solver_profile 的 *_runs 计数,以及顶层 mode/total_assertions/total_solver_* 系列。
+- **加速实测**(同冻结树、同机、共同争用窗口):串行 50149s vs 并行 16337s = **3.07x**;attempt1 裸机串行 12.76h vs 并行 4.54h = 2.8x(并行侧计时字段被争用抬高,不进门)。≤1h 目标属票据 07 终证口径,本票只交付并行模式与基线。
+- **树冻结解除**(2026-10-02 01:23 双跑归档起):票据 06(缓存)←02 解锁;04←03 已解锁;07←04+06 待前置完成。

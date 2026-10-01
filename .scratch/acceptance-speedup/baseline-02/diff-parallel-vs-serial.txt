@@ -1,0 +1,33 @@
+Ticket 02 diff gate: parallel full vs serial baseline (2026-10-02)
+
+command:
+  python tools/compare_summaries.py \
+    .scratch/acceptance-speedup/baseline-02/serial-full/summary.json \
+    .scratch/acceptance-speedup/baseline-02/parallel-full/summary.json \
+    --exclude appdata
+
+result:
+  OK: summaries equal (excluding appdata, delay_leaf_ms, edge_probe_ms,
+      gap_enum_ms, other_ms, route_walk_ms, seconds, solver_elapsed_ms,
+      total_ms, total_seconds)
+  gate_exit=0
+
+appdata exclusion rationale: per-job APPDATA path is an artifact of the
+--output directory; the two runs execute concurrently and must use different
+output dirs, so this is not a behavioral field. Timing *_ms/seconds are the
+default wall-clock exclusions (ADR-0006).
+
+serial-full : launched 2026-10-01 11:27:50, finished 2026-10-02 01:23:39,
+  wall 13:55:49 = 50149 s (== total_seconds 50149.14: serial wall = sum of jobs),
+  21/21 green (exit=0, script_errors=0 per job), runner exit=0,
+  mode=acceptance-reuse, total_assertions=19257,
+  longest job test_combo_solver 16637.27 s
+
+parallel-full: launched 2026-10-01 11:28:25, finished 2026-10-01 16:00:42,
+  wall 4:32:17 = 16337 s (= longest job 16330.45 s + import barrier 6.6 s),
+  21/21 green (exit=0, script_errors=0 per job), runner exit=0,
+  mode=acceptance-reuse, total_assertions=19257,
+  longest job test_combo_solver 16330.45 s
+
+speedup (same frozen tree, same machine, jointly contended window):
+  50149 / 16337 = 3.07x wall-clock; per-job timings are gate-excluded.
