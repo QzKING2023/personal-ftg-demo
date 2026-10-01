@@ -54,7 +54,17 @@ Blocked by: 01
 - **串行全量基线已发射**:19:10:46(pid 见 launch.log),`--serial` 全量 21 job,输出 `baseline-02/serial-full/`,stdout 逐 job 行判活。预计 12-16h(test_combo_solver 单 job 裸机即 3h55m),明晨完成。
 - **基线运行期间(至归档完成)工作树冻结**:任何会话不得改动战斗脚本、测试、招式数据——基线是唯一串行全量,树变即作废。
 
+### 基线第一跑(attempt1)与二轮 08 期望债(2026-10-01 晨)
+
+- attempt1 完成(2026-09-30 19:10:46 → 10-01 07:56,总 45948.69s ≈ 12.76h,21 job):19 绿 2 红——test_replay_acceptance(exit=1)与 test_solver_entry(exit=1)。红色基线不能作差分参照,已归档 `baseline-02/serial-full-attempt1/`;最长 job test_combo_solver 14017.5s(3.9h,前日修复在真实全量下站住)。
+- 定性(与 combo_solver 债同类——08 会话纸面更新测试期望但从未运行):
+  - entry 候选序:实际为字典序 `j2D/j5D/j6D/jA/jB/jC`(集合与 J 键记法均正确,旧期望沿 jA/jB/jC 时代目录序,两者在当时恰好一致);
+  - entry 空中链:显式空中起始下 `jA→jB→j5D` 不再成立——j5D 起手 6 帧使第三击落在木桩自然受身之后(07 时代旧 jD 第 14 帧勉强挤进);显式起始实际验证链为 `j5D` 单击 [7] 与 `jA→j6D` [5,12](timing-valid),`["jA","jB"]` 等三条为断链如实上报(证据 `probe-entry4.stdout` 全路线清单);
+  - replay:左向镜像记录断言仍指 `jB → jD`,实际记录已迁 `jB → j5D`(镜像 `6[A]` 仍在)。
+- 修复(commit 4b900d9)+ 定向验证全绿(`verify-fix2/`,编排器同口径):test_solver_entry 53/0、test_replay_acceptance 123/0(`ALL REPLAY ACCEPTANCE TESTS PASSED`)。
+- 注意:显式空中起始三击链消失是 j5D 帧数的数据后果(非回归)——若设计上要恢复,属 08 会话的 j5D 帧数据决策,与本票无关。
+
 ### 待办(基线完成后)
 
-- 串行全量基线归档:`.scratch/acceptance-speedup/baseline-02/serial-full/`(summary.json、runner.status.txt、编排器 stdout、总耗时)。
+- 串行全量基线(第二跑,`serial-full/`)归档:summary.json、runner.status.txt、编排器 stdout、总耗时。
 - 并行全量差分门(`--concurrency 8` 全量 vs 基线,compare_summaries 逐字段)+ 并行墙钟与最长 job 实测记录,两项落 Comments 后收票。
