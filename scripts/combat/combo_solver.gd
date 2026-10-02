@@ -608,6 +608,40 @@ static func last_request_profile() -> Dictionary:
 	return profile
 
 
+## 票据 04：延迟叶子前缀恢复（机械等价变换，搜索语义一行不动）。隐藏回退开关与
+## 测试钩子仅测试可见，不进验收参数：_delay_prefix_restore_disabled 强制旧路径
+## （每叶子从 frame 0 全量重放）；_test_delay_leaf_log 非空时按访问序逐叶子记录
+## run dict 投影（字典序对拍用）；_test_prefix_mutator 在前缀快照返回前调用
+## （差分 harness 的变异验证入口）。
+static var _delay_prefix_restore_disabled := false
+static var _test_delay_leaf_log = null
+static var _test_prefix_mutator := Callable()
+
+
+## 叶子录制投影（票据 04 harness）：run dict 的全部可值比字段 + 末态会话
+## settlement_state——会话/compiled 对象本身不可值比，以投影逐项相等为准。
+static func _test_leaf_projection(run: Dictionary) -> Dictionary:
+	var record := {}
+	for key in ["ok", "reason", "break_kind", "verified", "next_expected_move",
+			"proven_period", "laps_observed", "last_frame"]:
+		record[key] = run.get(key, null)
+	for key in ["hit_frames", "ended_reasons", "extra_hit_frames", "extra_hit_moves", "extra_hit_counts"]:
+		var value = run.get(key, [])
+		record[key] = value.duplicate() if value is Array else value
+	var snapshots: Array = []
+	for snapshot in run.get("snapshots", []):
+		snapshots.append([snapshot[0], snapshot[1]])
+	record["snapshots"] = snapshots
+	var session = run.get("session", null)
+	if session is CombatSession:
+		record["combo_hits"] = (session as CombatSession).combo_hits
+		record["combo_total_damage"] = (session as CombatSession).combo_total_damage
+		record["settlement"] = (session as CombatSession).settlement_state()
+	else:
+		record["settlement"] = null
+	return record
+
+
 ## 正式入口（issue 19）：接受共享资源表、可选显式起始战斗状态与搜索选项。
 ## 缺省起始状态为地面中立（空输入缓存/方向历史、地面中立木桩、固定探针接触位）；
 ## 默认左右面向分别验证，并以相对输入签名镜像对拍确认两侧结果对称；显式传入
@@ -3333,10 +3367,27 @@ func _feed_down(digit: int) -> bool:
 ## 时间轴口径（issue 14 起）：输入表与预期命中帧都按正常战斗帧编排——命中后的
 ## 8 帧 Hitstop 由会话冻结，探针以空输入跳过、不占用正常帧号；因此取消等待、
 ## 命中年龄与回放帧全部与规格的正常帧语义一致。观测上限按物理帧计（含冻结帧）。
-func _run_schedule(compiled: Dictionary, opts: Dictionary) -> Dictionary:
-	_profile_count_run()
+func _run_schedule(compiled: Dictionary, opts: Dictionary, prefix = null) -> Dictionary:
+	## 前缀捕获探测不计 run（票据 04）：搜索形状量（*_runs）与旧路径逐叶相等，
+	## 捕获重放是恢复机制的实施细节，不是一次叶子搜索。
+	if not opts.has("capture_before_frame"):
+		_profile_count_run()
 	if compiled.is_empty():
 		return _empty_run("输入表冲突：同一物理帧需要两个互斥输入")
+	if prefix is Dictionary and (prefix as Dictionary).is_empty():
+		prefix = null
+	## 前缀区间内断链/证明成立（票据 04）：断点先于任何可调输入、对全部延迟向量
+	## 不变——每个叶子返回同值 run，仅 compiled/hit_frames 等按本叶子编译表替换
+	##（与旧路径逐叶子全量重放的返回值逐字段一致）。
+	if prefix != null and prefix.has("frozen_run"):
+		var frozen: Dictionary = (prefix["frozen_run"] as Dictionary).duplicate()
+		var frozen_verified: int = int(frozen["verified"])
+		frozen["compiled"] = compiled
+		frozen["hit_frames"] = compiled["hit_frames"]
+		var frozen_moves: Array = compiled["hit_moves"]
+		frozen["next_expected_move"] = frozen_moves[frozen_verified] \
+				if frozen_verified < frozen_moves.size() else ""
+		return frozen
 	var inputs := {}
 	for spec in compiled["inputs"]:
 		inputs[spec.frame] = spec
@@ -3353,7 +3404,7 @@ func _run_schedule(compiled: Dictionary, opts: Dictionary) -> Dictionary:
 	var extra_hit_frames: Array[int] = []
 	var extra_hit_moves: Array[String] = []
 	var extra_hit_counts: Array[int] = []
-	var session := _new_session()
+	var session := _new_session(prefix != null)
 	var verified := 0
 	var break_reason := ""
 	var break_kind := ""
@@ -3363,6 +3414,25 @@ func _run_schedule(compiled: Dictionary, opts: Dictionary) -> Dictionary:
 	var laps_observed := 0
 	var frame := 0
 	var physics := 0
+	## 前缀恢复（票据 04）：restore 会话 clone_state 与 _run_schedule 循环内全部
+	## 跨帧可变计数器（frame/physics/verified/失败原因/ended 累积/循环快照序列/
+	## laps），从边界帧起只喂本叶子的尾部输入——恢复保真由 seam 差分证明与
+	## 逐叶子差分 harness 双重把关。
+	if prefix != null:
+		if not session.restore_state(prefix["session_state"]):
+			return _empty_run("前缀快照恢复失败（CombatSessionState 校验不通过）")
+		frame = int(prefix["frame"])
+		physics = int(prefix["physics"])
+		verified = int(prefix["verified"])
+		ended_reasons.assign(prefix["ended_reasons"])
+		snapshots = (prefix["snapshots"] as Array).duplicate()
+		extra_hit_frames.assign(prefix["extra_hit_frames"])
+		extra_hit_moves.assign(prefix["extra_hit_moves"])
+		extra_hit_counts.assign(prefix["extra_hit_counts"])
+		proven_period = int(prefix["proven_period"])
+		laps_observed = int(prefix["laps_observed"])
+	## 前缀捕获（票据 04）：步完边界前一帧并完成当帧事件处理后快照全部循环状态。
+	var capture_at: int = int(opts.get("capture_before_frame", 0))
 	var last_frame := hit_frames[total - 1] if total > 0 else 0
 	while frame < last_frame + tail_frames:
 		if session.hitstop_active():
@@ -3471,6 +3541,21 @@ func _run_schedule(compiled: Dictionary, opts: Dictionary) -> Dictionary:
 				]
 				break_kind = "ended"
 				break
+		if frame == capture_at:
+			opts["prefix_capture"] = {
+				"session_state": session.clone_state(),
+				"frame": frame,
+				"physics": physics,
+				"verified": verified,
+				"ended_reasons": ended_reasons.duplicate(),
+				"snapshots": snapshots.duplicate(),
+				"extra_hit_frames": extra_hit_frames.duplicate(),
+				"extra_hit_moves": extra_hit_moves.duplicate(),
+				"extra_hit_counts": extra_hit_counts.duplicate(),
+				"proven_period": proven_period,
+				"laps_observed": laps_observed,
+			}
+			break
 	# 木桩时序状态重现即成功：循环模拟在证明成立时提前停止（verified < total）。
 	var ok := proven_period > 0 or (break_reason == "" and verified == total)
 	return {
@@ -3571,7 +3656,93 @@ func _delay_search(links: Array[ChainLink], adjustable: Array[int], delays_per_l
 		delays.append(0)
 	if opts.get("snapshot_every", 0) == 0 and opts.get("delay_budget", 0) == 0:
 		opts["delay_budget"] = MAX_ROUTE_DELAY_TRIALS
-	return _delay_dfs(links, adjustable, _delay_caps(links, adjustable, size), delays, 0, opts)
+	var prefix := {}
+	if not _delay_prefix_restore_disabled:
+		_profile_enter(_PROFILE_DELAY)
+		prefix = _capture_delay_prefix(links, adjustable, opts)
+		_profile_exit()
+	return _delay_dfs(links, adjustable, _delay_caps(links, adjustable, size), delays, 0, opts, prefix)
+
+
+## 前缀快照捕获（票据 04）。边界判定是纯编译期差分：可调链接全部取最早合法等待
+##（JUMP_FRAME=1、PREV_HIT=0）编译基线表，再只把首个可调链接 +1 编译对照表，两张
+## 表的首个输入差异帧之前的部分对全部延迟向量不变——该帧之前不需要任何运行时
+## 探测。基线表重放到边界前一刻（capture_before_frame 钩子），快照 CombatSession
+## clone_state 与 _run_schedule 循环内全部跨帧可变状态。基线区间内断链/证明成立
+## 时断点先于任何可调输入（对延迟不变），全部叶子同值（frozen）；编译冲突或边界
+## 不可判定时返回空表，叶子回退全量重放（正确性优先，只损失提速）。
+func _capture_delay_prefix(links: Array[ChainLink], adjustable: Array[int], opts: Dictionary) -> Dictionary:
+	var saved_waits: Array[int] = []
+	for j in adjustable:
+		saved_waits.append(links[j].wait)
+		links[j].wait = 1 if links[j].trigger == ChainLink.Trigger.JUMP_FRAME else 0
+	var compiled_base := _compile_chain(links)
+	var boundary := -1
+	if not compiled_base.is_empty():
+		links[adjustable[0]].wait += 1
+		var compiled_shifted := _compile_chain(links)
+		if not compiled_shifted.is_empty():
+			boundary = _first_input_difference(compiled_base, compiled_shifted)
+	for i in range(adjustable.size()):
+		links[adjustable[i]].wait = saved_waits[i]
+	if compiled_base.is_empty() or boundary < 1:
+		return {}
+	if boundary == 1:
+		var fresh := _new_session()
+		return _finish_prefix({
+			"session_state": fresh.clone_state(),
+			"frame": 0,
+			"physics": 0,
+			"verified": 0,
+			"ended_reasons": [] as Array[int],
+			"snapshots": [] as Array,
+			"extra_hit_frames": [] as Array[int],
+			"extra_hit_moves": [] as Array[String],
+			"extra_hit_counts": [] as Array[int],
+			"proven_period": -1,
+			"laps_observed": 0,
+			"boundary": boundary,
+		})
+	var capture_opts := opts.duplicate()
+	capture_opts["capture_before_frame"] = boundary - 1
+	var probe_run := _run_schedule(compiled_base, capture_opts)
+	if not capture_opts.has("prefix_capture"):
+		if probe_run["reason"] != "" or probe_run["proven_period"] > 0:
+			return {"frozen_run": probe_run}
+		return {}
+	var prefix: Dictionary = capture_opts["prefix_capture"]
+	prefix["boundary"] = boundary
+	return _finish_prefix(prefix)
+
+
+func _finish_prefix(prefix: Dictionary) -> Dictionary:
+	if _test_prefix_mutator.is_valid():
+		_test_prefix_mutator.call(prefix)
+	return prefix
+
+
+## 两张编译表的首个输入差异帧（前缀边界）；无差异返回 -1。逐帧比对完整输入值
+##（方向/下/跳跃/按键/按住键，_freeze_input 口径），与哪条链接贡献输入无关。
+static func _first_input_difference(base: Dictionary, shifted: Dictionary) -> int:
+	var base_by := {}
+	for spec in base["inputs"]:
+		base_by[spec.frame] = spec
+	var shifted_by := {}
+	for spec in shifted["inputs"]:
+		shifted_by[spec.frame] = spec
+	var frames := {}
+	for frame in base_by:
+		frames[frame] = true
+	for frame in shifted_by:
+		frames[frame] = true
+	var ordered: Array = frames.keys()
+	ordered.sort()
+	for frame in ordered:
+		if not base_by.has(frame) or not shifted_by.has(frame):
+			return int(frame)
+		if _freeze_input(base_by[frame]) != _freeze_input(shifted_by[frame]):
+			return int(frame)
+	return -1
 
 
 ## 每个延迟槽的枚举上限：槽里有空中段起手（JUMP_FRAME）按 MAX_AIR_DELAY，
@@ -3588,7 +3759,7 @@ func _delay_caps(links: Array[ChainLink], adjustable: Array[int], vector_size: i
 	return caps
 
 
-func _delay_dfs(links: Array[ChainLink], adjustable: Array[int], caps: Array[int], delays: Array[int], depth: int, opts: Dictionary) -> Dictionary:
+func _delay_dfs(links: Array[ChainLink], adjustable: Array[int], caps: Array[int], delays: Array[int], depth: int, opts: Dictionary, prefix = null) -> Dictionary:
 	## 路线模式（snapshot_every == 0）的延迟向量预算按叶子回放计数：预算经 opts
 	## 回写共享（局部副本会让「至多 64 个延迟向量」永不生效——空中取消链上的
 	## 失败路线会枚举整棵延迟笛卡尔积）；循环证明模式不受预算限制。
@@ -3606,8 +3777,12 @@ func _delay_dfs(links: Array[ChainLink], adjustable: Array[int], caps: Array[int
 			var base := 1 if links[adjustable[j]].trigger == ChainLink.Trigger.JUMP_FRAME else 0
 			links[adjustable[j]].wait = base + delays[j % delays.size()]
 		_profile_enter(_PROFILE_DELAY)
-		var leaf_run := _run_schedule(_compile_chain(links), opts)
+		var leaf_run := _run_schedule(_compile_chain(links), opts, prefix)
 		_profile_exit()
+		if _test_delay_leaf_log != null:
+			var record := _test_leaf_projection(leaf_run)
+			record["delays"] = delays.duplicate()
+			_test_delay_leaf_log.append(record)
 		return leaf_run
 	## 循环证明模式只有「逐圈状态快照重现」才算成功——链条走完但未重现的
 	## 延迟向量不提前停止搜索（issue 21：另一组延迟可能完成证明）；
@@ -3615,7 +3790,7 @@ func _delay_dfs(links: Array[ChainLink], adjustable: Array[int], caps: Array[int
 	var best := {}
 	for d in range(0, caps[depth] + 1):
 		delays[depth] = d
-		var run := _delay_dfs(links, adjustable, caps, delays, depth + 1, opts)
+		var run := _delay_dfs(links, adjustable, caps, delays, depth + 1, opts, prefix)
 		if run["proven_period"] > 0 or (run["ok"] and not proof_mode):
 			return run
 		if not run.is_empty() and (best.is_empty() or _run_ranks_higher(run, best)):
@@ -3865,11 +4040,13 @@ func _proof_inputs(run: Dictionary) -> Array[ScheduledInput]:
 ## 起始状态在会话上一次成形：面向与钉位按验证面向镜像；显式空中起始先以
 ## Space 垂直跳 + 4f 起跳准备 + N 空中帧的确定性探针序把玩家带入目标空中帧
 ## （探针序本身不产生命中，分析时间轴从其后的首个正常帧计为第 1 帧）。
-func _new_session() -> CombatSession:
+func _new_session(skip_start_prologue := false) -> CombatSession:
 	var session := CombatSession.new(_table)
 	session.player_facing = _facing
 	session.dummy_position = session.player_position + Vector2(_facing * _pin_dx, 0.0)
-	if _is_air_start():
+	## 前缀恢复路径跳过起始探针序：restore_state 会覆盖全部可变状态（含探针序
+	## 的全部影响），seam 差分的 dirty-restore 口径证明任意前态下恢复等价。
+	if _is_air_start() and not skip_start_prologue:
 		session.step(FrameInput.make(0, true, ""))
 		_pin_dummy(session)
 		for i in GameParams.PLAYER_PREJUMP_FRAMES - 1 + _start.air_frames:
