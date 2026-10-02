@@ -1,0 +1,4 @@
+move_table containment OK: baseline 6 fps ⊆ cold 8 fps
+Traceback (most recent call last):
+  File "<stdin>", line 11, in <module>
+KeyError: 'solver_report_keys'

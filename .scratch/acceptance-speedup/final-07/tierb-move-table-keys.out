@@ -1,0 +1,3 @@
+move_table key containment OK: baseline 6 key-groups ⊆ cold 8
+baseline: [['analyze-4'], ['analyze-2'], ['analyze-1'], ['analyze-5'], ['analyze-3'], ['analyze-manifest-6']]
+cold:     [['analyze-4'], ['analyze-manifest-9'], ['analyze-2'], ['analyze-1'], ['analyze-5'], ['analyze-3'], ['analyze-manifest-7', 'analyze-manifest-8'], ['analyze-manifest-6']]

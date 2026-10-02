@@ -1,0 +1,368 @@
+{
+  "canonical": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\final-07\\solver-results.cache",
+  "entries_before": 0,
+  "fragments": [
+    {
+      "file": "worker-0000.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0001.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0003.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0004.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0005.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0006.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0007.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0008.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0009.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0010.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0011.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0012.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0013.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0014.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0015.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0016.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0017.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0018.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0019.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0020.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0021.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0022.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0023.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0024.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0025.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0026.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0027.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0028.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0029.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0030.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0031.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0032.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0033.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0034.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0035.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0036.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0037.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0038.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0039.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0040.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0041.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0042.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0043.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0044.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0045.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0046.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0047.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0048.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0049.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0050.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0051.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0052.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0053.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0054.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0055.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0056.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0057.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0058.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0060.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0061.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    }
+  ],
+  "entries_after": 60,
+  "merged_new": 60
+}

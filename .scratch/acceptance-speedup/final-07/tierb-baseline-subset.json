@@ -1,0 +1,766 @@
+{
+  "mode": "acceptance-reuse",
+  "total_seconds": 47357.79,
+  "total_assertions": 18931,
+  "total_solver_calls": 92,
+  "total_solver_underlying_calls": 92,
+  "total_solver_reuse_hits": 0,
+  "solver_reuse_hit_rate": 0.0,
+  "tests": [
+    {
+      "test": "import",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 0,
+      "assertions": 0,
+      "seconds": 6.21,
+      "solver_calls": 0,
+      "solver_underlying_calls": 0,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 0.0,
+      "combo_cache": {},
+      "solver_profile": {},
+      "report_fingerprints": [],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-import",
+      "solver_report_keys": []
+    },
+    {
+      "test": "test_air_d_landing",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 96,
+      "assertions": 96,
+      "seconds": 0.96,
+      "solver_calls": 0,
+      "solver_underlying_calls": 0,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 0.0,
+      "combo_cache": {},
+      "solver_profile": {},
+      "report_fingerprints": [],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-test_air_d_landing",
+      "solver_report_keys": []
+    },
+    {
+      "test": "test_charge_motion_sideswap",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 55,
+      "assertions": 55,
+      "seconds": 552.79,
+      "solver_calls": 0,
+      "solver_underlying_calls": 0,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 0.0,
+      "combo_cache": {},
+      "solver_profile": {},
+      "report_fingerprints": [],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-test_charge_motion_sideswap",
+      "solver_report_keys": []
+    },
+    {
+      "test": "test_combat_session",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 853,
+      "assertions": 853,
+      "seconds": 4.1,
+      "solver_calls": 0,
+      "solver_underlying_calls": 0,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 0.0,
+      "combo_cache": {},
+      "solver_profile": {},
+      "report_fingerprints": [],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-test_combat_session",
+      "solver_report_keys": []
+    },
+    {
+      "test": "test_combat_session_restore",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 98,
+      "assertions": 98,
+      "seconds": 62.17,
+      "solver_calls": 0,
+      "solver_underlying_calls": 0,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 0.0,
+      "combo_cache": {},
+      "solver_profile": {},
+      "report_fingerprints": [],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-test_combat_session_restore",
+      "solver_report_keys": []
+    },
+    {
+      "test": "test_combo_solver",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 3714,
+      "assertions": 3714,
+      "seconds": 16637.27,
+      "solver_calls": 27,
+      "solver_underlying_calls": 27,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 16621362.109,
+      "combo_cache": {
+        "bypasses": 0,
+        "enabled": true,
+        "entries": 0,
+        "hits": 0,
+        "misses": 0
+      },
+      "solver_profile": {
+        "delay_leaf_ms": 16135738.661,
+        "delay_leaf_runs": 4641148,
+        "edge_probe_ms": 37330.444,
+        "edge_probe_runs": 10612,
+        "gap_enum_ms": 55542.271,
+        "gap_enum_runs": 20869,
+        "other_ms": 1330.285,
+        "other_runs": 130,
+        "requests": 27,
+        "route_walk_ms": 392039.892,
+        "route_walk_runs": 0,
+        "total_ms": 16621981.553
+      },
+      "report_fingerprints": [
+        "2e70aab2609928898de96e3c3da1f2cf64211c9a849e44a15c8ea34a1b18de9e",
+        "50b5b84557878c76f191e5f9ef00c688b49964c3824495103c334960909cd6e9",
+        "578f523f4b31ee4ff3308db5f62a265fc5b5fe5c342e081ef6d383655ee8f6b0",
+        "65a20ceb3a25616c648566fd974131052b5448c73aed1dfdc5102325dc7709b9",
+        "799250dd9bc15faf24fed0a0208837cbb469820a28f8c809701e5079079f638d",
+        "86b830860d0178864bab0c7b14492d7580e33479f0477971bea8483654c2fae3",
+        "aa7badbf32314abef160afd088eb480ef88ce00f07735d92b04a79fa86ab9738",
+        "ab53cc4b5ae1f6808ae7daa5d2649fedf93a481480cfb9869575f86a149b3395",
+        "bd0da300977a3797edd70b84d01b77573e786f4a9f75951abd3b8f7c64928132",
+        "c7180c6b116ceb7ee2ee0a7ccf0ff14cf8d2a2039da306db74c90aa62e05c38f",
+        "fde05dcd628ad8787453cc64a1eb5e3fbbe0739030fe6d47ae2d191896426aaf"
+      ],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-test_combo_solver",
+      "solver_report_keys": [
+        [
+          "analyze-20"
+        ],
+        [
+          "analyze-1",
+          "analyze-2",
+          "analyze-3",
+          "analyze-4",
+          "analyze-5",
+          "analyze-6",
+          "analyze-16",
+          "analyze-17",
+          "analyze-18",
+          "analyze-19",
+          "analyze-21",
+          "analyze-22",
+          "analyze-23",
+          "analyze-25",
+          "analyze-26",
+          "analyze-27"
+        ],
+        [
+          "analyze-14"
+        ],
+        [
+          "analyze-7"
+        ],
+        [
+          "analyze-10",
+          "analyze-24"
+        ],
+        [
+          "analyze-11"
+        ],
+        [
+          "analyze-13"
+        ],
+        [
+          "analyze-15"
+        ],
+        [
+          "analyze-12"
+        ],
+        [
+          "analyze-8"
+        ],
+        [
+          "analyze-9"
+        ]
+      ]
+    },
+    {
+      "test": "test_crouch_stationary",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 45,
+      "assertions": 45,
+      "seconds": 0.76,
+      "solver_calls": 0,
+      "solver_underlying_calls": 0,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 0.0,
+      "combo_cache": {},
+      "solver_profile": {},
+      "report_fingerprints": [],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-test_crouch_stationary",
+      "solver_report_keys": []
+    },
+    {
+      "test": "test_hit_profiles",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 105,
+      "assertions": 105,
+      "seconds": 2042.78,
+      "solver_calls": 4,
+      "solver_underlying_calls": 4,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 2041523.547,
+      "combo_cache": {
+        "bypasses": 0,
+        "enabled": true,
+        "entries": 4,
+        "hits": 0,
+        "misses": 4
+      },
+      "solver_profile": {
+        "delay_leaf_ms": 1991098.177,
+        "delay_leaf_runs": 702392,
+        "edge_probe_ms": 4627.56,
+        "edge_probe_runs": 1645,
+        "gap_enum_ms": 6920.321,
+        "gap_enum_runs": 3151,
+        "other_ms": 553.074,
+        "other_runs": 20,
+        "requests": 4,
+        "route_walk_ms": 38401.275,
+        "route_walk_runs": 0,
+        "total_ms": 2041600.407
+      },
+      "report_fingerprints": [
+        "09996c30bdd22ba148e7f03502d7ceefe93e393667731ef33fdf3873a6dba30c",
+        "176f2024a5571146b86774a9e8efbaee36bd4f9dc45957ecf2e3797544031cf5",
+        "a63128d522d49e3a7899e0f151254b3947258125f449fb66860fe96586d55674"
+      ],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-test_hit_profiles",
+      "solver_report_keys": [
+        [
+          "solve-1"
+        ],
+        [
+          "solve-4"
+        ],
+        [
+          "solve-2",
+          "solve-3"
+        ]
+      ]
+    },
+    {
+      "test": "test_input_normalization",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 22,
+      "assertions": 22,
+      "seconds": 0.7,
+      "solver_calls": 0,
+      "solver_underlying_calls": 0,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 0.0,
+      "combo_cache": {},
+      "solver_profile": {},
+      "report_fingerprints": [],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-test_input_normalization",
+      "solver_report_keys": []
+    },
+    {
+      "test": "test_joint_acceptance",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 28,
+      "assertions": 28,
+      "seconds": 0.48,
+      "solver_calls": 0,
+      "solver_underlying_calls": 0,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 0.0,
+      "combo_cache": {},
+      "solver_profile": {},
+      "report_fingerprints": [],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-test_joint_acceptance",
+      "solver_report_keys": []
+    },
+    {
+      "test": "test_launcher_air_exits",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 39,
+      "assertions": 39,
+      "seconds": 526.32,
+      "solver_calls": 0,
+      "solver_underlying_calls": 0,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 0.0,
+      "combo_cache": {},
+      "solver_profile": {},
+      "report_fingerprints": [],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-test_launcher_air_exits",
+      "solver_report_keys": []
+    },
+    {
+      "test": "test_replay_acceptance",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 123,
+      "assertions": 123,
+      "seconds": 3208.65,
+      "solver_calls": 3,
+      "solver_underlying_calls": 3,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 3195405.735,
+      "combo_cache": {
+        "bypasses": 0,
+        "enabled": true,
+        "entries": 3,
+        "hits": 0,
+        "misses": 3
+      },
+      "solver_profile": {
+        "delay_leaf_ms": 3116847.012,
+        "delay_leaf_runs": 1088616,
+        "edge_probe_ms": 7374.476,
+        "edge_probe_runs": 2468,
+        "gap_enum_ms": 10805.109,
+        "gap_enum_runs": 4952,
+        "other_ms": 1017.666,
+        "other_runs": 30,
+        "requests": 3,
+        "route_walk_ms": 59468.644,
+        "route_walk_runs": 0,
+        "total_ms": 3195512.907
+      },
+      "report_fingerprints": [
+        "0a1a5e7630816527f02cce35307ccbd4a597152255b4ecdcbcb904e770f88ad5",
+        "68f00543c7ed0b8b405c0185e34c63cc35d78e57ece1a0bb05f58537f791e7a1",
+        "8458d181a9e27828e8368f9cc0794f84051db543fe7f8d770bb9aaca49717156"
+      ],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-test_replay_acceptance",
+      "solver_report_keys": [
+        [
+          "solve-2"
+        ],
+        [
+          "solve-3"
+        ],
+        [
+          "solve-1"
+        ]
+      ]
+    },
+    {
+      "test": "test_smoke",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 123,
+      "assertions": 123,
+      "seconds": 18.05,
+      "solver_calls": 1,
+      "solver_underlying_calls": 1,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 0.659,
+      "combo_cache": {
+        "bypasses": 0,
+        "enabled": true,
+        "entries": 0,
+        "hits": 0,
+        "misses": 0
+      },
+      "solver_profile": {
+        "delay_leaf_ms": 0.0,
+        "delay_leaf_runs": 0,
+        "edge_probe_ms": 0.0,
+        "edge_probe_runs": 0,
+        "gap_enum_ms": 0.0,
+        "gap_enum_runs": 0,
+        "other_ms": 0.741,
+        "other_runs": 0,
+        "requests": 1,
+        "route_walk_ms": 0.0,
+        "route_walk_runs": 0,
+        "total_ms": 0.741
+      },
+      "report_fingerprints": [
+        "118561462e2e522db5087dc10dbe80ab2b46145cad8af6d1deeb51a05c2e9ed3"
+      ],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-test_smoke",
+      "solver_report_keys": [
+        [
+          "analyze-manifest-1"
+        ]
+      ]
+    },
+    {
+      "test": "test_solver_cache",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 16,
+      "assertions": 16,
+      "seconds": 0.67,
+      "solver_calls": 0,
+      "solver_underlying_calls": 0,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 0.0,
+      "combo_cache": {},
+      "solver_profile": {},
+      "report_fingerprints": [],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-test_solver_cache",
+      "solver_report_keys": []
+    },
+    {
+      "test": "test_solver_cycles",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 30,
+      "assertions": 30,
+      "seconds": 9606.64,
+      "solver_calls": 10,
+      "solver_underlying_calls": 10,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 9605233.927,
+      "combo_cache": {
+        "bypasses": 0,
+        "enabled": true,
+        "entries": 7,
+        "hits": 3,
+        "misses": 7
+      },
+      "solver_profile": {
+        "delay_leaf_ms": 9343901.852,
+        "delay_leaf_runs": 2895806,
+        "edge_probe_ms": 19776.713,
+        "edge_probe_runs": 5778,
+        "gap_enum_ms": 38499.022,
+        "gap_enum_runs": 11686,
+        "other_ms": 2040.679,
+        "other_runs": 70,
+        "requests": 10,
+        "route_walk_ms": 201314.54,
+        "route_walk_runs": 0,
+        "total_ms": 9605532.806
+      },
+      "report_fingerprints": [
+        "0d7207aea96b5f939efcd620226efc99a84dc36a1da86ecab00986dc6bdcf056",
+        "1f10484c56b76847d85f6ead9ac2e3f6350824f048066081b7d0e375f85f4a42",
+        "47726955f941b94f22b70db51056c4993e4839cca9169d18c3581bd959e57a69",
+        "5033761ae41c4efdbbcec59c243d5d91fd63bc543bf65c8a54fd33d1b958fc14",
+        "8458d181a9e27828e8368f9cc0794f84051db543fe7f8d770bb9aaca49717156",
+        "a1e53ca4a350718ce7b5bd69213e6e1a3897cfe1fa2e9b62f81eb003e96f0b14",
+        "bbf9ce1c73db64fbaf2f860cc23fd48aab326b0205e72acb3e3da3af19dacbe4"
+      ],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-test_solver_cycles",
+      "solver_report_keys": [
+        [
+          "solve-8",
+          "solve-9"
+        ],
+        [
+          "solve-3"
+        ],
+        [
+          "solve-2"
+        ],
+        [
+          "solve-5"
+        ],
+        [
+          "solve-6",
+          "solve-10"
+        ],
+        [
+          "solve-4"
+        ],
+        [
+          "solve-1",
+          "solve-7"
+        ]
+      ]
+    },
+    {
+      "test": "test_solver_entry",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 53,
+      "assertions": 53,
+      "seconds": 1816.01,
+      "solver_calls": 19,
+      "solver_underlying_calls": 19,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 1814886.71,
+      "combo_cache": {
+        "bypasses": 0,
+        "enabled": true,
+        "entries": 4,
+        "hits": 13,
+        "misses": 4
+      },
+      "solver_profile": {
+        "delay_leaf_ms": 1763934.544,
+        "delay_leaf_runs": 622052,
+        "edge_probe_ms": 6767.431,
+        "edge_probe_runs": 2629,
+        "gap_enum_ms": 9830.824,
+        "gap_enum_runs": 4128,
+        "other_ms": 1434.991,
+        "other_runs": 29,
+        "requests": 19,
+        "route_walk_ms": 33193.427,
+        "route_walk_runs": 0,
+        "total_ms": 1815161.217
+      },
+      "report_fingerprints": [
+        "09996c30bdd22ba148e7f03502d7ceefe93e393667731ef33fdf3873a6dba30c",
+        "6524ec1c17328fa663e6feced5f90a05c69cbeda0ad9392499229125bf36f3a8",
+        "82382c3fb1d280c25553106919b9e8b4530e61d7afc30f207dcff069ce4504bf",
+        "8458d181a9e27828e8368f9cc0794f84051db543fe7f8d770bb9aaca49717156",
+        "9b5f89e367bb124e821e9b3591d4148a95006d1f22e39a64307c6f42bb940d70",
+        "b06bc1b7f566e59f7a17b5830b93a34f229b3af42abc2495c994fdfae9a3a0ed"
+      ],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-test_solver_entry",
+      "solver_report_keys": [
+        [
+          "solve-3"
+        ],
+        [
+          "solve-17"
+        ],
+        [
+          "solve-11"
+        ],
+        [
+          "solve-1",
+          "solve-2",
+          "solve-4",
+          "solve-5",
+          "solve-6",
+          "solve-12",
+          "solve-13",
+          "solve-14",
+          "solve-15",
+          "solve-19"
+        ],
+        [
+          "solve-18"
+        ],
+        [
+          "solve-7",
+          "solve-8",
+          "solve-9",
+          "solve-10",
+          "solve-16"
+        ]
+      ]
+    },
+    {
+      "test": "test_solver_route",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 2339,
+      "assertions": 2339,
+      "seconds": 8600.67,
+      "solver_calls": 15,
+      "solver_underlying_calls": 15,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 8595082.19,
+      "combo_cache": {
+        "bypasses": 0,
+        "enabled": true,
+        "entries": 8,
+        "hits": 7,
+        "misses": 8
+      },
+      "solver_profile": {
+        "delay_leaf_ms": 8384196.789,
+        "delay_leaf_runs": 2830992,
+        "edge_probe_ms": 20248.39,
+        "edge_probe_runs": 6596,
+        "gap_enum_ms": 32730.091,
+        "gap_enum_runs": 14196,
+        "other_ms": 2463.46,
+        "other_runs": 90,
+        "requests": 15,
+        "route_walk_ms": 155850.998,
+        "route_walk_runs": 0,
+        "total_ms": 8595489.728
+      },
+      "report_fingerprints": [
+        "2f2d721b3abe658989e8beebb14ac97bd9354a761605340abe0cd5ea8294d885",
+        "36408931f7b953add4db93295e6cc5cd7cbde1891d35bb0aa2b80f6e29f50348",
+        "7e4ee32d69b906da502b32c0b8387f1272d9808c43374dbb9a2ba902d8dc6856",
+        "8458d181a9e27828e8368f9cc0794f84051db543fe7f8d770bb9aaca49717156",
+        "8d35ef855dea7bdcde3d56e0ad5c425e72186a928a9faeaf092fa165084ae938",
+        "9e2c134e5e7412e79b1c3677b046f17a93f7a5bd739cbfcc4b1db60fb6b3ca78",
+        "a11a520eca3da996564e8f6ace51588e557ba5b63ac8c7dbc93c6fcb066e588c",
+        "b9ac5f2d4fa3be0d67c7c2184d910602918aedb2f30785f83d32221e212f395b"
+      ],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-test_solver_route",
+      "solver_report_keys": [
+        [
+          "solve-4"
+        ],
+        [
+          "solve-3"
+        ],
+        [
+          "solve-10"
+        ],
+        [
+          "solve-1",
+          "solve-2",
+          "solve-5",
+          "solve-7",
+          "solve-8",
+          "solve-13",
+          "solve-14",
+          "solve-15"
+        ],
+        [
+          "solve-9"
+        ],
+        [
+          "solve-12"
+        ],
+        [
+          "solve-11"
+        ],
+        [
+          "solve-6"
+        ]
+      ]
+    },
+    {
+      "test": "test_solver_spatial",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 11192,
+      "assertions": 11192,
+      "seconds": 4268.61,
+      "solver_calls": 13,
+      "solver_underlying_calls": 13,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 4232699.591,
+      "combo_cache": {
+        "bypasses": 0,
+        "enabled": true,
+        "entries": 4,
+        "hits": 7,
+        "misses": 4
+      },
+      "solver_profile": {
+        "delay_leaf_ms": 4130519.353,
+        "delay_leaf_runs": 1445606,
+        "edge_probe_ms": 9698.554,
+        "edge_probe_runs": 3294,
+        "gap_enum_ms": 15474.598,
+        "gap_enum_runs": 6868,
+        "other_ms": 1751.696,
+        "other_runs": 40,
+        "requests": 13,
+        "route_walk_ms": 75492.526,
+        "route_walk_runs": 0,
+        "total_ms": 4232936.727
+      },
+      "report_fingerprints": [
+        "07c55fc000bd3082ae31985edcf4da35060f5909e9e2d0dbe0e771670a776aac",
+        "0a1a5e7630816527f02cce35307ccbd4a597152255b4ecdcbcb904e770f88ad5",
+        "4e6024b8b83faf61b5556d61099002572a654c16f5901f766f749de20fbb3c10",
+        "8458d181a9e27828e8368f9cc0794f84051db543fe7f8d770bb9aaca49717156",
+        "91dc00dabd1782fb2a7c57648e1f385d5d75f8b0eac215cc46bb98deab84f540",
+        "d260ddf921eff1c662e90bd715d2dd1557a6e3d445ef0444f8aa08751c7eafea"
+      ],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-test_solver_spatial",
+      "solver_report_keys": [
+        [
+          "solve-7"
+        ],
+        [
+          "solve-2",
+          "solve-5",
+          "solve-10",
+          "solve-11",
+          "solve-12",
+          "solve-13"
+        ],
+        [
+          "solve-3"
+        ],
+        [
+          "solve-1",
+          "solve-4",
+          "solve-9"
+        ],
+        [
+          "solve-6"
+        ],
+        [
+          "solve-8"
+        ]
+      ]
+    },
+    {
+      "test": "diagnose_inputs",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 0,
+      "assertions": 0,
+      "seconds": 1.35,
+      "solver_calls": 0,
+      "solver_underlying_calls": 0,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 0.0,
+      "combo_cache": {},
+      "solver_profile": {},
+      "report_fingerprints": [],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-diagnose_inputs",
+      "solver_report_keys": []
+    },
+    {
+      "test": "main-smoke",
+      "exit": 0,
+      "script_errors": 0,
+      "pass_lines": 0,
+      "assertions": 0,
+      "seconds": 2.6,
+      "solver_calls": 0,
+      "solver_underlying_calls": 0,
+      "solver_reuse_hits": 0,
+      "solver_reuse_hit_rate": 0.0,
+      "solver_elapsed_ms": 0.0,
+      "combo_cache": {},
+      "solver_profile": {},
+      "report_fingerprints": [],
+      "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\acceptance-speedup\\baseline-02\\serial-full\\runtime-main-smoke",
+      "solver_report_keys": []
+    }
+  ]
+}

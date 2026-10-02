@@ -1,0 +1,15 @@
+== ticket 07 cold full sweep: task distribution (n=62) ==
+sum=17934s  max=1138s  p90=660s  median=304s  min=1s
+top 8 tasks:
+      1138s  exit=0 replay_ok=True 86bd4a5b0472e29e
+      1132s  exit=0 replay_ok=True 809584f5f5357b5c
+       695s  exit=0 replay_ok=True dc8a4a781cfd5d67
+       684s  exit=0 replay_ok=True d2316a6b8e564522
+       681s  exit=0 replay_ok=True d3046fd751300141
+       679s  exit=0 replay_ok=True a4c8e9d915f97dc0
+       660s  exit=0 replay_ok=True 7301a27dc646c397
+       652s  exit=0 replay_ok=True a671a38b18e5d87d
+failed/replay-bad tasks: [{'digest': 'fa7ff991c5f16ea51717f1b75544252eabeda1fb52e926bdacf34f4b8985df4b', 'exit': 1, 'seconds': 0.78, 'replay_ok': False}, {'digest': '0a3297e337e6379c12fe08c1885b922046b5a493a3fc810ab47152c05eace7b5', 'exit': 1, 'seconds': 0.74, 'replay_ok': False}]
+
+lane_busy_ratio=0.8736 (busy=17934s wall=2566s lanes=8)
+stage_walls: {"import": 6.85, "enumerate": 45.37, "sweep": 2566.0, "warm": 578.83, "total": 3197.04}
