@@ -42,6 +42,7 @@ func _initialize() -> void:
 	_test_attribute_edit_syncs_session_and_solver()
 	_test_cancel_edit_syncs_session_and_solver()
 	_test_solver_refuses_invalid_manifest_with_same_reason()
+	_test_analyze_manifest_cache_roundtrip_and_invalidation()
 	print("")
 	_metrics.emit("test_move_table")
 	if _failures == 0:
@@ -946,6 +947,36 @@ func _test_solver_refuses_invalid_manifest_with_same_reason() -> void:
 	var lines := report.to_lines()
 	_check(lines.any(func(line: String) -> bool: return line.contains("拒绝") and line.contains("hit_profiles")),
 		"refused report lines expose the refusal and the offending field")
+
+
+## 票据 06：analyze_manifest() 入口接入结果缓存。断言模式无关（冷跑首调未命中、
+## 热跑首调命中持久化条目都成立）且取计数差值——本 job 的累计账面
+## （hits+misses+bypasses==calls，Tier B 不变量）不得被本测试重置，全程不清缓存。
+func _test_analyze_manifest_cache_roundtrip_and_invalidation() -> void:
+	var paths := _write_valid_table("mt_solver_cache", 1)
+	var before := ComboSolver.result_cache_stats()
+	var first := _metrics.analyze_manifest(paths["manifest"])
+	var stats1 := ComboSolver.result_cache_stats()
+	var d1 := int(stats1.get("hits", 0)) - int(before.get("hits", 0)) 			+ int(stats1.get("misses", 0)) - int(before.get("misses", 0))
+	_check(not first.refused and d1 == 1,
+		"the first manifest analysis consults the cache exactly once (miss when cold, hit when warm)")
+	var second := _metrics.analyze_manifest(paths["manifest"])
+	var stats2 := ComboSolver.result_cache_stats()
+	_check(int(stats2.get("hits", 0)) - int(stats1.get("hits", 0)) == 1
+			and int(stats2.get("misses", 0)) == int(stats1.get("misses", 0)),
+		"an identical manifest analysis hits the cache without recomputing (cold or warm)")
+	_check("
+".join(first.to_lines()) == "
+".join(second.to_lines()),
+		"manifest cache hit preserves the complete report")
+	_replace_property_line(paths["moves"][0], "base_damage", "base_damage = 19")
+	var after_edit := _metrics.analyze_manifest(paths["manifest"])
+	var stats3 := ComboSolver.result_cache_stats()
+	var d3 := int(stats3.get("hits", 0)) - int(stats2.get("hits", 0)) 			+ int(stats3.get("misses", 0)) - int(stats2.get("misses", 0))
+	_check(d3 == 1 and "
+".join(after_edit.to_lines()) != "
+".join(second.to_lines()),
+		"editing a move resource file never reuses the stale entry: the request resolves to a different report (semantic signature)")
 
 
 # --- 辅助 ---

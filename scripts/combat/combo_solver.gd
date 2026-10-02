@@ -67,8 +67,12 @@ const MAX_ROUTE_DELAY_TRIALS := 64
 ## 上限不会截掉任何可行延迟，枚举是完备的。
 const MAX_AIR_DELAY := 40
 
-## 完整结果缓存只存在当前进程的 Engine metadata 中。缓存值是报告值快照，
-## 不暴露任何 Solver/CombatSession/Resource/compiled 对象；命中时逐字段重建。
+## 完整结果缓存：进程内驻留 Engine metadata（缓存值是报告值快照，不暴露任何
+## Solver/CombatSession/Resource/compiled 对象，命中时逐字段重建）；票据 06 起
+## 另可经环境变量持久化——job 启动只读加载规范缓存、新条目写 per-job fragment、
+## run 收尾由编排器合并（详见 _load_persistent_entries/_persist_new_entry）。
+## 查/存路径为三入口共用（_cache_query/_cache_store），命中校验是 descriptor
+## 规范文本全等，失效由表内容、manifest 文件签名、引擎版本与语义签名承载。
 const _RESULT_CACHE_META_KEY := "ftg_demo_combo_solver_result_cache_v1"
 const _REQUEST_SCHEMA_VERSION := 1
 const _REPORT_SNAPSHOT_VERSION := 1
@@ -466,25 +470,46 @@ func _init(move_table: Dictionary) -> void:
 
 
 ## 分析共享 manifest 指向的招式表；表未通过校验时拒绝分析并报告同一原因。
+## 票据 06 起接入完整结果缓存：同型 descriptor（entrypoint="analyze_manifest"）
+## 走 solve() 的同一查/存路径，拒绝形态不缓存。
 static func analyze_manifest(manifest_path: String) -> SolverReport:
 	_profile_reset()
 	var result := MoveTable.load_manifest(manifest_path)
 	if not result.ok:
+		_count_cache_bypass()
 		return _refused_report(result)
-	return ComboSolver.new(result.moves)._analyze()
+	var request := _build_analyze_request("analyze_manifest", manifest_path, result.moves, false)
+	var cached := _cache_query(request)
+	if cached != null:
+		return cached
+	return _finish_analyze_request(request, ComboSolver.new(result.moves)._analyze())
 
 
 ## 分析招式表：生成确定性接续边、可读路线与循环报告。不修改任何运行时战斗状态。
 ## 默认分析共享 manifest（与训练场同一份已校验数据）；显式传入字典用于注入实验表。
+## 票据 06 起接入完整结果缓存：同型 descriptor（entrypoint="analyze"）走 solve()
+## 的同一查/存路径，拒绝形态不缓存。
 static func analyze(move_table: Dictionary = {}) -> SolverReport:
 	_profile_reset()
+	var injected := not move_table.is_empty()
 	var table := move_table
-	if table.is_empty():
+	if not injected:
 		var result := MoveTable.load_default()
 		if not result.ok:
+			_count_cache_bypass()
 			return _refused_report(result)
 		table = result.moves
-	return ComboSolver.new(table)._analyze()
+	var request := _build_analyze_request("analyze", MoveTable.DEFAULT_MANIFEST_PATH, table, injected)
+	var cached := _cache_query(request)
+	if cached != null:
+		return cached
+	return _finish_analyze_request(request, ComboSolver.new(table)._analyze())
+
+
+static func _finish_analyze_request(request: Dictionary, report: SolverReport) -> SolverReport:
+	if bool(request.get("cacheable", false)) and result_cache_enabled() and not report.refused:
+		return _cache_store(request, report)
+	return report
 
 
 ## 完整结果缓存控制。默认开启；开关不参与请求键，只决定是否读取/发布结果。
@@ -527,7 +552,129 @@ static func _cache_state() -> Dictionary:
 	if not (state is Dictionary) or not state.has("entries"):
 		state = {"enabled": true, "entries": {}, "hits": 0, "misses": 0, "bypasses": 0}
 		Engine.set_meta(_RESULT_CACHE_META_KEY, state)
+		_load_persistent_entries(state)
 	return state
+
+
+## 完整结果缓存的统一查/存路径（票据 06）：solve()/analyze()/analyze_manifest()
+## 三入口共用——descriptor 规范文本全等校验、命中/未命中/旁路计数只此一处。
+## 返回命中解冻的报告；未命中/旁路计数后返回 null，由调用方现算。
+static func _cache_query(request: Dictionary) -> SolverReport:
+	var request_text: String = request.get("text", "")
+	var cacheable: bool = bool(request.get("cacheable", false))
+	if cacheable and result_cache_enabled():
+		var state := _cache_state()
+		var entries: Dictionary = state["entries"]
+		var digest: String = request["digest"]
+		if entries.has(digest):
+			var entry = entries[digest]
+			if entry is Dictionary and entry.get("descriptor", "") == request_text:
+				state["hits"] = int(state.get("hits", 0)) + 1
+				return _thaw_report(entry["snapshot"])
+		state["misses"] = int(state.get("misses", 0)) + 1
+	elif result_cache_enabled():
+		var state := _cache_state()
+		state["bypasses"] = int(state.get("bypasses", 0)) + 1
+	return null
+
+
+## 条目写入进程内缓存并发布到 per-job fragment（票据 06 持久化）；返回解冻副本，
+## 调用方拿到的报告与缓存快照不共享任何可变对象。
+static func _cache_store(request: Dictionary, report: SolverReport) -> SolverReport:
+	var state := _cache_state()
+	var entry := {"descriptor": request["text"], "snapshot": _freeze_report(report)}
+	state["entries"][request["digest"]] = entry
+	_persist_new_entry(request["digest"], entry)
+	return _thaw_report(entry["snapshot"])
+
+
+## 未 consult 缓存就返回的请求（非法选项、manifest 加载失败、拒绝形态）计一次
+## bypass——账面完整：hits+misses+bypasses == 全部请求，0/0/0 型异常无处藏身。
+static func _count_cache_bypass() -> void:
+	if result_cache_enabled():
+		var state := _cache_state()
+		state["bypasses"] = int(state.get("bypasses", 0)) + 1
+
+
+## 持久化缓存文件（票据 06）：首行 header（schema/version），其后每行一条
+## `{"digest": ..., "entry": "<var_to_str 条目>"}`——JSON 行保证 Python 编排器可
+## 无锁合并，var_to_str 内编码保证 int/float/String 类型逐字段保真（JSON 解析
+## 会把 int 变 float，故不直接 JSON 化条目）。
+const _RESULT_CACHE_FILE_SCHEMA := "ftg-demo-solver-result-cache"
+const _RESULT_CACHE_FILE_VERSION := 1
+const _CACHE_CANONICAL_ENV := "FTG_SOLVER_RESULT_CACHE"
+const _CACHE_FRAGMENT_ENV := "FTG_SOLVER_RESULT_CACHE_FRAGMENT"
+
+## 验收基线模式：编排器经 `-- --acceptance-no-reuse` 传入，持久层不加载不写入。
+static var _acceptance_no_reuse := "--acceptance-no-reuse" in OS.get_cmdline_user_args()
+## 本进程发布到 fragment 的新条目（digest → entry）；每次存储后整文件重写，
+## 无锁且崩溃安全（坏行在加载/合并侧被跳过）。
+static var _fragment_entries := {}
+
+
+static func _persistence_active() -> bool:
+	return not _acceptance_no_reuse and OS.get_environment(_CACHE_FRAGMENT_ENV) != ""
+
+
+## job 启动只读加载规范缓存（环境变量由编排器注入；header 缺失或版本不符则整
+## 文件拒载——与编排器合并器同口径）。已有同 digest 条目不覆盖——进程内结果优先。
+static func _load_persistent_entries(state: Dictionary) -> void:
+	if _acceptance_no_reuse:
+		return
+	var path := OS.get_environment(_CACHE_CANONICAL_ENV)
+	if path == "" or not FileAccess.file_exists(path):
+		return
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return
+	var loaded := {}
+	var saw_header := false
+	while not file.eof_reached():
+		var line := file.get_line().strip_edges()
+		if line == "":
+			continue
+		var parsed = JSON.parse_string(line)
+		if not (parsed is Dictionary):
+			continue
+		if parsed.has("digest"):
+			var digest := str(parsed.get("digest", ""))
+			var entry = str_to_var(str(parsed.get("entry", "")))
+			if digest != "" and entry is Dictionary and (entry as Dictionary).has("descriptor") \
+					and (entry as Dictionary).has("snapshot") and not loaded.has(digest):
+				loaded[digest] = entry
+		elif not saw_header:
+			saw_header = true
+			if str(parsed.get("schema", "")) != _RESULT_CACHE_FILE_SCHEMA \
+					or int(parsed.get("version", 0)) != _RESULT_CACHE_FILE_VERSION:
+				return
+	if not saw_header:
+		return
+	var entries: Dictionary = state["entries"]
+	for digest in loaded:
+		if not entries.has(digest):
+			entries[digest] = loaded[digest]
+
+
+static func _persist_new_entry(digest: String, entry: Dictionary) -> void:
+	if not _persistence_active():
+		return
+	_fragment_entries[digest] = entry
+	var path := OS.get_environment(_CACHE_FRAGMENT_ENV)
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_line(JSON.stringify({"schema": _RESULT_CACHE_FILE_SCHEMA, "version": _RESULT_CACHE_FILE_VERSION}))
+	for key in _fragment_entries:
+		file.store_line(JSON.stringify({"digest": key, "entry": var_to_str(_fragment_entries[key])}))
+	file.close()
+
+
+## 测试钩子（票据 06）：丢弃进程内缓存态与 fragment 记录，下次访问按环境变量
+## 重新执行启动加载——模拟全新 job 进程的冷启动。
+static func _test_fresh_cache_state() -> void:
+	if Engine.has_meta(_RESULT_CACHE_META_KEY):
+		Engine.remove_meta(_RESULT_CACHE_META_KEY)
+	_fragment_entries = {}
 
 
 ## 耗时分解插桩（票据 03，常开、非调试开关）：按调用点分类的墙钟累计，
@@ -652,17 +799,20 @@ static func solve(options: SolverOptions = null) -> SolverReport:
 	var opts := options if options != null else SolverOptions.new()
 	if opts.start != null and opts.start.stance == MoveData.Stance.AIR \
 			and (opts.start.air_frames < 0 or opts.start.air_frames >= GameParams.PLAYER_JUMP_AIRTIME_FRAMES):
+		_count_cache_bypass()
 		return _refused_start_state("air_frames=%d 超出普通跳 %d 帧滞空（落地后不再是空中姿态）" % [
 			opts.start.air_frames, GameParams.PLAYER_JUMP_AIRTIME_FRAMES,
 		])
 	if opts.spatial != null:
 		if opts.spatial.body_size != GameParams.BODY_SIZE:
+			_count_cache_bypass()
 			return _refused_spatial(
 				"空间数据的身体矩形 %s 与运行时身体矩形 %s 不一致——空间复验在真实 CombatSession 结算中进行，Solver 不维护第二套碰撞物理" % [
 					opts.spatial.body_size, GameParams.BODY_SIZE,
 				],
 				"调整 SolverSpatialData.body_size 与 GameParams.BODY_SIZE 一致后重新分析。")
 		if opts.start != null and opts.start.stance == MoveData.Stance.AIR:
+			_count_cache_bypass()
 			return _refused_spatial(
 				"首版空间探针只验证地面站位（双方站地）的 48/64/80 px 距离网格，与显式空中起始不匹配",
 				"使用地面起始做空间验证（空中站位的网格不在首版范围）。")
@@ -671,6 +821,7 @@ static func solve(options: SolverOptions = null) -> SolverReport:
 	if table.is_empty():
 		var result := MoveTable.load_manifest(opts.manifest_path)
 		if not result.ok:
+			_count_cache_bypass()
 			return _refused_report(result)
 		table = result.moves
 	else:
@@ -679,21 +830,9 @@ static func solve(options: SolverOptions = null) -> SolverReport:
 			table = copied["table"]
 	var facings: Array[int] = opts.facings.duplicate() if not opts.facings.is_empty() else [1, -1]
 	var request := _build_solve_request(options != null, opts, table, injected)
-	var request_text: String = request.get("text", "")
-	var cacheable: bool = bool(request.get("cacheable", false))
-	if cacheable and result_cache_enabled():
-		var state := _cache_state()
-		var entries: Dictionary = state["entries"]
-		var digest: String = request["digest"]
-		if entries.has(digest):
-			var entry = entries[digest]
-			if entry is Dictionary and entry.get("descriptor", "") == request_text:
-				state["hits"] = int(state.get("hits", 0)) + 1
-				return _thaw_report(entry["snapshot"])
-		state["misses"] = int(state.get("misses", 0)) + 1
-	elif result_cache_enabled():
-		var state := _cache_state()
-		state["bypasses"] = int(state.get("bypasses", 0)) + 1
+	var cached := _cache_query(request)
+	if cached != null:
+		return cached
 	var primary := ComboSolver.new(table)._analyze(facings[0], opts.start, true, opts.spatial)
 	var facing_texts: Array[String] = []
 	for facing in facings:
@@ -720,13 +859,8 @@ static func solve(options: SolverOptions = null) -> SolverReport:
 	if facings.size() > 1:
 		primary.summary += "左右面向分别验证%s。" % ("，镜像一致" if primary.mirror_consistent else "，但结果不一致（见注）")
 	primary.spatial_lines = _spatial_report_lines(primary, facings, opts.spatial != null)
-	if cacheable and result_cache_enabled() and not primary.refused:
-		var state := _cache_state()
-		state["entries"][request["digest"]] = {
-			"descriptor": request_text,
-			"snapshot": _freeze_report(primary),
-		}
-		return _thaw_report(state["entries"][request["digest"]]["snapshot"])
+	if bool(request.get("cacheable", false)) and result_cache_enabled() and not primary.refused:
+		return _cache_store(request, primary)
 	return primary
 
 
@@ -768,6 +902,55 @@ static func _build_solve_request(options_present: bool, opts: SolverOptions, tab
 		"start": {"present": opts.start != null, "value": start_value},
 		"facings": {"raw": opts.facings.duplicate(), "effective": effective_facings},
 		"spatial": {"present": opts.spatial != null, "value": spatial_value},
+		"probe": {
+			"pin_dx": PIN_DX,
+			"spatial_distances": SPATIAL_PROBE_DISTANCES.duplicate(),
+			"runtime_body_size": GameParams.BODY_SIZE,
+		},
+		"limits": {
+			"max_cycle_laps": MAX_CYCLE_LAPS,
+			"max_cycle_frames": MAX_CYCLE_FRAMES,
+			"recover_horizon": RECOVER_HORIZON,
+			"max_route_nodes": MAX_ROUTE_NODES,
+			"max_route_delay_trials": MAX_ROUTE_DELAY_TRIALS,
+			"max_air_delay": MAX_AIR_DELAY,
+			"cancel_window_frames": GameParams.CANCEL_WINDOW_FRAMES,
+			"route_delay_budget": MAX_ROUTE_DELAY_TRIALS,
+		},
+		"engine_version": Engine.get_version_info(),
+		"semantics": _solver_semantics_signature(),
+	}
+	var canonical := _canonical_variant(descriptor)
+	if canonical == "":
+		return {"cacheable": false, "text": "", "digest": ""}
+	return {"cacheable": true, "text": canonical, "digest": _sha256_text(canonical)}
+
+
+## analyze 入口的同型 descriptor（票据 06）：维度与 _build_solve_request 完全一致
+## （表内容、manifest 文件签名、引擎版本、全源码语义签名、限额常量），仅入口名与
+## 固定形状的选项字段不同——solve 的稳定排序/多面向报告与 analyze 的表序枚举是
+## 不同结果，entrypoint 单独成键使两入口永不互命中。
+static func _build_analyze_request(entrypoint: String, manifest_path: String, table: Dictionary, injected: bool) -> Dictionary:
+	var table_text := _canonical_variant(table)
+	if table_text == "":
+		return {"cacheable": false, "text": "", "digest": ""}
+	var descriptor := {
+		"request_schema_version": _REQUEST_SCHEMA_VERSION,
+		"report_snapshot_version": _REPORT_SNAPSHOT_VERSION,
+		"entrypoint": entrypoint,
+		"sort_outputs": false,
+		"options_present": false,
+		"table_source": "injected" if injected else "manifest",
+		"injected_nonempty": injected,
+		"table_schema_version": 1,
+		"table_content_digest": _sha256_text(table_text),
+		"manifest_path": manifest_path,
+		"manifest_signature": {"status": "not_used"} if injected else _manifest_signature(manifest_path),
+		"manifest_load_status": "not_used" if injected else "ok",
+		"table": table,
+		"start": {"present": false, "value": null},
+		"facings": {"raw": [], "effective": [1]},
+		"spatial": {"present": false, "value": null},
 		"probe": {
 			"pin_dx": PIN_DX,
 			"spatial_distances": SPATIAL_PROBE_DISTANCES.duplicate(),

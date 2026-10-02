@@ -20,6 +20,16 @@ DEFAULT_EXCLUDE = ("seconds", "total_seconds", "solver_elapsed_ms",
                    "total_ms", "delay_leaf_ms", "edge_probe_ms",
                    "gap_enum_ms", "route_walk_ms", "other_ms")
 
+# Tier B (ADR-0006 rev4, ticket 06): cross-mode comparisons (dedup fix, hot
+# cache, sweep vs cold serial baseline) additionally exclude cache/profiling
+# counters and identity fields, and check structural invariants instead:
+# hits+misses+bypasses == solver_calls per Solver job (complete cache accounting
+# — bypasses are refused/unkeyable requests that never consult the cache; the
+# ADR's hits+misses==calls is the bypasses==0 special case), and the
+# fingerprint/keys mapping (report_fingerprints / solver_report_keys) compared
+# field by field by walk().
+TIER_B_EXCLUDE = ("combo_cache", "solver_profile", "mode", "appdata")
+
 
 def load(path: str):
     with io.open(path, "r", encoding="utf-8-sig") as handle:
@@ -57,22 +67,54 @@ def walk(a, b, path: str, exclude: set, diffs: list) -> None:
         diffs.append("%s: %r != %r" % (path, a, b))
 
 
+def _tier_b_invariants(summary, side: str, diffs: list) -> None:
+    for row in summary.get("tests", []):
+        calls = row.get("solver_calls", 0) or 0
+        cache = row.get("combo_cache") or {}
+        hits = cache.get("hits", 0) or 0
+        misses = cache.get("misses", 0) or 0
+        bypasses = cache.get("bypasses", 0) or 0
+        if calls > 0 and hits + misses + bypasses != calls:
+            diffs.append("%s.tests[%s]: combo_cache hits+misses+bypasses=%d "
+                         "(hits=%d misses=%d bypasses=%d) != solver_calls=%d"
+                         % (side, row.get("test"), hits + misses + bypasses,
+                            hits, misses, bypasses, calls))
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("left")
     parser.add_argument("right")
     parser.add_argument("--exclude", nargs="*", default=[],
                         help="extra field names to skip, added to the default timing exclusions")
+    parser.add_argument("--tier-b", action="store_true",
+                        help="cross-mode gate (ADR-0006 rev4): additionally exclude "
+                             "combo_cache/solver_profile/mode/appdata and require "
+                             "hits+misses+bypasses == solver_calls per Solver job")
+    parser.add_argument("--invariant-side", choices=("both", "left", "right"), default="both",
+                        help="which side(s) the tier B accounting invariant applies to; a frozen "
+                             "pre-fix baseline legitimately violates it, so baseline comparisons "
+                             "check only the current side (right)")
     args = parser.parse_args(argv)
     exclude = set(DEFAULT_EXCLUDE) | set(args.exclude)
+    if args.tier_b:
+        exclude |= set(TIER_B_EXCLUDE)
     diffs = []
-    walk(load(args.left), load(args.right), "$", exclude, diffs)
+    left = load(args.left)
+    right = load(args.right)
+    walk(left, right, "$", exclude, diffs)
+    if args.tier_b:
+        if args.invariant_side in ("both", "left"):
+            _tier_b_invariants(left, "left", diffs)
+        if args.invariant_side in ("both", "right"):
+            _tier_b_invariants(right, "right", diffs)
     if diffs:
         for line in diffs:
             print(line)
         print("DIFF: %d mismatching field(s)" % len(diffs))
         return 1
-    print("OK: summaries equal (excluding %s)" % ", ".join(sorted(exclude)))
+    print("OK: summaries equal (excluding %s)%s"
+          % (", ".join(sorted(exclude)), " [tier B]" if args.tier_b else ""))
     return 0
 
 

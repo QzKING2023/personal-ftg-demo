@@ -17,3 +17,5 @@
 - **Tier A（同模式对拍）**：冷对冷（并行对串行、插桩前后、前缀恢复前后）——compare_summaries 全字段相等，排除集仅修订一/三累计的计时测量字段；`*_runs` 计数与 `combo_cache` 必须相等。
 - **Tier B（跨模式对拍）**：去重/热跑/清扫跑 vs 冷串行基线——在全字段相等上追加排除 `combo_cache`/`solver_profile`/`mode`（及 `appdata`，票据 02 既有）；语义载体全数保留：各 job 退出码、script_errors、断言数、pass_lines、`solver_calls`、`report_fingerprints`（指纹+次数+keys 请求序键）逐字段相等。另加不变量：各 Solver job `hits+misses==calls`；清扫热跑 misses==0 为通过形态（>0 如实记录为枚举缺口/性能债，不判死）；枚举双跑 descriptor 序列确定。
 - 分级原则：Tier B 不是放松——移出比对的字段由不变量接管，而非置之不理；凡比较双方运行模式相同，必须用 Tier A。
+
+修订五（2026-10-02，票据 06 实现时）：两处落地口径澄清，不动两级制本身。①不变量的完整账面形式为 `hits+misses+bypasses==calls`——refused/不可键请求（非法选项、manifest 加载失败、拒绝形态）自本票起计 bypass（此前这类请求全然不计，修订四的字面形式 `hits+misses==calls` 在含拒绝请求的 job 上对 02 基线即不成立，如 test_smoke 的坏 manifest 分析）；`bypasses==0` 的 job 上两者同式，0/0/0 型零计数异常在完整账面下依然必被抓获。②对**跨树基线**（冻结的 02 串行基线 vs 后续票种的树）做 Tier B 时，若票种自身新增了测试断言，`pass_lines`/`assertions`/`total_assertions` 追加排除并记录增量——语义载体以 `report_fingerprints`（含 keys）与退出码/script_errors 为准；同树对拍（如冷对热）仍逐字段含断言数。

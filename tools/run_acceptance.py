@@ -28,6 +28,13 @@ from pathlib import Path
 DEFAULT_ENGINE = "D:/Godot/Godot_v4.5.1-stable_mono_win64_console.exe"
 DEFAULT_OUTPUT = ".scratch/ftg-combat-foundation/acceptance-2026-09-17/final"
 METRICS_PREFIX = "ACCEPTANCE_SOLVER_METRICS_JSON="
+# Persistent solver result cache (ticket 06): canonical file plus per-job
+# fragments under <output>/cache-fragments/, merged back at run end. The Godot
+# side loads/reads via these env vars; --no-reuse sets neither and skips merge.
+CACHE_CANONICAL_ENV = "FTG_SOLVER_RESULT_CACHE"
+CACHE_FRAGMENT_ENV = "FTG_SOLVER_RESULT_CACHE_FRAGMENT"
+CACHE_HEADER = {"schema": "ftg-demo-solver-result-cache", "version": 1}
+DEFAULT_CACHE_RELATIVE = ".cache/acceptance/solver-results.cache"
 
 # Godot script errors can abort a single test function while the process still
 # exits 0, so the log must be scanned separately. Select-String is
@@ -83,7 +90,21 @@ def parse_metrics(lines: list):
         return None
 
 
-def run_job(job: dict, engine: str, project_root: Path, log_root: Path, no_reuse: bool) -> dict:
+def _job_env(runtime: Path, cache: Path, fragment: Path) -> dict:
+    env = dict(os.environ)
+    env["APPDATA"] = str(runtime)
+    env["LOCALAPPDATA"] = str(runtime)
+    if cache is not None:
+        # The engine's FileAccess cannot create missing parent directories,
+        # so the fragment directory must exist before the job starts.
+        fragment.parent.mkdir(parents=True, exist_ok=True)
+        env[CACHE_CANONICAL_ENV] = str(cache)
+        env[CACHE_FRAGMENT_ENV] = str(fragment)
+    return env
+
+
+def run_job(job: dict, engine: str, project_root: Path, log_root: Path, no_reuse: bool,
+            cache: Path = None) -> dict:
     runtime = log_root / ("runtime-" + job["name"])
     runtime.mkdir(parents=True, exist_ok=True)
     argv = [
@@ -97,9 +118,8 @@ def run_job(job: dict, engine: str, project_root: Path, log_root: Path, no_reuse
     if no_reuse and job["name"] not in ("import", "main-smoke"):
         argv += ["--", "--acceptance-no-reuse"]
 
-    env = dict(os.environ)
-    env["APPDATA"] = str(runtime)
-    env["LOCALAPPDATA"] = str(runtime)
+    fragment = log_root / "cache-fragments" / (job["name"] + ".fragment")
+    env = _job_env(runtime, cache, fragment)
 
     log_path = log_root / (job["name"] + ".log")
     started = time.perf_counter()
@@ -129,6 +149,9 @@ def run_job(job: dict, engine: str, project_root: Path, log_root: Path, no_reuse
         "combo_cache": metrics.get("combo_cache") if metrics else {},
         "solver_profile": (metrics or {}).get("profile_totals") or {},
         "report_fingerprints": [str(v) if (v := r.get("fingerprint")) is not None else "" for r in reports],
+        # Per-unique-report request keys (ticket 06 Tier B invariant): the hot/cold
+        # gate requires the fingerprint→keys mapping to match field by field.
+        "solver_report_keys": [[str(k) for k in (r.get("keys") or [])] for r in reports],
         "appdata": str(runtime),
     }
 
@@ -140,6 +163,88 @@ def write_json(path: Path, payload) -> None:
         json.dump(payload, handle, indent=4, ensure_ascii=True)
 
 
+def _read_cache_file(path: Path):
+    """Parse one cache file: (ordered digest→line dict, bad_line_count, header_ok)."""
+    entries: dict = {}
+    bad = 0
+    saw_header = False
+    header_ok = True
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+        except ValueError:
+            bad += 1
+            continue
+        if not isinstance(obj, dict):
+            bad += 1
+            continue
+        if "digest" in obj:
+            digest = obj.get("digest")
+            entry = obj.get("entry")
+            if not (isinstance(digest, str) and digest and isinstance(entry, str) and entry):
+                bad += 1
+            elif digest not in entries:
+                entries[digest] = obj
+        elif "schema" in obj:
+            saw_header = True
+            if obj.get("schema") != CACHE_HEADER["schema"] \
+                    or obj.get("version") != CACHE_HEADER["version"]:
+                # Unknown format: drop the file wholesale, mirroring the Godot
+                # loader (entries are then rebuilt from fragments).
+                return {}, bad, False
+        else:
+            bad += 1
+    return entries, bad, header_ok and saw_header
+
+
+def merge_cache_fragments(canonical: Path, fragment_dir: Path, report_path: Path = None) -> dict:
+    """Lock-free fragment merge (ticket 06): union canonical + per-job fragments
+    keyed by digest (canonical first, fragments in sorted name order — a fixed
+    merge order keeps re-merging the same inputs byte-identical / idempotent).
+    The canonical file is replaced atomically; corrupt lines are skipped."""
+    entries: dict = {}
+    before = 0
+    if canonical.is_file():
+        canonical_entries, _, ok = _read_cache_file(canonical)
+        if ok:
+            entries.update(canonical_entries)
+            before = len(entries)
+    fragments = []
+    merged_new = 0
+    frag_paths = sorted(fragment_dir.glob("*.fragment")) if fragment_dir.is_dir() else []
+    for frag in frag_paths:
+        frag_entries, bad, _ = _read_cache_file(frag)
+        added = sum(1 for digest in frag_entries if digest not in entries)
+        for digest in frag_entries:
+            if digest not in entries:
+                entries[digest] = frag_entries[digest]
+        merged_new += added
+        fragments.append({"file": frag.name, "entries": len(frag_entries),
+                          "merged_new": added, "bad_lines": bad})
+    canonical.parent.mkdir(parents=True, exist_ok=True)
+    tmp = canonical.with_name(canonical.name + ".tmp")
+    with open(tmp, "w", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(CACHE_HEADER, separators=(",", ":")) + "\n")
+        for digest in entries:
+            handle.write(json.dumps(entries[digest], separators=(",", ":"),
+                                    ensure_ascii=False) + "\n")
+    os.replace(str(tmp), str(canonical))
+    stats = {
+        "canonical": str(canonical),
+        "entries_before": before,
+        "fragments": fragments,
+        "entries_after": len(entries),
+        "merged_new": merged_new,
+    }
+    if report_path is not None:
+        with open(report_path, "w", encoding="utf-8") as handle:
+            json.dump(stats, handle, indent=2, ensure_ascii=False)
+    return stats
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Acceptance orchestrator (PS runner parity, parallel fan-out).")
     parser.add_argument("--engine", default=DEFAULT_ENGINE)
@@ -149,20 +254,24 @@ def main(argv=None) -> int:
     parser.add_argument("--serial", action="store_true",
                         help="force serial mode (equivalent to --concurrency 1; overrides --concurrency)")
     parser.add_argument("--cache", default=None,
-                        help="persistent solver cache path (placeholder, ticket 06)")
+                        help="persistent solver result cache file (default: %s; "
+                             "disabled entirely with --no-reuse)" % DEFAULT_CACHE_RELATIVE)
     parser.add_argument("--no-reuse", action="store_true",
-                        help="baseline mode: pass --acceptance-no-reuse to test jobs")
+                        help="baseline mode: pass --acceptance-no-reuse to test jobs and "
+                             "skip persistent cache loading/writing/merging")
     args = parser.parse_args(argv)
     if args.serial:
         args.concurrency = 1
     if args.concurrency < 1:
         parser.error("--concurrency must be >= 1")
-    if args.cache:
-        print("warning: --cache is a placeholder (ticket 06), ignored", file=sys.stderr)
 
     project_root = Path(__file__).resolve().parent.parent
     log_root = Path(os.path.abspath(str(project_root / args.output)))
     log_root.mkdir(parents=True, exist_ok=True)
+    cache = None
+    if not args.no_reuse:
+        cache = Path(os.path.abspath(str(project_root / args.cache))) if args.cache \
+            else project_root / DEFAULT_CACHE_RELATIVE
 
     jobs = discover_jobs(project_root)
     results = [None] * len(jobs)
@@ -176,16 +285,16 @@ def main(argv=None) -> int:
 
     # Import barrier: the import job writes the shared import-cache directory,
     # so it must exit before any concurrent test job starts (ticket 02).
-    record(0, run_job(jobs[0], args.engine, project_root, log_root, args.no_reuse))
+    record(0, run_job(jobs[0], args.engine, project_root, log_root, args.no_reuse, cache))
 
     remaining = list(enumerate(jobs[1:], start=1))
     if args.concurrency == 1:
         for index, job in remaining:
-            record(index, run_job(job, args.engine, project_root, log_root, args.no_reuse))
+            record(index, run_job(job, args.engine, project_root, log_root, args.no_reuse, cache))
     else:
         with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
             futures = {
-                pool.submit(run_job, job, args.engine, project_root, log_root, args.no_reuse): index
+                pool.submit(run_job, job, args.engine, project_root, log_root, args.no_reuse, cache): index
                 for index, job in remaining
             }
             for future in as_completed(futures):
@@ -204,6 +313,16 @@ def main(argv=None) -> int:
         "tests": results,
     }
     write_json(log_root / "summary.json", summary)
+    if cache is not None:
+        try:
+            stats = merge_cache_fragments(cache, log_root / "cache-fragments",
+                                          log_root / "cache-merge.json")
+            print("cache-merge: %d entries (+%d new from %d fragment(s))"
+                  % (stats["entries_after"], stats["merged_new"], len(stats["fragments"])),
+                  flush=True)
+        except OSError as error:
+            # Cache merge is an optimization, never an acceptance failure.
+            print("warning: cache merge failed: %s" % error, file=sys.stderr)
     # Failure predicate: only a real non-zero process exit code or a positive
     # script-error count; missing counts already normalized to 0 above.
     exit_code = 1 if any(r["exit"] != 0 or r["script_errors"] > 0 for r in results) else 0

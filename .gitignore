@@ -24,6 +24,9 @@ skills-lock.json
 # Python 工具缓存
 __pycache__/
 
+# 验收 Solver 结果持久化缓存（票据 06，本机派生物）
+.cache/
+
 # 系统文件
 .DS_Store
 Thumbs.db
