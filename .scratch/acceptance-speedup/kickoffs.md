@@ -7,6 +7,7 @@
 通用红线(每条提示词均引用,此处供人查阅):
 
 - **语义冻结(ADR-0006)**:字典序枚举、budget 按叶子计数、proof_mode 逐圈快照、首条成立即返回、失败代表性排序,一行不动;语义削减(候选/圈数/帧数/档位)禁止。
+- **等价 oracle 两级制(ADR-0006 修订四,2026-10-02)**:同模式对拍(冷对冷)全字段相等;跨模式(去重/热跑/清扫 vs 冷串行基线)走 Tier B——追加排除 combo_cache/solver_profile/mode/appdata,另加不变量。票据已写明适用级别,拿不准先查 ADR。
 - **验证经济学**:票据级验证只跑定向 test job + 差分 harness;全量只在 02(串行基线)和 07(终证)各跑一次。
 - **长任务**:一律后台运行,退出码落盘,以输出文件行数判活;不以进程名批量杀 Godot(会误杀并行实例)。
 - **开工协议**:先看 git 状态;若工作树有他票在途改动,停下来与用户确认。
@@ -72,25 +73,39 @@
 - 若触发:机制沿用 04 的前缀快照/恢复与差分门,不发明新机制;每个扩展点独立过门。
 ```
 
-## 06 跨进程结果缓存与 fragment 合并(Blocked by: 02)
+## 06 跨进程结果缓存、analyze 入口修复与 fragment 合并(Blocked by: 02)
 
 ```text
 /implement .scratch/acceptance-speedup/spec.md .scratch/acceptance-speedup/issues/06-persistent-result-cache.md
 
 会话约束:
-- 第一件事是查明 test_combo_solver 零缓存计数异常(禁用还是统计重置),结论写进票据再继续。
-- 命中校验与失效沿用现有 descriptor 全等与语义签名,本票只做持久化与合并,不改缓存键逻辑。
-- 冷/热门用覆盖全部唯一请求的定向子集或第二次全量;收益与理论上限(30 唯一/98 请求)对比,差异要解释。
+- 零缓存计数根因已定位(2026-10-02 grilling,见票据 Comments:缓存只在 solve() 查/写,analyze/analyze_manifest 入口不接);开工先核对票据里的修复形态(entrypoint="analyze" 同型 descriptor 接进同一查/存路径),不必重新调查。
+- 命中校验与失效沿用现有 descriptor 全等与语义签名;除 analyze 入口覆盖外不改缓存键逻辑,持久化与 fragment 合并照票据 AC 做。
+- 去重修复与冷/热门一律走 Tier B(ADR-0006 修订四):compare_summaries 追加排除 combo_cache/solver_profile/mode/appdata,不变量 hits+misses==calls,report_fingerprints 含 keys 逐字段相等。
+- 冷/热门用覆盖全部唯一请求的定向子集;收益与 02 基线实测的重复结构(combo 27 请求仅 11 唯一)对比,差异要解释。
 ```
 
-## 07 全量终证与分片触发判定(Blocked by: 04, 06;05 若实施则加)
+## 08 全局前置清扫分片(Blocked by: 06)
+
+```text
+/implement .scratch/acceptance-speedup/spec.md .scratch/acceptance-speedup/issues/08-global-sweep-sharding.md
+
+会话约束:
+- 前置确认:票据 06 已 implemented——fragment 格式与合并器是本票的直接依赖;工作树干净。
+- 枚举模式开关只走编排器内部传递(先例=票据 04 隐藏回退开关),不进验收参数、不进 --help;枚举跑产物全部丢弃,不进任何门。
+- 差分门先行:Tier B 门先在"全缓存命中"的 stub 形态下自洽,再接枚举与清扫扇出;枚举确定性双跑(同树两次 descriptor 序列相等)是第一个验收动作。
+- 验收只跑定向 job 子集 + 枚举确定性,不跑全量——全量清扫跑留给 07 终证。
+- 饱和度(各车道 busy 占比、三段墙钟)先在定向规模上量出正确形态再交票。
+```
+
+## 07 全量终证(Blocked by: 04, 06, 08;05 若实施则加)
 
 ```text
 /implement .scratch/acceptance-speedup/spec.md .scratch/acceptance-speedup/issues/07-final-proof-and-sharding-decision.md
 
 会话约束:
-- 前置确认:04、06(及 05 若实施)全部 implemented。
-- 本次全量必须是冷跑(全新缓存文件或 --acceptance-no-reuse),后台运行并按小时级轮询。
-- 墙钟 ≤1h 是整个工程的成败判据:达标则归档证据、完成分片触发判定(最长 job >20min 才开票);不达标则停下向用户报告差距与候选手段,不自作主张开分片票。
+- 前置确认:04、06、08(及 05 若实施)全部 implemented;分片判定已由 08 前置交付,本票不再有"开分片票"动作。
+- 本次全量必须是冷跑且用默认配置(清扫开、全新缓存文件,mode=acceptance-sweep),后台运行并按小时级轮询。
+- 墙钟 ≤1h 是整个工程的成败判据:达标则归档证据(Tier B 对拍 + 饱和度与余量推算);不达标则停下向用户报告差距与候选手段,不自作主张追加提速手段。
 - 更新量级基线数据到票据 Comments,供后续票据估计验收时长。
 ```
