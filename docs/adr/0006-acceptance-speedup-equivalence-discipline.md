@@ -9,3 +9,11 @@
 修订（2026-09-30，票据 01 落地时）：差分 oracle 的排除字段从 `seconds` 扩为 `seconds`/`total_seconds`/`solver_elapsed_ms` 三个——三者同为墙钟测量，同一 runner 两次运行也不相等，不扩则门自身不稳定；计数与 fingerprint 等全部其余字段仍逐字段相等。
 
 修订（2026-09-30，票据 03 落地时）：Solver 耗时分解插桩常开并透传进 summary（`solver_profile` 的 `total_ms`/`delay_leaf_ms`/`edge_probe_ms`/`gap_enum_ms`/`route_walk_ms`/`other_ms`），六个键与 `seconds` 同为墙钟测量，进同一排除集；其 `*_runs` 计数是确定性搜索形状量，保持逐字段相等。插桩本身零语义影响（只读墙钟、不改任何搜索行为与报告内容），归类为机械等价纪律下的观测手段而非提速变换。
+
+修订（2026-10-02，grilling 定案）：**job 内请求分片由条件票转正为第四类机械等价变换**（全局前置清扫，票据 08），废止本 ADR 正文"若做完后最长 job 仍 >20min，才追加 job 内请求分片票冲击 ≤30 分钟"的条件条款。转正依据：用户要求 8 核饱和，且 ≤1h 目标须为未来连段边增长保留余量（性能尽量高，而非"恰好达标"）。清扫 = 枚举（编排器专用 stub 模式：miss 记 descriptor、返回拒绝形态报告、不计算）→ 唯一请求跨 job 去重后铺满并发车道算完写缓存 fragment（复用票据 06 基建）→ 全部 job 热缓存正常跑；对搜索语义零触碰。
+
+同修订确立**差分 oracle 两级制**（自缓存去重/热跑/清扫起，全字段相等不再可能——缓存计数与 profile 计数"因设计而异"，它们是性能遥测而非语义载体）：
+
+- **Tier A（同模式对拍）**：冷对冷（并行对串行、插桩前后、前缀恢复前后）——compare_summaries 全字段相等，排除集仅修订一/三累计的计时测量字段；`*_runs` 计数与 `combo_cache` 必须相等。
+- **Tier B（跨模式对拍）**：去重/热跑/清扫跑 vs 冷串行基线——在全字段相等上追加排除 `combo_cache`/`solver_profile`/`mode`（及 `appdata`，票据 02 既有）；语义载体全数保留：各 job 退出码、script_errors、断言数、pass_lines、`solver_calls`、`report_fingerprints`（指纹+次数+keys 请求序键）逐字段相等。另加不变量：各 Solver job `hits+misses==calls`；清扫热跑 misses==0 为通过形态（>0 如实记录为枚举缺口/性能债，不判死）；枚举双跑 descriptor 序列确定。
+- 分级原则：Tier B 不是放松——移出比对的字段由不变量接管，而非置之不理；凡比较双方运行模式相同，必须用 Tier A。
