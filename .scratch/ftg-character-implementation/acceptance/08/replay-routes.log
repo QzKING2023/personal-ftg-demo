@@ -1,0 +1,212 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+=== R1 2C>6D>j2D>214C（L-01 例外全帧序）| 面向 1 | 起始间距 50 px ===
+  F4   RT START 2C（落地恢复余 0）
+  F13  RT HIT seg1 伤13.0 第1击 2C 玩家y=440.0 木桩y=438.2
+  F22  RT HITSTOP_ENDED（恢复首个正常帧）
+  F22  RT START 6D（落地恢复余 0）
+  F31  RT HIT seg1 伤15.1 第2击 6D 玩家y=428.0 木桩y=437.5
+  F40  RT HITSTOP_ENDED（恢复首个正常帧）
+  F40  RT START j2D（落地恢复余 0）
+  F48  RT HIT seg1 伤13.6 第3击  玩家y=440.0 木桩y=438.2
+  F57  RT HITSTOP_ENDED（恢复首个正常帧）
+  F57  RT START 214C（落地恢复余 5）
+  F65  RT HIT seg1 伤6.8 第4击 214C 玩家y=440.0 木桩y=440.0
+  F74  RT HITSTOP_ENDED（恢复首个正常帧）
+  F82  RT COMBO_ENDED 原因1
+  F83  RT DUMMY_RECOVERED
+  PASS  R1 路线四击成立 ["2C", "6D", "j2D", "214C"]
+  PASS  R1 落地当帧（F48）无新招：首帧锁保持
+  PASS  R1 214C 于落地后首个正常帧 F57 消费（停顿冻结 F49–F56，正常恢复要到 F62）
+  PASS  R1 例外消费延续同一连段（第 4 击 214C）
+
+=== R1 2C>6D>j2D>214C（L-01 例外全帧序）| 面向 -1 | 起始间距 50 px ===
+  F4   RT START 2C（落地恢复余 0）
+  F13  RT HIT seg1 伤13.0 第1击 2C 玩家y=440.0 木桩y=438.2
+  F22  RT HITSTOP_ENDED（恢复首个正常帧）
+  F22  RT START 6D（落地恢复余 0）
+  F31  RT HIT seg1 伤15.1 第2击 6D 玩家y=428.0 木桩y=437.5
+  F40  RT HITSTOP_ENDED（恢复首个正常帧）
+  F40  RT START j2D（落地恢复余 0）
+  F48  RT HIT seg1 伤13.6 第3击  玩家y=440.0 木桩y=438.2
+  F57  RT HITSTOP_ENDED（恢复首个正常帧）
+  F57  RT START 214C（落地恢复余 5）
+  F65  RT HIT seg1 伤6.8 第4击 214C 玩家y=440.0 木桩y=440.0
+  F74  RT HITSTOP_ENDED（恢复首个正常帧）
+  F82  RT COMBO_ENDED 原因1
+  F83  RT DUMMY_RECOVERED
+  PASS  R1 路线四击成立 ["2C", "6D", "j2D", "214C"]
+  PASS  R1 落地当帧（F48）无新招：首帧锁保持
+  PASS  R1 214C 于落地后首个正常帧 F57 消费（停顿冻结 F49–F56，正常恢复要到 F62）
+  PASS  R1 例外消费延续同一连段（第 4 击 214C）
+
+=== R1b 落地当帧输入 214C（记录但不消费）| 面向 1 ===
+  F22  R1b HIT seg1 伤18.0 第1击 j2D 玩家y=384.0 木桩y=440.0
+  F31  R1b HITSTOP_ENDED（恢复首个正常帧）
+  F45  R1b HIT seg1 伤9.0 第2击 214C 玩家y=440.0 木桩y=440.0
+  F54  R1b HITSTOP_ENDED（恢复首个正常帧）
+  F62  R1b COMBO_ENDED 原因1
+  F65  R1b DUMMY_RECOVERED
+  PASS  R1b 落地当帧（F36）按下的 214C 记录但不消费，落地后首个正常帧 F37 消费
+  PASS  R1b 连段延续到 214C（第 2 击）
+
+=== R2 2C>6D>j6D>5B（普通落地恢复 + 延迟普通连接）| 面向 1 | 起始间距 50 px ===
+  F4   RT START 2C（落地恢复余 0）
+  F13  RT HIT seg1 伤13.0 第1击 2C 玩家y=440.0 木桩y=438.2
+  F22  RT HITSTOP_ENDED（恢复首个正常帧）
+  F22  RT START 6D（落地恢复余 0）
+  F31  RT HIT seg1 伤15.1 第2击 6D 玩家y=428.0 木桩y=437.5
+  F40  RT HITSTOP_ENDED（恢复首个正常帧）
+  F40  RT START j6D（落地恢复余 0）
+  F47  RT HIT seg1 伤12.8 第3击 j6D 玩家y=436.5 木桩y=435.6
+  F56  RT HITSTOP_ENDED（恢复首个正常帧）
+  F60  RT START 5B（落地恢复余 0）
+  F66  RT HIT seg1 伤8.1 第4击 5B 玩家y=440.0 木桩y=440.0
+  F75  RT HITSTOP_ENDED（恢复首个正常帧）
+  F84  RT DUMMY_RECOVERED
+  F84  RT COMBO_ENDED 原因3
+  PASS  R2 路线四击成立 ["2C", "6D", "j6D", "5B"]（帧 [13, 31, 47, 66]）
+  PASS  R2 5B 于完整普通落地恢复（3+1）后的首个合法帧 F60 消费（落地 F56）
+  PASS  R2 j6D 命中时目标为空中目标、命中后保持浮空（对空连接前提）
+
+=== R2 2C>6D>j6D>5B（普通落地恢复 + 延迟普通连接）| 面向 -1 | 起始间距 50 px ===
+  F4   RT START 2C（落地恢复余 0）
+  F13  RT HIT seg1 伤13.0 第1击 2C 玩家y=440.0 木桩y=438.2
+  F22  RT HITSTOP_ENDED（恢复首个正常帧）
+  F22  RT START 6D（落地恢复余 0）
+  F31  RT HIT seg1 伤15.1 第2击 6D 玩家y=428.0 木桩y=437.5
+  F40  RT HITSTOP_ENDED（恢复首个正常帧）
+  F40  RT START j6D（落地恢复余 0）
+  F47  RT HIT seg1 伤12.8 第3击 j6D 玩家y=436.5 木桩y=435.6
+  F56  RT HITSTOP_ENDED（恢复首个正常帧）
+  F60  RT START 5B（落地恢复余 0）
+  F66  RT HIT seg1 伤8.1 第4击 5B 玩家y=440.0 木桩y=440.0
+  F75  RT HITSTOP_ENDED（恢复首个正常帧）
+  F84  RT DUMMY_RECOVERED
+  F84  RT COMBO_ENDED 原因3
+  PASS  R2 路线四击成立 ["2C", "6D", "j6D", "5B"]（帧 [13, 31, 47, 66]）
+  PASS  R2 5B 于完整普通落地恢复（3+1）后的首个合法帧 F60 消费（落地 F56）
+  PASS  R2 j6D 命中时目标为空中目标、命中后保持浮空（对空连接前提）
+
+=== R3 2C>6D>j5D 收束 + 挥空落地恢复 | 面向 1 | 起始间距 50 px ===
+  F4   RT START 2C（落地恢复余 0）
+  F13  RT HIT seg1 伤13.0 第1击 2C 玩家y=440.0 木桩y=438.2
+  F22  RT HITSTOP_ENDED（恢复首个正常帧）
+  F22  RT START 6D（落地恢复余 0）
+  F31  RT HIT seg1 伤15.1 第2击 6D 玩家y=428.0 木桩y=437.5
+  F40  RT HITSTOP_ENDED（恢复首个正常帧）
+  F40  RT START j5D（落地恢复余 0）
+  F46  RT HIT seg1 伤12.1 第3击 j5D 玩家y=426.9 木桩y=435.4
+  F55  RT HITSTOP_ENDED（恢复首个正常帧）
+  F60  RT COMBO_ENDED 原因2
+  F71  RT DUMMY_RECOVERED
+  PASS  R3 三击后路线收束 ["2C", "6D", "j5D"]
+  PASS  R3 收束按取消窗关闭/收招结束（原因 [{ "frame": 60, "reason": 2 }]）
+  PASS  R3 j5D 不取得任何落地资格
+  PASS  R3 挥空 j5D 同样承担空技落地恢复（落地余 3+1=4 帧）
+
+=== R3 2C>6D>j5D 收束 + 挥空落地恢复 | 面向 -1 | 起始间距 50 px ===
+  F4   RT START 2C（落地恢复余 0）
+  F13  RT HIT seg1 伤13.0 第1击 2C 玩家y=440.0 木桩y=438.2
+  F22  RT HITSTOP_ENDED（恢复首个正常帧）
+  F22  RT START 6D（落地恢复余 0）
+  F31  RT HIT seg1 伤15.1 第2击 6D 玩家y=428.0 木桩y=437.5
+  F40  RT HITSTOP_ENDED（恢复首个正常帧）
+  F40  RT START j5D（落地恢复余 0）
+  F46  RT HIT seg1 伤12.1 第3击 j5D 玩家y=426.9 木桩y=435.4
+  F55  RT HITSTOP_ENDED（恢复首个正常帧）
+  F60  RT COMBO_ENDED 原因2
+  F71  RT DUMMY_RECOVERED
+  PASS  R3 三击后路线收束 ["2C", "6D", "j5D"]
+  PASS  R3 收束按取消窗关闭/收招结束（原因 [{ "frame": 60, "reason": 2 }]）
+  PASS  R3 j5D 不取得任何落地资格
+  PASS  R3 挥空 j5D 同样承担空技落地恢复（落地余 3+1=4 帧）
+
+=== R4 反例组 | 面向 1 ===
+  PASS  R4a 挥空 j2D 落地当帧按收招未接续断连（F48）
+  PASS  R4a 214C 不早于正常恢复结束（起手 F55，落地 F48）
+  F4   RT START 2C（落地恢复余 0）
+  F13  RT HIT seg1 伤13.0 第1击 2C 玩家y=440.0 木桩y=438.2
+  F22  RT HITSTOP_ENDED（恢复首个正常帧）
+  F22  RT START 6D（落地恢复余 0）
+  F31  RT HIT seg1 伤15.1 第2击 6D 玩家y=428.0 木桩y=437.5
+  F40  RT HITSTOP_ENDED（恢复首个正常帧）
+  F40  RT START j2D（落地恢复余 0）
+  F48  RT HIT seg1 伤13.6 第3击  玩家y=440.0 木桩y=438.2
+  F57  RT HITSTOP_ENDED（恢复首个正常帧）
+  F57  RT COMBO_ENDED 原因2
+  F75  RT DUMMY_RECOVERED
+  PASS  R4b 命中前按下的 214C 不经例外补发（命中 ["2C", "6D", "j2D"]，起手 ["2C", "6D", "j2D"]）
+  F4   RT START 2C（落地恢复余 0）
+  F13  RT HIT seg1 伤13.0 第1击 2C 玩家y=440.0 木桩y=438.2
+  F22  RT HITSTOP_ENDED（恢复首个正常帧）
+  F22  RT START 6D（落地恢复余 0）
+  F31  RT HIT seg1 伤15.1 第2击 6D 玩家y=428.0 木桩y=437.5
+  F40  RT HITSTOP_ENDED（恢复首个正常帧）
+  F40  RT START j2D（落地恢复余 0）
+  F48  RT HIT seg1 伤13.6 第3击  玩家y=440.0 木桩y=438.2
+  F57  RT HITSTOP_ENDED（恢复首个正常帧）
+  F57  RT COMBO_ENDED 原因2
+  F62  RT START 236C（落地恢复余 0）
+  F75  RT DUMMY_RECOVERED
+  PASS  R4c 非声明目标（236C）不消费例外：资格落地后失效断连；236C 至多按独立招式在正常恢复后起手（F62，落地 F48，起手 ["2C", "6D", "j2D", "236C"]）
+  PASS  R4d 被防 j2D 不取得命中落地资格
+  F4   RT START 2C（落地恢复余 0）
+  F13  RT HIT seg1 伤13.0 第1击 2C 玩家y=440.0 木桩y=438.2
+  F22  RT HITSTOP_ENDED（恢复首个正常帧）
+  F22  RT START 6D（落地恢复余 0）
+  F31  RT HIT seg1 伤15.1 第2击 6D 玩家y=428.0 木桩y=437.5
+  F40  RT HITSTOP_ENDED（恢复首个正常帧）
+  F40  RT START j6D（落地恢复余 0）
+  F47  RT HIT seg1 伤12.8 第3击 j6D 玩家y=436.5 木桩y=435.6
+  F56  RT HITSTOP_ENDED（恢复首个正常帧）
+  F60  RT COMBO_ENDED 原因2
+  F75  RT DUMMY_RECOVERED
+  PASS  R4e j6D 不取得 j2D 例外（214C 起手 -1，落地 F56）
+
+=== R5 5A>5B>5C>6A>jc.jB>j5D | 面向 1 | 起始间距 50 px ===
+  F6   R5 HIT seg1 伤5.8 第1击 5A 玩家y=440.0 木桩y=440.0
+  F15  R5 HITSTOP_ENDED（恢复首个正常帧）
+  F21  R5 HIT seg1 伤7.8 第2击 5B 玩家y=440.0 木桩y=440.0
+  F30  R5 HITSTOP_ENDED（恢复首个正常帧）
+  F38  R5 HIT seg1 伤9.3 第3击 6A 玩家y=440.0 木桩y=440.0
+  F47  R5 HITSTOP_ENDED（恢复首个正常帧）
+  F54  R5 HIT seg1 伤8.4 第4击 6A 玩家y=440.0 木桩y=434.0
+  F63  R5 HITSTOP_ENDED（恢复首个正常帧）
+  F75  R5 HIT seg1 伤5.7 第5击 jB 玩家y=387.5 木桩y=392.3
+  F84  R5 HITSTOP_ENDED（恢复首个正常帧）
+  F90  R5 HIT seg1 伤6.8 第6击 j5D 玩家y=368.4 木桩y=400.2
+  F99  R5 HITSTOP_ENDED（恢复首个正常帧）
+  F107 R5 COMBO_ENDED 原因1
+  F113 R5 DUMMY_RECOVERED
+  PASS  R5 jB 命中确认取消进入空中 D 系（j5D 收束）：["5A", "5B", "5C", "6A", "jB", "j5D"]
+
+=== R5 5A>5B>5C>6A>jc.jB>j5D | 面向 -1 | 起始间距 50 px ===
+  F6   R5 HIT seg1 伤5.8 第1击 5A 玩家y=440.0 木桩y=440.0
+  F15  R5 HITSTOP_ENDED（恢复首个正常帧）
+  F21  R5 HIT seg1 伤7.8 第2击 5B 玩家y=440.0 木桩y=440.0
+  F30  R5 HITSTOP_ENDED（恢复首个正常帧）
+  F38  R5 HIT seg1 伤9.3 第3击 6A 玩家y=440.0 木桩y=440.0
+  F47  R5 HITSTOP_ENDED（恢复首个正常帧）
+  F54  R5 HIT seg1 伤8.4 第4击 6A 玩家y=440.0 木桩y=434.0
+  F63  R5 HITSTOP_ENDED（恢复首个正常帧）
+  F75  R5 HIT seg1 伤5.7 第5击 jB 玩家y=387.5 木桩y=392.3
+  F84  R5 HITSTOP_ENDED（恢复首个正常帧）
+  F90  R5 HIT seg1 伤6.8 第6击 j5D 玩家y=368.4 木桩y=400.2
+  F99  R5 HITSTOP_ENDED（恢复首个正常帧）
+  F107 R5 COMBO_ENDED 原因1
+  F113 R5 DUMMY_RECOVERED
+  PASS  R5 jB 命中确认取消进入空中 D 系（j5D 收束）：["5A", "5B", "5C", "6A", "jB", "j5D"]
+
+=== R6 独立跳 j2D 对地目标 > 214C | 面向 1 ===
+  F22  R6 HIT seg1 伤18.0 第1击 j2D 玩家y=384.0 木桩y=440.0
+  F31  R6 HITSTOP_ENDED（恢复首个正常帧）
+  F45  R6 HIT seg1 伤9.0 第2击 214C 玩家y=440.0 木桩y=440.0
+  F54  R6 HITSTOP_ENDED（恢复首个正常帧）
+  F62  R6 COMBO_ENDED 原因1
+  F65  R6 DUMMY_RECOVERED
+  PASS  R6 对地 j2D 命中（grounded 资料）同样取得一次性落地取消：["j2D", "214C"]
+  PASS  R6 连段延续到 214C（第 2 击）
+
+
+ALL REPLAY 08 CHECKS PASSED
