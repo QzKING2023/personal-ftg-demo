@@ -482,6 +482,9 @@ static func analyze_manifest(manifest_path: String) -> SolverReport:
 	var cached := _cache_query(request)
 	if cached != null:
 		return cached
+	var stub := _enumerate_intercept(request)
+	if stub != null:
+		return stub
 	return _finish_analyze_request(request, ComboSolver.new(result.moves)._analyze())
 
 
@@ -503,6 +506,9 @@ static func analyze(move_table: Dictionary = {}) -> SolverReport:
 	var cached := _cache_query(request)
 	if cached != null:
 		return cached
+	var stub := _enumerate_intercept(request)
+	if stub != null:
+		return stub
 	return _finish_analyze_request(request, ComboSolver.new(table)._analyze())
 
 
@@ -562,6 +568,8 @@ static func _cache_state() -> Dictionary:
 static func _cache_query(request: Dictionary) -> SolverReport:
 	var request_text: String = request.get("text", "")
 	var cacheable: bool = bool(request.get("cacheable", false))
+	if cacheable:
+		_last_request = {"text": request_text, "digest": request["digest"]}
 	if cacheable and result_cache_enabled():
 		var state := _cache_state()
 		var entries: Dictionary = state["entries"]
@@ -675,6 +683,74 @@ static func _test_fresh_cache_state() -> void:
 	if Engine.has_meta(_RESULT_CACHE_META_KEY):
 		Engine.remove_meta(_RESULT_CACHE_META_KEY)
 	_fragment_entries = {}
+
+
+## 票据 08 全局前置清扫：编排器专用枚举模式开关（env 传递，不进验收参数——
+## 先例 = 票据 04 的隐藏回退开关，--acceptance-no-reuse 下强制失效）。开启时
+## 缓存 miss 只记录 descriptor 并返回拒绝形态的完整 stub 报告（不计算）；命中
+## 返回真实报告。枚举跑的 stdout、summary 与退出码由编排器全部丢弃，不进任何门。
+const _ENUMERATE_ENV := "FTG_SOLVER_ENUMERATE"
+static var _enumerate_out_path := OS.get_environment(_ENUMERATE_ENV)
+## 枚举序（访问序全量，重复保留——去重是编排器的职责）；每次 miss 整文件重写，
+## 与 fragment 写入同一崩溃安全口径（坏行在收集侧被跳过）。
+static var _enumerated: Array = []
+
+
+static func _enumeration_active() -> bool:
+	return _enumerate_out_path != "" and not _acceptance_no_reuse
+
+
+## 枚举 stub：与 _refused_base 同形的完整拒绝报告（refused/理由/建议/scope 齐备，
+## 空 edges/routes/cycles 对测试断言只产生 FAIL 计数，_check 非致命——枚举跑能
+## 完整走完）。文案带 digest 前缀，便于人工核对 per-job 枚举序。
+static func _enumeration_stub(request: Dictionary) -> SolverReport:
+	_enumerated.append({"digest": request["digest"], "descriptor": request["text"]})
+	var file := FileAccess.open(_enumerate_out_path, FileAccess.WRITE)
+	if file != null:
+		for record in _enumerated:
+			file.store_line(JSON.stringify(record))
+		file.close()
+	var report := SolverReport.new()
+	report.refused = true
+	report.refusal_reason = "枚举模式（全局前置清扫）：请求 %s 只登记不计算" % request["digest"]
+	report.refusal_advice = "本报告来自枚举跑，全部产物丢弃；真实结果由清扫 worker 按 descriptor 重算并经缓存热跑交付。"
+	report.summary = "枚举模式 stub：请求已登记为待清扫计算单元，本次不产出任何结论。"
+	report.scope = SCOPE_TEXT
+	return report
+
+
+## 测试钩子（票据 08）：重置枚举序并把输出指向测试路径。
+static func _test_set_enumeration(path: String) -> void:
+	_enumerated = []
+	_enumerate_out_path = path
+
+
+## 测试钩子（票据 08）：快照/恢复完整枚举态（路径 + 序列）。验收的枚举跑中本
+## hook 的使用者也跑——恢复必须连同序列一起交还，否则 job 级 descriptor 文件
+## 会被空序重写截断。
+static func _test_snapshot_enumeration() -> Dictionary:
+	return {"path": _enumerate_out_path, "sequence": _enumerated.duplicate()}
+
+
+static func _test_restore_enumeration(snapshot: Dictionary) -> void:
+	_enumerate_out_path = str(snapshot.get("path", ""))
+	var sequence: Array = []
+	for record in snapshot.get("sequence", []):
+		sequence.append(record)
+	_enumerated = sequence
+
+
+## 三入口共用的枚举拦截点：仅 cacheable 请求（有完整 descriptor 供 worker 重建）
+## 登记为 stub；不可键请求照常现算（其结果本就不可缓存，也不可清扫）。
+static func _enumerate_intercept(request: Dictionary) -> SolverReport:
+	if _enumeration_active() and bool(request.get("cacheable", false)):
+		return _enumeration_stub(request)
+	return null
+
+
+## 最近一次 cacheable 请求的 canonical 文本与 digest（票据 08 清扫 worker 的重建
+## 校验入口：重建请求必须与之全等，否则 worker 报错退出、该条记为枚举缺口）。
+static var _last_request := {}
 
 
 ## 耗时分解插桩（票据 03，常开、非调试开关）：按调用点分类的墙钟累计，
@@ -833,6 +909,9 @@ static func solve(options: SolverOptions = null) -> SolverReport:
 	var cached := _cache_query(request)
 	if cached != null:
 		return cached
+	var stub := _enumerate_intercept(request)
+	if stub != null:
+		return stub
 	var primary := ComboSolver.new(table)._analyze(facings[0], opts.start, true, opts.spatial)
 	var facing_texts: Array[String] = []
 	for facing in facings:
@@ -1100,6 +1179,371 @@ static func _canonical_object(value: Object, type_name: String, fields: Array) -
 			return ""
 		result += "K" + str(field.length()) + ":" + field + ";" + field_text
 	return result
+
+
+## _canonical_variant 的机械逆（票据 08 清扫 worker 用）：byte 游标解析同一套
+## 类型化编码——字符串长度是 UTF-8 字节数，游标全程按字节推进；对象解出
+## {"__object__": 类型, "fields": {...}} 占位（typed 数组的属性提示只在宿主类上，
+## 还原在 _rehydrate_object 做）。字段数按 _x_VALUE_FIELDS 常量锁定，编码/解码
+## 共用同一常量源，schema 演进时两端口径天然同步。
+class _CanonicalReader extends RefCounted:
+	var _bytes := PackedByteArray()
+	var _pos := 0
+	var error := ""
+
+
+	func _init(text: String) -> void:
+		_bytes = text.to_utf8_buffer()
+
+
+	func _fail(message: String) -> void:
+		if error == "":
+			error = "%s（byte %d）" % [message, _pos]
+
+
+	func _has(count: int) -> bool:
+		return _pos + count <= _bytes.size()
+
+
+	func _starts_with(prefix: String) -> bool:
+		var want := prefix.to_utf8_buffer()
+		if not _has(want.size()):
+			return false
+		return _bytes.slice(_pos, _pos + want.size()) == want
+
+
+	func _byte_at(offset: int) -> int:
+		return _bytes[_pos + offset] if _has(offset + 1) else -1
+
+
+	func parse_value() -> Variant:
+		if error != "":
+			return null
+		if _starts_with("N;"):
+			_pos += 2
+			return null
+		if _starts_with("B1:1;"):
+			_pos += 5
+			return true
+		if _starts_with("B1:0;"):
+			_pos += 5
+			return false
+		if _starts_with("Fnan;"):
+			_pos += 5
+			return NAN
+		if not _has(1):
+			_fail("truncated value")
+			return null
+		var tag := char(_byte_at(0))
+		match tag:
+			"I", "F", "S", "Y":
+				_pos += 1
+				var length := _read_length_header()
+				if error != "" or length < 0 or not _has(length + 1):
+					_fail("截断的 %s token" % tag)
+					return null
+				var payload := _bytes.slice(_pos, _pos + length)
+				_pos += length
+				if _byte_at(0) != 59:
+					_fail("%s token 缺少分号" % tag)
+					return null
+				_pos += 1
+				match tag:
+					"I":
+						return payload.get_string_from_utf8().to_int()
+					"F":
+						return float(payload.get_string_from_utf8())
+					"S":
+						return payload.get_string_from_utf8()
+					_:
+						var hex_text := payload.get_string_from_utf8()
+						var out := PackedByteArray()
+						out.resize(hex_text.length() / 2)
+						for i in range(out.size()):
+							out[i] = hex_text.substr(i * 2, 2).hex_to_int()
+						return out
+			"V":
+				if not _starts_with("V2:"):
+					_fail("非法 V2 token")
+					return null
+				_pos += 3
+				var x = parse_value()
+				var y = parse_value()
+				if error != "":
+					return null
+				return Vector2(float(x), float(y))
+			"A":
+				_pos += 1
+				var count := _read_length_header()
+				if error != "" or count < 0 or not _starts_with("["):
+					_fail("非法数组头")
+					return null
+				_pos += 1
+				var items: Array = []
+				for _i in range(count):
+					items.append(parse_value())
+					if error != "":
+						return null
+				if not _starts_with("];"):
+					_fail("非法数组尾")
+					return null
+				_pos += 2
+				return items
+			"D":
+				_pos += 1
+				var pair_count := _read_length_header()
+				if error != "" or pair_count < 0 or not _starts_with("["):
+					_fail("非法字典头")
+					return null
+				_pos += 1
+				var dict := {}
+				for _i in range(pair_count):
+					var key = parse_value()
+					var value = parse_value()
+					if error != "":
+						return null
+					dict[key] = value
+				if not _starts_with("];"):
+					_fail("非法字典尾")
+					return null
+				_pos += 2
+				return dict
+			"O":
+				_pos += 1
+				var type_bytes := _read_until_byte(58)
+				if error != "":
+					return null
+				var type_text := type_bytes.get_string_from_utf8()
+				var field_count := _object_field_count(type_text)
+				if field_count < 0:
+					_fail("未知对象类型 %s" % type_text)
+					return null
+				var fields := {}
+				for _i in range(field_count):
+					if not _starts_with("K"):
+						_fail("非法字段头")
+						return null
+					_pos += 1
+					var name_length := _read_length_header()
+					if error != "" or name_length < 0 or not _has(name_length + 1):
+						_fail("非法字段名")
+						return null
+					var name_bytes := _bytes.slice(_pos, _pos + name_length)
+					_pos += name_length
+					if _byte_at(0) != 59:
+						_fail("字段名缺少分号")
+						return null
+					_pos += 1
+					fields[name_bytes.get_string_from_utf8()] = parse_value()
+					if error != "":
+						return null
+				return {"__object__": type_text, "fields": fields}
+		_fail("未知 token 标记")
+		return null
+
+
+	func _read_length_header() -> int:
+		var end := _pos
+		while end < _bytes.size() and _bytes[end] >= 48 and _bytes[end] <= 57:
+			end += 1
+		if end == _pos or end >= _bytes.size() or _bytes[end] != 58:
+			_fail("非法长度头")
+			return -1
+		var length := int(_bytes.slice(_pos, end).get_string_from_utf8())
+		_pos = end + 1
+		return length
+
+
+	func _read_until_byte(stop: int) -> PackedByteArray:
+		var end := _pos
+		while end < _bytes.size() and _bytes[end] != stop:
+			end += 1
+		if end >= _bytes.size():
+			_fail("未终止的 token")
+			return PackedByteArray()
+		var payload := _bytes.slice(_pos, end)
+		_pos = end + 1
+		return payload
+
+
+	func _object_field_count(type_text: String) -> int:
+		match type_text:
+			"MoveData":
+				return ComboSolver._MOVE_VALUE_FIELDS.size()
+			"MoveSegment":
+				return ComboSolver._SEGMENT_VALUE_FIELDS.size()
+			"HitProfile":
+				return ComboSolver._PROFILE_VALUE_FIELDS.size()
+		return -1
+
+
+## 解码入口：全文恰好一个值；{"ok", "value", "error"} 结果封套。
+static func _decode_canonical(text: String) -> Dictionary:
+	var reader := _CanonicalReader.new(text)
+	var value = reader.parse_value()
+	if reader.error != "":
+		return {"ok": false, "value": null, "error": reader.error}
+	if reader._pos != reader._bytes.size():
+		return {"ok": false, "value": null, "error": "尾部残留字节（byte %d/%d）" % [reader._pos, reader._bytes.size()]}
+	return {"ok": true, "value": value, "error": ""}
+
+
+## typed 数组的属性提示缓存（类名 → 字段 → hint_string）。typed 数组在属性表里
+## 报 PROPERTY_HINT_TYPE_STRING，hint_string 形如 "4:"（内置 String 元素）或
+## "24/17:HitProfile"（对象元素 + 类名），在 _typed_array_from 里归一解析。
+static var _typed_array_element_cache := {}
+
+
+static func _typed_array_element(type_text: String, field: String) -> String:
+	if not _typed_array_element_cache.has(type_text):
+		var specs := {}
+		var proto: Object = null
+		match type_text:
+			"MoveData":
+				proto = MoveData.new()
+			"MoveSegment":
+				proto = MoveSegment.new()
+			"HitProfile":
+				proto = HitProfile.new()
+		if proto != null:
+			for prop in proto.get_property_list():
+				var hint_string := str(prop.get("hint_string", ""))
+				if int(prop.get("hint", 0)) == PROPERTY_HINT_TYPE_STRING \
+						and hint_string != "" and hint_string.find(":") >= 0:
+					specs[str(prop.get("name", ""))] = hint_string
+		_typed_array_element_cache[type_text] = specs
+	return _typed_array_element_cache[type_text].get(field, "")
+
+
+static func _typed_array_from(values: Array, hint_string: String) -> Array:
+	var class_text := ""
+	var type_part := hint_string
+	var colon := hint_string.find(":")
+	if colon >= 0:
+		type_part = hint_string.substr(0, colon)
+		class_text = hint_string.substr(colon + 1)
+	var slash := type_part.find("/")
+	if slash >= 0:
+		type_part = type_part.substr(0, slash)
+	var element_type := TYPE_OBJECT if not type_part.is_valid_int() else int(type_part)
+	if element_type != TYPE_OBJECT:
+		return Array(values, element_type, &"", null)
+	# 脚本类元素：运行时构造器对非 ClassDB 类的校验不可靠，逐元素进类型化
+	# 局部数组（与测试代码同款手法）；未知元素类原样返回，由 canonical 全等
+	# 校验兜底裁决。
+	if class_text == "HitProfile":
+		var profiles: Array[HitProfile] = []
+		for value in values:
+			profiles.append(value)
+		return profiles
+	if class_text == "MoveSegment":
+		var segments: Array[MoveSegment] = []
+		for value in values:
+			segments.append(value)
+		return segments
+	return values
+
+
+## 占位对象 → 真实 MoveData/MoveSegment/HitProfile：canonical 编码只含值字段
+##（_canonical_object 的 schema 守卫保证缓存请求的全部行为字段都在编码内），
+## typed 数组按属性提示重建；其余字段原样赋值（枚举即 int）。
+static func _rehydrate_canonical(value):
+	if value is Dictionary and value.has("__object__"):
+		var fields: Dictionary = value["fields"]
+		var rehydrated = _rehydrate_object(str(value["__object__"]))
+		if rehydrated == null:
+			return null
+		for field in fields:
+			var coerced = _rehydrate_canonical(fields[field])
+			var hint_string := _typed_array_element(str(value["__object__"]), field)
+			if coerced is Array and hint_string != "":
+				coerced = _typed_array_from(coerced, hint_string)
+			(rehydrated as Object).set(field, coerced)
+		return rehydrated
+	if value is Array:
+		var items: Array = []
+		for item in value:
+			items.append(_rehydrate_canonical(item))
+		return items
+	if value is Dictionary:
+		var dict := {}
+		for key in value:
+			dict[key] = _rehydrate_canonical(value[key])
+		return dict
+	return value
+
+
+static func _rehydrate_object(type_text: String):
+	match type_text:
+		"MoveData":
+			return MoveData.new()
+		"MoveSegment":
+			return MoveSegment.new()
+		"HitProfile":
+			return HitProfile.new()
+	return null
+
+
+## descriptor 里的表（move_id → MoveData 占位）→ 可注入的 MoveData 表。
+static func _rehydrated_table(table_value) -> Dictionary:
+	var table := {}
+	if table_value is Dictionary:
+		for move_id in table_value:
+			var move = _rehydrate_canonical(table_value[move_id])
+			if move is MoveData:
+				table[move_id] = move
+	return table
+
+
+## 票据 08 清扫 worker 的重放入口：descriptor canonical 文本 → 解码 → 重建请求
+## 输入 → 调对应入口现算（存储路径即 06 的 fragment 写入）。重建请求必须与
+## descriptor 逐字节全等（_last_request 校验），否则 ok=false——该条记为枚举
+## 缺口，由热跑 miss 就地现算兜底正确性。
+static func _sweep_replay(descriptor_text: String) -> Dictionary:
+	var decoded := _decode_canonical(descriptor_text)
+	if not bool(decoded.get("ok", false)):
+		return {"ok": false, "error": "decode 失败：%s" % decoded.get("error", "")}
+	var descriptor: Dictionary = decoded["value"]
+	var facings_value: Dictionary = descriptor.get("facings", {})
+	match str(descriptor.get("entrypoint", "")):
+		"solve":
+			if bool(descriptor.get("options_present", false)):
+				var opts := SolverOptions.new()
+				opts.manifest_path = str(descriptor.get("manifest_path", MoveTable.DEFAULT_MANIFEST_PATH))
+				if str(descriptor.get("table_source", "")) == "injected":
+					opts.move_table = _rehydrated_table(descriptor.get("table", {}))
+				var raw: Array = facings_value.get("raw", [])
+				if not raw.is_empty():
+					var typed_facings: Array[int] = []
+					for facing in raw:
+						typed_facings.append(int(facing))
+					opts.facings = typed_facings
+				var start_value = descriptor.get("start", {}).get("value", null)
+				if start_value != null:
+					var start := SolverStartState.new()
+					start.stance = int((start_value as Dictionary).get("stance", 1))
+					start.air_frames = int((start_value as Dictionary).get("air_frames", 0))
+					opts.start = start
+				var spatial_value = descriptor.get("spatial", {}).get("value", null)
+				if spatial_value != null:
+					var spatial := SolverSpatialData.new()
+					spatial.body_size = (spatial_value as Dictionary).get("body_size", GameParams.BODY_SIZE)
+					opts.spatial = spatial
+				solve(opts)
+			else:
+				solve(null)
+		"analyze":
+			if str(descriptor.get("table_source", "")) == "injected":
+				analyze(_rehydrated_table(descriptor.get("table", {})))
+			else:
+				analyze({})
+		"analyze_manifest":
+			analyze_manifest(str(descriptor.get("manifest_path", "")))
+		_:
+			return {"ok": false, "error": "未知 entrypoint：%s" % descriptor.get("entrypoint", "")}
+	if str(_last_request.get("text", "")) != descriptor_text:
+		return {"ok": false, "error": "重建请求不相等（重建 digest=%s）" % _last_request.get("digest", "")}
+	return {"ok": true, "error": ""}
 
 
 static func _freeze_report(report: SolverReport) -> Dictionary:

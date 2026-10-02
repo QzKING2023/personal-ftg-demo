@@ -24,6 +24,10 @@ func _initialize() -> void:
 	_test_tampered_descriptor_entry_is_ignored()
 	_test_persistence_off_without_env_or_with_no_reuse()
 	_test_persistence_skipped_when_cache_disabled()
+	_test_enumeration_stub_records_sequence_and_refuses()
+	_test_enumeration_hit_returns_real_report()
+	_test_canonical_decode_round_trip()
+	_test_sweep_replay_rebuilds_and_validates()
 	print("")
 	if _failures == 0:
 		print("ALL SOLVER CACHE TESTS PASSED")
@@ -279,6 +283,148 @@ func _test_tampered_descriptor_entry_is_ignored() -> void:
 	ComboSolver._test_fresh_cache_state()
 	_remove_cache_file(canonical)
 	_remove_cache_file(fragment)
+
+
+## 票据 08 枚举模式：miss 记 descriptor、返回完整拒绝 stub（不计算）、重复
+## 请求保留在序列里；序列两次生成逐字节确定。验收的枚举跑也会运行本文件——
+## 无 env 时用自有文件做全套断言，枚举 env 激活时请求照常进 job 级序列
+##（清扫覆盖由编排器门裁决），只断言 stub 行为本身。
+func _test_enumeration_stub_records_sequence_and_refuses() -> void:
+	var own_file := not ComboSolver._enumeration_active()
+	var out := "user://solver_cache_enumerate.jsonl"
+	if own_file:
+		_remove_cache_file(out)
+		ComboSolver._test_set_enumeration(out)
+	ComboSolver.clear_result_cache()
+	ComboSolver.set_result_cache_enabled(true)
+	var table := _tiny_table(51)
+	var options := _options(table)
+	var first := ComboSolver.solve(options)
+	_check(first.refused and first.refusal_reason.contains("枚举模式"),
+		"enumeration miss returns a complete refused stub (reason carries the mode tag)")
+	_check(first.scope.length() > 100, "the enumeration stub carries the full scope text")
+	var second := ComboSolver.analyze(table)
+	_check(second.refused, "enumeration miss on the analyze entrypoint also returns a stub")
+	if not own_file:
+		return
+	var lines := _read_file_lines(out)
+	_check(lines.size() == 2, "every miss appends one descriptor line (repeats preserved)")
+	var first_line = JSON.parse_string(lines[0])
+	_check(first_line is Dictionary and str(first_line.get("digest", "")).length() == 64
+			and str(first_line.get("descriptor", "")).contains("S5:solve;"),
+		"a solve descriptor line carries the sha256 digest and the canonical text")
+	## 同两请求再枚举一轮：序列逐字节重现（枚举确定性，进程内口径）。
+	ComboSolver._test_set_enumeration(out)
+	var again := ComboSolver.solve(options)
+	ComboSolver.analyze(table)
+	_check(again.refused, "re-enumeration still stubs (nothing is ever computed or stored)")
+	var replay_lines := _read_file_lines(out)
+	_check(str(lines) == str(replay_lines),
+		"the per-job descriptor sequence is byte-identical across enumeration rounds")
+	ComboSolver._test_set_enumeration("")
+	_remove_cache_file(out)
+
+
+## 票据 08 枚举模式：缓存命中时返回真实报告（不做 stub），序列不增长——
+## 增量清扫的既有条目不再进入唯一请求清单。
+func _test_enumeration_hit_returns_real_report() -> void:
+	var out := "user://solver_cache_enumerate.jsonl"
+	var snapshot := ComboSolver._test_snapshot_enumeration()
+	var own_file := not ComboSolver._enumeration_active()
+	if own_file:
+		_remove_cache_file(out)
+	ComboSolver._test_set_enumeration("")
+	ComboSolver.clear_result_cache()
+	ComboSolver.set_result_cache_enabled(true)
+	var table := _tiny_table(52)
+	var options := _options(table)
+	var computed := ComboSolver.solve(options)
+	if own_file:
+		ComboSolver._test_set_enumeration(out)
+	else:
+		ComboSolver._test_restore_enumeration(snapshot)
+	var warm := ComboSolver.solve(options)
+	_check(not warm.refused and _report_signature(warm) == _report_signature(computed),
+		"an enumeration-mode cache hit returns the real report, not a stub")
+	if own_file:
+		_check(_read_file_lines(out).is_empty(),
+			"a cache hit records nothing — already-covered requests are not swept")
+		ComboSolver._test_set_enumeration("")
+		_remove_cache_file(out)
+	else:
+		ComboSolver._test_restore_enumeration(snapshot)
+
+
+## 票据 08 canonical 解码器：descriptor → 解码 → MoveData 还原 → 重编码，
+## canonical 文本与 digest 逐字节全等（worker 重建请求纯机械的 oracle）。
+func _test_canonical_decode_round_trip() -> void:
+	var table := _tiny_table(53)
+	(table["cache_probe"] as MoveData).cancel_targets = ["cache_probe"]
+	(table["cache_probe"] as MoveData).motion_x_px = 12.5
+	var options := _options(table)
+	var request := ComboSolver._build_solve_request(true, options, table, true)
+	_check(bool(request.get("cacheable", false)), "the round-trip probe uses a cacheable request")
+	var decoded: Dictionary = ComboSolver._decode_canonical(str(request["text"]))
+	_check(bool(decoded.get("ok", false)), "decoding the canonical request text succeeds")
+	var descriptor: Dictionary = decoded.get("value", {})
+	_check(str(descriptor.get("entrypoint", "")) == "solve", "the decoded descriptor keeps its entrypoint")
+	var rebuilt_table := ComboSolver._rehydrated_table(descriptor.get("table", {}))
+	_check(rebuilt_table.has("cache_probe") and rebuilt_table["cache_probe"] is MoveData,
+		"the decoded table rehydrates into real MoveData objects")
+	var move := rebuilt_table["cache_probe"] as MoveData
+	_check(move.base_damage == 53 and move.motion_x_px == 12.5
+			and move.cancel_targets == ["cache_probe"] and move.hit_profiles.size() == 1,
+		"rehydrated MoveData values survive the encode/decode round trip (ints, floats, typed arrays)")
+	var rebuilt_options := _options(rebuilt_table)
+	var rebuilt := ComboSolver._build_solve_request(true, rebuilt_options, rebuilt_table, true)
+	_check(str(rebuilt.get("text", "")) == str(request["text"]) and str(rebuilt.get("digest", "")) == str(request["digest"]),
+		"re-encoding the rehydrated table reproduces the canonical text byte for byte")
+
+
+## 票据 08 清扫重放：_sweep_replay 按 descriptor 重建请求并现算，重建文本必须与
+## descriptor 全等；损坏/未知的 descriptor 必须响亮失败（枚举缺口由热跑兜底）。
+## 枚举跑中本测试同样运行（stub 不影响全等校验），compute 路径在无 env 时覆盖。
+func _test_sweep_replay_rebuilds_and_validates() -> void:
+	ComboSolver.clear_result_cache()
+	ComboSolver.set_result_cache_enabled(true)
+	var own_file := not ComboSolver._enumeration_active()
+	var out := "user://solver_cache_enumerate.jsonl"
+	if own_file:
+		_remove_cache_file(out)
+		ComboSolver._test_set_enumeration(out)
+	var table := _tiny_table(54)
+	var options := _options(table)
+	ComboSolver.solve(options)
+	var lines := _read_file_lines(out if own_file else ComboSolver._enumerate_out_path)
+	if own_file:
+		ComboSolver._test_set_enumeration("")
+		_remove_cache_file(out)
+	_check(not lines.is_empty(), "the replay probe starts from one enumerated descriptor")
+	if lines.is_empty():
+		return
+	var record = JSON.parse_string(lines[lines.size() - 1])
+	var descriptor_text := str((record as Dictionary).get("descriptor", ""))
+	var result: Dictionary = ComboSolver._sweep_replay(descriptor_text)
+	_check(bool(result.get("ok", false)), "replaying a well-formed descriptor rebuilds the identical request")
+	var replay_again: Dictionary = ComboSolver._sweep_replay(descriptor_text)
+	_check(bool(replay_again.get("ok", false)), "replaying the same descriptor is idempotent (hit path)")
+	var truncated: Dictionary = ComboSolver._sweep_replay(descriptor_text.substr(0, descriptor_text.length() - 3))
+	_check(not bool(truncated.get("ok", false)), "a truncated descriptor fails loudly instead of guessing")
+	var unknown_entry: String = descriptor_text.replace("S5:solve;", "S6:solveX;")
+	var unknown: Dictionary = ComboSolver._sweep_replay(unknown_entry)
+	_check(not bool(unknown.get("ok", false)), "an unknown entrypoint fails loudly")
+	ComboSolver._last_request = {}
+	var missing_manifest: Dictionary = ComboSolver._sweep_replay(_manifest_descriptor_with_missing_path())
+	_check(not bool(missing_manifest.get("ok", false)),
+		"a replay that never builds a cacheable request (missing manifest) fails validation")
+	ComboSolver._last_request = {}
+
+
+func _manifest_descriptor_with_missing_path() -> String:
+	var manifest_path := "user://solver_cache_missing_manifest_for_replay.tres"
+	var table := _tiny_table(55)
+	var request := ComboSolver._build_analyze_request("analyze_manifest", manifest_path, table, false)
+	return str(request.get("text", ""))
 
 
 func _read_file_lines(path: String) -> Array:

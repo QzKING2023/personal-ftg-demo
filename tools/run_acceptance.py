@@ -35,6 +35,16 @@ CACHE_CANONICAL_ENV = "FTG_SOLVER_RESULT_CACHE"
 CACHE_FRAGMENT_ENV = "FTG_SOLVER_RESULT_CACHE_FRAGMENT"
 CACHE_HEADER = {"schema": "ftg-demo-solver-result-cache", "version": 1}
 DEFAULT_CACHE_RELATIVE = ".cache/acceptance/solver-results.cache"
+# Global pre-sweep (ticket 08): three stages — enumerate (stub mode, per-job
+# descriptor files, all outputs discarded) → unique requests fan out to one
+# worker process each over the same lanes → every job runs again warm against
+# the merged canonical cache. The enumerate switch is orchestrator-internal
+# (env only, never an acceptance argument); --sweep-stage enumerate stops after
+# the enumeration pass so the determinism gate can run it twice and diff.
+SWEEP_ENUMERATE_ENV = "FTG_SOLVER_ENUMERATE"
+SWEEP_TASK_FILE_ENV = "FTG_SWEEP_TASK_FILE"
+SWEEP_WORKER_SCRIPT = "res://tools/solver_sweep_worker.gd"
+SWEEP_WORKER_RESULT_PREFIX = "SWEEP_WORKER_RESULT="
 
 # Godot script errors can abort a single test function while the process still
 # exits 0, so the log must be scanned separately. Select-String is
@@ -90,7 +100,7 @@ def parse_metrics(lines: list):
         return None
 
 
-def _job_env(runtime: Path, cache: Path, fragment: Path) -> dict:
+def _job_env(runtime: Path, cache: Path, fragment: Path, enumerate_to: Path = None) -> dict:
     env = dict(os.environ)
     env["APPDATA"] = str(runtime)
     env["LOCALAPPDATA"] = str(runtime)
@@ -100,11 +110,19 @@ def _job_env(runtime: Path, cache: Path, fragment: Path) -> dict:
         fragment.parent.mkdir(parents=True, exist_ok=True)
         env[CACHE_CANONICAL_ENV] = str(cache)
         env[CACHE_FRAGMENT_ENV] = str(fragment)
+    if enumerate_to is not None:
+        enumerate_to.parent.mkdir(parents=True, exist_ok=True)
+        env[SWEEP_ENUMERATE_ENV] = str(enumerate_to)
+    else:
+        # Never let a stray FTG_SOLVER_ENUMERATE from the orchestrator's own
+        # environment leak into warm jobs or workers (stub mode is
+        # orchestrator-internal by contract).
+        env.pop(SWEEP_ENUMERATE_ENV, None)
     return env
 
 
 def run_job(job: dict, engine: str, project_root: Path, log_root: Path, no_reuse: bool,
-            cache: Path = None) -> dict:
+            cache: Path = None, enumerate_to: Path = None) -> dict:
     runtime = log_root / ("runtime-" + job["name"])
     runtime.mkdir(parents=True, exist_ok=True)
     argv = [
@@ -119,7 +137,7 @@ def run_job(job: dict, engine: str, project_root: Path, log_root: Path, no_reuse
         argv += ["--", "--acceptance-no-reuse"]
 
     fragment = log_root / "cache-fragments" / (job["name"] + ".fragment")
-    env = _job_env(runtime, cache, fragment)
+    env = _job_env(runtime, cache, fragment, enumerate_to)
 
     log_path = log_root / (job["name"] + ".log")
     started = time.perf_counter()
@@ -245,6 +263,243 @@ def merge_cache_fragments(canonical: Path, fragment_dir: Path, report_path: Path
     return stats
 
 
+def _read_descriptor_file(path: Path) -> list:
+    """One enumeration pass product: the ordered (digest, descriptor) request
+    sequence of a job. Malformed lines are skipped, mirroring the cache reader."""
+    records = []
+    if not path.is_file():
+        return records
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(obj, dict) and isinstance(obj.get("digest"), str) and obj["digest"] \
+                and isinstance(obj.get("descriptor"), str) and obj["descriptor"]:
+            records.append((obj["digest"], obj["descriptor"]))
+    return records
+
+
+def _collect_unique_descriptors(per_job: dict) -> dict:
+    """Cross-job dedup (digest → descriptor); downstream task order is the
+    sorted digest order, so this map's insertion order never leaks out."""
+    unique = {}
+    for name in sorted(per_job):
+        for digest, descriptor in per_job[name]:
+            if digest not in unique:
+                unique[digest] = descriptor
+    return unique
+
+
+def _parse_worker_results(log_path: Path) -> list:
+    results = []
+    for line in read_log_lines(log_path):
+        if line.startswith(SWEEP_WORKER_RESULT_PREFIX):
+            try:
+                payload = json.loads(line[len(SWEEP_WORKER_RESULT_PREFIX):])
+            except ValueError:
+                continue
+            if isinstance(payload, dict):
+                results.append(payload)
+    return results
+
+
+def run_sweep_task(index: int, digest: str, descriptor: str, engine: str, project_root: Path,
+                   sweep_root: Path, cache: Path) -> dict:
+    """One unique request → one worker process: descriptor → recompute →
+    cache fragment (ticket 06 infrastructure)."""
+    task_file = sweep_root / ("task-%04d.json" % index)
+    with open(task_file, "w", encoding="utf-8") as handle:
+        handle.write(json.dumps({"digest": digest, "descriptor": descriptor}) + "\n")
+    fragment = sweep_root / ("worker-%04d.fragment" % index)
+    runtime = sweep_root / ("runtime-%04d" % index)
+    runtime.mkdir(parents=True, exist_ok=True)
+    argv = [engine, "--headless", "--path", str(project_root), "-s", SWEEP_WORKER_SCRIPT]
+    env = dict(os.environ)
+    env["APPDATA"] = str(runtime)
+    env["LOCALAPPDATA"] = str(runtime)
+    env[CACHE_CANONICAL_ENV] = str(cache)
+    env[CACHE_FRAGMENT_ENV] = str(fragment)
+    env[SWEEP_TASK_FILE_ENV] = str(task_file)
+    env.pop(SWEEP_ENUMERATE_ENV, None)
+    log_path = sweep_root / ("worker-%04d.log" % index)
+    started = time.perf_counter()
+    with open(log_path, "wb") as sink:
+        code = subprocess.run(argv, cwd=str(project_root), env=env, stdout=sink,
+                              stderr=subprocess.STDOUT).returncode
+    elapsed = round(time.perf_counter() - started, 2)
+    worker_rows = _parse_worker_results(log_path)
+    replay_ok = all(bool(row.get("ok")) for row in worker_rows) and len(worker_rows) >= 1
+    return {
+        "digest": digest,
+        "exit": _int0(code),
+        "seconds": elapsed,
+        "replay_ok": replay_ok,
+        "log": log_path.name,
+    }
+
+
+def run_sweep(args, project_root: Path, log_root: Path, cache: Path, jobs: list) -> int:
+    """Ticket 08 three-stage global pre-sweep. The enumeration pass's stdout,
+    summaries and exit codes are discarded entirely — only its per-job descriptor
+    files feed the sweep; warm-run misses are recorded as enumeration gaps."""
+    results = [None] * len(jobs)
+
+    def record(index: int, row: dict) -> None:
+        results[index] = row
+        print(json.dumps(row, separators=(",", ":")), flush=True)
+        write_json(log_root / "summary.json", [r for r in results if r is not None])
+
+    remaining = list(enumerate(jobs[1:], start=1))
+
+    import_started = time.perf_counter()
+    record(0, run_job(jobs[0], args.engine, project_root, log_root, args.no_reuse, cache))
+    import_seconds = time.perf_counter() - import_started
+
+    descriptor_dir = log_root / "sweep" / "descriptors"
+    descriptor_dir.mkdir(parents=True, exist_ok=True)
+    enum_root = log_root / "enumerate"
+    enum_started = time.perf_counter()
+
+    def enumerate_one(item):
+        index, job = item
+        row = run_job(job, args.engine, project_root, enum_root, False, cache,
+                      enumerate_to=descriptor_dir / (job["name"] + ".jsonl"))
+        return index, job["name"], row
+
+    with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
+        enum_rows = {name: row for _, name, row in pool.map(enumerate_one, remaining)}
+    enum_seconds = time.perf_counter() - enum_started
+
+    per_job = {job["name"]: _read_descriptor_file(descriptor_dir / (job["name"] + ".jsonl"))
+               for _, job in remaining}
+    unique = _collect_unique_descriptors(per_job)
+    report = {
+        "mode": "acceptance-sweep",
+        "concurrency": args.concurrency,
+        "cache": str(cache),
+        "enumerate": {
+            "wall_seconds": round(enum_seconds, 2),
+            "jobs": {name: {
+                "exit": row["exit"],
+                "seconds": row["seconds"],
+                "requests": len(per_job[name]),
+            } for name, row in enum_rows.items()},
+            "requests_total": sum(len(v) for v in per_job.values()),
+            "unique_descriptors": len(unique),
+        },
+        "stage_walls": {"import": round(import_seconds, 2),
+                        "enumerate": round(enum_seconds, 2)},
+    }
+
+    if args.sweep_stage == "enumerate":
+        write_json(log_root / "sweep.json", report)
+        with open(log_root / "runner.status.txt", "w", encoding="ascii") as handle:
+            handle.write("exit=0\n")
+        print("sweep-enumerate: %d request(s) → %d unique descriptor(s), wall %.1fs"
+              % (report["enumerate"]["requests_total"], len(unique), enum_seconds), flush=True)
+        return 0
+
+    sweep_root = log_root / "sweep" / "workers"
+    sweep_root.mkdir(parents=True, exist_ok=True)
+    ordered = sorted(unique.items())
+    sweep_started = time.perf_counter()
+
+    def sweep_one(item):
+        index, (digest, descriptor) = item
+        return index, run_sweep_task(index, digest, descriptor, args.engine,
+                                     project_root, sweep_root, cache)
+
+    task_records = [None] * len(ordered)
+    if ordered:
+        with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
+            for index, row in pool.map(sweep_one, list(enumerate(ordered))):
+                task_records[index] = row
+    for row in task_records:
+        print("sweep-task: %s exit=%d replay_ok=%s %.1fs"
+              % (row["digest"][:12], row["exit"], row["replay_ok"], row["seconds"]), flush=True)
+    sweep_seconds = time.perf_counter() - sweep_started
+
+    merge_stats = None
+    try:
+        merge_stats = merge_cache_fragments(cache, sweep_root, log_root / "sweep-merge.json")
+    except OSError as error:
+        print("warning: sweep fragment merge failed: %s" % error, file=sys.stderr)
+    covered = set()
+    if cache is not None and cache.is_file():
+        entries, _, ok = _read_cache_file(cache)
+        if ok:
+            covered = set(entries)
+    gaps = [row["digest"] for row in task_records if row["digest"] not in covered]
+    busy_total = sum(row["seconds"] for row in task_records)
+    report["sweep"] = {
+        "wall_seconds": round(sweep_seconds, 2),
+        "lanes": args.concurrency,
+        "tasks": len(ordered),
+        "task_busy_seconds": round(busy_total, 2),
+        "lane_busy_ratio": round(busy_total / (args.concurrency * sweep_seconds), 4)
+                            if ordered and sweep_seconds > 0 else None,
+        "covered": len(ordered) - len(gaps),
+        "gaps": gaps,
+        "task_rows": [{"digest": row["digest"], "exit": row["exit"],
+                       "seconds": row["seconds"], "replay_ok": row["replay_ok"]}
+                      for row in task_records],
+        "merge": merge_stats,
+    }
+    report["stage_walls"]["sweep"] = round(sweep_seconds, 2)
+
+    warm_started = time.perf_counter()
+    if args.concurrency == 1:
+        for index, job in remaining:
+            record(index, run_job(job, args.engine, project_root, log_root, args.no_reuse, cache))
+    else:
+        with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
+            futures = {
+                pool.submit(run_job, job, args.engine, project_root, log_root, args.no_reuse, cache): index
+                for index, job in remaining
+            }
+            for future in as_completed(futures):
+                record(futures[future], future.result())
+    warm_seconds = time.perf_counter() - warm_started
+    report["stage_walls"]["warm"] = round(warm_seconds, 2)
+    report["stage_walls"]["total"] = round(import_seconds + enum_seconds + sweep_seconds + warm_seconds, 2)
+    report["warm"] = {
+        "wall_seconds": round(warm_seconds, 2),
+        "misses_total": sum(_int0((r.get("combo_cache") or {}).get("misses")) for r in results if r),
+    }
+
+    total_calls = sum(r["solver_calls"] for r in results)
+    total_reuse_hits = sum(r["solver_reuse_hits"] for r in results)
+    summary = {
+        "mode": "acceptance-sweep",
+        "total_seconds": round(sum(r["seconds"] for r in results), 2),
+        "total_assertions": sum(r["assertions"] for r in results),
+        "total_solver_calls": total_calls,
+        "total_solver_underlying_calls": sum(r["solver_underlying_calls"] for r in results),
+        "total_solver_reuse_hits": total_reuse_hits,
+        "solver_reuse_hit_rate": total_reuse_hits / total_calls if total_calls > 0 else 0.0,
+        "tests": results,
+    }
+    write_json(log_root / "summary.json", summary)
+    write_json(log_root / "sweep.json", report)
+    if cache is not None:
+        try:
+            stats = merge_cache_fragments(cache, log_root / "cache-fragments",
+                                          log_root / "cache-merge.json")
+            print("cache-merge: %d entries (+%d new from %d fragment(s))"
+                  % (stats["entries_after"], stats["merged_new"], len(stats["fragments"])),
+                  flush=True)
+        except OSError as error:
+            print("warning: cache merge failed: %s" % error, file=sys.stderr)
+    exit_code = 1 if any(r["exit"] != 0 or r["script_errors"] > 0 for r in results) else 0
+    with open(log_root / "runner.status.txt", "w", encoding="ascii") as handle:
+        handle.write("exit=%d\n" % exit_code)
+    return exit_code
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Acceptance orchestrator (PS runner parity, parallel fan-out).")
     parser.add_argument("--engine", default=DEFAULT_ENGINE)
@@ -259,11 +514,22 @@ def main(argv=None) -> int:
     parser.add_argument("--no-reuse", action="store_true",
                         help="baseline mode: pass --acceptance-no-reuse to test jobs and "
                              "skip persistent cache loading/writing/merging")
+    parser.add_argument("--sweep", action="store_true",
+                        help="global pre-sweep mode (ticket 08): enumerate every job first "
+                             "(stub mode, outputs discarded), compute the deduplicated unique "
+                             "requests across lanes into cache fragments, then run all jobs "
+                             "warm; requires the persistent cache")
+    parser.add_argument("--sweep-stage", choices=("all", "enumerate"), default="all",
+                        help="stop after the enumeration pass (determinism gate: run twice, "
+                             "diff the per-job descriptor sequences)")
     args = parser.parse_args(argv)
     if args.serial:
         args.concurrency = 1
     if args.concurrency < 1:
         parser.error("--concurrency must be >= 1")
+    if args.sweep and args.no_reuse:
+        parser.error("--sweep needs the persistent cache; --no-reuse is the reuse-free "
+                     "baseline mode (no enumeration, no sweep, no cache IO)")
 
     project_root = Path(__file__).resolve().parent.parent
     log_root = Path(os.path.abspath(str(project_root / args.output)))
@@ -274,6 +540,8 @@ def main(argv=None) -> int:
             else project_root / DEFAULT_CACHE_RELATIVE
 
     jobs = discover_jobs(project_root)
+    if args.sweep:
+        return run_sweep(args, project_root, log_root, cache, jobs)
     results = [None] * len(jobs)
 
     def record(index: int, row: dict) -> None:
