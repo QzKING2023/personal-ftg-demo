@@ -1,0 +1,121 @@
+[
+  {
+    "ProcessId": 6704,
+    "ParentProcessId": 24156,
+    "Name": "python.exe",
+    "CreationDate": "2026-10-03T12:07:05.274533+08:00",
+    "CommandLine": "C:\\Users\\q1625\\AppData\\Local\\Programs\\Python\\Python314\\python.exe tools/run_acceptance.py --sweep --output .scratch/ftg-character-implementation/acceptance/09/full-01"
+  },
+  {
+    "ProcessId": 43676,
+    "ParentProcessId": 6704,
+    "Name": "Godot_v4.5.1-stable_mono_win64_console.exe",
+    "CreationDate": "2026-10-03T12:18:20.073058+08:00",
+    "CommandLine": "D:/Godot/Godot_v4.5.1-stable_mono_win64_console.exe --headless --path D:\\Godot\\Program\\ftgdemo -s res://tools/solver_sweep_worker.gd"
+  },
+  {
+    "ProcessId": 35716,
+    "ParentProcessId": 6704,
+    "Name": "Godot_v4.5.1-stable_mono_win64_console.exe",
+    "CreationDate": "2026-10-03T15:01:36.95739+08:00",
+    "CommandLine": "D:/Godot/Godot_v4.5.1-stable_mono_win64_console.exe --headless --path D:\\Godot\\Program\\ftgdemo -s res://tools/solver_sweep_worker.gd"
+  },
+  {
+    "ProcessId": 1412,
+    "ParentProcessId": 6704,
+    "Name": "Godot_v4.5.1-stable_mono_win64_console.exe",
+    "CreationDate": "2026-10-03T15:03:05.302417+08:00",
+    "CommandLine": "D:/Godot/Godot_v4.5.1-stable_mono_win64_console.exe --headless --path D:\\Godot\\Program\\ftgdemo -s res://tools/solver_sweep_worker.gd"
+  },
+  {
+    "ProcessId": 22972,
+    "ParentProcessId": 6704,
+    "Name": "Godot_v4.5.1-stable_mono_win64_console.exe",
+    "CreationDate": "2026-10-03T15:03:19.026508+08:00",
+    "CommandLine": "D:/Godot/Godot_v4.5.1-stable_mono_win64_console.exe --headless --path D:\\Godot\\Program\\ftgdemo -s res://tools/solver_sweep_worker.gd"
+  },
+  {
+    "ProcessId": 50880,
+    "ParentProcessId": 6704,
+    "Name": "Godot_v4.5.1-stable_mono_win64_console.exe",
+    "CreationDate": "2026-10-03T16:06:02.060466+08:00",
+    "CommandLine": "D:/Godot/Godot_v4.5.1-stable_mono_win64_console.exe --headless --path D:\\Godot\\Program\\ftgdemo -s res://tools/solver_sweep_worker.gd"
+  },
+  {
+    "ProcessId": 30460,
+    "ParentProcessId": 6704,
+    "Name": "Godot_v4.5.1-stable_mono_win64_console.exe",
+    "CreationDate": "2026-10-03T16:52:35.700514+08:00",
+    "CommandLine": "D:/Godot/Godot_v4.5.1-stable_mono_win64_console.exe --headless --path D:\\Godot\\Program\\ftgdemo -s res://tools/solver_sweep_worker.gd"
+  },
+  {
+    "ProcessId": 42860,
+    "ParentProcessId": 6704,
+    "Name": "Godot_v4.5.1-stable_mono_win64_console.exe",
+    "CreationDate": "2026-10-03T16:52:49.510189+08:00",
+    "CommandLine": "D:/Godot/Godot_v4.5.1-stable_mono_win64_console.exe --headless --path D:\\Godot\\Program\\ftgdemo -s res://tools/solver_sweep_worker.gd"
+  },
+  {
+    "ProcessId": 16596,
+    "ParentProcessId": 6704,
+    "Name": "Godot_v4.5.1-stable_mono_win64_console.exe",
+    "CreationDate": "2026-10-03T17:29:17.488389+08:00",
+    "CommandLine": "D:/Godot/Godot_v4.5.1-stable_mono_win64_console.exe --headless --path D:\\Godot\\Program\\ftgdemo -s res://tools/solver_sweep_worker.gd"
+  },
+  {
+    "ProcessId": 37800,
+    "ParentProcessId": 43676,
+    "Name": "Godot_v4.5.1-stable_mono_win64.exe",
+    "CreationDate": "2026-10-03T12:18:20.094812+08:00",
+    "CommandLine": "D:\\Godot\\Godot_v4.5.1-stable_mono_win64.exe --headless --path D:\\Godot\\Program\\ftgdemo -s res://tools/solver_sweep_worker.gd"
+  },
+  {
+    "ProcessId": 35564,
+    "ParentProcessId": 35716,
+    "Name": "Godot_v4.5.1-stable_mono_win64.exe",
+    "CreationDate": "2026-10-03T15:01:36.969999+08:00",
+    "CommandLine": "D:\\Godot\\Godot_v4.5.1-stable_mono_win64.exe --headless --path D:\\Godot\\Program\\ftgdemo -s res://tools/solver_sweep_worker.gd"
+  },
+  {
+    "ProcessId": 45488,
+    "ParentProcessId": 1412,
+    "Name": "Godot_v4.5.1-stable_mono_win64.exe",
+    "CreationDate": "2026-10-03T15:03:05.317509+08:00",
+    "CommandLine": "D:\\Godot\\Godot_v4.5.1-stable_mono_win64.exe --headless --path D:\\Godot\\Program\\ftgdemo -s res://tools/solver_sweep_worker.gd"
+  },
+  {
+    "ProcessId": 11376,
+    "ParentProcessId": 22972,
+    "Name": "Godot_v4.5.1-stable_mono_win64.exe",
+    "CreationDate": "2026-10-03T15:03:19.039774+08:00",
+    "CommandLine": "D:\\Godot\\Godot_v4.5.1-stable_mono_win64.exe --headless --path D:\\Godot\\Program\\ftgdemo -s res://tools/solver_sweep_worker.gd"
+  },
+  {
+    "ProcessId": 14184,
+    "ParentProcessId": 50880,
+    "Name": "Godot_v4.5.1-stable_mono_win64.exe",
+    "CreationDate": "2026-10-03T16:06:02.073859+08:00",
+    "CommandLine": "D:\\Godot\\Godot_v4.5.1-stable_mono_win64.exe --headless --path D:\\Godot\\Program\\ftgdemo -s res://tools/solver_sweep_worker.gd"
+  },
+  {
+    "ProcessId": 24684,
+    "ParentProcessId": 30460,
+    "Name": "Godot_v4.5.1-stable_mono_win64.exe",
+    "CreationDate": "2026-10-03T16:52:35.732966+08:00",
+    "CommandLine": "D:\\Godot\\Godot_v4.5.1-stable_mono_win64.exe --headless --path D:\\Godot\\Program\\ftgdemo -s res://tools/solver_sweep_worker.gd"
+  },
+  {
+    "ProcessId": 48860,
+    "ParentProcessId": 42860,
+    "Name": "Godot_v4.5.1-stable_mono_win64.exe",
+    "CreationDate": "2026-10-03T16:52:49.523217+08:00",
+    "CommandLine": "D:\\Godot\\Godot_v4.5.1-stable_mono_win64.exe --headless --path D:\\Godot\\Program\\ftgdemo -s res://tools/solver_sweep_worker.gd"
+  },
+  {
+    "ProcessId": 30716,
+    "ParentProcessId": 16596,
+    "Name": "Godot_v4.5.1-stable_mono_win64.exe",
+    "CreationDate": "2026-10-03T17:29:17.502509+08:00",
+    "CommandLine": "D:\\Godot\\Godot_v4.5.1-stable_mono_win64.exe --headless --path D:\\Godot\\Program\\ftgdemo -s res://tools/solver_sweep_worker.gd"
+  }
+]

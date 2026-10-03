@@ -1,0 +1,6 @@
+probe exit=1
+probe exit=0
+test_combo_solver exit=1
+diag exit=0
+test_solver_route exit=1
+done

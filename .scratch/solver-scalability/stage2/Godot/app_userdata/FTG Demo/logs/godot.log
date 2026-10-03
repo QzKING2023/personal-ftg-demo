@@ -1,0 +1,12 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2548)
+
+PASS  snapshots really sit at different physical frames (3 vs 8)
+PASS  settlement state normalizes absolute frame counters into relative ages (equal at matching phases)
+PASS  settlement state distinguishes player facing
+PASS  settlement state distinguishes jump-slot age (jump flag participates in the key)
+PASS  settlement state distinguishes direction-history ages (candidates derive from them)
+SOLVER_STAGE edges 1524
+SOLVER_STAGE gaps 3273

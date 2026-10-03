@@ -1,0 +1,16 @@
+{
+  "cache_bypasses": 0,
+  "cache_hits": 0,
+  "cache_misses": 1,
+  "context_attempts": 6,
+  "cycle_state_snapshots": 0,
+  "delay_dfs_leaves": 2,
+  "delay_dfs_nodes": 6,
+  "edge_built": 4,
+  "gap_built": 36,
+  "prefix_frozen_returns": 0,
+  "prefix_restores": 2,
+  "session_steps": 2932,
+  "spatial_rechecks": 0,
+  "structure_candidates": 40
+}

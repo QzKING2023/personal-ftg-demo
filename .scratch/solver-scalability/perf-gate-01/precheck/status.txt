@@ -1,0 +1,6 @@
+delay exit=0
+combo exit=1
+route exit=1
+combo-after exit=1
+route-after exit=1
+combo-after2 exit=1

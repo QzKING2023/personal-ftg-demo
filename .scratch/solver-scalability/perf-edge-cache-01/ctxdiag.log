@@ -1,0 +1,10 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+A: 990 probes total, 118 from 6D/2D
+B: 990 probes total, 118 from 6D/2D
+=== B-MISS 6D>jA kind=9
+  B ctxsig: D9:[S7:move_id;S2:6D;S3:key;S1:D;S7:trigger;I1:0;S4:wait;I1:0;S11:press_space;B1:0;S4:feed;S1:6;S5:rekka;B1:0;S7:charged;B1:0;S8:via_text;S0:;];
+  A ctxsig: D9:[S7:move_id;S2:6D;S3:key;S1:D;S7:trigger;I1:0;S4:wait;I1:0;S11:press_space;B1:0;S4:feed;S1:6;S5:rekka;B1:0;S7:charged;B1:0;S8:via_text;S24:规范入口直接起手;];
+=== B-MISS 2D>jA kind=9
+  B ctxsig: D9:[S7:move_id;S2:2D;S3:key;S1:D;S7:trigger;I1:0;S4:wait;I1:0;S11:press_space;B1:0;S4:feed;S0:;S5:rekka;B1:0;S7:charged;B1:0;S8:via_text;S0:;];
+  A ctxsig: D9:[S7:move_id;S2:2D;S3:key;S1:D;S7:trigger;I1:0;S4:wait;I1:0;S11:press_space;B1:0;S4:feed;S0:;S5:rekka;B1:0;S7:charged;B1:0;S8:via_text;S24:规范入口直接起手;];

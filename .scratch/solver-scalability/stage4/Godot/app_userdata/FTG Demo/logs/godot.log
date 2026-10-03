@@ -1,0 +1,33 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2548)
+
+PASS  snapshots really sit at different physical frames (3 vs 8)
+PASS  settlement state normalizes absolute frame counters into relative ages (equal at matching phases)
+PASS  settlement state distinguishes player facing
+PASS  settlement state distinguishes jump-slot age (jump flag participates in the key)
+PASS  settlement state distinguishes direction-history ages (candidates derive from them)
+SOLVER_STAGE edges 1545
+SOLVER_STAGE gaps 3348
+SOLVER_ROUTE_BEGIN 1 5A->5B->5D
+SOLVER_ROUTE_END 1
+SOLVER_ROUTE_BEGIN 2 5A->5B->5[D]
+SOLVER_ROUTE_END 2
+SOLVER_ROUTE_BEGIN 3 5A->5B->5C->6A->jA->jB->jC->j5D
+SOLVER_ROUTE_END 3
+SOLVER_ROUTE_BEGIN 4 5A->5B->5C->6A->jA->jB->jC->j6D
+SOLVER_ROUTE_END 4
+SOLVER_ROUTE_BEGIN 5 5A->5B->5C->6A->jA->jB->jC->j2D
+SOLVER_ROUTE_END 5
+SOLVER_ROUTE_BEGIN 6 5A->5B->5C->6A->jA->jB->jC->j214D
+SOLVER_ROUTE_END 6
+SOLVER_ROUTE_BEGIN 7 5A->5B->5C->6A->jA->jB->j5D
+SOLVER_ROUTE_END 7
+SOLVER_ROUTE_BEGIN 8 5A->5B->5C->6A->jA->jB->j6D
+SOLVER_ROUTE_END 8
+SOLVER_ROUTE_BEGIN 9 5A->5B->5C->6A->jA->jB->j2D->214C
+SOLVER_ROUTE_END 9
+SOLVER_ROUTE_BEGIN 10 5A->5B->5C->6A->jA->jB->j214D->214C
+SOLVER_ROUTE_END 10
+SOLVER_ROUTE_PATHS 1000

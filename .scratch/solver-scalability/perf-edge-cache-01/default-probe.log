@@ -1,0 +1,6 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+PASS  default-table fingerprints identical: solve cache off/cold/hot and analyze off/reuse
+PASS  default-table hot replay strictly fewer steps (1891548 < 2114250)
+EDGE_CACHE_DEFAULT_JSON={"analyze_cache_off":{"edge_hit_rate":0.0,"elapsed_ms":110471.487,"session_steps":1057125,"stats":{"edge_hits":0,"edge_misses":0,"timing_hits":0,"timing_misses":0}},"analyze_reuse":{"edge_hit_rate":0.0,"elapsed_ms":111499.643,"session_steps":1056747,"stats":{"edge_hits":0,"edge_misses":990,"timing_hits":6,"timing_misses":46}},"fingerprint_equal":true,"solve_cache_off":{"edge_hit_rate":0.0,"elapsed_ms":206653.741,"session_steps":2114250,"stats":{"edge_hits":0,"edge_misses":0,"timing_hits":0,"timing_misses":0}},"solve_cold":{"edge_hit_rate":0.0,"elapsed_ms":224299.37,"session_steps":2113494,"stats":{"edge_hits":0,"edge_misses":1980,"timing_hits":12,"timing_misses":92}},"solve_hot":{"edge_hit_rate":0.997979797979798,"elapsed_ms":196822.669,"session_steps":1891548,"stats":{"edge_hits":1976,"edge_misses":4,"timing_hits":2,"timing_misses":6}}}

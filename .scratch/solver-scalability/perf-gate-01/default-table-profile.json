@@ -1,0 +1,37 @@
+{
+  "cycles": 0,
+  "edges": 79,
+  "elapsed_ms": 236780.506,
+  "fingerprint_sha256": "e071fdc661bffe47e5fd03036507ecc118a2a1a14193b3b8cb91ad1e9fcaca45",
+  "gaps": 404,
+  "routes": 16,
+  "v1": {
+    "delay_leaf_ms": 122879.368,
+    "delay_leaf_runs": 165516,
+    "edge_probe_ms": 4019.61,
+    "edge_probe_runs": 1110,
+    "gap_enum_ms": 4381.979,
+    "gap_enum_runs": 1672,
+    "other_ms": 83.942,
+    "other_runs": 10,
+    "route_walk_ms": 105415.57,
+    "route_walk_runs": 0,
+    "total_ms": 236780.469
+  },
+  "v2": {
+    "cache_bypasses": 0,
+    "cache_hits": 0,
+    "cache_misses": 1,
+    "context_attempts": 48,
+    "cycle_state_snapshots": 21230,
+    "delay_dfs_leaves": 165506,
+    "delay_dfs_nodes": 186882,
+    "edge_built": 158,
+    "gap_built": 2002,
+    "prefix_frozen_returns": 0,
+    "prefix_restores": 165506,
+    "session_steps": 2114250,
+    "spatial_rechecks": 0,
+    "structure_candidates": 2160
+  }
+}

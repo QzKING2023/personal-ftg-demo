@@ -1,0 +1,4 @@
+diag2 exit=0
+test_combo_solver-2 exit=1
+test_solver_route-2 exit=1
+done

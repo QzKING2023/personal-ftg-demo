@@ -1,0 +1,65 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+PASS  E=1 fixture yields >= 1 timing-valid route under the old path (1 routes, 1 valid)
+PASS  E=1 fixture builds exactly 1 configured edges (x2 facings)
+PASS  E=2 fixture yields >= 1 timing-valid route under the old path (1 routes, 1 valid)
+PASS  E=2 fixture builds exactly 2 configured edges (x2 facings)
+PASS  E=4 fixture yields >= 1 timing-valid route under the old path (3 routes, 3 valid)
+PASS  E=4 fixture builds exactly 4 configured edges (x2 facings)
+PASS  E=8 fixture yields >= 1 timing-valid route under the old path (7 routes, 5 valid)
+PASS  E=8 fixture builds exactly 8 configured edges (x2 facings)
+PASS  E=1: full semantic fingerprint identical across old path and current path
+PASS  E=2: full semantic fingerprint identical across old path and current path
+PASS  E=4: full semantic fingerprint identical across old path and current path
+PASS  E=8: full semantic fingerprint identical across old path and current path
+PASS  E=1: shape count structure_candidates frozen across paths (16 == 16)
+PASS  E=1: shape count context_attempts frozen across paths (2 == 2)
+PASS  E=1: shape count edge_built frozen across paths (2 == 2)
+PASS  E=1: shape count gap_built frozen across paths (14 == 14)
+PASS  E=1: shape count delay_dfs_nodes frozen across paths (4 == 4)
+PASS  E=1: shape count delay_dfs_leaves frozen across paths (2 == 2)
+PASS  E=2: shape count structure_candidates frozen across paths (36 == 36)
+PASS  E=2: shape count context_attempts frozen across paths (6 == 6)
+PASS  E=2: shape count edge_built frozen across paths (4 == 4)
+PASS  E=2: shape count gap_built frozen across paths (32 == 32)
+PASS  E=2: shape count delay_dfs_nodes frozen across paths (6 == 6)
+PASS  E=2: shape count delay_dfs_leaves frozen across paths (2 == 2)
+PASS  E=4: shape count structure_candidates frozen across paths (108 == 108)
+PASS  E=4: shape count context_attempts frozen across paths (6 == 6)
+PASS  E=4: shape count edge_built frozen across paths (8 == 8)
+PASS  E=4: shape count gap_built frozen across paths (100 == 100)
+PASS  E=4: shape count delay_dfs_nodes frozen across paths (18 == 18)
+PASS  E=4: shape count delay_dfs_leaves frozen across paths (6 == 6)
+PASS  E=8: shape count structure_candidates frozen across paths (444 == 444)
+PASS  E=8: shape count context_attempts frozen across paths (6 == 6)
+PASS  E=8: shape count edge_built frozen across paths (16 == 16)
+PASS  E=8: shape count gap_built frozen across paths (428 == 428)
+PASS  E=8: shape count delay_dfs_nodes frozen across paths (260 == 260)
+PASS  E=8: shape count delay_dfs_leaves frozen across paths (220 == 220)
+PASS  E=1/old: structure_candidates == edge_built + gap_built (16 == 2 + 14)
+PASS  E=1/new: structure_candidates == edge_built + gap_built (16 == 2 + 14)
+PASS  E=2/old: structure_candidates == edge_built + gap_built (36 == 4 + 32)
+PASS  E=2/new: structure_candidates == edge_built + gap_built (36 == 4 + 32)
+PASS  E=4/old: structure_candidates == edge_built + gap_built (108 == 8 + 100)
+PASS  E=4/new: structure_candidates == edge_built + gap_built (108 == 8 + 100)
+PASS  E=8/old: structure_candidates == edge_built + gap_built (444 == 16 + 428)
+PASS  E=8/new: structure_candidates == edge_built + gap_built (444 == 16 + 428)
+PASS  growth key structure_candidates non-decreasing across E=1/2/4/8
+PASS  growth key context_attempts non-decreasing across E=1/2/4/8
+PASS  growth key edge_built non-decreasing across E=1/2/4/8
+PASS  growth key gap_built non-decreasing across E=1/2/4/8
+PASS  growth key delay_dfs_nodes non-decreasing across E=1/2/4/8
+PASS  growth key delay_dfs_leaves non-decreasing across E=1/2/4/8
+PASS  growth key session_steps non-decreasing across E=1/2/4/8
+PASS  growth key prefix_restores non-decreasing across E=1/2/4/8
+PASS  growth key prefix_frozen_returns non-decreasing across E=1/2/4/8
+PASS  edge_built grows exactly with configured edges (2/4/8/16 across facings)
+PASS  oracle schema is solver-growth-oracle-v1
+PASS  E=1 old-path fingerprint matches the pinned oracle (8d8dd9130ecb)
+PASS  E=2 old-path fingerprint matches the pinned oracle (184a0b9c0f6d)
+PASS  E=4 old-path fingerprint matches the pinned oracle (5f5f21d39e66)
+PASS  E=8 old-path fingerprint matches the pinned oracle (d6a8e9856a86)
+
+SOLVER_GROWTH_JSON={"1":{"context_attempts":2,"cycle_state_snapshots":0,"delay_dfs_leaves":2,"delay_dfs_nodes":4,"edge_built":2,"fingerprint":"8d8dd9130ecb039e74dc2fe6f13df9df29f52eadcf98d33ef8a25603cdd074d2","fingerprint_path_equal":true,"gap_built":14,"prefix_frozen_returns":0,"prefix_restores":2,"session_steps":1230,"spatial_rechecks":0,"structure_candidates":16},"2":{"context_attempts":6,"cycle_state_snapshots":0,"delay_dfs_leaves":2,"delay_dfs_nodes":6,"edge_built":4,"fingerprint":"184a0b9c0f6d27668aaef3d1e56b86f17fdcee0a140054ad3593ea8967d8ac60","fingerprint_path_equal":true,"gap_built":32,"prefix_frozen_returns":0,"prefix_restores":2,"session_steps":2932,"spatial_rechecks":0,"structure_candidates":36},"4":{"context_attempts":6,"cycle_state_snapshots":0,"delay_dfs_leaves":6,"delay_dfs_nodes":18,"edge_built":8,"fingerprint":"5f5f21d39e6689dfb434c1818db41e19d36ca8bf0110c02b863c3b4ad0c32541","fingerprint_path_equal":true,"gap_built":100,"prefix_frozen_returns":0,"prefix_restores":6,"session_steps":6510,"spatial_rechecks":0,"structure_candidates":108},"8":{"context_attempts":6,"cycle_state_snapshots":0,"delay_dfs_leaves":220,"delay_dfs_nodes":260,"edge_built":16,"fingerprint":"d6a8e9856a862865a4b35ab32290b1f504ce53657359734d3b8949a45f2e7766","fingerprint_path_equal":true,"gap_built":428,"prefix_frozen_returns":210,"prefix_restores":10,"session_steps":21826,"spatial_rechecks":0,"structure_candidates":444}}
+ALL SOLVER GROWTH TESTS PASSED

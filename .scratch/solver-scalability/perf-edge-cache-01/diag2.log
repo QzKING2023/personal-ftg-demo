@@ -1,0 +1,14 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+fingerprint e071fdc661bffe47e5fd03036507ecc118a2a1a14193b3b8cb91ad1e9fcaca45
+  counts {"cache_bypasses":0,"cache_hits":0,"cache_misses":0,"context_attempts":48,"cycle_state_snapshots":21230,"delay_dfs_leaves":165506,"delay_dfs_nodes":186882,"edge_built":158,"gap_built":1822,"prefix_frozen_returns":0,"prefix_restores":165506,"session_steps":2113494,"spatial_rechecks":0,"structure_candidates":1980}
+fingerprint e071fdc661bffe47e5fd03036507ecc118a2a1a14193b3b8cb91ad1e9fcaca45
+  counts {"cache_bypasses":0,"cache_hits":0,"cache_misses":0,"context_attempts":48,"cycle_state_snapshots":21230,"delay_dfs_leaves":165506,"delay_dfs_nodes":186882,"edge_built":158,"gap_built":1822,"prefix_frozen_returns":0,"prefix_restores":165506,"session_steps":1891364,"spatial_rechecks":0,"structure_candidates":1980}
+fingerprint 85ec8b32b6c60693d4e55ec8b7182a0e42d96bffaf36bd3b2cd65e0783b35f8c
+  counts {"cache_bypasses":0,"cache_hits":0,"cache_misses":0,"context_attempts":24,"cycle_state_snapshots":10615,"delay_dfs_leaves":82753,"delay_dfs_nodes":93441,"edge_built":79,"gap_built":911,"prefix_frozen_returns":0,"prefix_restores":82753,"session_steps":945682,"spatial_rechecks":0,"structure_candidates":990}
+solve A probes: 1980  solve B probes: 1980  analyze C probes: 990
+analyze ref fingerprint: 85ec8b32b6c60693d4e55ec8b7182a0e42d96bffaf36bd3b2cd65e0783b35f8c
+solve B keys missing from A: 0
+analyze C keys missing from A: 0
+stats: {"edge_hits":2970,"edge_misses":1980,"enabled":true,"entries":2026,"timing_hits":12,"timing_misses":92}
