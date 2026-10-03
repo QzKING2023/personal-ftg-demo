@@ -30,3 +30,61 @@ __pycache__/
 # 系统文件
 .DS_Store
 Thumbs.db
+
+# --- 工作树卫生（2026-10-03 清理）---
+# IDE 与引擎本地日志
+.idea/
+.godot_logs/
+.tmp/
+
+# 后台任务 pid（验收编排与诊断探针的临时产物）
+*.pid
+
+# 验收/探针运行的本地派生物：每进程 APPDATA 副本、runtime 输出、缓存分片、
+# 枚举与 sweep 中间产物、引擎 stdout。策展证据（报告/summary/关键日志/探针脚本）
+# 照常入库——这些模式只挡原始派生物。
+.scratch/**/*appdata*/
+.scratch/**/*runtime*/
+.scratch/**/cache-fragments/
+.scratch/**/enumerate/
+.scratch/**/sweep/
+.scratch/**/engine.log
+.scratch/**/*.stdout
+
+# acceptance-speedup 闭票(04-08)后的本地复跑原始 dump（策展件已入库；
+# 目录不整档忽略，按具体子路径挡原始产物，避免 tracked-but-ignored 扩大）
+.scratch/acceptance-speedup/baseline-02/parallel-full/
+.scratch/acceptance-speedup/baseline-02/serial-full/
+.scratch/acceptance-speedup/baseline-02/serial-full-attempt1/
+.scratch/acceptance-speedup/baseline-02/verify-fix/
+.scratch/acceptance-speedup/baseline-02/verify-fix2/
+.scratch/acceptance-speedup/cache-06/
+.scratch/acceptance-speedup/delay-dfs-04/
+.scratch/acceptance-speedup/difftest-01/noreuse/
+.scratch/acceptance-speedup/difftest-01/run/
+.scratch/acceptance-speedup/difftest-01/tree/
+.scratch/acceptance-speedup/difftest-02/a/
+.scratch/acceptance-speedup/difftest-02/b/
+.scratch/acceptance-speedup/difftest-02/run/
+.scratch/acceptance-speedup/difftest-02/tree/
+.scratch/acceptance-speedup/difftest-02/marker
+.scratch/acceptance-speedup/final-07/full/
+.scratch/acceptance-speedup/final-07/solver-results.cache
+.scratch/acceptance-speedup/profile-03/gate/
+.scratch/acceptance-speedup/sweep-08/
+
+# 历史会话的一次性碎屑（票据 03-08 期的散装日志/探针/诊断目录）
+.scratch/*.log
+.scratch/*.txt
+.scratch/*.status
+.scratch/*.out
+.scratch/probe_*.gd
+.scratch/air-d-test/
+.scratch/diagnose-combo-performance/
+.scratch/perf-acceptance/
+.scratch/perf-combo-solver/
+.scratch/seam-diff-*/
+.scratch/solver-*-2026*/
+.scratch/sweep-08/
+.scratch/ticket09/
+.scratch/ftg-character-implementation/acceptance-phase0-check/
