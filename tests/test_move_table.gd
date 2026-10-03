@@ -59,7 +59,7 @@ func _test_default_manifest_loads_shared_table() -> void:
 	var result := MoveTable.load_default()
 	_check(result.ok, "default manifest loads and validates")
 	_check(result.errors.is_empty(), "default manifest reports no errors")
-	var expected_ids := ["5A", "2A", "5B", "2B", "5C", "2C", "6A", "236C", "214C", "214C~B", "214C~C", "jA", "jB", "jC", "j5D", "j6D", "j2D", "5D", "5[D]", "6D", "2D", "214D", "BC"]
+	var expected_ids := ["5A", "2A", "5B", "2B", "5C", "2C", "6A", "236C", "214C", "214C~B", "214C~C", "jA", "jB", "jC", "j5D", "j6D", "j2D", "j214D", "5D", "5[D]", "6D", "2D", "214D", "BC"]
 	_check(result.moves.keys() == expected_ids, "table preserves manifest order and ids (stable enumeration)")
 	for move_id in expected_ids:
 		var move := result.moves[move_id] as MoveData
@@ -159,10 +159,10 @@ func _test_default_table_entries_match_manifest() -> void:
 	var ja := result.moves["jA"] as MoveData
 	var jb := result.moves["jB"] as MoveData
 	var jc := result.moves["jC"] as MoveData
-	_check(ja.cancel_targets == ["jB", "jC", "j5D", "j6D", "j2D"]
-		and jb.cancel_targets == ["jC", "j5D", "j6D", "j2D"]
-		and jc.cancel_targets == ["j5D", "j6D", "j2D"],
-		"the air normals cancel into the air D series (j214D exits arrive with ticket 09)")
+	_check(ja.cancel_targets == ["jB", "jC", "j5D", "j6D", "j2D", "j214D"]
+		and jb.cancel_targets == ["jC", "j5D", "j6D", "j2D", "j214D"]
+		and jc.cancel_targets == ["j5D", "j6D", "j2D", "j214D"],
+		"the air normals cancel into the air D series and j214D (ticket 09)")
 	var six_d := result.moves["6D"] as MoveData
 	var two_d := result.moves["2D"] as MoveData
 	_check(six_d.direction_derivation == "6D" and two_d.requires_crouch,
@@ -175,9 +175,9 @@ func _test_default_table_entries_match_manifest() -> void:
 		and MoveData.profile_for(six_d, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL) != null
 		and MoveData.profile_for(two_d, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL) != null,
 		"6D/2D declare airborne-only profiles: grounded targets report no-profile, never a fallback")
-	_check(six_d.air_exit_targets == ["jA", "jB", "jC", "j5D", "j6D", "j2D"]
-		and two_d.air_exit_targets == ["jA", "jB", "jC", "j5D", "j6D", "j2D"],
-		"6D/2D declare their air exits into the delivered air moves (normals + ticket 08 air D series; j214D arrives with ticket 09)")
+	_check(six_d.air_exit_targets == ["jA", "jB", "jC", "j5D", "j6D", "j2D", "j214D"]
+		and two_d.air_exit_targets == ["jA", "jB", "jC", "j5D", "j6D", "j2D", "j214D"],
+		"6D/2D declare their air exits into the delivered air moves (normals + ticket 08 air D series + ticket 09 j214D)")
 	_check(two_d.hitbox_y_offset_px == -70.0 and six_d.hitbox_y_offset_px == 0.0,
 		"2D declares the raised vertical hitbox while 6D stays centered")
 	var grades := {

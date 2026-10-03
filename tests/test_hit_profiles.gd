@@ -216,7 +216,7 @@ func _test_illegal_profile_combinations_reject() -> void:
 		], "damage_override"],
 		["未知 target_state 枚举", [
 			_profile(HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL, HitProfile.Reaction.GROUND_HITSTUN,
-				{"target_state": 4, "ground_stun_frames": 12, "upward_speed_px_s": 0.0}),
+				{"target_state": 5, "ground_stun_frames": 12, "upward_speed_px_s": 0.0}),
 		], "target_state"],
 		["未知 hit_context 枚举", [
 			_profile(HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL, HitProfile.Reaction.GROUND_HITSTUN,

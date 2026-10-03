@@ -52,7 +52,7 @@ func _initialize() -> void:
 func _test_default_table_reports_ground_route() -> void:
 	var report := _default_analyze()
 	_check(report.safe and report.cycles.is_empty(), "default table reports no valid cycle")
-	_check(report.edges.size() == 71, "default table enumerates 71 edges (ticket 05 基线 36：15 chain + 8 special + 4 link + 1 jump + 2 air cancels + 1 landing + 2 Rekka derives + 1 ~B link + 1 special D entry + 1 source-limited 5B link；ticket 06 增 7 条（6 蓄力变体 + 5[D]→5B 来源限定）；ticket 07 增 12 条：6A jc jB/jC（2 jump）+ jA/jB→jC（2 空中取消）+ 2C→6D/2D（2 链式）+ 6D/2D→jA/jB/jC（6 空中出口）；ticket 08 净增 16 条：空中 D 系相关边 17 条（jA/jB/jC→三新招取消 9、6D/2D→三新招出口 6、j2D→214C 命中落地取消 1、j6D→5B 空技延迟连接 1），其中 jB→j5D 迁自旧 jB→jD 边)")
+	_check(report.edges.size() == 79, "default table enumerates 79 edges (ticket 05 基线 36：15 chain + 8 special + 4 link + 1 jump + 2 air cancels + 1 landing + 2 Rekka derives + 1 ~B link + 1 special D entry + 1 source-limited 5B link；ticket 06 增 7 条（6 蓄力变体 + 5[D]→5B 来源限定）；ticket 07 增 12 条：6A jc jB/jC（2 jump）+ jA/jB→jC（2 空中取消）+ 2C→6D/2D（2 链式）+ 6D/2D→jA/jB/jC（6 空中出口）；ticket 08 净增 16 条：空中 D 系相关边 17 条（jA/jB/jC→三新招取消 9、6D/2D→三新招出口 6、j2D→214C 命中落地取消 1、j6D→5B 空技延迟连接 1），其中 jB→j5D 迁自旧 jB→jD 边；ticket 09 增 8 条：jA/jB/jC→j214D 取消 3 + 6D/2D→j214D 出口 2 + j214D→5B/6A/214C 弹地延迟连接 3)")
 	var ab := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	_check(ab != null and ab.valid, "5A -> 5B is a valid chain continuation")
 	if ab != null:

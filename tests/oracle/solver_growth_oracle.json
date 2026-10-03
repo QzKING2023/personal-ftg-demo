@@ -1,0 +1,16 @@
+{
+  "edges": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "entrypoint": "solve/injected-growth-fixture/default-facings/old-path",
+  "fingerprints": {
+    "1": "8d8dd9130ecb039e74dc2fe6f13df9df29f52eadcf98d33ef8a25603cdd074d2",
+    "2": "184a0b9c0f6d27668aaef3d1e56b86f17fdcee0a140054ad3593ea8967d8ac60",
+    "4": "5f5f21d39e6689dfb434c1818db41e19d36ca8bf0110c02b863c3b4ad0c32541",
+    "8": "d6a8e9856a862865a4b35ab32290b1f504ce53657359734d3b8949a45f2e7766"
+  },
+  "schema": "solver-growth-oracle-v1"
+}

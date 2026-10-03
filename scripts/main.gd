@@ -72,6 +72,10 @@ func _physics_process(_delta: float) -> void:
 			_last_state_note = "向下击落触地 → 普通倒地"
 		if event.type == CombatEvent.Type.SLIDE_STARTED:
 			_last_state_note = "击飞触地 → 地面滑行（%d 帧，可被 5D 捞起）" % session.dummy_slide_left
+		if event.type == CombatEvent.Type.BOUNCE_CONTACT:
+			_last_state_note = "弹地触地 → 反弹一次，追击窗口 %d 帧（起手 %s：%s）" % [
+				session.dummy_bounce_left, _starter_grade_text(session.combo_starter_grade),
+				"一次性追击" if session.combo_bounce_followup > 0 else "无追击资格，命中即收尾"]
 		if event.type == CombatEvent.Type.CHARGE_COMMITTED:
 			_last_state_note = "蓄力提交 %s → %s（按住 %d 帧%s）" % [
 				event.charge_from_move_id, event.charge_to_move_id, event.charge_age,
@@ -327,6 +331,8 @@ func _update_dummy_status() -> void:
 		state_text = "击飞触地前（%d→滑行%d）" % [session.dummy_hitstun_left, session.dummy_slide_left]
 	elif session.dummy_state == CombatSession.DummyState.GROUND_SLIDE:
 		state_text = "地面滑行（%d）" % session.dummy_slide_left
+	elif session.dummy_state == CombatSession.DummyState.GROUND_BOUNCE:
+		state_text = "弹地（%s，追击窗%d）" % ["已触地反弹" if session.dummy_bounce_contacted else "触地前", session.dummy_bounce_left]
 	if not session.dummy_on_ground:
 		# 空中高度（票据 07）：对空判定与高度失配的可观察口径（0.0 为贴地）。
 		state_text += "·空中%.1fpx" % maxf(0.0, GameParams.ground_stand_y() - session.dummy_position.y)
@@ -344,6 +350,9 @@ func _update_dummy_status() -> void:
 			session.combo_time_scale,
 			session.combo_trajectory_scale,
 		]
+		# 弹地追击资格（票据 09）：弹地进入后的一次性继续资格可观察口径。
+		if session.dummy_state == CombatSession.DummyState.GROUND_BOUNCE or session.combo_bounce_followup > 0:
+			combo_text += " 弹地追击%s" % ("可用" if session.combo_bounce_followup > 0 else "已耗尽")
 	var link_text := _last_link_fail if _last_link_fail != "" else "—"
 	var state_note := _last_state_note if _last_state_note != "" else "—"
 	# 两行布局：第一行姿态与血量，第二行受击状态与连段；连接失败原因与状态事件第三行。
@@ -418,4 +427,6 @@ func _combo_end_text(reason: CombatEvent.ComboEndReason) -> String:
 			return "木桩自然受身"
 		CombatEvent.ComboEndReason.KNOCKDOWN:
 			return "普通倒地"
+		CombatEvent.ComboEndReason.BOUNCE_END:
+			return "弹地后收尾（无追击资格）"
 	return "未知"

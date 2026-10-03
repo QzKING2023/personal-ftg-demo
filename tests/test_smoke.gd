@@ -673,31 +673,19 @@ func _test_backward_qcb_keyboard(main: Node2D, session: CombatSession) -> void:
 
 
 func _test_air_derivation_keyboard(facing: int) -> void:
-	# 配置的空中方向派生走真实训练场输入路径（issue 12）：临时合法 manifest =
-	# 共享 9 招 + 空中派生 j214D（AIR + 214 + D）。前跳后 S → S+A → A → J 在空中
-	# 识别并起手 j214D；木桩在射程外——成功出招但未命中可区分。
-	var air_qcb := (MoveData.default_table()["j5D"] as MoveData).duplicate()
-	air_qcb.move_id = "j214D"
-	air_qcb.direction_derivation = "214D"
-	air_qcb.command_tier = MoveData.CommandTier.SPECIAL
-	ResourceSaver.save(air_qcb, "user://smoke_air_qcb.tres")
-	var shared_manifest := ResourceLoader.load("res://data/move_manifest.tres") as MoveManifest
-	var manifest := MoveManifest.new()
-	manifest.move_paths = shared_manifest.move_paths.duplicate()
-	manifest.move_paths.append("user://smoke_air_qcb.tres")
-	ResourceSaver.save(manifest, "user://smoke_air_manifest.tres")
-
+	# 空中方向派生走真实训练场输入路径（issue 12，票据 09 起直接用共享表的真
+	# j214D：AIR + 214 + D）。前跳后 S → S+A → A → J 在空中识别并起手 j214D；
+	# 木桩在射程外——成功出招但未命中可区分。
 	var air_main: Node2D = load("res://scenes/main.tscn").instantiate()
-	air_main.set("manifest_path", "user://smoke_air_manifest.tres")
 	root.add_child(air_main)
 	await process_frame
 	var session: CombatSession = air_main.get("session")
-	_check(session != null, "training ground runs the temp manifest with the configured air derivative")
+	_check(session != null, "training ground runs the shared manifest with the air derivative")
 	if session == null:
 		air_main.queue_free()
 		await process_frame
 		return
-	_check((session.move_table() as Dictionary).has("j214D"), "session table contains the configured j214D")
+	_check((session.move_table() as Dictionary).has("j214D"), "session table contains the shared j214D")
 	session.player_position = Vector2(240.0 if facing == 1 else 720.0, GameParams.ground_stand_y())
 	session.player_facing = facing
 	session.dummy_position = Vector2(900.0 if facing == 1 else 60.0, GameParams.ground_stand_y())

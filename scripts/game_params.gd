@@ -163,6 +163,31 @@ const NORMAL_HIT_TRAJECTORY_SCALE := 0.95
 const SLIDE_HIT_DAMAGE_SCALE := 0.92
 const SLIDE_HIT_TIME_SCALE := 0.96
 const SLIDE_HIT_TRAJECTORY_SCALE := 0.96
+# 弹地追击每击累计倍率（票据 09，B-03：命中 GROUND_BOUNCE 目标的后续击；
+# 与普通/滑行命中分层声明，调校初值）。
+const BOUNCE_HIT_DAMAGE_SCALE := 0.88
+const BOUNCE_HIT_TIME_SCALE := 0.92
+const BOUNCE_HIT_TRAJECTORY_SCALE := 0.93
+# 落地普通连接每击累计倍率（票据 09：经空技延迟普通连接起手的招式的命中；
+# 与普通/滑行/弹地命中分层声明，调校初值）。
+const LANDING_LINK_HIT_DAMAGE_SCALE := 0.94
+const LANDING_LINK_HIT_TIME_SCALE := 0.95
+const LANDING_LINK_HIT_TRAJECTORY_SCALE := 0.95
+# 弹地追击资格（票据 09，B-03：GROUND_BOUNCE 进入时按 starter grade 派生的一次性
+# bounce_followup；A 起手为 0——弹地后的新命中只能作为收尾，B/C/D 为一次性 1，
+# 成功追击后消费，不随命中刷新）。
+const STARTER_BOUNCE_FOLLOWUP := {
+	MoveData.StarterGrade.A: 0,
+	MoveData.StarterGrade.B: 1,
+	MoveData.StarterGrade.C: 1,
+	MoveData.StarterGrade.D: 1,
+}
+# 统一弹地流程（票据 09，B-01/B-02）：触地反弹速度与触地后追击窗口——结果状态
+# 统一（grounded/airborne 命中都进入同一 GROUND_BOUNCE），profile 只声明进入运动
+# 与触地前窗口；反弹速度与追击窗口是统一流程参数（调校初值）。窗口按时间层
+# 预先换算、反弹速度按轨迹层换算，一次 j214D 至多一次反弹。
+const GROUND_BOUNCE_REBOUND_SPEED_PX_S := 330.0
+const GROUND_BOUNCE_FOLLOWUP_WINDOW_FRAMES := 16
 # 伤害层底线：累计修正不再低于 10%（只作用伤害层）。
 const COMBO_DAMAGE_FLOOR := 0.1
 

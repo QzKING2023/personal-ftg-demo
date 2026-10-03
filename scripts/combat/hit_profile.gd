@@ -9,12 +9,16 @@ extends Resource
 ## 命中前目标状态：接地且非倒地为 GROUNDED，真正离地为 AIRBORNE，
 ## 地面滑行（票据 05，S-05）为 GROUND_SLIDE——只有显式声明该状态资料的招式
 ## 能命中滑行目标，缺失不回退为 GROUNDED 或 AIRBORNE。
+## 弹地中（票据 09，B-01/B-02）为 GROUND_BOUNCE——同样只有显式声明该状态资料的
+## 招式能在弹地追击窗口命中；j214D 自身不声明该键，第二次 j214D 对弹地目标
+## 按缺失资料无命中（MISS_NO_PROFILE），不产生第二次反弹。
 ## 倒地、未支持状态和未知状态不会被转换成 grounded。
 enum TargetState {
 	UNSET = 0,        ## 未声明（非法）
 	GROUNDED = 1,     ## 地面目标
 	AIRBORNE = 2,     ## 空中目标
 	GROUND_SLIDE = 3, ## 地面滑行目标（仅显式捞起资料可命中）
+	GROUND_BOUNCE = 4, ## 弹地目标（票据 09：触地事件后的追击窗口；仅显式资料可命中）
 }
 
 ## 命中上下文：目标处于自身招式 startup/recovery 的显式易受击窗口时为 COUNTER。
@@ -33,6 +37,8 @@ enum Reaction {
 	LOW_FLOAT_SWEEP = 4,     ## 低浮空扫倒（仅 GROUNDED 目标；短暂滞空后触地转普通倒地）
 	DOWNWARD_SLAM = 5,       ## 向下击落（仅 AIRBORNE 目标；立即获得向下速度，触地转普通倒地）
 	LOW_FLOAT_TO_SLIDE = 6,  ## 击飞触地滑行（仅 GROUNDED 目标；短暂滞空后触地转 GROUND_SLIDE，票据 05）
+	GROUND_BOUNCE = 7,       ## 统一弹地（票据 09，B-01：grounded/airborne 命中都进入同一 GROUND_BOUNCE
+	                         ## 状态；profile 声明进入运动，首次触地反弹一次并开放追击窗口）
 }
 
 ## 唯一键之一：命中前目标状态。
@@ -74,6 +80,8 @@ func reaction_timer_frames() -> int:
 			return air_untech_frames
 		Reaction.LOW_FLOAT_TO_SLIDE:
 			return air_untech_frames
+		Reaction.GROUND_BOUNCE:
+			return air_untech_frames
 	return -1
 
 
@@ -89,6 +97,8 @@ func _target_state_label() -> String:
 			return "airborne"
 		TargetState.GROUND_SLIDE:
 			return "slide"
+		TargetState.GROUND_BOUNCE:
+			return "bounce"
 	return "unset"
 
 

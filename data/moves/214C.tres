@@ -43,6 +43,26 @@ horizontal_speed_px_s = 40.0
 upward_speed_px_s = 240.0
 downward_speed_px_s = -1.0
 
+[sub_resource type="Resource" id="HitProfile_214c_bounce"]
+script = ExtResource("2_hitprofile")
+target_state = 4
+hit_context = 1
+reaction = 2
+air_untech_frames = 28
+horizontal_speed_px_s = 40.0
+upward_speed_px_s = 240.0
+downward_speed_px_s = -1.0
+
+[sub_resource type="Resource" id="HitProfile_214c_bounce_counter"]
+script = ExtResource("2_hitprofile")
+target_state = 4
+hit_context = 2
+reaction = 2
+air_untech_frames = 34
+horizontal_speed_px_s = 40.0
+upward_speed_px_s = 240.0
+downward_speed_px_s = -1.0
+
 [resource]
 script = ExtResource("1_214c")
 move_id = "214C"
@@ -57,7 +77,7 @@ attack_attribute = 2
 air_attack = false
 hitbox_size = Vector2(42, 28)
 hitbox_gap = 3.0
-hit_profiles = Array[Resource]([SubResource("HitProfile_214c_grounded_normal"), SubResource("HitProfile_214c_grounded_counter"), SubResource("HitProfile_214c_airborne_normal"), SubResource("HitProfile_214c_airborne_counter")])
+hit_profiles = Array[Resource]([SubResource("HitProfile_214c_grounded_normal"), SubResource("HitProfile_214c_grounded_counter"), SubResource("HitProfile_214c_airborne_normal"), SubResource("HitProfile_214c_airborne_counter"), SubResource("HitProfile_214c_bounce"), SubResource("HitProfile_214c_bounce_counter")])
 throw_range = -1.0
 extra_landing_recovery_frames = 0
 cancel_targets = Array[String]([])

@@ -443,8 +443,8 @@ static func _validate_hit_profiles(owner, source: String, id_label: String, erro
 				source, id_label, label, profile.get_class() if profile != null else "null",
 			])
 			continue
-		if not _enum_in_range(profile.target_state, 1, 3):
-			errors.append("[%s] %s: %s: target_state — 未知或未声明枚举值 %d（合法范围 1–3：grounded/airborne/slide）" % [
+		if not _enum_in_range(profile.target_state, 1, 4):
+			errors.append("[%s] %s: %s: target_state — 未知或未声明枚举值 %d（合法范围 1–4：grounded/airborne/slide/bounce）" % [
 				source, id_label, label, profile.target_state,
 			])
 			continue
@@ -460,8 +460,8 @@ static func _validate_hit_profiles(owner, source: String, id_label: String, erro
 			])
 		else:
 			seen_keys[key] = i
-		if not _enum_in_range(profile.reaction, 1, 6):
-			errors.append("[%s] %s: %s: reaction — 未知或未声明枚举值 %d（合法范围 1–6：ground_hitstun/launch/ground_knockdown/low_float_sweep/downward_slam/low_float_to_slide）" % [
+		if not _enum_in_range(profile.reaction, 1, 7):
+			errors.append("[%s] %s: %s: reaction — 未知或未声明枚举值 %d（合法范围 1–7：ground_hitstun/launch/ground_knockdown/low_float_sweep/downward_slam/low_float_to_slide/ground_bounce）" % [
 				source, id_label, label, profile.reaction,
 			])
 			continue
@@ -575,6 +575,29 @@ static func _validate_hit_profiles(owner, source: String, id_label: String, erro
 					])
 				_reject_foreign_timer(source, id_label, label, profile, "ground_stun_frames", profile.ground_stun_frames, errors)
 				_reject_foreign_timer(source, id_label, label, profile, "knockdown_frames", profile.knockdown_frames, errors)
+			HitProfile.Reaction.GROUND_BOUNCE:
+				## 统一弹地（票据 09，B-01）：grounded/airborne（或显式 slide）命中进入
+				## 同一 GROUND_BOUNCE 状态；profile 声明进入运动与触地前窗口，反弹速度
+				## 与追击窗口是统一流程参数（GameParams），不逐 profile 声明。
+				if profile.target_state == HitProfile.TargetState.GROUND_BOUNCE:
+					errors.append("[%s] %s: %s — 矛盾：弹地目标不接受再次弹地反应（一次弹地至多一次反弹；追击资料请声明 LAUNCH）" % [
+						source, id_label, label, profile.label(),
+					])
+				if profile.air_untech_frames < 1:
+					errors.append("[%s] %s: %s: air_untech_frames — 触地前窗口为负、未设置或为 0（当前 %d，须至少 1 帧）" % [
+						source, id_label, label, profile.air_untech_frames,
+					])
+				if profile.target_state == HitProfile.TargetState.GROUNDED and profile.upward_speed_px_s <= 0.0:
+					errors.append("[%s] %s: %s: upward_speed_px_s — 矛盾：grounded 弹地命中必须声明大于 0 的进入上弹初速度（当前 %s）" % [
+						source, id_label, label, str(profile.upward_speed_px_s),
+					])
+				if profile.target_state != HitProfile.TargetState.GROUNDED and profile.upward_speed_px_s < 0.0:
+					errors.append("[%s] %s: %s: upward_speed_px_s — 矛盾：airborne/slide 弹地命中的进入垂直速度须为非负（0 = 沿重力落下；当前 %s）" % [
+						source, id_label, label, str(profile.upward_speed_px_s),
+					])
+				_reject_foreign_timer(source, id_label, label, profile, "ground_stun_frames", profile.ground_stun_frames, errors)
+				_reject_foreign_timer(source, id_label, label, profile, "knockdown_frames", profile.knockdown_frames, errors)
+				_reject_foreign_timer(source, id_label, label, profile, "slide_frames", profile.slide_frames, errors)
 		if profile.hit_context == HitProfile.HitContext.COUNTER \
 				and not owner.has_normal_profile(profile.target_state):
 			errors.append("[%s] %s: %s — 矛盾：声明 %s 的 counter 却缺少同状态 normal profile（不得只提供 counter）" % [
@@ -598,6 +621,8 @@ static func _target_state_name(target_state: int) -> String:
 			return "airborne"
 		HitProfile.TargetState.GROUND_SLIDE:
 			return "slide"
+		HitProfile.TargetState.GROUND_BOUNCE:
+			return "bounce"
 	return "未知目标状态 %d" % target_state
 
 
@@ -615,6 +640,8 @@ static func _reaction_name(reaction: int) -> String:
 			return "DOWNWARD_SLAM"
 		HitProfile.Reaction.LOW_FLOAT_TO_SLIDE:
 			return "LOW_FLOAT_TO_SLIDE"
+		HitProfile.Reaction.GROUND_BOUNCE:
+			return "GROUND_BOUNCE"
 	return "未知反应 %d" % reaction
 
 

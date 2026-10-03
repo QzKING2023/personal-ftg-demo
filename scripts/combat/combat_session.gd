@@ -24,6 +24,9 @@ enum DummyState {
 	SPIKE_FALL,         ## 向下击落坠落（票据 04：无空中计时，触地同帧转普通倒地）
 	LOW_FLOAT_TO_SLIDE, ## 击飞触地滑行前滞空（票据 05：触地转 GROUND_SLIDE，不经过倒地）
 	GROUND_SLIDE,       ## 地面滑行（独立计时；仅显式 slide 资料的招式可命中覆盖，归零自然回中立）
+	GROUND_BOUNCE,      ## 统一弹地（票据 09，B-01/B-02：grounded/airborne 命中都进入本状态；
+	                    ## 触地前按资料运动，首次触地记 bounce_contact 并反弹一次、开放追击
+	                    ## 窗口；归零自然回中立，不转普通倒地、不接受 OTG）
 }
 
 ## 防御姿态：地面 4 为站防、1 为蹲防；真正离地后 4/1 均为空防。
@@ -70,6 +73,12 @@ var dummy_knockdown_left := 0
 ## 剩余地面滑行帧数（票据 05：触地转换起自下一正常帧倒数，含当前帧；归零自然
 ## 回中立并结束连段。命中当帧按时间层预先换算，滑行中的有效命中整体覆盖）。
 var dummy_slide_left := 0
+## 弹地首次触地是否已发生（票据 09，B-02：bounce_contact——从该事件起开放统一
+## 追击窗口；一次弹地流程至多一次反弹，第二次触地不再反弹）。触地前不可追击。
+var dummy_bounce_contacted := false
+## 剩余弹地追击窗口帧数（票据 09：bounce_contact 当帧按时间层预先换算，触地当帧
+## 不消耗，自下一正常帧倒数；归零自然恢复（空中则空中受身），不转普通倒地）。
+var dummy_bounce_left := 0
 ## 木桩当前防御姿态（票据 03：由逐帧显式请求驱动；被防硬直期间冻结保持）。
 var dummy_guard: GuardPosture = GuardPosture.NONE
 ## 剩余被防硬直帧数（含当前帧；停顿结束后按正常帧倒数，木桩期间不可出招）。
@@ -108,6 +117,10 @@ var combo_starter_grade: MoveData.StarterGrade = MoveData.StarterGrade.UNSET
 var combo_damage_scale := 1.0
 var combo_time_scale := 1.0
 var combo_trajectory_scale := 1.0
+## 一次性弹地追击资格（票据 09，B-03）：GROUND_BOUNCE 进入时按 starter grade 派生
+## （A=0：弹地后的新命中只能作为收尾；B/C/D=1：成功追击后消费，不随命中刷新）。
+## 资格绑定本次连段与当前目标；连段结束清除，状态转换不重置、不提升。
+var combo_bounce_followup := 0
 
 var _moves: Dictionary = {}
 var _current_move: MoveData = null
@@ -236,6 +249,9 @@ var _finished_move: MoveData = null
 var _pending_link_check := false
 ## 当前招式是否经普通连接起手（判定窗口结束无接触时报 DISTANCE_INSUFFICIENT）。
 var _move_via_link := false
+## 当前招式是否经空技延迟普通连接起手（票据 09：落地恢复后首个合法帧消费的
+## j6D/j214D 目押——该招命中使用落地普通连接的分层每击倍率，与地面目押分层）。
+var _move_via_air_link := false
 
 # --- Rekka 派生（票据 04，I-04/S-07）---
 ## 首段命中或被防接触后派生窗口打开；窗口只属于当前执行的首段招式——
@@ -365,6 +381,8 @@ func reset_to_initial_state() -> void:
 	dummy_hitstun_left = 0
 	dummy_knockdown_left = 0
 	dummy_slide_left = 0
+	dummy_bounce_contacted = false
+	dummy_bounce_left = 0
 	dummy_guard = GuardPosture.NONE
 	dummy_blockstun_left = 0
 	combo_hits = 0
@@ -376,6 +394,7 @@ func reset_to_initial_state() -> void:
 	combo_damage_scale = 1.0
 	combo_time_scale = 1.0
 	combo_trajectory_scale = 1.0
+	combo_bounce_followup = 0
 	_current_move = null
 	_move_frame = 0
 	_hit_once_this_move = false
@@ -423,6 +442,7 @@ func reset_to_initial_state() -> void:
 	_finished_move = null
 	_pending_link_check = false
 	_move_via_link = false
+	_move_via_air_link = false
 	_rekka_window_open = false
 	_rekka_contact_frame = 0
 	_rekka_branch = ""
@@ -488,6 +508,8 @@ func clone_state() -> Dictionary:
 			"hitstun_left": dummy_hitstun_left,
 			"knockdown_left": dummy_knockdown_left,
 			"slide_left": dummy_slide_left,
+			"bounce_contacted": dummy_bounce_contacted,
+			"bounce_left": dummy_bounce_left,
 			"guard": dummy_guard,
 			"blockstun_left": dummy_blockstun_left,
 			"move_id": dummy_move_id,
@@ -507,6 +529,7 @@ func clone_state() -> Dictionary:
 			"damage_scale": combo_damage_scale,
 			"time_scale": combo_time_scale,
 			"trajectory_scale": combo_trajectory_scale,
+			"bounce_followup": combo_bounce_followup,
 		},
 		"player_move": {
 			"move_id": _move_id(_current_move),
@@ -523,6 +546,7 @@ func clone_state() -> Dictionary:
 			"is_followup": _move_is_followup,
 			"pending_hit_id": _move_id(_pending_hit),
 			"via_link": _move_via_link,
+			"via_air_link": _move_via_air_link,
 			"finished_move_id": _move_id(_finished_move),
 			"pending_link_check": _pending_link_check,
 			"finished_move_hit": _finished_move_hit,
@@ -665,6 +689,8 @@ func restore_state(state: Dictionary) -> bool:
 	dummy_hitstun_left = int(dummy.get("hitstun_left", 0))
 	dummy_knockdown_left = int(dummy.get("knockdown_left", 0))
 	dummy_slide_left = int(dummy.get("slide_left", 0))
+	dummy_bounce_contacted = bool(dummy.get("bounce_contacted", false))
+	dummy_bounce_left = int(dummy.get("bounce_left", 0))
 	dummy_guard = int(dummy.get("guard", GuardPosture.NONE))
 	dummy_blockstun_left = int(dummy.get("blockstun_left", 0))
 	dummy_move_id = String(dummy.get("move_id", ""))
@@ -684,6 +710,7 @@ func restore_state(state: Dictionary) -> bool:
 	combo_damage_scale = float(combo.get("damage_scale", 1.0))
 	combo_time_scale = float(combo.get("time_scale", 1.0))
 	combo_trajectory_scale = float(combo.get("trajectory_scale", 1.0))
+	combo_bounce_followup = int(combo.get("bounce_followup", 0))
 
 	_current_move = _move_from_id(String(move_state.get("move_id", "")))
 	_move_frame = int(move_state.get("frame", 0))
@@ -701,6 +728,7 @@ func restore_state(state: Dictionary) -> bool:
 	_move_is_followup = bool(move_state.get("is_followup", false))
 	_pending_hit = _move_from_id(String(move_state.get("pending_hit_id", "")))
 	_move_via_link = bool(move_state.get("via_link", false))
+	_move_via_air_link = bool(move_state.get("via_air_link", false))
 	_finished_move = _move_from_id(String(move_state.get("finished_move_id", "")))
 	_pending_link_check = bool(move_state.get("pending_link_check", false))
 	_finished_move_hit = bool(move_state.get("finished_move_hit", false))
@@ -931,6 +959,9 @@ func debug_snapshot() -> Dictionary:
 		"damage_scale": combo_damage_scale,
 		"time_scale": combo_time_scale,
 		"trajectory_scale": combo_trajectory_scale,
+		"bounce_followup": combo_bounce_followup,
+		"dummy_bounce_left": dummy_bounce_left,
+		"dummy_bounce_contacted": dummy_bounce_contacted,
 		"rekka_branch": _rekka_branch,
 		"special_entry_open": _special_entry_open,
 		"special_entry_age": (maxi(0, _normal_frame_index - _special_entry_frame) if _special_entry_open else -1),
@@ -1020,6 +1051,8 @@ func settlement_state() -> Dictionary:
 		"hit_confirmed": _move_hit_confirmed,
 		"cancel_age": cancel_age,
 		"move_is_followup": _move_is_followup,
+		"move_via_link": _move_via_link,
+		"move_via_air_link": _move_via_air_link,
 		"move_via_special_entry": _move_via_special_entry,
 		"finished_move_hit": _finished_move_hit,
 		"finished_move_via_entry": _finished_move_via_entry,
@@ -1058,12 +1091,14 @@ func settlement_state() -> Dictionary:
 		"direction_history": direction_history,
 		"last_direction_digit": _last_direction_digit,
 		# 连段资源（结算资格门；伤害等纯报告量见上文口径）。起手等级与三层累计
-		# 修正影响后续命中的伤害/计时/轨迹，是真实结算量，入快照。
+		# 修正影响后续命中的伤害/计时/轨迹，是真实结算量，入快照；弹地追击资格
+		# 影响弹地目标上命中的连段延续（票据 09，B-03），入快照。
 		"combo_active": combo_active,
 		"starter_grade": combo_starter_grade,
 		"damage_scale": combo_damage_scale,
 		"time_scale": combo_time_scale,
 		"trajectory_scale": combo_trajectory_scale,
+		"bounce_followup": combo_bounce_followup,
 		# Rekka 派生（票据 04）：分支锁定与窗口开闭影响后续起手资格，是真实结算量。
 		"rekka_branch": _rekka_branch,
 		"rekka_window_open": _rekka_window_open,
@@ -1082,12 +1117,15 @@ func settlement_state() -> Dictionary:
 		"hit_landing_landed": _hit_landing_landed_frame >= 0,
 		"pending_air_link": _pending_air_link,
 		"air_link_move_id": (_move_id(_finished_move) if _pending_air_link else ""),
-		# 木桩姿态/阶段、受击计时与速度（滑行计时影响追击窗口与自然恢复时点）
+		# 木桩姿态/阶段、受击计时与速度（滑行计时影响追击窗口与自然恢复时点；
+		# 弹地触地标记与追击窗口计时影响可追击域与弹地分支——票据 09）
 		"dummy_state": dummy_state,
 		"dummy_on_ground": dummy_on_ground,
 		"dummy_hitstun_left": dummy_hitstun_left,
 		"dummy_knockdown_left": dummy_knockdown_left,
 		"dummy_slide_left": dummy_slide_left,
+		"dummy_bounce_contacted": dummy_bounce_contacted,
+		"dummy_bounce_left": dummy_bounce_left,
 		"dummy_velocity": dummy_velocity,
 		"dummy_position_y": dummy_position.y,
 		"dummy_move_id": dummy_move_id,
@@ -1596,7 +1634,8 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 		_pending_hit = null
 		return
 	var context := _dummy_hit_context()
-	var profile := move.segment_profile_for(_pending_hit_segment, _dummy_target_state(), context)
+	var target_state_before := _dummy_target_state()
+	var profile := move.segment_profile_for(_pending_hit_segment, target_state_before, context)
 	if profile == null:
 		## 缺失不回退：不借用 grounded/normal 资料（或其他段的资料），不造成伤害、
 		## 不改变受击状态、不刷新倒地/滑行计时，也不取得命中确认或取消资格。
@@ -1609,17 +1648,26 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 	combo_active = true
 	combo_hits += 1
 	## 起手修正（C-01/C-02）：首击锁定 starter grade 并以 starter 倍率初始化三层；
-	## 后续每击把命中倍率乘入各层——命中滑行目标使用 slide 倍率（票据 05，S-05），
-	## 其余按普通命中倍率。三层独立舍入输出，互不反推。
+	## 后续每击把命中倍率乘入各层——命中滑行目标使用 slide 倍率（票据 05，S-05）、
+	## 命中弹地目标使用 bounce 追击倍率（票据 09，B-03）、经空技延迟普通连接起手的
+	## 招式使用落地连接倍率（票据 09），其余按普通命中倍率。三层独立舍入，互不反推。
 	if combo_hits == 1:
 		combo_starter_grade = move.starter_grade
 		combo_damage_scale = float(GameParams.STARTER_DAMAGE_SCALE[move.starter_grade])
 		combo_time_scale = float(GameParams.STARTER_TIME_SCALE[move.starter_grade])
 		combo_trajectory_scale = float(GameParams.STARTER_TRAJECTORY_SCALE[move.starter_grade])
-	elif _dummy_target_state() == HitProfile.TargetState.GROUND_SLIDE:
+	elif target_state_before == HitProfile.TargetState.GROUND_BOUNCE:
+		combo_damage_scale *= GameParams.BOUNCE_HIT_DAMAGE_SCALE
+		combo_time_scale *= GameParams.BOUNCE_HIT_TIME_SCALE
+		combo_trajectory_scale *= GameParams.BOUNCE_HIT_TRAJECTORY_SCALE
+	elif target_state_before == HitProfile.TargetState.GROUND_SLIDE:
 		combo_damage_scale *= GameParams.SLIDE_HIT_DAMAGE_SCALE
 		combo_time_scale *= GameParams.SLIDE_HIT_TIME_SCALE
 		combo_trajectory_scale *= GameParams.SLIDE_HIT_TRAJECTORY_SCALE
+	elif _move_via_link and _move_via_air_link:
+		combo_damage_scale *= GameParams.LANDING_LINK_HIT_DAMAGE_SCALE
+		combo_time_scale *= GameParams.LANDING_LINK_HIT_TIME_SCALE
+		combo_trajectory_scale *= GameParams.LANDING_LINK_HIT_TRAJECTORY_SCALE
 	else:
 		combo_damage_scale *= GameParams.NORMAL_HIT_DAMAGE_SCALE
 		combo_time_scale *= GameParams.NORMAL_HIT_TIME_SCALE
@@ -1659,6 +1707,19 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 			dummy_hitstun_left = _scaled_timer_frames(profile.air_untech_frames)
 			dummy_slide_left = _scaled_timer_frames(profile.slide_frames)
 			dummy_knockdown_left = 0
+		HitProfile.Reaction.GROUND_BOUNCE:
+			## 统一弹地（票据 09，B-01/B-02）：grounded/airborne 命中都进入同一
+			## GROUND_BOUNCE——profile 只声明进入运动（初速度）与触地前窗口；
+			## 追击窗口按统一流程参数在命中当帧按时间层预先换算（触地事件起倒数）。
+			## 进入时按 starter grade 派生一次性 bounce_followup（A=0，B/C/D=1）；
+			## 弹地不重置 starter grade 与三层修正，不刷新空中资源。
+			dummy_state = DummyState.GROUND_BOUNCE
+			dummy_hitstun_left = _scaled_timer_frames(profile.air_untech_frames)
+			dummy_bounce_left = _scaled_timer_frames(GameParams.GROUND_BOUNCE_FOLLOWUP_WINDOW_FRAMES)
+			dummy_bounce_contacted = false
+			dummy_knockdown_left = 0
+			dummy_slide_left = 0
+			combo_bounce_followup = int(GameParams.STARTER_BOUNCE_FOLLOWUP[combo_starter_grade])
 	_dummy_fresh_reaction = true
 	## 实际命中覆盖被防硬直：连防姿态让位给受击状态，残留被防计时随之作废。
 	dummy_blockstun_left = 0
@@ -1666,9 +1727,13 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 	_clear_dummy_move()
 	dummy_velocity.x = _attack_direction() * roundf(profile.horizontal_speed_px_s * combo_trajectory_scale)
 	if profile.reaction == HitProfile.Reaction.LAUNCH or profile.reaction == HitProfile.Reaction.LOW_FLOAT_SWEEP \
-			or profile.reaction == HitProfile.Reaction.LOW_FLOAT_TO_SLIDE:
+			or profile.reaction == HitProfile.Reaction.LOW_FLOAT_TO_SLIDE \
+			or profile.reaction == HitProfile.Reaction.GROUND_BOUNCE:
 		## 浮空、低浮空与击飞触地滑行命中必定重起跳：即使木桩仍在上一击的微浮中
 		## 也按 profile 的垂直初速度重置滞空；普通地面命中保持接地，垂直速度不动。
+		## 弹地进入同口径（票据 09，B-02）：grounded 命中立即按初速度离地上弹，
+		## airborne 命中沿 profile 轨迹落向地面（覆盖既有浮空速度）；触地反弹速度
+		## 在 bounce_contact 时按当时轨迹层换算施加。
 		dummy_velocity.y = -roundf(profile.upward_speed_px_s * combo_trajectory_scale)
 	if profile.reaction == HitProfile.Reaction.DOWNWARD_SLAM:
 		dummy_velocity.y = roundf(profile.downward_speed_px_s * combo_trajectory_scale)
@@ -1704,6 +1769,14 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 	## 位置、速度、受击、落地与受身计时暂停；物理帧号照常递增，输入仍被采样记录）。
 	_hitstop_left = GameParams.HITSTOP_FRAMES
 	events.append(CombatEvent.hitstop_started())
+	if target_state_before == HitProfile.TargetState.GROUND_BOUNCE:
+		## 弹地追击资格（票据 09，B-03）：命中弹地目标的有效追击消费一次性资格；
+		## 资格为 0（A 起手或已消费）时该命中立即作为路线终点——伤害与受击反馈已
+		## 完整结算，但不开放后续取消，连段就此结束（不形成被禁止的弹地后循环）。
+		if combo_bounce_followup > 0:
+			combo_bounce_followup = 0
+		else:
+			_end_combo(CombatEvent.ComboEndReason.BOUNCE_END, events)
 	if profile.reaction == HitProfile.Reaction.GROUND_KNOCKDOWN:
 		## 普通倒地进入即结束当前连段；倒地处理本身继续独立计时。
 		_end_combo(CombatEvent.ComboEndReason.KNOCKDOWN, events)
@@ -1721,12 +1794,14 @@ func _scaled_timer_frames(declared_frames: int) -> int:
 
 
 ## 命中判定前的木桩目标状态：接地且非倒地为 GROUNDED，真正离地为 AIRBORNE，
-## 地面滑行为 GROUND_SLIDE（票据 05，S-05：只有显式 slide 资料的招式能命中，
-## 缺失即 MISS_NO_PROFILE，不回退 grounded/airborne）。
-## 倒地不可命中（_can_hit_dummy 已排除），不会进入本分类。
+## 地面滑行为 GROUND_SLIDE（票据 05，S-05），弹地为 GROUND_BOUNCE（票据 09，
+## B-01）——均只有显式声明该状态资料的招式能命中，缺失即 MISS_NO_PROFILE，
+## 不回退 grounded/airborne。倒地不可命中（_can_hit_dummy 已排除）。
 func _dummy_target_state() -> HitProfile.TargetState:
 	if dummy_state == DummyState.GROUND_SLIDE:
 		return HitProfile.TargetState.GROUND_SLIDE
+	if dummy_state == DummyState.GROUND_BOUNCE:
+		return HitProfile.TargetState.GROUND_BOUNCE
 	return HitProfile.TargetState.GROUNDED if dummy_on_ground else HitProfile.TargetState.AIRBORNE
 
 
@@ -2006,16 +2081,28 @@ func _air_move_defers_end(move: MoveData) -> bool:
 	return combo_active and not move.link_targets.is_empty()
 
 
+## 弹地等待（票据 09，B-02/B-03）：前招（j214D）实际命中把木桩送入弹地且尚未
+## 触地时，延迟普通连接的评估推迟到 bounce_contact 打开追击窗口——「触地后按
+## 剩余硬直继续」的目押语义。等待有界：触地前受身/窗口关闭按既有失败口径
+## 结束连段；等待期间动作缓存不被独立起手窃取（保持连接评估的输入资格）。
+func _bounce_wait_active() -> bool:
+	return _pending_air_link and _finished_move != null and _finished_move_hit \
+		and dummy_state == DummyState.GROUND_BOUNCE and not dummy_bounce_contacted
+
+
 ## 空技延迟普通连接消费（票据 08：j6D）：攻击者完全落地恢复后的首个合法帧
 ## 按缓存消费声明目标——与地面普通连接同一口径（合法接续起手、不产生取消
 ## 年龄、不跳过落地首帧锁），目标剩余硬直、姿态与 active 重叠重新判定；
-## 无可消费候选时按目押失败/配置缺口报告并结束连段。
+## 无可消费候选时按目押失败/配置缺口报告并结束连段。弹地等待中（前招命中
+## 弹地、触地未发生）评估推迟到追击窗口打开（票据 09）。
 func _resolve_air_link(events: Array[CombatEvent]) -> void:
 	if not _pending_air_link:
 		return
 	if _current_move != null or not player_on_ground or _player_stunned():
 		return
 	if not _independent_start_allowed():
+		return
+	if _bounce_wait_active():
 		return
 	_pending_air_link = false
 	var finished := _finished_move
@@ -2024,6 +2111,7 @@ func _resolve_air_link(events: Array[CombatEvent]) -> void:
 		var target := _moves.get(_buffered_move_id) as MoveData
 		_start_move(_buffered_move_id, target, true)
 		_move_via_link = true
+		_move_via_air_link = true
 		_note_buffer_consumed(_buffered_move_id)
 		_clear_buffer()
 		return
@@ -2080,6 +2168,10 @@ func _buffer_action_candidate() -> Dictionary:
 	if _buffered_key == "" and _buffered_move_id == "":
 		return {}
 	if _buffer_waiting:
+		return {}
+	if _bounce_wait_active():
+		## 弹地等待中缓存不作为独立起手消费（票据 09）：留给触地后的延迟连接
+		## 评估；年龄照常增长，过早输入会自然过期并按目押失败上报。
 		return {}
 	if _startable_cancel(_buffered_move_id):
 		return {"move_id": _buffered_move_id, "is_followup": true}
@@ -2431,7 +2523,7 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 	if dummy_state == DummyState.GROUND_HITSTUN or dummy_state == DummyState.AIR_HITSTUN \
 			or dummy_state == DummyState.KNOCKED_DOWN or dummy_state == DummyState.LOW_FLOAT_SWEEP \
 			or dummy_state == DummyState.SPIKE_FALL or dummy_state == DummyState.LOW_FLOAT_TO_SLIDE \
-			or dummy_state == DummyState.GROUND_SLIDE:
+			or dummy_state == DummyState.GROUND_SLIDE or dummy_state == DummyState.GROUND_BOUNCE:
 		friction = GameParams.DUMMY_HITSTUN_FRICTION
 	dummy_velocity.x = move_toward(dummy_velocity.x, 0.0, friction * GameParams.PHYSICS_TICK)
 	if not dummy_on_ground:
@@ -2519,6 +2611,36 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 				if dummy_slide_left == 0:
 					dummy_state = DummyState.NEUTRAL
 					events.append(CombatEvent.dummy_recovered())
+					_end_combo(CombatEvent.ComboEndReason.DUMMY_RECOVERED, events)
+		DummyState.GROUND_BOUNCE:
+			if not dummy_bounce_contacted:
+				if dummy_on_ground:
+					## 弹地首次触地（票据 09，B-02）：记录 bounce_contact，按反弹速度
+					## （轨迹层换算）进入上升阶段，统一追击窗口自本事件起倒数（当帧
+					## 不消耗，与 slide 转换同口径）；从该事件起开放追击。
+					dummy_bounce_contacted = true
+					dummy_hitstun_left = 0
+					dummy_velocity.y = -roundf(GameParams.GROUND_BOUNCE_REBOUND_SPEED_PX_S * combo_trajectory_scale)
+					events.append(CombatEvent.bounce_contact())
+				elif not _dummy_fresh_reaction:
+					## 触地前窗口（资料声明，时间层换算）：调校初值下触地先于窗口耗尽；
+					## 窗口先耗尽时按浮空受身处理（结束连段），不产生弹地。
+					dummy_hitstun_left = maxi(dummy_hitstun_left - 1, 0)
+					if dummy_hitstun_left == 0:
+						dummy_state = DummyState.AIR_RECOVERED
+						_end_combo(CombatEvent.ComboEndReason.DUMMY_RECOVERED, events)
+			elif not _dummy_fresh_reaction:
+				## 弹地追击窗口（bounce_contact 当帧按时间层预先换算，触地当帧不消耗）：
+				## 上升/下降滞空照常倒数（停顿帧不进入本函数）；归零自然恢复——空中
+				## 则空中受身，落地则回中立，不转普通倒地。一次弹地至多一次反弹：
+				## 再次触地不重置窗口、不再反弹。
+				dummy_bounce_left = maxi(dummy_bounce_left - 1, 0)
+				if dummy_bounce_left == 0:
+					if dummy_on_ground:
+						dummy_state = DummyState.NEUTRAL
+						events.append(CombatEvent.dummy_recovered())
+					else:
+						dummy_state = DummyState.AIR_RECOVERED
 					_end_combo(CombatEvent.ComboEndReason.DUMMY_RECOVERED, events)
 		DummyState.KNOCKED_DOWN:
 			## 普通倒地：独立倒地计时逐帧消耗（命中当帧不消耗，停顿帧不推进）；
@@ -2762,6 +2884,7 @@ func _start_move(move_id: String, move: MoveData, is_followup: bool) -> void:
 	_move_blocked = false
 	_move_is_followup = is_followup
 	_move_via_link = false
+	_move_via_air_link = false
 	## 新招式起手即取代前招的空技落地接缝（票据 08）：延迟连接挂起与收招
 	## 快照随接缝终结——资格（若有）由自身的消费/失效路径管理。
 	_pending_air_link = false
@@ -2801,6 +2924,7 @@ func _clear_current_move() -> void:
 	_move_blocked = false
 	_move_is_followup = false
 	_move_via_link = false
+	_move_via_air_link = false
 	_move_via_special_entry = false
 	## 招式被打断或自然结束：派生窗口与特殊进入资格只属于该招，随之关闭
 	## （未消费的资格不能跨招式补发）。
@@ -3045,8 +3169,12 @@ func _can_hit_dummy() -> bool:
 func _dummy_pursuable() -> bool:
 	## 可追击的受击状态：地面硬直、浮空硬直、低浮空、击飞触地滑行前滞空或
 	## 地面滑行（连段仍活跃时合法接续可继续命中；低浮空的追击窗口由触地转换
-	## 关闭，滑行的追击窗口由滑行计时关闭——S-05）。普通倒地与空中已受身不在
-	## 可追击域内；滑行目标能否被某招命中另由该招的 slide 资料门决定。
+	## 关闭，滑行的追击窗口由滑行计时关闭——S-05）。弹地（票据 09，B-02）只在
+	## 首次触地（bounce_contact）后才可追击——触地前沿资料运动、不开完整地面追击。
+	## 普通倒地与空中已受身不在可追击域内；滑行/弹地目标能否被某招命中另由该招
+	## 的对应目标状态资料门决定。
+	if dummy_state == DummyState.GROUND_BOUNCE:
+		return dummy_bounce_contacted
 	return dummy_state == DummyState.GROUND_HITSTUN or dummy_state == DummyState.AIR_HITSTUN \
 		or dummy_state == DummyState.LOW_FLOAT_SWEEP or dummy_state == DummyState.LOW_FLOAT_TO_SLIDE \
 		or dummy_state == DummyState.GROUND_SLIDE
@@ -3063,11 +3191,13 @@ func _end_combo(reason: CombatEvent.ComboEndReason, events: Array[CombatEvent]) 
 	combo_active = false
 	## 连段结束清除起手等级与三层累计修正（自然恢复/普通倒地/收尾同口径）；
 	## 下一段连段首击重新锁定。特殊进入资格绑定本次连段，随之清除（I-05.3）；
-	## 命中落地资格与空技延迟连接同样绑定本次连段（票据 08，L-01）。
+	## 命中落地资格与空技延迟连接同样绑定本次连段（票据 08，L-01）；弹地追击
+	## 资格同样绑定本次连段（票据 09，B-03）。
 	combo_starter_grade = MoveData.StarterGrade.UNSET
 	combo_damage_scale = 1.0
 	combo_time_scale = 1.0
 	combo_trajectory_scale = 1.0
+	combo_bounce_followup = 0
 	_close_special_entry()
 	_close_hit_landing()
 	_pending_air_link = false

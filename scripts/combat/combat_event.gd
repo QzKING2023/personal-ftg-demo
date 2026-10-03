@@ -23,18 +23,21 @@ enum Type {
 	REKKA_BRANCH_LOCKED, ## Rekka 派生窗口内第一个 B/C 新按下锁定分支（见 rekka_branch/rekka_move_id；票据 04）
 	SPIKE_LANDED,      ## 向下击落触地：同帧转普通倒地（票据 04）
 	SLIDE_STARTED,     ## 击飞触地转地面滑行：进入 GROUND_SLIDE 可追击窗口（票据 05；计时自下一正常帧倒数）
+	BOUNCE_CONTACT,    ## 弹地首次触地：记录 bounce_contact，按反弹速度上弹并开放统一追击窗口（票据 09；一次弹地至多一次）
 	CHARGE_COMMITTED,  ## 动作内蓄力分支提交：active 边界处按住年龄/松键判定为普通版或蓄力版（见 charge_* 字段；票据 06）
 	SWITCHED_SIDES,    ## 换边：面向按玩家与木桩真实横向关系翻转（新面向见 direction；票据 06，下一物理帧起生效）
 }
 
 ## 连段结束原因：收尾、取消窗口关闭、招式收招未接续、木桩自然受身/恢复、
-## 普通倒地反应（进入倒地即结束当前连段）。
+## 普通倒地反应（进入倒地即结束当前连段）、弹地后收尾（A 起手或资格已消费时
+## 弹地目标上的新命中立即作为路线终点，票据 09，B-03）。
 enum ComboEndReason {
 	FINISHER,
 	CANCEL_WINDOW_CLOSED,
 	MOVE_RECOVERED,
 	DUMMY_RECOVERED,
 	KNOCKDOWN,
+	BOUNCE_END,
 }
 
 ## 普通投尝试被拒绝的原因：状态禁用（蹲下/pre-jump/空中/招式阶段/受击硬直/
@@ -238,6 +241,14 @@ static func spike_landed() -> CombatEvent:
 static func slide_started() -> CombatEvent:
 	var event := CombatEvent.new()
 	event.type = Type.SLIDE_STARTED
+	return event
+
+
+## 弹地首次触地（票据 09，B-02）：bounce_contact 记录、按反弹速度进入上升阶段、
+## 统一追击窗口自下一正常帧倒数开放。
+static func bounce_contact() -> CombatEvent:
+	var event := CombatEvent.new()
+	event.type = Type.BOUNCE_CONTACT
 	return event
 
 
