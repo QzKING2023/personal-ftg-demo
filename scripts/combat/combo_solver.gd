@@ -146,6 +146,189 @@ class ScheduledInput extends RefCounted:
 		return input
 
 
+## P3（solver-checkpoint）：_compile_chain 输出的不可变视图。构造时深拷贝输入
+## 表与预期命中表，此后不再改写——前缀 trie 的行走/登记、惰性区间围栏都以它
+## 为准；运行结果 dict 的 "compiled" 字段仍指向原始编译 dict（内容与之一致）。
+class CompiledSchedule extends RefCounted:
+	var inputs: Array[ScheduledInput] = []
+	var hit_frames: Array[int] = []
+	var hit_moves: Array[String] = []
+	var jump_frame := -1
+	var land_frame := -1
+	var _frames: Array[int] = []
+	var _by_frame := {}
+
+
+	static func from_compiled(compiled: Dictionary) -> CompiledSchedule:
+		var schedule := CompiledSchedule.new()
+		if compiled.is_empty():
+			return schedule
+		for spec in compiled["inputs"]:
+			var input := spec as ScheduledInput
+			schedule.inputs.append(input)
+			schedule._frames.append(input.frame)
+			schedule._by_frame[input.frame] = input
+		schedule.hit_frames = (compiled["hit_frames"] as Array[int]).duplicate()
+		schedule.hit_moves = (compiled["hit_moves"] as Array[String]).duplicate()
+		schedule.jump_frame = int(compiled.get("jump_frame", -1))
+		schedule.land_frame = int(compiled.get("land_frame", -1))
+		return schedule
+
+
+	func spec_at(frame: int) -> ScheduledInput:
+		return _by_frame.get(frame)
+
+
+	## 输入帧游标推进：跳过 ≤ from_frame 的输入，返回下一个未消费输入的下标。
+	func advance_cursor(from_frame: int) -> int:
+		var idx := 0
+		while idx < _frames.size() and _frames[idx] <= from_frame:
+			idx += 1
+		return idx
+
+
+	func frame_at(cursor: int) -> int:
+		return _frames[cursor] if cursor < _frames.size() else -1
+
+
+## P3（solver-checkpoint）：一次真实 CombatSession 前缀执行的不可变快照。
+## session_state 是 clone_state 全量执行状态（不用 settlement_state——那只是
+## 影响未来结算的子集，缺 HP/位置/输入史），外加 _run_schedule 循环的全部跨帧
+## 计数器（frame/physics/verified/ended 累积/循环快照序列/extra 命中记录/证明
+## 状态）。构造时深冻结，此后只读；恢复方把可变副本喂回循环局部——任何分支
+## 消费后都不得改写快照本身（不可变纪律由本类无写入方法保证）。
+class SessionCheckpoint extends RefCounted:
+	var session_state := {}
+	var frame := 0
+	var physics := 0
+	var verified := 0
+	var ended_reasons: Array[int] = []
+	var snapshots: Array = []
+	var extra_hit_frames: Array[int] = []
+	var extra_hit_moves: Array[String] = []
+	var extra_hit_counts: Array[int] = []
+	var proven_period := -1
+	var laps_observed := 0
+	## 快照保证输入一致的最远帧（分歧帧）：恢复方从此帧之后喂自己的尾部输入。
+	var boundary := -1
+
+
+	static func capture(prefix: Dictionary) -> SessionCheckpoint:
+		var checkpoint := SessionCheckpoint.new()
+		checkpoint.session_state = (prefix["session_state"] as Dictionary).duplicate(true)
+		checkpoint.frame = int(prefix["frame"])
+		checkpoint.physics = int(prefix["physics"])
+		checkpoint.verified = int(prefix["verified"])
+		for value in prefix["ended_reasons"]:
+			checkpoint.ended_reasons.append(int(value))
+		checkpoint.snapshots = (prefix["snapshots"] as Array).duplicate()
+		for value in prefix["extra_hit_frames"]:
+			checkpoint.extra_hit_frames.append(int(value))
+		for value in prefix["extra_hit_moves"]:
+			checkpoint.extra_hit_moves.append(String(value))
+		for value in prefix["extra_hit_counts"]:
+			checkpoint.extra_hit_counts.append(int(value))
+		checkpoint.proven_period = int(prefix.get("proven_period", -1))
+		checkpoint.laps_observed = int(prefix.get("laps_observed", 0))
+		checkpoint.boundary = int(prefix.get("boundary", -1))
+		return checkpoint
+
+
+	## 旧接口投影（票据 04 测试与 legacy 调用方按 Dictionary 读取）。
+	func as_prefix() -> Dictionary:
+		return {
+			"session_state": session_state,
+			"frame": frame,
+			"physics": physics,
+			"verified": verified,
+			"ended_reasons": ended_reasons.duplicate(),
+			"snapshots": snapshots.duplicate(),
+			"extra_hit_frames": extra_hit_frames.duplicate(),
+			"extra_hit_moves": extra_hit_moves.duplicate(),
+			"extra_hit_counts": extra_hit_counts.duplicate(),
+			"proven_period": proven_period,
+			"laps_observed": laps_observed,
+			"boundary": boundary,
+		}
+
+
+## P3（solver-checkpoint）：前缀转移 memo——按输入内容寻址的持久化 trie。
+## 节点 = 某张编译表在某个输入帧完成当帧事件处理后的不可变 SessionCheckpoint；
+## 子边键 = (帧号, 该帧输入内容摘要)。会话执行是输入确定性的：同 scope（表
+## 摘要/面向/钉位/起始/注入/选项形状）下输入前缀逐帧相同的两张表，到任何帧的
+## 执行与求解器计数器都相同——任意运行从最深匹配节点恢复即等价于从零重放
+##（票据 04 差分口径的组成化推广；restore 保真由 seam 差分证明背书）。
+## trie 在求解器实例内持久：同一请求内路线兄弟、边/缺口探针的公共上下文重放
+## 只执行一次。容量满后确定性地停止登记（访问序确定，饱和可复现，只损失共享）。
+class TransitionMemo extends RefCounted:
+	const MAX_NODES := 8192
+
+	var _scopes := {}
+
+
+	func scope_state(scope_key: String) -> Dictionary:
+		if not _scopes.has(scope_key):
+			_scopes[scope_key] = {"nodes": 0, "children": {}, "root": null}
+		return _scopes[scope_key]
+
+
+	func scope_root(scope_key: String) -> SessionCheckpoint:
+		return scope_state(scope_key)["root"]
+
+
+	func set_scope_root(scope_key: String, checkpoint: SessionCheckpoint) -> void:
+		scope_state(scope_key)["root"] = checkpoint
+
+
+	## 沿编译表输入链走到最深节点。max_frame > 0 时不接受更深的节点（捕获运行
+	## 的 memo 恢复不得越过 capture_at，否则探针会跑过捕获点）。返回
+	## [checkpoint（无匹配为 null）， 最深节点的子边表（供登记方续接）]。
+	func deepest(scope_key: String, schedule: CompiledSchedule, max_frame := -1) -> Array:
+		var children: Dictionary = scope_state(scope_key)["children"]
+		var checkpoint: SessionCheckpoint = null
+		for spec in schedule.inputs:
+			if max_frame > 0 and spec.frame > max_frame:
+				break
+			if not children.has(spec.frame):
+				break
+			var by_digest: Dictionary = children[spec.frame]
+			var digest := _spec_digest(spec)
+			if not by_digest.has(digest):
+				break
+			var entry: Dictionary = by_digest[digest]
+			checkpoint = entry["checkpoint"]
+			children = entry["children"]
+		return [checkpoint, children]
+
+
+	## 在父子边表上登记新节点，返回新节点的子边表（容量满或重复键时挂空链/
+	## 复用既有链——首个登记者胜出，确定性）。
+	func extend(parent_children: Dictionary, spec: ScheduledInput, scope: Dictionary, checkpoint: SessionCheckpoint) -> Dictionary:
+		var entry := {"checkpoint": checkpoint, "children": {}}
+		if int(scope["nodes"]) >= MAX_NODES:
+			return entry["children"]
+		if not parent_children.has(spec.frame):
+			parent_children[spec.frame] = {}
+		var by_digest: Dictionary = parent_children[spec.frame]
+		var digest := _spec_digest(spec)
+		if by_digest.has(digest):
+			return (by_digest[digest] as Dictionary)["children"]
+		by_digest[digest] = entry
+		scope["nodes"] = int(scope["nodes"]) + 1
+		return entry["children"]
+
+
+	static func _spec_digest(spec: ScheduledInput) -> String:
+		return "%d|%d|%d|%s|%s" % [int(spec.axis), int(spec.down), int(spec.jump), spec.key, spec.held_key]
+
+
+	func stats() -> Dictionary:
+		var total := 0
+		for key in _scopes:
+			total += int(_scopes[key]["nodes"])
+		return {"scopes": _scopes.size(), "nodes": total}
+
+
 ## 接续链中的一段：某招式如何被按出来。触发点决定按键帧——
 ## START 从第 1 帧起手（方向派生先喂方向序列）；PREV_HIT 在上一招命中确认后
 ## 第 wait 帧按键（命中确认取消）；JUMP_FRAME 在 Space 起跳后第 wait 帧按键
@@ -299,6 +482,121 @@ class SolverCycle extends RefCounted:
 		return " → ".join(route) + " → 回到 " + route[0]
 
 
+## P4（solver-delay-dp）：循环 time_scale 单调不变量的形式化载体。把票据 09 起
+## 在用的「逐圈证明被单调时间修正排除」从内联启发式升级为声明式契约：evaluate
+## 依次检查四项前置条件，任一不满足即 FALLBACK（回退精确逐圈状态复现搜索），
+## 全部满足才 APPLY（证明级排除，跳过延迟笛卡尔积）。前置条件与论证逐项对应：
+## 1) 每圈有效 HIT——循环每圈至少一个招式命中源（存活的链条里每次预期命中都
+##    把 time_scale 乘上一个 <1 的因子；连段中段的资源重置在 _run_schedule 的
+##    连段计数校验处断链，不会出现在存活链里，故快照间的 time_scale 只乘不减）；
+## 2) 倍率有限且严格落于 (0,1)——starter 初始化与全部每击分层倍率一起检查：
+##    出现 1.0 时快照可以原值重现、出现 0/负数时乘积恒为 0 也可重现、非有限值
+##    无单调可言——三者都使严格递减论证失效，必须回退；
+## 3) time_scale 属于完整循环状态键——settlement_state 携带 time_scale 的防漂移
+##    检查（键里丢掉该字段时排除论证失去依据，回退；独立静态判定面可单测）；
+## 4) 无浮点下溢——观测视野内（MAX_CYCLE_LAPS 圈 × 每圈预期命中数上界）最小
+##    可达 time_scale 保持在 float64 正规数域（≥ 2.2e-308）：正规数域内 t×f < t
+##    对一切 f<1 严格成立（相对舍入 2^-53 远小于 1-f 的最小间隔），下溢到 0 或
+##    非正规域后乘法可能原地舍入、严格递减不再保证，回退。
+## 适用域沿用票据 09 口径：循环内存在首命中资料为 GROUND_BOUNCE /
+## LOW_FLOAT_TO_SLIDE 的招式才进入前置条件检查（普通循环保持精确逐圈模拟的
+## 诚实上报口径）——域外 FALLBACK 不携带 failed_precondition。
+class CycleInvariant extends RefCounted:
+	enum Verdict { FALLBACK, APPLY }
+
+	const LAP_HIT_PRECONDITION := "每圈有效 HIT"
+	const FACTOR_PRECONDITION := "倍率有限且严格小于 1"
+	const KEY_PRECONDITION := "time_scale 在完整循环键中"
+	const UNDERFLOW_PRECONDITION := "无浮点下溢"
+
+	var verdict: Verdict = Verdict.FALLBACK
+	## APPLY 时的证明级排除文案（与票据 09 起的报告逐字节一致，指纹不漂移）。
+	var reason := ""
+	## 进入适用域后首个未满足的前置条件名（域外回退为空串）；诊断与测试断言面。
+	var failed_precondition := ""
+	## 判定所用的全部倍率（名称 → 数值，含测试注入覆盖后的最终值）。
+	var factors := {}
+	## 一圈预期命中数上界（Σ 循环招式判定段数；下溢检查的指数底）。
+	var hits_per_lap := 0
+
+	func applies() -> bool:
+		return verdict == Verdict.APPLY
+
+
+	## 前置条件 3 的判定面：settlement 键是否携带 float 型 time_scale。
+	static func settlement_covers_time_scale(settlement: Dictionary) -> bool:
+		return settlement.has("time_scale") and typeof(settlement["time_scale"]) == TYPE_FLOAT
+
+
+	## 适用域（票据 09 口径）：循环内存在首命中资料为弹地/滑行反应的招式。
+	## 只看每个招式的首个 profile——与既有行为逐字节一致（保守适用域，不因
+	## 形式化而扩大排除范围）。
+	static func scope_extended_reaction(cycle_ids: Array[String], table: Dictionary) -> bool:
+		for move_id in cycle_ids:
+			var move := table.get(move_id) as MoveData
+			if move == null:
+				continue
+			for profile in move.hit_profiles:
+				if profile.reaction == HitProfile.Reaction.GROUND_BOUNCE \
+						or profile.reaction == HitProfile.Reaction.LOW_FLOAT_TO_SLIDE:
+					return true
+				break
+		return false
+
+
+	## 前置条件 1：每个循环成员都是表内打击招式——每圈至少一个预期命中源。
+	## 投/缺失招式使「快照间至少一次乘性命中」无从保证，回退。
+	static func each_lap_hit_source(cycle_ids: Array[String], table: Dictionary) -> bool:
+		if cycle_ids.is_empty():
+			return false
+		for move_id in cycle_ids:
+			var move := table.get(move_id) as MoveData
+			if move == null or not move.is_strike():
+				return false
+		return true
+
+
+	static func hits_per_lap_upper(cycle_ids: Array[String], table: Dictionary) -> int:
+		var hits := 0
+		for move_id in cycle_ids:
+			var move := table.get(move_id) as MoveData
+			if move != null:
+				hits += move.segment_count()
+		return hits
+
+
+	static func evaluate(cycle_ids: Array[String], table: Dictionary, factors: Dictionary, settlement: Dictionary) -> CycleInvariant:
+		var invariant := CycleInvariant.new()
+		invariant.factors = factors
+		invariant.hits_per_lap = hits_per_lap_upper(cycle_ids, table)
+		if not scope_extended_reaction(cycle_ids, table):
+			return invariant
+		if not each_lap_hit_source(cycle_ids, table):
+			invariant.failed_precondition = LAP_HIT_PRECONDITION
+			return invariant
+		var min_factor := INF
+		for factor_name in factors:
+			var factor := float(factors[factor_name])
+			if not is_finite(factor) or factor <= 0.0 or factor >= 1.0:
+				invariant.failed_precondition = FACTOR_PRECONDITION
+				return invariant
+			min_factor = minf(min_factor, factor)
+		if not settlement_covers_time_scale(settlement):
+			invariant.failed_precondition = KEY_PRECONDITION
+			return invariant
+		var max_hits := maxi(ComboSolver.MAX_CYCLE_LAPS * maxi(invariant.hits_per_lap, 1), 1)
+		var worst := pow(min_factor, max_hits - 1)
+		## float64 最小正规数必须运行时计算：GDScript 会把 ≤1e-308 的字面量
+		## 冲洗成 0.0（解析器下溢），写字面量会让本检查恒假。
+		var min_normal := pow(2.0, -1022.0)
+		if not is_finite(worst) or worst < min_normal:
+			invariant.failed_precondition = UNDERFLOW_PRECONDITION
+			return invariant
+		invariant.verdict = Verdict.APPLY
+		invariant.reason = "逐圈证明被单调时间修正排除：每圈至少一次有效 HIT，time_scale 严格递减并属于 settlement_state，回边不可能重现；未执行延迟笛卡尔积"
+		return invariant
+
+
 ## 起始战斗状态（issue 19）：分析起点的显式描述。
 ## 缺省（null）＝地面中立、空输入缓存/方向历史、地面中立木桩、固定探针接触位；
 ## 中间状态必须由调用方显式提供——空中姿态以确定性探针序（Space 垂直跳 + 4f
@@ -338,6 +636,17 @@ class SolverOptions extends RefCounted:
 	var facings: Array[int] = [1, -1]
 	## 空间验证数据（null = 不做空间验证，路线仅 timing-valid；issue 22）。
 	var spatial: SolverSpatialData = null
+	## 完整路线集合模式（P5）：true 时 MAX_ROUTE_REPORTS 不作为语义剪枝——全部
+	## ≤ MAX_ROUTE_NODES 的简单路径照常枚举并模拟，报告如实携带完整集合；
+	## 语义维度，进请求键（与默认截断模式互不命中缓存）。
+	var complete := false
+	## 资源看门狗毫秒预算（P5；0 = 不启用）。到点只在安全点（一个路线源/一个
+	## 结构循环/一条空间复验之后）暂停并持久化 incomplete 状态，绝不静默截断
+	## 语义；恢复经 resume_analysis。资源控制量，不进请求键。
+	var watchdog_ms := 0
+	## 看门狗暂停状态的持久化路径（P5；空 = 回退环境变量 FTG_SOLVER_RESUME，
+	## 再空则暂停但不持久化并如实注记）。
+	var resume_path := ""
 
 
 ## 分析报告：接续边、可读路线、循环与可读文本。refused = 招式表未通过校验，
@@ -360,6 +669,10 @@ class SolverReport extends RefCounted:
 	var refusal_reason := ""
 	## 拒绝报告的修正建议（表非法 → 修资源；起始状态非法 → 调用方调整选项）。
 	var refusal_advice := ""
+	## 资源看门狗暂停（P5）：枚举在安全点暂停且未完成——不是拒绝、不是截断
+	## 语义；未完成状态已持久化（或如实注记未持久化），resume_analysis 续算。
+	## 未完成报告不进结果缓存。
+	var paused_incomplete := false
 	## 共享招式表摘要行（设计者核对资源编辑是否进入报告，issue 11）。
 	var table_lines: Array[String] = []
 	## 起始状态说明（issue 19）：缺省/显式起始、固定接触位、验证面向与镜像结论。
@@ -461,6 +774,14 @@ var _table_has_throw := false
 ## ——差分测试跑第二路径前必须清结果缓存（与 _delay_prefix_restore_disabled
 ## 同一口径）。
 static var _compiled_index_disabled := false
+## P5（solver-routes-cycles）差分开关：true 退回全起点 DFS + canonical 去重的
+## 旧环枚举（等价性差分 oracle；先例 _compiled_index_disabled，不进语义签名/
+## 请求键）。
+static var _cycle_enum_legacy := false
+## P5（solver-routes-cycles）差分开关：true 禁用路线叶执行的 trie 登记（退回
+## 「只有捕获探测登记」的 P3 行为；叶子仍可恢复，等价性差分 oracle）。不进
+## 语义签名/请求键。
+static var _route_leaf_memo_disabled := false
 ## 请求级不可变索引（_init 构建；null = 旧路径）。索引查找全程有效。
 var _index: CompiledMoveIndex = null
 ## P2（perf-edge-cache）缺口探针的显式注入（compiled input）：探针期间 from 的
@@ -480,6 +801,11 @@ var _pin_dx := PIN_DX
 ## 显式起始战斗状态（null = 默认地面中立；issue 19）。
 var _start: SolverStartState = null
 var _route_search_truncated := false
+## 路线报告容量（P5）：默认 MAX_ROUTE_REPORTS；complete 模式换入无上界值——
+## 上限是报告表面而非语义剪枝，完整模式不设该剪枝（资源由看门狗守护）。
+var _route_report_cap := MAX_ROUTE_REPORTS
+## 看门狗到期时刻（P5；Time.get_ticks_msec 口径；-1 = 未启用）。
+var _watchdog_deadline_ms := -1
 
 
 func _init(move_table: Dictionary) -> void:
@@ -496,7 +822,9 @@ func _init(move_table: Dictionary) -> void:
 ## 分析共享 manifest 指向的招式表；表未通过校验时拒绝分析并报告同一原因。
 ## 票据 06 起接入完整结果缓存：同型 descriptor（entrypoint="analyze_manifest"）
 ## 走 solve() 的同一查/存路径，拒绝形态不缓存。
-static func analyze_manifest(manifest_path: String) -> SolverReport:
+## mode（P6）：资源控制量（watchdog_ms/resume_path）直达 _analyze，不进请求键；
+## 缺省 {} 时与旧行为逐字节一致（无看门狗即永不暂停）。
+static func analyze_manifest(manifest_path: String, mode: Dictionary = {}) -> SolverReport:
 	_profile_reset()
 	_profile_v2_reset()
 	var result := MoveTable.load_manifest(manifest_path)
@@ -510,14 +838,14 @@ static func analyze_manifest(manifest_path: String) -> SolverReport:
 	var stub := _enumerate_intercept(request)
 	if stub != null:
 		return stub
-	return _finish_analyze_request(request, ComboSolver.new(result.moves)._analyze())
+	return _finish_analyze_request(request, ComboSolver.new(result.moves)._analyze(1, null, false, null, mode))
 
 
 ## 分析招式表：生成确定性接续边、可读路线与循环报告。不修改任何运行时战斗状态。
 ## 默认分析共享 manifest（与训练场同一份已校验数据）；显式传入字典用于注入实验表。
 ## 票据 06 起接入完整结果缓存：同型 descriptor（entrypoint="analyze"）走 solve()
 ## 的同一查/存路径，拒绝形态不缓存。
-static func analyze(move_table: Dictionary = {}) -> SolverReport:
+static func analyze(move_table: Dictionary = {}, mode: Dictionary = {}) -> SolverReport:
 	_profile_reset()
 	_profile_v2_reset()
 	var injected := not move_table.is_empty()
@@ -535,11 +863,14 @@ static func analyze(move_table: Dictionary = {}) -> SolverReport:
 	var stub := _enumerate_intercept(request)
 	if stub != null:
 		return stub
-	return _finish_analyze_request(request, ComboSolver.new(table)._analyze())
+	return _finish_analyze_request(request, ComboSolver.new(table)._analyze(1, null, false, null, mode))
 
 
 static func _finish_analyze_request(request: Dictionary, report: SolverReport) -> SolverReport:
-	if bool(request.get("cacheable", false)) and result_cache_enabled() and not report.refused:
+	## 暂停报告（P5/P6）不进结果缓存——未完成状态由 resume_analysis 续算，
+	## 续算完成的报告由清扫 worker 经 _sweep_store_completed 显式入缓存。
+	if bool(request.get("cacheable", false)) and result_cache_enabled() and not report.refused \
+			and not report.paused_incomplete:
 		return _cache_store(request, report)
 	return report
 
@@ -980,6 +1311,11 @@ static func _test_fresh_cache_state() -> void:
 ## 缓存 miss 只记录 descriptor 并返回拒绝形态的完整 stub 报告（不计算）；命中
 ## 返回真实报告。枚举跑的 stdout、summary 与退出码由编排器全部丢弃，不进任何门。
 const _ENUMERATE_ENV := "FTG_SOLVER_ENUMERATE"
+## 看门狗暂停快照（P5）：schema 常量 + 恢复路径环境变量 + 暂停注记前缀
+##（续算腿按前缀剥离暂停注记，最终报告与不中断路径指纹全等）。
+const _RESUME_SCHEMA_VERSION := "ftg-demo-solver-resume-v1"
+const _RESUME_PATH_ENV := "FTG_SOLVER_RESUME"
+const _PAUSE_NOTE_PREFIX := "资源看门狗暂停："
 static var _enumerate_out_path := OS.get_environment(_ENUMERATE_ENV)
 ## 枚举序（访问序全量，重复保留——去重是编排器的职责）；每次 miss 整文件重写，
 ## 与 fragment 写入同一崩溃安全口径（坏行在收集侧被跳过）。
@@ -1206,6 +1542,90 @@ static func last_request_profile_v2() -> Dictionary:
 static var _delay_prefix_restore_disabled := false
 static var _test_delay_leaf_log = null
 static var _test_prefix_mutator := Callable()
+## P4（solver-delay-dp）：延迟搜索 DP 的差分开关——true 强制旧 DFS 枚举
+##（Tier A oracle）。开关不进语义签名/请求键：差分测试跑第二路径前清结果缓存
+##（与 _delay_prefix_restore_disabled 同一口径）。
+static var _delay_dp_disabled := false
+## P4：CycleInvariant 的倍率注入覆盖（仅测试可见；键为 GameParams 常量名）。
+## 驱动「倍率=1/非法倍率/浮点下溢」前置条件失败分支——生产路径恒为空。
+static var _test_cycle_factor_override := {}
+## P4：DP 实例级计账（searches=启用 DP 的 _delay_search 次数；nodes=建键节点；
+## stores=登记子树结果；hits=精确命中返回）。测试可见，不进验收参数。
+var _delay_dp_totals := {"searches": 0, "nodes": 0, "stores": 0, "hits": 0}
+
+## P3（solver-checkpoint）：前缀转移 memo——按输入内容寻址的持久化 trie，
+## 求解器实例内存活（同一请求内跨搜索共享：路线兄弟、边/缺口探针的公共
+## 上下文重放只执行一次；跨请求不共享，随实例消亡）。
+var _transition_memo := TransitionMemo.new()
+## 注入副本的 scope 签名缓存（按 MoveData 实例）：缺口探针的每次
+## _run_schedule 都要算 scope 键，canonical 全招式序列化只做一次。
+var _memo_injection_cache := {"id": 0, "text": ""}
+
+
+func clear_transition_memo() -> void:
+	_transition_memo = TransitionMemo.new()
+
+
+func transition_memo_stats() -> Dictionary:
+	return _transition_memo.stats()
+
+
+## memo 参与条件：差分开关关闭，且变异钩子未装——变异测试保持票据 04 的
+## 单前缀口径（被污染的 checkpoint 进 trie 会跨样本串扰）。
+func _memo_active(_opts: Dictionary) -> bool:
+	return not _delay_prefix_restore_disabled and not _test_prefix_mutator.is_valid()
+
+
+## trie 的 scope 键：会话执行身份的全部维度——表摘要、缺口探针注入副本摘要
+##（注入改取消资格，同输入可不同执行，必须分域）、面向、钉位、显式起始、
+## 选项形状（snapshot_every/max_frames/unpredicted_tail/tail_frames 影响计数
+## 器与提前停机，全部进键）。delay_budget/capture_before_frame 不影响执行
+## 内容，不进键。
+## The input trie is safe to share only when the schedule's expected-hit
+## semantics are identical too.  Two delay vectors can have the same input
+## prefix while predicting different hit frames; reusing a checkpoint would
+## then reuse its `verified` counter against the wrong schedule and change the
+## representative failure.  Keep this signature in the scope rather than
+## weakening the checkpoint contents or the report ordering contract.
+func _memo_scope_key(opts: Dictionary, compiled: Dictionary = {}) -> String:
+	var injection := ""
+	if _probe_move != null:
+		var move_id := _probe_move.get_instance_id()
+		if int(_memo_injection_cache["id"]) != move_id:
+			_memo_injection_cache = {
+				"id": move_id,
+				"text": "%s@%s" % [_probe_from_id, _sha256_text(_canonical_variant(_probe_move))],
+			}
+		injection = String(_memo_injection_cache["text"])
+	return "|".join([
+		_probe_table_digest(),
+		str(_facing),
+		str(_pin_dx),
+		_canonical_variant(_probe_start_value()),
+		injection,
+		str(int(opts.get("snapshot_every", 0))),
+		str(int(opts.get("max_frames", 0))),
+		str(1 if opts.get("unpredicted_tail", false) else 0),
+		str(int(opts.get("tail_frames", 0))),
+		_compiled_semantics_key(compiled),
+	])
+
+
+func _compiled_semantics_key(compiled: Dictionary) -> String:
+	if compiled.is_empty():
+		return ""
+	var hits: Array[String] = []
+	for i in range(compiled.get("hit_frames", []).size()):
+		hits.append("%d:%s" % [
+			int(compiled["hit_frames"][i]),
+			String(compiled["hit_moves"][i]),
+		])
+	return "%s|%s|%s|%s" % [
+		";".join(hits),
+		str(int(compiled.get("jump_frame", -1))),
+		str(int(compiled.get("land_frame", -1))),
+		str(1 if compiled.get("unpredicted_tail", false) else 0),
+	]
 
 
 ## 叶子录制投影（票据 04 harness）：run dict 的全部可值比字段 + 末态会话
@@ -1237,10 +1657,16 @@ static func _test_leaf_projection(run: Dictionary) -> Dictionary:
 ## 默认左右面向分别验证，并以相对输入签名镜像对拍确认两侧结果对称；显式传入
 ## 空中等中间状态时，首招候选随之切换为该状态下当前可执行的招式。一次性探针不
 ## 修改任何活动会话；非法表与训练场观察同一拒绝原因（issue 11）。
-static func solve(options: SolverOptions = null) -> SolverReport:
+## resource_mode（P6 清扫 worker 专用）：仅携带资源控制量（watchdog_ms/resume_path），
+## 不改变 options_present 与任何请求键维度——缺省 {} 时行为与旧签名逐字节一致。
+static func solve(options: SolverOptions = null, resource_mode: Dictionary = {}) -> SolverReport:
 	_profile_reset()
 	_profile_v2_reset()
 	var opts := options if options != null else SolverOptions.new()
+	if resource_mode.has("watchdog_ms"):
+		opts.watchdog_ms = int(resource_mode["watchdog_ms"])
+	if resource_mode.has("resume_path"):
+		opts.resume_path = str(resource_mode["resume_path"])
 	if opts.start != null and opts.start.stance == MoveData.Stance.AIR \
 			and (opts.start.air_frames < 0 or opts.start.air_frames >= GameParams.PLAYER_JUMP_AIRTIME_FRAMES):
 		_count_cache_bypass()
@@ -1280,35 +1706,218 @@ static func solve(options: SolverOptions = null) -> SolverReport:
 	var stub := _enumerate_intercept(request)
 	if stub != null:
 		return stub
-	var primary := ComboSolver.new(table)._analyze(facings[0], opts.start, true, opts.spatial)
+	var mode := {"complete": opts.complete, "watchdog_ms": opts.watchdog_ms, "resume_path": opts.resume_path}
+	var primary := ComboSolver.new(table)._analyze(facings[0], opts.start, true, opts.spatial, mode)
 	var facing_texts: Array[String] = []
 	for facing in facings:
 		facing_texts.append(_facing_text(facing))
 	primary.start_lines.append("验证面向：%s" % "、".join(facing_texts))
+	if primary.paused_incomplete:
+		return _solve_paused_return(primary, null, facings, 0, mode, {})
 	var primary_sections := _signature_sections(primary, facings[0])
 	for i in range(1, facings.size()):
-		var run := ComboSolver.new(table)._analyze(facings[i], opts.start, true, opts.spatial)
-		primary.verified_facings.append(facings[i])
-		var sections := _signature_sections(run, facings[i])
-		var diff: Array[String] = []
-		for section in ["edges", "gaps", "routes", "cycles"]:
-			if sections[section] != primary_sections[section]:
-				diff.append(_SECTION_LABELS[section])
-		if diff.is_empty():
-			primary.notes.append("面向 %s 镜像验证一致：接续边/配置缺口/路线/循环与相对输入在两侧完全对称" % _facing_text(facings[i]))
-		else:
-			primary.mirror_consistent = false
-			primary.notes.append("面向 %s 与面向 %s 的%s结果不一致——镜像对称被打破，请回报该差异" % [
-				_facing_text(facings[i]), _facing_text(facings[0]), "、".join(diff),
-			])
-		_merge_route_spatial(primary, run)
-		primary.guide_lines.append_array(run.guide_lines)
+		var run := ComboSolver.new(table)._analyze(facings[i], opts.start, true, opts.spatial, mode)
+		if run.paused_incomplete:
+			return _solve_paused_return(run, primary, facings, i, mode, primary_sections)
+		_merge_facing_run(primary, run, facings[i], primary_sections)
 	if facings.size() > 1:
 		primary.summary += "左右面向分别验证%s。" % ("，镜像一致" if primary.mirror_consistent else "，但结果不一致（见注）")
 	primary.spatial_lines = _spatial_report_lines(primary, facings, opts.spatial != null)
-	if bool(request.get("cacheable", false)) and result_cache_enabled() and not primary.refused:
+	if bool(request.get("cacheable", false)) and result_cache_enabled() and not primary.refused and not primary.paused_incomplete:
 		return _cache_store(request, primary)
 	return primary
+
+
+## 暂停快照的持久化路径（P5）：显式 resume_path 优先，回退环境变量。
+static func _resume_target_path(mode: Dictionary) -> String:
+	var path := str(mode.get("resume_path", ""))
+	if path != "":
+		return path
+	return OS.get_environment(_RESUME_PATH_ENV)
+
+
+## 快照整文件重写（与枚举序文件同一崩溃安全口径；坏行在加载侧拒绝）。
+static func _persist_resume_snapshot(path: String, snapshot: Dictionary) -> bool:
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		return false
+	file.store_line(JSON.stringify(snapshot))
+	file.close()
+	return true
+
+
+## 快照加载：读文件、解析、校验 schema；失败返回 ok=false 与原因。
+static func _load_resume_snapshot(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {"ok": false, "error": "文件不存在", "snapshot": {}}
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return {"ok": false, "error": "无法打开", "snapshot": {}}
+	var text := file.get_as_text()
+	file.close()
+	var parsed = JSON.parse_string(text)
+	if parsed == null or not (parsed is Dictionary):
+		return {"ok": false, "error": "JSON 解析失败（非 JSON 对象）", "snapshot": {}}
+	var snapshot: Dictionary = parsed
+	if str(snapshot.get("schema", "")) != _RESUME_SCHEMA_VERSION:
+		return {"ok": false, "error": "schema 不符（%s）" % snapshot.get("schema", ""), "snapshot": {}}
+	return {"ok": true, "error": "", "snapshot": snapshot}
+
+
+## 暂停注记剥离（P5 续算腿入口）：暂停是暂态资源状态，不进入最终报告——
+## 续算完成的报告与不中断路径指纹全等。
+static func _strip_pause_notes(report: SolverReport) -> void:
+	var kept: Array[String] = []
+	for note in report.notes:
+		if not String(note).begins_with(_PAUSE_NOTE_PREFIX):
+			kept.append(String(note))
+	report.notes = kept
+
+
+static func _phase_label(phase: String) -> String:
+	match phase:
+		"routes":
+			return "路线枚举"
+		"cycles":
+			return "循环证明"
+		"spatial":
+			return "空间复验"
+	return "收尾"
+
+
+## 快照起始值 → SolverStartState（P5；null 保持 null）。
+static func _start_from_snapshot(snapshot: Dictionary) -> SolverStartState:
+	var value = snapshot.get("start", null)
+	if value == null:
+		return null
+	var start := SolverStartState.new()
+	start.stance = int(value.get("stance", 1))
+	start.air_frames = int(value.get("air_frames", 0))
+	return start
+
+
+## 看门狗暂停后的续算入口（P5）：读快照 → canonical 重建招式表 → 续算腿
+##（边/缺口阶段不重跑，路线/循环/空间从游标继续）。快照是 solve 级
+##（kind == "solve"）时先续算暂停的面向线程，再跑剩余面向并按 solve 的镜像
+## 对拍/合并/空间分层收尾。续算完成的报告不回写结果缓存——内容与不中断路径
+## 一致，缓存由下一次同型请求自然建立；续算仍受同一看门狗预算约束（可再次
+## 暂停并改写快照）。
+static func resume_analysis(resume_path: String) -> SolverReport:
+	_profile_reset()
+	_profile_v2_reset()
+	var load := _load_resume_snapshot(resume_path)
+	if not bool(load["ok"]):
+		return _refused_base("恢复快照加载失败（%s）：%s" % [resume_path, load["error"]])
+	var snapshot: Dictionary = load["snapshot"]
+	var decoded := _decode_canonical(str(snapshot.get("table_text", "")))
+	if not bool(decoded.get("ok", false)):
+		return _refused_base("恢复快照的招式表解码失败：%s" % decoded.get("error", ""))
+	var table := _rehydrated_table(decoded.get("value", {}))
+	if str(snapshot.get("kind", "analysis")) == "solve":
+		return _resume_solve(table, snapshot)
+	var mode := {
+		"complete": bool(snapshot.get("complete", false)),
+		"watchdog_ms": int(snapshot.get("watchdog_ms", 0)),
+		"resume_path": str(snapshot.get("resume_path", resume_path)),
+		"resume_state": snapshot,
+	}
+	var solver := ComboSolver.new(table)
+	var spatial = SolverSpatialData.new() if bool(snapshot.get("spatial", false)) else null
+	return solver._analyze(int(snapshot.get("facing", 1)), _start_from_snapshot(snapshot), bool(snapshot.get("sort_outputs", false)), spatial, mode)
+
+
+## solve 级快照的续算（P5）：线程（暂停的面向分析）先行；线程即主面向时完成
+## 后补上 solve 外壳（验证面向行/镜像对拍基准），否则与冻结 primary 合并；
+## 剩余面向逐个新算（仍受看门狗约束）并合并，最后按 solve 收尾。
+static func _resume_solve(table: Dictionary, snapshot: Dictionary) -> SolverReport:
+	var thread: Dictionary = snapshot.get("thread", {})
+	var thread_facing := int(snapshot.get("thread_facing", 1))
+	var facings: Array[int] = [thread_facing]
+	for facing in snapshot.get("pending_facings", []):
+		facings.append(int(facing))
+	var mode := {
+		"complete": bool(thread.get("complete", false)),
+		"watchdog_ms": int(thread.get("watchdog_ms", 0)),
+		"resume_path": str(thread.get("resume_path", "")),
+		"resume_state": thread,
+	}
+	var spatial = SolverSpatialData.new() if bool(thread.get("spatial", false)) else null
+	var start := _start_from_snapshot(thread)
+	var run := ComboSolver.new(table)._analyze(thread_facing, start, bool(thread.get("sort_outputs", true)), spatial, mode)
+	if run.paused_incomplete:
+		return _solve_paused_return(run, null, facings, 0, mode, {})
+	var primary: SolverReport
+	var pristine: Dictionary = snapshot.get("pristine_sections", {})
+	if snapshot.get("primary", null) == null:
+		primary = run
+		pristine = _signature_sections(primary, facings[0])
+		var facing_texts: Array[String] = []
+		for facing in facings:
+			facing_texts.append(_facing_text(facing))
+		primary.start_lines.append("验证面向：%s" % "、".join(facing_texts))
+	else:
+		primary = _thaw_report(snapshot["primary"])
+		_merge_facing_run(primary, run, thread_facing, pristine)
+	for i in range(1, facings.size()):
+		var facing_run := ComboSolver.new(table)._analyze(facings[i], start, true, spatial, mode)
+		if facing_run.paused_incomplete:
+			return _solve_paused_return(facing_run, primary, facings, i, mode, pristine)
+		_merge_facing_run(primary, facing_run, facings[i], pristine)
+	if facings.size() > 1:
+		primary.summary += "左右面向分别验证%s。" % ("，镜像一致" if primary.mirror_consistent else "，但结果不一致（见注）")
+	primary.spatial_lines = _spatial_report_lines(primary, facings, spatial != null)
+	return primary
+
+
+## solve 级暂停收尾（P5）：把 `_analyze` 刚持久化的线程快照包一层 solve 上下文
+##（非主面向暂停时冻结 primary 连同已完成的合并、原始镜像签名、剩余面向），
+## 改写同一恢复文件；返回暂停报告（诚实标记，不进结果缓存）。
+static func _solve_paused_return(paused_report: SolverReport, primary: SolverReport, facings: Array[int], paused_index: int, mode: Dictionary, pristine: Dictionary) -> SolverReport:
+	var path := _resume_target_path(mode)
+	var wrapped := false
+	if path != "" and FileAccess.file_exists(path):
+		var load := _load_resume_snapshot(path)
+		if bool(load["ok"]) and str(load["snapshot"].get("kind", "")) == "analysis":
+			var snap: Dictionary = load["snapshot"]
+			var pending: Array[int] = []
+			for i in range(paused_index + 1, facings.size()):
+				pending.append(facings[i])
+			snap["kind"] = "solve"
+			snap["thread_facing"] = facings[paused_index]
+			snap["primary"] = _freeze_report(primary) if primary != null else null
+			snap["pristine_sections"] = pristine
+			snap["pending_facings"] = pending
+			wrapped = _persist_resume_snapshot(path, snap)
+	if wrapped:
+		paused_report.notes.append("%ssolve 已在面向 %s 的枚举中途暂停并把未完成状态连同剩余面向持久化（%s）；ComboSolver.resume_analysis 续算" % [
+			_PAUSE_NOTE_PREFIX, _facing_text(facings[paused_index]), path,
+		])
+	else:
+		paused_report.notes.append("%ssolve 已在面向 %s 的枚举中途暂停；未配置可用恢复路径，未完成状态未能持久化——重跑该请求可获得完整报告" % [
+			_PAUSE_NOTE_PREFIX, _facing_text(facings[paused_index]),
+		])
+	return paused_report
+
+
+## 单面向结果并入主报告（P5 从 solve 的面向循环抽出，solve 与 resume 共用）：
+## 镜像签名对拍（对 frozen 主面向原始签名，不受后续合并影响）、空间结果合并、
+## 操作说明拼接——与原循环体逐字节同序。
+static func _merge_facing_run(primary: SolverReport, run: SolverReport, facing: int, pristine_sections: Dictionary) -> void:
+	primary.verified_facings.append(facing)
+	var sections := _signature_sections(run, facing)
+	var diff: Array[String] = []
+	for section in ["edges", "gaps", "routes", "cycles"]:
+		if sections[section] != pristine_sections[section]:
+			diff.append(_SECTION_LABELS[section])
+	if diff.is_empty():
+		primary.notes.append("面向 %s 镜像验证一致：接续边/配置缺口/路线/循环与相对输入在两侧完全对称" % _facing_text(facing))
+	else:
+		primary.mirror_consistent = false
+		primary.notes.append("面向 %s 与面向 %s 的%s结果不一致——镜像对称被打破，请回报该差异" % [
+			_facing_text(facing), _facing_text(int(primary.verified_facings[0])), "、".join(diff),
+		])
+	_merge_route_spatial(primary, run)
+	primary.guide_lines.append_array(run.guide_lines)
 
 
 static func _clone_move_table(table: Dictionary) -> Dictionary:
@@ -1349,6 +1958,7 @@ static func _build_solve_request(options_present: bool, opts: SolverOptions, tab
 		"start": {"present": opts.start != null, "value": start_value},
 		"facings": {"raw": opts.facings.duplicate(), "effective": effective_facings},
 		"spatial": {"present": opts.spatial != null, "value": spatial_value},
+		"complete": {"present": options_present, "value": opts.complete},
 		"probe": {
 			"pin_dx": PIN_DX,
 			"spatial_distances": SPATIAL_PROBE_DISTANCES.duplicate(),
@@ -1868,12 +2478,16 @@ static func _rehydrated_table(table_value) -> Dictionary:
 ## 输入 → 调对应入口现算（存储路径即 06 的 fragment 写入）。重建请求必须与
 ## descriptor 逐字节全等（_last_request 校验），否则 ok=false——该条记为枚举
 ## 缺口，由热跑 miss 就地现算兜底正确性。
-static func _sweep_replay(descriptor_text: String) -> Dictionary:
+## overrides（P6 可复用 worker 池）：资源控制量（watchdog_ms/resume_path），
+## 只到安全点暂停、绝不改变请求键与报告内容；返回值带 report/paused/refused
+## 供 worker 做心跳与续算编排。
+static func _sweep_replay(descriptor_text: String, overrides: Dictionary = {}) -> Dictionary:
 	var decoded := _decode_canonical(descriptor_text)
 	if not bool(decoded.get("ok", false)):
 		return {"ok": false, "error": "decode 失败：%s" % decoded.get("error", "")}
 	var descriptor: Dictionary = decoded["value"]
 	var facings_value: Dictionary = descriptor.get("facings", {})
+	var report: SolverReport = null
 	match str(descriptor.get("entrypoint", "")):
 		"solve":
 			if bool(descriptor.get("options_present", false)):
@@ -1898,20 +2512,55 @@ static func _sweep_replay(descriptor_text: String) -> Dictionary:
 					var spatial := SolverSpatialData.new()
 					spatial.body_size = (spatial_value as Dictionary).get("body_size", GameParams.BODY_SIZE)
 					opts.spatial = spatial
-				solve(opts)
+				## complete 是语义维度（进请求键）：重建必须原样带回，否则
+				## 重建门（文本全等）必然拒绝 complete 模式请求（P7 实证）。
+				var complete_value = descriptor.get("complete", {}).get("value", null)
+				if complete_value != null:
+					opts.complete = bool(complete_value)
+				if overrides.has("watchdog_ms"):
+					opts.watchdog_ms = int(overrides["watchdog_ms"])
+				if overrides.has("resume_path"):
+					opts.resume_path = str(overrides["resume_path"])
+				report = solve(opts)
 			else:
-				solve(null)
+				report = solve(null, overrides)
 		"analyze":
 			if str(descriptor.get("table_source", "")) == "injected":
-				analyze(_rehydrated_table(descriptor.get("table", {})))
+				report = analyze(_rehydrated_table(descriptor.get("table", {})), overrides)
 			else:
-				analyze({})
+				report = analyze({}, overrides)
 		"analyze_manifest":
-			analyze_manifest(str(descriptor.get("manifest_path", "")))
+			report = analyze_manifest(str(descriptor.get("manifest_path", "")), overrides)
 		_:
 			return {"ok": false, "error": "未知 entrypoint：%s" % descriptor.get("entrypoint", "")}
 	if str(_last_request.get("text", "")) != descriptor_text:
 		return {"ok": false, "error": "重建请求不相等（重建 digest=%s）" % _last_request.get("digest", "")}
+	return {
+		"ok": true,
+		"error": "",
+		"paused": report.paused_incomplete,
+		"refused": report.refused,
+		"report": report,
+	}
+
+
+## P6 清扫 worker 的续算回填入口：resume_analysis 的完成腿不回写结果缓存
+## （P5 口径——缓存由下一次同型请求自然建立），worker 池没有「下一次」，
+## 由本入口显式入缓存。digest 必须与 descriptor canonical 文本的 sha256 全等
+## （完整性门），暂停/拒绝报告拒绝入缓存。
+static func _sweep_store_completed(descriptor_text: String, digest: String, report: SolverReport) -> Dictionary:
+	if report == null:
+		return {"ok": false, "error": "报告为空"}
+	if report.paused_incomplete:
+		return {"ok": false, "error": "报告仍处于暂停未完成状态"}
+	if report.refused:
+		return {"ok": false, "error": "拒绝报告不进结果缓存"}
+	if not result_cache_enabled():
+		return {"ok": false, "error": "结果缓存未启用"}
+	var rebuilt := _sha256_text(descriptor_text)
+	if rebuilt != digest:
+		return {"ok": false, "error": "descriptor/digest 不一致（重建 digest=%s）" % rebuilt}
+	_cache_store({"cacheable": true, "text": descriptor_text, "digest": digest}, report)
 	return {"ok": true, "error": ""}
 
 
@@ -1949,6 +2598,7 @@ static func _freeze_report(report: SolverReport) -> Dictionary:
 		"guide_lines": report.guide_lines.duplicate(),
 		"verified_facings": report.verified_facings.duplicate(),
 		"mirror_consistent": report.mirror_consistent,
+		"paused_incomplete": report.paused_incomplete,
 	}
 
 
@@ -2030,6 +2680,7 @@ static func _thaw_report(snapshot: Dictionary) -> SolverReport:
 	report.refusal_reason = snapshot.get("refusal_reason", "")
 	report.refusal_advice = snapshot.get("refusal_advice", "")
 	report.mirror_consistent = snapshot.get("mirror_consistent", true)
+	report.paused_incomplete = bool(snapshot.get("paused_incomplete", false))
 	report.notes = _string_array(snapshot.get("notes", []))
 	report.table_lines = _string_array(snapshot.get("table_lines", []))
 	report.start_lines = _string_array(snapshot.get("start_lines", []))
@@ -2341,103 +2992,221 @@ static func _refused_base(reason: String) -> SolverReport:
 ## 起始状态（null = 默认地面中立）；sort_outputs 按稳定键排序边与路线（solve 用，
 ## 旧入口 analyze 保留表序枚举）；spatial 非空时在路线产出后做 48/64/80 px
 ## 站位复验（issue 22，旧入口 analyze 不做空间分层）。
-func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false, spatial: SolverSpatialData = null) -> SolverReport:
+## 看门狗到期检查（P5）：只在安全点调用（一个路线源/一个结构循环/一条空间
+## 复验完成之后），当前单位的工作总是完整做完——暂停点永远落在可持久化的
+## 进度边界上。
+func _watchdog_due() -> bool:
+	return _watchdog_deadline_ms > 0 and Time.get_ticks_msec() >= _watchdog_deadline_ms
+
+
+## 起始状态的可序列化值（P5 暂停快照用；null 起始保持 null）。
+func _start_snapshot_value():
+	if _start == null:
+		return null
+	return {"stance": int(_start.stance), "air_frames": int(_start.air_frames)}
+
+
+## 看门狗暂停（P5）：标记 paused_incomplete、如实注记、把 incomplete 状态冻结
+## 并持久化。快照自包含——canonical 表文本（_rehydrated_table 可精确重建）、
+## 面向/起始/排序/空间/模式、冻结报告与进度游标；恢复腿不重跑边/缺口阶段，
+## 从游标续算。暂停不是连段语义：已输出结论逐帧验证过，剩余枚举由
+## resume_analysis 续算，截断/未完成的措辞一概不出现。
+func _pause_and_persist(report: SolverReport, mode: Dictionary, progress: Dictionary, sort_outputs: bool, spatial_provided: bool) -> void:
+	report.paused_incomplete = true
+	var path := _resume_target_path(mode)
+	var phase := str(progress["phase"])
+	var persisted := false
+	if path != "":
+		var snapshot := {
+			"schema": _RESUME_SCHEMA_VERSION,
+			"kind": "analysis",
+			"table_text": _canonical_variant(_table),
+			"facing": _facing,
+			"start": _start_snapshot_value(),
+			"sort_outputs": sort_outputs,
+			"spatial": spatial_provided,
+			"complete": bool(mode.get("complete", false)),
+			"watchdog_ms": int(mode.get("watchdog_ms", 0)),
+			"resume_path": path,
+			"report": _freeze_report(report),
+			"route_search_truncated": _route_search_truncated,
+			"progress": {
+				"phase": phase,
+				"sources_done": int(progress["sources_done"]),
+				"cycles_done": int(progress["cycles_done"]),
+				"spatial_done": int(progress["spatial_done"]),
+			},
+		}
+		persisted = _persist_resume_snapshot(path, snapshot)
+	var done_text := "已完成路线源 %d、结构循环 %d、空间复验 %d 条" % [
+		int(progress["sources_done"]), int(progress["cycles_done"]), int(progress["spatial_done"]),
+	]
+	if persisted:
+		report.notes.append("%s枚举在%s阶段暂停（%s），暂停不是连段语义、已输出结论仍逐帧验证；未完成状态已持久化（%s），ComboSolver.resume_analysis 可续算至完整报告" % [
+			_PAUSE_NOTE_PREFIX, _phase_label(phase), done_text, path,
+		])
+	else:
+		report.notes.append("%s枚举在%s阶段暂停（%s），暂停不是连段语义、已输出结论仍逐帧验证；未配置持久化路径（SolverOptions.resume_path 或环境变量 %s），未完成状态未能持久化——重跑该请求可获得完整报告" % [
+			_PAUSE_NOTE_PREFIX, _phase_label(phase), done_text, _RESUME_PATH_ENV,
+		])
+
+
+func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false, spatial: SolverSpatialData = null, mode := {}) -> SolverReport:
+	var complete := bool(mode.get("complete", false))
 	_route_search_truncated = false
+	_route_report_cap = 1 << 30 if complete else MAX_ROUTE_REPORTS
 	_facing = facing
 	_start = start
 	_pin_dx = PIN_DX
+	var watchdog_ms := int(mode.get("watchdog_ms", 0))
+	_watchdog_deadline_ms = Time.get_ticks_msec() + watchdog_ms if watchdog_ms > 0 else -1
 	var report := SolverReport.new()
-	report.scope = SCOPE_TEXT
-	report.verified_facings = [facing]
-	report.table_lines = _table_summary_lines()
-	report.start_lines = _start_state_lines()
-	if spatial != null:
-		report.start_lines.append("空间验证：已提供空间数据——地面站位 × 48/64/80 px 身体中心水平距离网格（验证面向与结果见空间分层节）")
-	report.first_candidates = _first_candidates()
-	report.binding_lines = _binding_variant_lines()
-	if _table_has_throw:
-		report.notes.append("普通投是 B+C 组合输入，无单键起手，不在首招候选（组合输入调度不在本入口范围）")
-	var contexts := _build_contexts()
-	var timing_cache := {}
+	var progress := {"phase": "routes", "sources_done": 0, "cycles_done": 0, "spatial_done": 0}
+	var resume_state: Dictionary = mode.get("resume_state", {})
+	var contexts := {}
 	var valid_adj := {}
 	var edge_kinds := {}
-	_profile_enter(_PROFILE_EDGE)
-	if _index != null:
-		## 索引路径（P1）：配置边候选在 _init 时已按旧循环的完整枚举序冻结成
-		## 描述符（from 表序 × kind 固定序 × 目标声明序，含蓄力变体派生边）。
-		for descriptor in _index.configured_edges:
-			_profile_v2_bump("structure_candidates")
-			var edge := _build_edge(descriptor.from_id, descriptor.to_id, descriptor.kind, contexts, timing_cache)
-			_register_edge(edge, report, valid_adj, edge_kinds)
-	else:
-		for from_id in _table:
-			var from_move := _table[from_id] as MoveData
-			## 投技不走单键/取消链起手（投技行为在后续 issue 实装），不进入接续图。
-			if from_move == null or from_move.is_throw():
-				continue
-			var kinds_and_targets := [
-				[EdgeKind.CANCEL, from_move.cancel_targets],
-				[EdgeKind.CHAIN_CANCEL, from_move.chain_cancel_targets],
-				[EdgeKind.SPECIAL_CANCEL, from_move.special_cancel_targets],
-				[EdgeKind.JUMP_CANCEL, from_move.jump_cancel_targets],
-				[EdgeKind.LANDING_CANCEL, from_move.landing_cancel_targets],
-				[EdgeKind.NORMAL_LINK, from_move.link_targets],
-				[EdgeKind.REKKA_DERIVE, _rekka_targets_of(from_move)],
-				[EdgeKind.SPECIAL_ENTRY, from_move.special_entry_targets],
-				[EdgeKind.SPECIAL_ENTRY_LINK, from_move.special_entry_link_targets],
-				[EdgeKind.AIR_EXIT, from_move.air_exit_targets],
-				[EdgeKind.HIT_LANDING_CANCEL, from_move.hit_landing_cancel_targets],
-			]
-			for pair in kinds_and_targets:
-				var kind: EdgeKind = pair[0]
-				for to_id in pair[1]:
-					_profile_v2_bump("structure_candidates")
-					var edge := _build_edge(from_id, to_id, kind, contexts, timing_cache)
-					_register_edge(edge, report, valid_adj, edge_kinds)
-					## 蓄力变体（票据 06）：目标声明蓄力时，同一接缝另验证按住至阈值
-					## 的蓄力版提交（to 换为 charge_only 目标，独立成边、独立验证）。
-					var pair_to := _table.get(to_id) as MoveData
-					if pair_to != null and pair_to.is_chargeable() and _table.has(pair_to.charge_move_id):
-						_profile_v2_bump("structure_candidates")
-						var charged_edge := _build_edge(from_id, pair_to.charge_move_id, kind, contexts, timing_cache)
-						_register_edge(charged_edge, report, valid_adj, edge_kinds)
-	_profile_exit()
-	_profile_enter(_PROFILE_GAP)
-	_enumerate_gaps(contexts, timing_cache, report)
-	_profile_exit()
-	if report.edges.any(func(edge: SolverEdge) -> bool: return edge.blocked_valid):
-		report.notes.append("被防取消边只在固定探针姿态下验证取消时序（被防是独立接触结果，不产生命中，不入路线/循环图）；被防安全性（指定反击招式、时机、距离、版中/版边与左右面向）必须真实空间回放（replay-required），静态报告不下安全结论")
-	## 图的路线起点：起始姿态下单键可起手、无方向派生的打击招式（按表内顺序，确定性枚举）。
 	var sources: Array[String] = []
-	for move_id in _table:
-		if _is_plain_start_id(move_id):
-			sources.append(move_id)
-	_profile_enter(_PROFILE_ROUTE)
-	for start_id in sources:
-		_walk_routes(start_id, [start_id], valid_adj, report.routes, contexts, edge_kinds)
-		if _route_search_truncated:
-			break
-	_profile_exit()
-	if _route_search_truncated:
-		report.notes.append("可读路线枚举达到 %d 条报告上限，路线集合未完成；已输出的路线仍逐帧验证，接续边与循环结论不受该报告上限影响" % MAX_ROUTE_REPORTS)
-	_profile_enter(_PROFILE_ROUTE)
-	for cycle_ids in _elementary_cycles(valid_adj):
-		var cycle := _simulate_cycle(cycle_ids, contexts, edge_kinds)
-		if cycle.outcome == SolverCycle.Outcome.PROVEN:
-			report.cycles.append(cycle)
+	if resume_state.is_empty():
+		report.scope = SCOPE_TEXT
+		report.verified_facings = [facing]
+		report.table_lines = _table_summary_lines()
+		report.start_lines = _start_state_lines()
+		if spatial != null:
+			report.start_lines.append("空间验证：已提供空间数据——地面站位 × 48/64/80 px 身体中心水平距离网格（验证面向与结果见空间分层节）")
+		report.first_candidates = _first_candidates()
+		report.binding_lines = _binding_variant_lines()
+		if _table_has_throw:
+			report.notes.append("普通投是 B+C 组合输入，无单键起手，不在首招候选（组合输入调度不在本入口范围）")
+		contexts = _build_contexts()
+		var timing_cache := {}
+		_profile_enter(_PROFILE_EDGE)
+		if _index != null:
+			## 索引路径（P1）：配置边候选在 _init 时已按旧循环的完整枚举序冻结成
+			## 描述符（from 表序 × kind 固定序 × 目标声明序，含蓄力变体派生边）。
+			for descriptor in _index.configured_edges:
+				_profile_v2_bump("structure_candidates")
+				var edge := _build_edge(descriptor.from_id, descriptor.to_id, descriptor.kind, contexts, timing_cache)
+				_register_edge(edge, report, valid_adj, edge_kinds)
 		else:
-			var label: String = " → ".join(cycle_ids) + " → 回到 " + cycle_ids[0]
-			if cycle.outcome == SolverCycle.Outcome.HORIZON_TRUNCATED \
-					or cycle.outcome == SolverCycle.Outcome.LAPS_EXHAUSTED:
-				report.incomplete_cycle_count += 1
-				report.notes.append("结构性循环 %s：%s" % [label, cycle.reason])
-			else:
-				report.notes.append("结构性循环 %s 在逐圈模拟中断开，不构成有效循环：%s" % [label, cycle.reason])
-	_profile_exit()
-	if spatial != null:
-		_profile_enter(_PROFILE_ROUTE)
-		_verify_routes_spatial(report, contexts, edge_kinds)
+			for from_id in _table:
+				var from_move := _table[from_id] as MoveData
+				## 投技不走单键/取消链起手（投技行为在后续 issue 实装），不进入接续图。
+				if from_move == null or from_move.is_throw():
+					continue
+				var kinds_and_targets := [
+					[EdgeKind.CANCEL, from_move.cancel_targets],
+					[EdgeKind.CHAIN_CANCEL, from_move.chain_cancel_targets],
+					[EdgeKind.SPECIAL_CANCEL, from_move.special_cancel_targets],
+					[EdgeKind.JUMP_CANCEL, from_move.jump_cancel_targets],
+					[EdgeKind.LANDING_CANCEL, from_move.landing_cancel_targets],
+					[EdgeKind.NORMAL_LINK, from_move.link_targets],
+					[EdgeKind.REKKA_DERIVE, _rekka_targets_of(from_move)],
+					[EdgeKind.SPECIAL_ENTRY, from_move.special_entry_targets],
+					[EdgeKind.SPECIAL_ENTRY_LINK, from_move.special_entry_link_targets],
+					[EdgeKind.AIR_EXIT, from_move.air_exit_targets],
+					[EdgeKind.HIT_LANDING_CANCEL, from_move.hit_landing_cancel_targets],
+				]
+				for pair in kinds_and_targets:
+					var kind: EdgeKind = pair[0]
+					for to_id in pair[1]:
+						_profile_v2_bump("structure_candidates")
+						var edge := _build_edge(from_id, to_id, kind, contexts, timing_cache)
+						_register_edge(edge, report, valid_adj, edge_kinds)
+						## 蓄力变体（票据 06）：目标声明蓄力时，同一接缝另验证按住至阈值
+						## 的蓄力版提交（to 换为 charge_only 目标，独立成边、独立验证）。
+						var pair_to := _table.get(to_id) as MoveData
+						if pair_to != null and pair_to.is_chargeable() and _table.has(pair_to.charge_move_id):
+							_profile_v2_bump("structure_candidates")
+							var charged_edge := _build_edge(from_id, pair_to.charge_move_id, kind, contexts, timing_cache)
+							_register_edge(charged_edge, report, valid_adj, edge_kinds)
 		_profile_exit()
+		_profile_enter(_PROFILE_GAP)
+		_enumerate_gaps(contexts, timing_cache, report)
+		_profile_exit()
+		if report.edges.any(func(edge: SolverEdge) -> bool: return edge.blocked_valid):
+			report.notes.append("被防取消边只在固定探针姿态下验证取消时序（被防是独立接触结果，不产生命中，不入路线/循环图）；被防安全性（指定反击招式、时机、距离、版中/版边与左右面向）必须真实空间回放（replay-required），静态报告不下结论")
+		## 图的路线起点：起始姿态下单键可起手、无方向派生的打击招式（按表内顺序，确定性枚举）。
+		for move_id in _table:
+			if _is_plain_start_id(move_id):
+				sources.append(move_id)
+	else:
+		## 续算腿（P5）：报告与进度游标来自快照；上下文/路线图/起点按确定性重建
+		##（邻接表按冻结边注册序复原，与首腿 _register_edge 同构；上下文与起点是
+		## 表/面向/起始的确定函数）。边/缺口阶段不重跑——结论已在冻结报告里。
+		report = _thaw_report(resume_state.get("report", {}))
+		report.paused_incomplete = false
+		_strip_pause_notes(report)
+		_route_search_truncated = bool(resume_state.get("route_search_truncated", false))
+		var saved: Dictionary = resume_state.get("progress", {})
+		for key in ["sources_done", "cycles_done", "spatial_done"]:
+			progress[key] = int(saved.get(key, 0))
+		progress["phase"] = str(saved.get("phase", "routes"))
+		contexts = _build_contexts()
+		for edge in report.edges:
+			if not edge.valid:
+				continue
+			if not valid_adj.has(edge.from_id):
+				valid_adj[edge.from_id] = [] as Array[String]
+			var targets: Array[String] = valid_adj[edge.from_id]
+			if targets.has(edge.to_id):
+				continue
+			targets.append(edge.to_id)
+			var key := "%s|%s" % [edge.from_id, edge.to_id]
+			if not edge_kinds.has(key):
+				edge_kinds[key] = edge.kind
+		for move_id in _table:
+			if _is_plain_start_id(move_id):
+				sources.append(move_id)
+	if str(progress["phase"]) == "routes":
+		_profile_enter(_PROFILE_ROUTE)
+		for i in range(int(progress["sources_done"]), sources.size()):
+			_walk_routes(sources[i], [sources[i]], valid_adj, report.routes, contexts, edge_kinds)
+			progress["sources_done"] = i + 1
+			if _route_search_truncated:
+				break
+			if _watchdog_due():
+				_profile_exit()
+				_pause_and_persist(report, mode, progress, sort_outputs, spatial != null)
+				return report
+		_profile_exit()
+		if _route_search_truncated:
+			report.notes.append("可读路线枚举达到 %d 条报告上限，路线集合未完成；已输出的路线仍逐帧验证，接续边与循环结论不受该报告上限影响" % MAX_ROUTE_REPORTS)
+		progress["phase"] = "cycles"
+	if str(progress["phase"]) == "cycles":
+		_profile_enter(_PROFILE_ROUTE)
+		var structural_cycles := _elementary_cycles(valid_adj)
+		for i in range(int(progress["cycles_done"]), structural_cycles.size()):
+			var cycle_ids: Array[String] = structural_cycles[i]
+			var cycle := _simulate_cycle(cycle_ids, contexts, edge_kinds)
+			if cycle.outcome == SolverCycle.Outcome.PROVEN:
+				report.cycles.append(cycle)
+			else:
+				var label: String = " → ".join(cycle_ids) + " → 回到 " + cycle_ids[0]
+				if cycle.outcome == SolverCycle.Outcome.HORIZON_TRUNCATED \
+						or cycle.outcome == SolverCycle.Outcome.LAPS_EXHAUSTED:
+					report.incomplete_cycle_count += 1
+					report.notes.append("结构性循环 %s：%s" % [label, cycle.reason])
+				else:
+					report.notes.append("结构性循环 %s 在逐圈模拟中断开，不构成有效循环：%s" % [label, cycle.reason])
+			progress["cycles_done"] = i + 1
+			if _watchdog_due():
+				_profile_exit()
+				_pause_and_persist(report, mode, progress, sort_outputs, spatial != null)
+				return report
+		_profile_exit()
+		progress["phase"] = "spatial"
+	if spatial != null and str(progress["phase"]) == "spatial":
+		_profile_enter(_PROFILE_ROUTE)
+		for i in range(int(progress["spatial_done"]), report.routes.size()):
+			_verify_route_spatial(report.routes[i], contexts, edge_kinds)
+			progress["spatial_done"] = i + 1
+			if _watchdog_due():
+				_profile_exit()
+				_pause_and_persist(report, mode, progress, sort_outputs, spatial != null)
+				return report
+		_profile_exit()
+		progress["phase"] = "done"
 	report.safe = report.cycles.is_empty()
 	if sort_outputs:
 		## 稳定排序（issue 19）：排序键含全部并列维度（from/to/kind 唯一、路线标签唯一），
@@ -4278,6 +5047,23 @@ func _clone_link_with_wait(link: ChainLink, wait: int) -> ChainLink:
 	return clone
 
 
+## Clone a complete cycle link before appending it to another lap. Cycle
+## search mutates `wait` while enumerating delays, so sharing RefCounted links
+## across laps lets one lap overwrite another lap's schedule.
+func _clone_link(link: ChainLink) -> ChainLink:
+	var clone := ChainLink.new()
+	clone.move_id = link.move_id
+	clone.key = link.key
+	clone.trigger = link.trigger
+	clone.wait = link.wait
+	clone.press_space = link.press_space
+	clone.feed = link.feed
+	clone.rekka = link.rekka
+	clone.charged = link.charged
+	clone.via_text = link.via_text
+	return clone
+
+
 ## 全字段克隆 + via_text 覆盖（候选链入口标注用；_clone_link_with_wait 不带
 ## via_text/charged，语义不同不共用）。
 func _clone_link_with_via(link: ChainLink, via_text: String) -> ChainLink:
@@ -4524,7 +5310,7 @@ func _run_schedule(compiled: Dictionary, opts: Dictionary, prefix = null) -> Dic
 	## 前缀区间内断链/证明成立（票据 04）：断点先于任何可调输入、对全部延迟向量
 	## 不变——每个叶子返回同值 run，仅 compiled/hit_frames 等按本叶子编译表替换
 	##（与旧路径逐叶子全量重放的返回值逐字段一致）。
-	if prefix != null and prefix.has("frozen_run"):
+	if prefix is Dictionary and (prefix as Dictionary).has("frozen_run"):
 		_profile_v2_bump("prefix_frozen_returns")
 		var frozen: Dictionary = (prefix["frozen_run"] as Dictionary).duplicate()
 		var frozen_verified: int = int(frozen["verified"])
@@ -4534,9 +5320,31 @@ func _run_schedule(compiled: Dictionary, opts: Dictionary, prefix = null) -> Dic
 		frozen["next_expected_move"] = frozen_moves[frozen_verified] \
 				if frozen_verified < frozen_moves.size() else ""
 		return frozen
-	var inputs := {}
-	for spec in compiled["inputs"]:
-		inputs[spec.frame] = spec
+	## 前缀归一化（P3）：legacy Dictionary 前缀在入口冻结为不可变 SessionCheckpoint；
+	## DFS 下降链传的已是 checkpoint。
+	var checkpoint: SessionCheckpoint = null
+	if prefix is SessionCheckpoint:
+		checkpoint = prefix
+	elif prefix is Dictionary:
+		checkpoint = SessionCheckpoint.capture(prefix)
+	var schedule := CompiledSchedule.from_compiled(compiled)
+	## memo 最深节点（P3）：scope 内输入前缀与本表逐帧相同的最深 checkpoint，
+	## 取它与显式父 checkpoint 中更深者——两者对本表前缀都有效，更深者少重放。
+	var record_memo := opts.has("record_checkpoints") and _memo_active(opts)
+	var memo_scope_key := ""
+	var memo_scope: Dictionary = {}
+	var memo_children = null
+	var capture_at: int = int(opts.get("capture_before_frame", 0))
+	if _memo_active(opts):
+		memo_scope_key = _memo_scope_key(opts, compiled)
+		var found: Array = _transition_memo.deepest(memo_scope_key, schedule, capture_at)
+		var candidate: SessionCheckpoint = found[0]
+		if candidate != null and (checkpoint == null or candidate.frame > checkpoint.frame):
+			checkpoint = candidate
+		if record_memo:
+			memo_scope = _transition_memo.scope_state(memo_scope_key)
+			memo_children = found[1]
+	var inputs := schedule._by_frame
 	var hit_frames: Array[int] = compiled["hit_frames"]
 	var hit_moves: Array[String] = compiled["hit_moves"]
 	var total := hit_frames.size()
@@ -4550,7 +5358,7 @@ func _run_schedule(compiled: Dictionary, opts: Dictionary, prefix = null) -> Dic
 	var extra_hit_frames: Array[int] = []
 	var extra_hit_moves: Array[String] = []
 	var extra_hit_counts: Array[int] = []
-	var session := _new_session(prefix != null)
+	var session := _new_session(checkpoint != null)
 	var verified := 0
 	var break_reason := ""
 	var break_kind := ""
@@ -4560,26 +5368,53 @@ func _run_schedule(compiled: Dictionary, opts: Dictionary, prefix = null) -> Dic
 	var laps_observed := 0
 	var frame := 0
 	var physics := 0
-	## 前缀恢复（票据 04）：restore 会话 clone_state 与 _run_schedule 循环内全部
-	## 跨帧可变计数器（frame/physics/verified/失败原因/ended 累积/循环快照序列/
-	## laps），从边界帧起只喂本叶子的尾部输入——恢复保真由 seam 差分证明与
-	## 逐叶子差分 harness 双重把关。
-	if prefix != null:
-		if not session.restore_state(prefix["session_state"]):
+	## 前缀恢复（票据 04/P3）：restore 会话 clone_state 全量执行状态与
+	## _run_schedule 循环内全部跨帧计数器（frame/physics/verified/ended 累积/
+	## 循环快照序列/laps），从边界帧起只喂本叶子的尾部输入——恢复保真由 seam
+	## 差分证明与逐叶子差分 harness 双重把关；checkpoint 不可变，恢复只读。
+	if checkpoint != null:
+		if not session.restore_state(checkpoint.session_state):
 			return _empty_run("前缀快照恢复失败（CombatSessionState 校验不通过）")
 		_profile_v2_bump("prefix_restores")
-		frame = int(prefix["frame"])
-		physics = int(prefix["physics"])
-		verified = int(prefix["verified"])
-		ended_reasons.assign(prefix["ended_reasons"])
-		snapshots = (prefix["snapshots"] as Array).duplicate()
-		extra_hit_frames.assign(prefix["extra_hit_frames"])
-		extra_hit_moves.assign(prefix["extra_hit_moves"])
-		extra_hit_counts.assign(prefix["extra_hit_counts"])
-		proven_period = int(prefix["proven_period"])
-		laps_observed = int(prefix["laps_observed"])
+		frame = checkpoint.frame
+		physics = checkpoint.physics
+		verified = checkpoint.verified
+		ended_reasons.assign(checkpoint.ended_reasons)
+		snapshots = checkpoint.snapshots.duplicate()
+		extra_hit_frames.assign(checkpoint.extra_hit_frames)
+		extra_hit_moves.assign(checkpoint.extra_hit_moves)
+		extra_hit_counts.assign(checkpoint.extra_hit_counts)
+		proven_period = checkpoint.proven_period
+		laps_observed = checkpoint.laps_observed
+	var input_cursor := schedule.advance_cursor(frame)
+	## memo 恰好恢复在捕获点：状态与计数器就是捕获内容，直接发出，不再步进——
+	## 否则探针会越过 capture_at 继续跑完整表。
+	if capture_at > 0 and frame == capture_at:
+		opts["prefix_capture"] = {
+			"session_state": session.clone_state(),
+			"frame": frame,
+			"physics": physics,
+			"verified": verified,
+			"ended_reasons": ended_reasons.duplicate(),
+			"snapshots": snapshots.duplicate(),
+			"extra_hit_frames": extra_hit_frames.duplicate(),
+			"extra_hit_moves": extra_hit_moves.duplicate(),
+			"extra_hit_counts": extra_hit_counts.duplicate(),
+			"proven_period": proven_period,
+			"laps_observed": laps_observed,
+		}
+		return {
+			"ok": proven_period > 0 or verified == total,
+			"reason": "", "break_kind": "", "verified": verified,
+			"hit_frames": hit_frames,
+			"next_expected_move": hit_moves[verified] if verified < hit_moves.size() else "",
+			"ended_reasons": ended_reasons, "extra_hit_frames": extra_hit_frames,
+			"extra_hit_moves": extra_hit_moves, "extra_hit_counts": extra_hit_counts,
+			"proven_period": proven_period, "snapshots": snapshots,
+			"laps_observed": laps_observed, "session": session,
+			"compiled": compiled, "last_frame": frame,
+		}
 	## 前缀捕获（票据 04）：步完边界前一帧并完成当帧事件处理后快照全部循环状态。
-	var capture_at: int = int(opts.get("capture_before_frame", 0))
 	var last_frame := hit_frames[total - 1] if total > 0 else 0
 	while frame < last_frame + tail_frames:
 		if session.hitstop_active():
@@ -4592,6 +5427,33 @@ func _run_schedule(compiled: Dictionary, opts: Dictionary, prefix = null) -> Dic
 			session.step(FrameInput.new())
 			_pin_dummy(session)
 			continue
+		## 惰性区间批量推进（P3）：到下一个围栏（计划输入/预期命中/捕获点/观测
+		## 终点任一）之间无输入、无预期命中、无捕获点，且会话可证明无事件（空闲、
+		## 无待决事件源、无 Hitstop、连段不活跃）时整段步过——只省去逐帧事件
+		## 解析与核验，物理步进与钉位照常；证明不了的区间保持下方逐帧路径。
+		var inert_fence := last_frame + tail_frames - 1
+		if verified < total:
+			inert_fence = mini(inert_fence, int(hit_frames[verified]) - 1)
+		if capture_at > 0:
+			inert_fence = mini(inert_fence, capture_at - 1)
+		var next_input := schedule.frame_at(input_cursor)
+		if next_input > 0:
+			inert_fence = mini(inert_fence, next_input - 1)
+		if inert_fence > frame and _session_inert(session):
+			var horizon_hit := false
+			while frame < inert_fence:
+				frame += 1
+				physics += 1
+				if max_frames > 0 and physics > max_frames:
+					break_reason = "观测帧数达到上限（%d 帧）" % max_frames
+					break_kind = "horizon"
+					horizon_hit = true
+					break
+				session.step(FrameInput.new())
+				_pin_dummy(session)
+			if horizon_hit:
+				break
+			continue
 		frame += 1
 		physics += 1
 		if max_frames > 0 and physics > max_frames:
@@ -4599,8 +5461,9 @@ func _run_schedule(compiled: Dictionary, opts: Dictionary, prefix = null) -> Dic
 			break_kind = "horizon"
 			break
 		var input := FrameInput.new()
-		if inputs.has(frame):
+		if schedule.frame_at(input_cursor) == frame:
 			input = (inputs[frame] as ScheduledInput).to_frame_input()
+			input_cursor += 1
 		var events := session.step(input)
 		_pin_dummy(session)
 		var hit_now := _hit_count(events) > 0
@@ -4689,6 +5552,26 @@ func _run_schedule(compiled: Dictionary, opts: Dictionary, prefix = null) -> Dic
 				]
 				break_kind = "ended"
 				break
+		## trie 登记（P3）：捕获运行在每个计划输入帧完成当帧事件处理后登记一个
+		## 不可变 checkpoint——后续任何输入前缀重合的运行（路线兄弟、同上下文的
+		## 边/缺口探针、下一层 pivot 捕获）从最深节点恢复，不再重放该前缀。
+		## 登记的是深冻结副本，本循环继续用局部变量推进，互不干扰。
+		if record_memo and memo_children != null and inputs.has(frame):
+			var recorded := SessionCheckpoint.capture({
+				"session_state": session.clone_state(),
+				"frame": frame,
+				"physics": physics,
+				"verified": verified,
+				"ended_reasons": ended_reasons.duplicate(),
+				"snapshots": snapshots.duplicate(),
+				"extra_hit_frames": extra_hit_frames.duplicate(),
+				"extra_hit_moves": extra_hit_moves.duplicate(),
+				"extra_hit_counts": extra_hit_counts.duplicate(),
+				"proven_period": proven_period,
+				"laps_observed": laps_observed,
+				"boundary": frame + 1,
+			})
+			memo_children = _transition_memo.extend(memo_children, inputs[frame], memo_scope, recorded)
 		if frame == capture_at:
 			opts["prefix_capture"] = {
 				"session_state": session.clone_state(),
@@ -4804,12 +5687,17 @@ func _delay_search(links: Array[ChainLink], adjustable: Array[int], delays_per_l
 		delays.append(0)
 	if opts.get("snapshot_every", 0) == 0 and opts.get("delay_budget", 0) == 0:
 		opts["delay_budget"] = MAX_ROUTE_DELAY_TRIALS
-	var prefix := {}
+	var prefix = {}
 	if not _delay_prefix_restore_disabled:
 		_profile_enter(_PROFILE_DELAY)
-		prefix = _capture_delay_prefix(links, adjustable, opts)
+		prefix = _capture_delay_prefix_checkpoint(links, adjustable, opts, null)
 		_profile_exit()
-	return _delay_dfs(links, adjustable, _delay_caps(links, adjustable, size), delays, 0, opts, prefix)
+	var caps := _delay_caps(links, adjustable, size)
+	var dp = null
+	if _delay_dp_active(opts):
+		dp = _delay_dp_context(links, adjustable, caps)
+		_delay_dp_totals["searches"] = int(_delay_dp_totals["searches"]) + 1
+	return _delay_dfs(links, adjustable, caps, delays, 0, opts, prefix, dp)
 
 
 ## 前缀快照捕获（票据 04）。边界判定是纯编译期差分：可调链接全部取最早合法等待
@@ -4819,7 +5707,20 @@ func _delay_search(links: Array[ChainLink], adjustable: Array[int], delays_per_l
 ## clone_state 与 _run_schedule 循环内全部跨帧可变状态。基线区间内断链/证明成立
 ## 时断点先于任何可调输入（对延迟不变），全部叶子同值（frozen）；编译冲突或边界
 ## 不可判定时返回空表，叶子回退全量重放（正确性优先，只损失提速）。
+## P3：公共契约保持返回 Dictionary（票据 04 测试口径）；内部实现捕获不可变
+## SessionCheckpoint，且基线重放先走 memo——同 scope 内输入前缀重合的捕获从
+## 最深节点恢复，不再从零重放。
 func _capture_delay_prefix(links: Array[ChainLink], adjustable: Array[int], opts: Dictionary) -> Dictionary:
+	var captured = _capture_delay_prefix_checkpoint(links, adjustable, opts, null)
+	if captured is SessionCheckpoint:
+		return (captured as SessionCheckpoint).as_prefix()
+	return captured
+
+
+## 捕获实现（P3）：返回 SessionCheckpoint（活前缀）、{}（回退全量重放）或
+## {"frozen_run": run}（区间内终态）。parent = DFS 下降链上的显式父 checkpoint
+##（比 memo 更浅时由 _run_schedule 取 memo 的更深者）。
+func _capture_delay_prefix_checkpoint(links: Array[ChainLink], adjustable: Array[int], opts: Dictionary, parent) -> Variant:
 	var saved_waits: Array[int] = []
 	for j in adjustable:
 		saved_waits.append(links[j].wait)
@@ -4836,9 +5737,29 @@ func _capture_delay_prefix(links: Array[ChainLink], adjustable: Array[int], opts
 	if compiled_base.is_empty() or boundary < 1:
 		return {}
 	if boundary == 1:
-		var fresh := _new_session()
-		return _finish_prefix({
-			"session_state": fresh.clone_state(),
+		if _memo_active(opts):
+			var scope := _memo_scope_key(opts, compiled_base)
+			var root := _transition_memo.scope_root(scope)
+			if root != null:
+				return root
+			root = SessionCheckpoint.capture(_finish_prefix({
+				"session_state": _new_session().clone_state(),
+				"frame": 0,
+				"physics": 0,
+				"verified": 0,
+				"ended_reasons": [] as Array[int],
+				"snapshots": [] as Array,
+				"extra_hit_frames": [] as Array[int],
+				"extra_hit_moves": [] as Array[String],
+				"extra_hit_counts": [] as Array[int],
+				"proven_period": -1,
+				"laps_observed": 0,
+				"boundary": boundary,
+			}))
+			_transition_memo.set_scope_root(scope, root)
+			return root
+		return SessionCheckpoint.capture(_finish_prefix({
+			"session_state": _new_session().clone_state(),
 			"frame": 0,
 			"physics": 0,
 			"verified": 0,
@@ -4850,17 +5771,19 @@ func _capture_delay_prefix(links: Array[ChainLink], adjustable: Array[int], opts
 			"proven_period": -1,
 			"laps_observed": 0,
 			"boundary": boundary,
-		})
+		}))
 	var capture_opts := opts.duplicate()
 	capture_opts["capture_before_frame"] = boundary - 1
-	var probe_run := _run_schedule(compiled_base, capture_opts)
+	if _memo_active(opts):
+		capture_opts["record_checkpoints"] = true
+	var probe_run := _run_schedule(compiled_base, capture_opts, parent)
 	if not capture_opts.has("prefix_capture"):
 		if probe_run["reason"] != "" or probe_run["proven_period"] > 0:
 			return {"frozen_run": probe_run}
 		return {}
 	var prefix: Dictionary = capture_opts["prefix_capture"]
 	prefix["boundary"] = boundary
-	return _finish_prefix(prefix)
+	return SessionCheckpoint.capture(_finish_prefix(prefix))
 
 
 func _finish_prefix(prefix: Dictionary) -> Dictionary:
@@ -4907,7 +5830,7 @@ func _delay_caps(links: Array[ChainLink], adjustable: Array[int], vector_size: i
 	return caps
 
 
-func _delay_dfs(links: Array[ChainLink], adjustable: Array[int], caps: Array[int], delays: Array[int], depth: int, opts: Dictionary, prefix = null) -> Dictionary:
+func _delay_dfs(links: Array[ChainLink], adjustable: Array[int], caps: Array[int], delays: Array[int], depth: int, opts: Dictionary, prefix = null, dp = null) -> Dictionary:
 	_profile_v2_bump("delay_dfs_nodes")
 	## 路线模式（snapshot_every == 0）的延迟向量预算按叶子回放计数：预算经 opts
 	## 回写共享（局部副本会让「至多 64 个延迟向量」永不生效——空中取消链上的
@@ -4944,22 +5867,127 @@ func _delay_dfs(links: Array[ChainLink], adjustable: Array[int], caps: Array[int
 	## the remaining delay values cannot be observed by CombatSession.  This is
 	## a semantic prefix proof, rather than a hit/frame cap, so adding another
 	## combo edge cannot multiply work behind an already-dead prefix.
+	## P3：每个 DFS 内部节点都捕获本子树共享的 checkpoint（证明模式维持原有
+	## frozen 短路；路线模式只做恢复、绝不短路——叶子数/字典序/预算语义与旧
+	## 路径逐叶全等），捕获从父 checkpoint 增量执行，不再从零重放。
 	var child_prefix = prefix
-	if proof_mode and not _delay_prefix_restore_disabled and _test_delay_leaf_log == null and depth < delays.size():
-		child_prefix = _capture_delay_prefix_pivot(links, adjustable, depth, opts)
-		if child_prefix.has("frozen_run"):
-			return child_prefix["frozen_run"]
+	if not _delay_prefix_restore_disabled and depth < delays.size():
+		if proof_mode:
+			if _test_delay_leaf_log == null:
+				child_prefix = _capture_delay_prefix_pivot(links, adjustable, depth, opts, prefix, true)
+				if child_prefix is Dictionary and (child_prefix as Dictionary).has("frozen_run"):
+					return child_prefix["frozen_run"]
+		else:
+			var pivoted = _capture_delay_prefix_pivot(links, adjustable, depth, opts, prefix, false)
+			if pivoted is SessionCheckpoint:
+				child_prefix = pivoted
+	## P4（solver-delay-dp）：DP 备忘录查表。节点键绑定 (深度=可调槽序,
+	## 完整 SessionCheckpoint 内容, 前缀延迟赋值, 剩余 link signature 哈希)——
+	## 只有完整未来行为相同（同状态、同剩余结构、同未执行输入的编译影响）的
+	## 节点才命中；删减的 settlement_state 不做执行缓存键。命中返回首个登记者
+	## 的子树结果：字典序首访 + 失败并列保先，使最终上报与旧 DFS 全等（证明
+	## 成立在首访即向上早停，缓存条目不会被读到）。
+	var dp_key := ""
+	var dp_content := {}
+	if dp != null and child_prefix is SessionCheckpoint:
+		dp_content = (child_prefix as SessionCheckpoint).as_prefix()
+		dp_key = _delay_dp_node_key(dp, depth, delays, dp_content)
+		_delay_dp_bump(dp, "nodes")
+		var probe_key := dp_key
+		while dp["memo"].has(probe_key):
+			var entry: Dictionary = dp["memo"][probe_key]
+			if entry["content"] == dp_content:
+				_delay_dp_bump(dp, "hits")
+				return entry["run"]
+			## 哈希前缀冲突（概率可忽略）：深比较不等则延长探针键续查，绝不误合并。
+			probe_key += "#"
+		dp_key = probe_key
 	var best := {}
 	for d in range(0, caps[depth] + 1):
 		delays[depth] = d
-		var run := _delay_dfs(links, adjustable, caps, delays, depth + 1, opts, child_prefix)
+		## P3：路径赋值显式落链。pivot 捕获读「slots < pivot 已持有 DFS 赋值」，
+		## 此前该不变式靠「上一叶子执行后的残留赋值」侥幸成立（可调链接的自然
+		## wait 恰为最早值时无症状）；叶子执行时仍按完整向量重写，此提前写不
+		## 改变任何叶结果。
+		links[adjustable[depth]].wait = (1 if links[adjustable[depth]].trigger == ChainLink.Trigger.JUMP_FRAME else 0) + d
+		var run := _delay_dfs(links, adjustable, caps, delays, depth + 1, opts, child_prefix, dp)
 		if run["proven_period"] > 0 or (run["ok"] and not proof_mode):
 			return run
 		if not run.is_empty() and (best.is_empty() or _run_ranks_higher(run, best)):
 			best = run
 		if not proof_mode and opts.get("delay_budget", 0) <= 0:
 			return best
+	## 正常出口登记子树结果（早停的成功结果无需登记——搜索已结束，不会再读）。
+	if dp_key != "":
+		dp["memo"][dp_key] = {"run": best, "content": dp_content}
+		_delay_dp_bump(dp, "stores")
 	return best
+
+
+## P4：DP 启用域——仅证明模式（snapshot_every>0，循环证明搜索）。路线模式的
+## 延迟预算按叶子执行计数扣减、观测上限语义与「哪些向量被验证过」耦合，合并
+## 会改变预算截断点与最远失败归属，故路线模式保持旧 DFS 逐叶执行。其余条件与
+## memo 同口径：差分开关关闭、前缀恢复链路可用、叶子日志/变异钩子未装载。
+func _delay_dp_active(opts: Dictionary) -> bool:
+	return not _delay_dp_disabled \
+			and not _delay_prefix_restore_disabled \
+			and opts.get("snapshot_every", 0) > 0 \
+			and _test_delay_leaf_log == null \
+			and not _test_prefix_mutator.is_valid()
+
+
+## DP 搜索上下文（每次 _delay_search 新建，memo 随搜索结束消亡——跨搜索共享
+## 需要 scope 维度进键，当前无收益不承担该复杂度）。sig 是本搜索的剩余 link
+## signature：全部链接的身份字段 + 不可调链接的固定等待 + 逐槽枚举上限。
+func _delay_dp_context(links: Array[ChainLink], adjustable: Array[int], caps: Array[int]) -> Dictionary:
+	var sig := _dp_remaining_signature(links, adjustable, caps)
+	return {"memo": {}, "sig": sig, "sig_hash": hash(sig), "nodes": 0, "stores": 0, "hits": 0}
+
+
+func _delay_dp_bump(dp: Dictionary, key: String) -> void:
+	dp[key] = int(dp[key]) + 1
+	_delay_dp_totals[key] = int(_delay_dp_totals.get(key, 0)) + 1
+
+
+func delay_dp_stats() -> Dictionary:
+	return _delay_dp_totals.duplicate()
+
+
+func reset_delay_dp_stats() -> void:
+	_delay_dp_totals = {"searches": 0, "nodes": 0, "stores": 0, "hits": 0}
+
+
+## 剩余 link signature：可调槽的当前等待是搜索过程量（叶子按完整向量重写），
+## 不入签名；不可调链接的固定等待入签名。键内 sig 取哈希（原文存于上下文供
+## 诊断），配合每次搜索独立的 memo 保证正确性不受哈希冲突影响。
+func _dp_remaining_signature(links: Array[ChainLink], adjustable: Array[int], caps: Array[int]) -> String:
+	var parts: Array[String] = []
+	for i in range(links.size()):
+		var link := links[i]
+		var wait_text := "A" if adjustable.has(i) else str(link.wait)
+		parts.append("%d=%s|%s|%d|%s|%d|%d|%d|%s" % [
+			i, link.move_id, link.key, link.trigger, link.feed,
+			1 if link.press_space else 0, 1 if link.rekka else 0, 1 if link.charged else 0, wait_text,
+		])
+	var cap_text: Array[String] = []
+	for cap in caps:
+		cap_text.append(str(cap))
+	return ";".join(parts) + "##" + ",".join(cap_text)
+
+
+## DP 节点键四元组：剩余 link signature 哈希｜可调槽深度（link index）｜前缀
+## 延迟赋值｜完整 checkpoint 内容哈希。前缀赋值必须入键：pivot 边界可能落在
+## 上一可调链接的预期命中之前（wait=0 时边界=锚点帧），此时该链接的编译预测
+## 尚未进入 checkpoint——两个 checkpoint 相同但前缀赋值不同的子树编译表不同，
+## 未来不同，禁止合并；赋值全部执行完毕（命中已验证入态）后差异自然消失，
+## 键相同才命中——这正是「完整未来行为相同才合并」的可判定形式。
+func _delay_dp_node_key(dp: Dictionary, depth: int, delays: Array[int], content: Dictionary) -> String:
+	var prefix_text := ""
+	for i in range(depth):
+		if i > 0:
+			prefix_text += ","
+		prefix_text += str(int(delays[i]))
+	return "%d|%d|%s|%d" % [int(dp["sig_hash"]), depth, prefix_text, hash(content)]
 
 
 ## Capture a proof prefix at an arbitrary delay slot.  Slots before `pivot`
@@ -4967,7 +5995,10 @@ func _delay_dfs(links: Array[ChainLink], adjustable: Array[int], caps: Array[int
 ## earliest legal waits.  Shifting only the pivot gives the first frame at
 ## which any unassigned value can affect the run.  A terminal result before
 ## that frame is therefore shared by the whole remaining subtree.
-func _capture_delay_prefix_pivot(links: Array[ChainLink], adjustable: Array[int], pivot: int, opts: Dictionary) -> Dictionary:
+## P3：parent = 下降链父 checkpoint（捕获从它增量执行，_run_schedule 内部再与
+## memo 最深节点取更深者）；返回 SessionCheckpoint 或 {}，frozen_on_break=false
+## 时区间内断链不作 frozen 短路（路线模式叶子仍逐个执行，形状量不变）。
+func _capture_delay_prefix_pivot(links: Array[ChainLink], adjustable: Array[int], pivot: int, opts: Dictionary, parent = null, frozen_on_break := true) -> Variant:
 	if pivot < 0 or pivot >= adjustable.size():
 		return {}
 	var saved_waits: Array[int] = []
@@ -4989,16 +6020,20 @@ func _capture_delay_prefix_pivot(links: Array[ChainLink], adjustable: Array[int]
 		links[adjustable[i]].wait = saved_waits[i]
 	if compiled_base.is_empty() or boundary < 1:
 		return {}
+	if boundary == 1 and parent is SessionCheckpoint:
+		return parent
 	var capture_opts := opts.duplicate()
 	capture_opts["capture_before_frame"] = boundary - 1
-	var probe_run := _run_schedule(compiled_base, capture_opts)
+	if _memo_active(opts):
+		capture_opts["record_checkpoints"] = true
+	var probe_run := _run_schedule(compiled_base, capture_opts, parent)
 	if not capture_opts.has("prefix_capture"):
-		if probe_run["reason"] != "" or probe_run["proven_period"] > 0:
+		if frozen_on_break and (probe_run["reason"] != "" or probe_run["proven_period"] > 0):
 			return {"frozen_run": probe_run}
 		return {}
 	var captured: Dictionary = capture_opts["prefix_capture"]
 	captured["boundary"] = boundary
-	return _finish_prefix(captured)
+	return SessionCheckpoint.capture(_finish_prefix(captured))
 
 
 ## 失败运行的代表性排序：观测截断（链条在帧数上限处仍成立）优先于断链——它是
@@ -5028,7 +6063,7 @@ func _walk_routes(node_id: String, path: Array[String], adj: Dictionary, routes:
 			_walk_routes(next_id, next_path, adj, routes, contexts, edge_kinds)
 			extended = true
 	if not extended:
-		if routes.size() >= MAX_ROUTE_REPORTS:
+		if routes.size() >= _route_report_cap:
 			_route_search_truncated = true
 			return
 		var route := _simulate_route(path, contexts, edge_kinds)
@@ -5040,6 +6075,11 @@ func _walk_routes(node_id: String, path: Array[String], adj: Dictionary, routes:
 ## 取消都在命中确认当帧 w=0 消费，落地接续键压在预测的落地帧上）。空间复验
 ## （issue 22）换钉位间距后复用同一入口——timing 与 spatial 两层结论出自
 ## 同一套真实结算。
+## P5 路线前缀备忘：叶子执行也在每个输入帧向 scope trie 登记 checkpoint——
+## 兄弟路线（共享招式前缀且前缀延迟赋值一致）与同档空间复验从最深节点恢复，
+## 只重放输入分歧之后的 suffix；scope 含 facing 与 pin_dx，即 (路线输入前缀 ×
+## 面向 × 钉位档) 的分层缓存。输入内容寻址与 P3 同一语义：恢复只省执行、不改
+## 任何搜索行为（字典序/预算/最远失败归属不变）。
 func _route_run(route_ids: Array[String], contexts: Dictionary, edge_kinds: Dictionary) -> Dictionary:
 	var context: Array[ChainLink] = contexts.get(route_ids[0], [])
 	if context.is_empty():
@@ -5049,7 +6089,10 @@ func _route_run(route_ids: Array[String], contexts: Dictionary, edge_kinds: Dict
 		var kind: EdgeKind = edge_kinds.get("%s|%s" % [route_ids[i - 1], route_ids[i]], EdgeKind.CANCEL)
 		links.append_array(_links_for_edge(route_ids[i - 1], route_ids[i], kind))
 	var adjustable := _adjustable_indices(links)
-	return _delay_search(links, adjustable, adjustable.size(), {})
+	var opts := {}
+	if not _route_leaf_memo_disabled:
+		opts["record_checkpoints"] = true
+	return _delay_search(links, adjustable, adjustable.size(), opts)
 
 
 ## 路线对象构造：单次模拟结果转为可读路线——完全成立记 timing_valid 并携带
@@ -5087,19 +6130,27 @@ func _simulate_route(route_ids: Array[String], contexts: Dictionary, edge_kinds:
 ## solve() 的签名对拍保证，不按面向重复罗列。
 func _verify_routes_spatial(report: SolverReport, contexts: Dictionary, edge_kinds: Dictionary) -> void:
 	for route in report.routes:
-		if not route.timing_valid:
-			continue
-		var failures: Array[String] = []
-		for distance in SPATIAL_PROBE_DISTANCES:
-			_profile_v2_bump("spatial_rechecks")
-			_pin_dx = distance
-			var run := _route_run(route.move_ids, contexts, edge_kinds)
-			if not run["ok"]:
-				failures.append("%d px：%s" % [distance, _spatial_failure_text(run)])
-		_pin_dx = PIN_DX
-		route.spatial_state = SolverRoute.SpatialState.VALID if failures.is_empty() \
-			else SolverRoute.SpatialState.INVALID
-		route.spatial_failures = failures
+		_verify_route_spatial(route, contexts, edge_kinds)
+
+
+## 单条路线的空间复验（P5 抽出，_verify_routes_spatial/_analyze 空间阶段共用）：
+## 换入 48/64/80 px 钉位重跑同一套逐帧结算——相交判定由真实 CombatSession 承担
+##（不做纯几何近似）；P5 起路线叶执行的 trie 登记（scope 含 facing/pin_dx）使
+## 同档兄弟路线只重放输入分歧后的 suffix。时序未成立的路线不作空间复验。
+func _verify_route_spatial(route: SolverRoute, contexts: Dictionary, edge_kinds: Dictionary) -> void:
+	if not route.timing_valid:
+		return
+	var failures: Array[String] = []
+	for distance in SPATIAL_PROBE_DISTANCES:
+		_profile_v2_bump("spatial_rechecks")
+		_pin_dx = distance
+		var run := _route_run(route.move_ids, contexts, edge_kinds)
+		if not run["ok"]:
+			failures.append("%d px：%s" % [distance, _spatial_failure_text(run)])
+	_pin_dx = PIN_DX
+	route.spatial_state = SolverRoute.SpatialState.VALID if failures.is_empty() \
+		else SolverRoute.SpatialState.INVALID
+	route.spatial_failures = failures
 
 
 ## 空间失败的具体条件：挥空＝招式已起手但命中框未与木桩身体矩形相交（站位
@@ -5116,15 +6167,51 @@ func _spatial_failure_text(run: Dictionary) -> String:
 # --- 循环 ---
 
 
+## P5（solver-routes-cycles）：结构环枚举 = SCC 预处理 + Johnson 风格去重。
+## 顶点序取 adj 插入序（与旧实现的发现序一致）——每个环在其「序最小成员」处
+## 生根、恰好枚举一次，不再从每个成员重复遍历后靠 seen 集去重。三面剪枝：
+##   1) 根迭代按序移除顶点，剩余子图只含「序 ≥ 根」的顶点——经过更小序顶点的
+##      路径必属于更小序根的环（该顶点是环成员），对当前根是纯重复遍历；
+##   2) 根的 DFS 只在与根强连通（剩余子图内）的分量里走——其余顶点到不了根，
+##      经过它的路径不可能闭合成当前根的环；
+##   3) blocked 集 + 回溯解锁（Johnson B 表）——当前栈前缀下到不了根的顶点
+##      不再重复进入。
+## 三面剪掉的分支都不含任何被上报的环（旧实现的 seen 去重本来也会丢弃它们），
+## DFS 前缀序不变——输出与旧全起点 DFS + canonical 去重逐字节同序同集
+##（差分 oracle：_cycle_enum_legacy）。每环仍经 _canonical_cycle 归一到
+## 字典序最小起点表示。
 func _elementary_cycles(adj: Dictionary) -> Array[Array]:
+	if _cycle_enum_legacy:
+		return _elementary_cycles_legacy(adj)
+	var order: Array[String] = []
+	for node_id in adj.keys():
+		order.append(node_id)
 	var found: Array[Array] = []
-	var seen := {}
-	for start_id in adj.keys():
-		_walk_cycles(start_id, start_id, [start_id], adj, seen, found)
+	var remaining := {}
+	for node_id in order:
+		remaining[node_id] = true
+	for root in order:
+		if not remaining.has(root):
+			continue
+		var membership := _scc_membership(adj, remaining)
+		var component: Dictionary = membership.get(root, {})
+		if not component.is_empty():
+			_circuit_dfs(adj, component, root, root, {}, {}, [], found)
+		remaining.erase(root)
 	return found
 
 
-func _walk_cycles(start_id: String, node_id: String, path: Array[String], adj: Dictionary, seen: Dictionary, found: Array[Array]) -> void:
+## 旧路径（P5 差分 oracle）：全起点 DFS + canonical 去重。保留供
+## _cycle_enum_legacy 对拍，生产枚举不走这里。
+func _elementary_cycles_legacy(adj: Dictionary) -> Array[Array]:
+	var found: Array[Array] = []
+	var seen := {}
+	for start_id in adj.keys():
+		_walk_cycles_legacy(start_id, start_id, [start_id], adj, seen, found)
+	return found
+
+
+func _walk_cycles_legacy(start_id: String, node_id: String, path: Array[String], adj: Dictionary, seen: Dictionary, found: Array[Array]) -> void:
 	if not adj.has(node_id):
 		return
 	for next_id in adj[node_id]:
@@ -5137,11 +6224,11 @@ func _walk_cycles(start_id: String, node_id: String, path: Array[String], adj: D
 		elif not path.has(next_id):
 			var next_path: Array[String] = path.duplicate()
 			next_path.append(next_id)
-			_walk_cycles(start_id, next_id, next_path, adj, seen, found)
+			_walk_cycles_legacy(start_id, next_id, next_path, adj, seen, found)
 
 
 ## 同一循环的不同起点归一：旋转到字典序最小的招式 id 开头。
-func _canonical_cycle(path: Array[String]) -> Array[String]:
+static func _canonical_cycle(path: Array[String]) -> Array[String]:
 	var best := 0
 	for i in range(1, path.size()):
 		if path[i] < path[best]:
@@ -5150,6 +6237,106 @@ func _canonical_cycle(path: Array[String]) -> Array[String]:
 	for i in range(path.size()):
 		rotated.append(path[(best + i) % path.size()])
 	return rotated
+
+
+## 迭代 Tarjan SCC（P5）：图 = adj 限定在 allowed 顶点集内的边（出边目标不在
+## allowed 内的边被忽略——旧实现同样到不了这些顶点）。返回 node_id → 同分量
+## 顶点集（含自身）；无出边的顶点不可能是环成员，不进映射。
+static func _scc_membership(adj: Dictionary, allowed: Dictionary) -> Dictionary:
+	var index := {}
+	var low := {}
+	var on_stack := {}
+	var stack: Array[String] = []
+	var counter := 0
+	var membership := {}
+	for root in allowed.keys():
+		if index.has(root) or not adj.has(root):
+			continue
+		index[root] = counter
+		low[root] = counter
+		counter += 1
+		stack.append(root)
+		on_stack[root] = true
+		var frames: Array = [[root, 0]]
+		while not frames.is_empty():
+			var frame: Array = frames[frames.size() - 1]
+			var node: String = frame[0]
+			var targets: Array = adj.get(node, [])
+			if frame[1] < targets.size():
+				frame[1] += 1
+				var next_id := str(targets[frame[1] - 1])
+				if not allowed.has(next_id):
+					continue
+				if not index.has(next_id):
+					index[next_id] = counter
+					low[next_id] = counter
+					counter += 1
+					stack.append(next_id)
+					on_stack[next_id] = true
+					frames.append([next_id, 0])
+				elif on_stack.has(next_id):
+					low[node] = mini(int(low[node]), int(index[next_id]))
+			else:
+				frames.pop_back()
+				if not frames.is_empty():
+					var parent: String = frames[frames.size() - 1][0]
+					low[parent] = mini(int(low[parent]), int(low[node]))
+				if int(low[node]) == int(index[node]):
+					var component := {}
+					while true:
+						var member: String = stack.pop_back()
+						on_stack.erase(member)
+						component[member] = true
+						if member == node:
+							break
+					for member in component.keys():
+						membership[member] = component
+	return membership
+
+
+## Johnson 逐根闭路搜索（P5，教科书形态）：component = 根的强连通分量（搜索域），
+## blocked 集 + B 表（block_map）承担「当前栈前缀下到不了根就不重复进入」的
+## 剪枝；next==root 时闭路输出。递归深度 ≤ 分量大小（路线图顶点数 ≤ 表招式数，
+## 无栈溢出面）。发现序 = 孩子序（adj 插入序）上的 DFS 前缀序，与旧实现一致。
+static func _circuit_dfs(adj: Dictionary, component: Dictionary, root: String, node: String,
+		blocked: Dictionary, block_map: Dictionary, stack: Array[String], found: Array[Array]) -> bool:
+	stack.append(node)
+	blocked[node] = true
+	var found_circuit := false
+	var targets: Array = adj.get(node, [])
+	for next_id in targets:
+		if not component.has(next_id):
+			continue
+		if next_id == root:
+			var circuit: Array[String] = []
+			circuit.assign(stack)
+			found.append(_canonical_cycle(circuit))
+			found_circuit = true
+		elif not blocked.has(next_id):
+			if _circuit_dfs(adj, component, root, next_id, blocked, block_map, stack, found):
+				found_circuit = true
+	stack.pop_back()
+	if found_circuit:
+		_johnson_unblock(node, blocked, block_map)
+	else:
+		## 无闭路经过本顶点：把 node 记入各后继的 B 表——后继将来解锁时须连带
+		## 解锁 node（它们可能经 node 回到根）。
+		for next_id in targets:
+			if not block_map.has(next_id):
+				block_map[next_id] = []
+			var b_list: Array = block_map[next_id]
+			if not b_list.has(node):
+				b_list.append(node)
+	return found_circuit
+
+
+static func _johnson_unblock(node: String, blocked: Dictionary, block_map: Dictionary) -> void:
+	blocked.erase(node)
+	var b_list: Array = block_map.get(node, [])
+	block_map.erase(node)
+	for dependent in b_list.duplicate():
+		if blocked.has(dependent):
+			_johnson_unblock(str(dependent), blocked, block_map)
 
 
 ## 循环模拟：入口上下文把会话带到起点招式的命中，随后逐圈按固定接续链出招
@@ -5161,16 +6348,18 @@ func _canonical_cycle(path: Array[String]) -> Array[String]:
 func _simulate_cycle(cycle_ids: Array[String], contexts: Dictionary, edge_kinds: Dictionary) -> SolverCycle:
 	var cycle := SolverCycle.new()
 	cycle.route = cycle_ids.duplicate()
-	var monotonic_reason := _cycle_monotonic_time_reason(cycle_ids)
-	if monotonic_reason != "":
+	var invariant := _cycle_invariant(cycle_ids)
+	if invariant.applies():
 		## Every structural cycle contains at least one real HIT per lap.  The
 		## accumulated time scale is part of settlement_state and each legal hit
 		## multiplies it by a strict factor below one.  It therefore cannot repeat
 		## at a later lap (within the finite observation horizon, before numeric
 		## underflow).  This is a semantic invariant, so rejecting the cycle here
 		## is both complete and independent of delay-vector cardinality.
+		## P4：前置条件（每圈有效 HIT/倍率域/键覆盖/无下溢）由 CycleInvariant
+		## 显式检查，任一不满足即回退下方的精确逐圈状态复现搜索。
 		cycle.outcome = SolverCycle.Outcome.BROKEN
-		cycle.reason = monotonic_reason
+		cycle.reason = invariant.reason
 		return cycle
 	var size := cycle_ids.size()
 	var context: Array[ChainLink] = contexts.get(cycle_ids[0], [])
@@ -5183,9 +6372,12 @@ func _simulate_cycle(cycle_ids: Array[String], contexts: Dictionary, edge_kinds:
 		lap_links.append_array(_links_for_edge(cycle_ids[i], cycle_ids[(i + 1) % size], kind))
 	var links := _cloned_context_links(context)
 	for lap in range(MAX_CYCLE_LAPS):
-		# 同一圈的链接对象按引用重复：延迟按圈取模一致，多圈共享同一等待值。
+		## 每圈必须拥有独立的 ChainLink 实例。_delay_dfs 会原地写入可调链接的
+		## wait；复用同一对象会让前缀捕获/恢复把后续圈的调度写回前一圈，导致
+		## restore 开关两侧看到不同的预期命中帧与断链归属。
+		## 延迟仍按圈取模（per_lap），这里只复制对象，不改变输入顺序或等待值。
 		for lap_link in lap_links:
-			links.append(lap_link)
+			links.append(_clone_link(lap_link))
 	var adjustable := _adjustable_indices(links)
 	## 每圈的延迟槽包含空中段起手与空中取消（结构按圈重复，模长对齐交替取槽）：
 	## issue 15 起落地接缝循环的证明需要每圈同时延迟两者。
@@ -5222,35 +6414,30 @@ func _simulate_cycle(cycle_ids: Array[String], contexts: Dictionary, edge_kinds:
 	return cycle
 
 
-## Return a proof-level invariant for cycle search, or an empty string when the
-## configured correction model does not provide one.  Keep this derived from
-## the actual tuning constants so changing a multiplier to 1.0 automatically
-## re-enables full replay search instead of silently weakening the solver.
-func _cycle_monotonic_time_reason(cycle_ids: Array[String] = []) -> String:
-	var extended_reaction := false
-	for move_id in cycle_ids:
-		var move := _table.get(move_id) as MoveData
-		if move == null:
-			continue
-		for profile in move.hit_profiles:
-			if profile.reaction == HitProfile.Reaction.GROUND_BOUNCE or profile.reaction == HitProfile.Reaction.LOW_FLOAT_TO_SLIDE:
-				extended_reaction = true
-			break
-		if extended_reaction:
-			break
-	if not extended_reaction:
-		return ""
-	var factors: Array[float] = []
-	for value in GameParams.STARTER_TIME_SCALE.values():
-		factors.append(float(value))
-	factors.append(float(GameParams.NORMAL_HIT_TIME_SCALE))
-	factors.append(float(GameParams.SLIDE_HIT_TIME_SCALE))
-	factors.append(float(GameParams.BOUNCE_HIT_TIME_SCALE))
-	factors.append(float(GameParams.LANDING_LINK_HIT_TIME_SCALE))
-	for factor in factors:
-		if not is_finite(factor) or factor <= 0.0 or factor >= 1.0:
-			return ""
-	return "逐圈证明被单调时间修正排除：每圈至少一次有效 HIT，time_scale 严格递减并属于 settlement_state，回边不可能重现；未执行延迟笛卡尔积"
+## P4：time_scale 全部倍率来源——starter 初始化（逐起手等级）与四类每击分层
+## 倍率，键为 GameParams 常量名。判定始终取实际调校常量（改任一倍率为 1.0
+## 自动回退完整逐圈搜索，不静默弱化求解器）；_test_cycle_factor_override 仅
+## 测试可见的注入覆盖，不进验收参数与语义签名。
+func _cycle_time_factors() -> Dictionary:
+	var factors := {}
+	var grades: Array = GameParams.STARTER_TIME_SCALE.keys()
+	grades.sort()
+	for grade in grades:
+		factors["STARTER_TIME_SCALE[%d]" % int(grade)] = float(GameParams.STARTER_TIME_SCALE[grade])
+	factors["NORMAL_HIT_TIME_SCALE"] = float(GameParams.NORMAL_HIT_TIME_SCALE)
+	factors["SLIDE_HIT_TIME_SCALE"] = float(GameParams.SLIDE_HIT_TIME_SCALE)
+	factors["BOUNCE_HIT_TIME_SCALE"] = float(GameParams.BOUNCE_HIT_TIME_SCALE)
+	factors["LANDING_LINK_HIT_TIME_SCALE"] = float(GameParams.LANDING_LINK_HIT_TIME_SCALE)
+	for key in _test_cycle_factor_override:
+		factors[key] = float(_test_cycle_factor_override[key])
+	return factors
+
+
+## 循环不变量评估（P4）：收集当前请求的全部判定输入（表、倍率、活探针的
+## settlement 键）交给 CycleInvariant.evaluate。倍率缺省取 GameParams 实值。
+func _cycle_invariant(cycle_ids: Array[String]) -> CycleInvariant:
+	var settlement := _new_session(true).settlement_state()
+	return CycleInvariant.evaluate(cycle_ids, _table, _cycle_time_factors(), settlement)
 
 
 ## 循环起始状态说明：分析起点（缺省/显式）与入口招式的真实键位起手方式。
@@ -5312,6 +6499,19 @@ func _pin_dummy(session: CombatSession) -> void:
 	## 且无其它调用点（见 _run_schedule/_run_blocked_probe/_source_timing/_new_session）。
 	_profile_v2_bump("session_steps")
 	session.dummy_position.x = session.player_position.x + session.player_facing * _pin_dx
+
+
+## P3 惰性区间判定（保守充分条件）：空输入步进不产生任何事件的证明口径——
+## 玩家空闲（进行中招式是命中/收招/取消窗关闭事件的载体）、CombatSession 侧
+## 无待决事件源（含多段/延迟落地连接的待决命中、缓存等待、投技待结算、特殊
+## 进入窗口、木桩待决攻击）、无 Hitstop、连段不活跃（活跃期间取消/恢复窗口
+## 到期与木桩计时器到期都能发 COMBO_ENDED，无法廉价证明其不触发）。证明不了
+## 的区间一律逐帧 step——批量推进只省逐帧事件解析，绝不跳过物理步进。
+func _session_inert(session: CombatSession) -> bool:
+	return session.player_move_id == "" \
+			and not session.hitstop_active() \
+			and not session.combo_active \
+			and not session.has_deferred_event_sources()
 
 
 func _dummy_pursuable(session: CombatSession) -> bool:

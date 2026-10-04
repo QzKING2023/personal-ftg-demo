@@ -856,6 +856,28 @@ func hitstop_active() -> bool:
 	return _hitstop_left > 0
 
 
+## 空输入步进是否仍可能自主产生事件：进行中招式（命中/收招/取消窗关闭）、
+## 待决命中（多段/延迟落地连接）、缓存等待消费、投技待结算、特殊进入窗口、
+## 木桩待决攻击与 Hitstop 冻结都是无输入事件源。Solver checkpoint 前缀转移的
+## 「可证明无事件区间」批量推进用它做保守判定（P3）；连段活跃期间另有取消/
+## 恢复窗口到期的 COMBO_ENDED 源不在此列——调用方须自行把 combo_active 区间
+## 排除在批量推进之外。取消窗口是只读判定面：与 clone_state 的完整性契约
+## 同步维护（新事件源字段加入时两处都要带上）。
+func has_deferred_event_sources() -> bool:
+	return _current_move != null \
+			or _pending_hit != null \
+			or _pending_link_check \
+			or _pending_air_link \
+			or _hit_landing_open \
+			or _buffer_waiting \
+			or _pending_throw_physics > 0 \
+			or _special_entry_open \
+			or _dummy_move != null \
+			or _pending_dummy_hit != null \
+			or _hitstop_left > 0 \
+			or _hitstop_resume_pending
+
+
 ## 当前招式当前判定段的命中框（世界坐标）；没有进行中的打击招式时返回空矩形
 ## （投技无命中框）。判定阶段与非判定阶段共用同一几何，是否生效由 player_phase
 ## 决定；多段招式按当前段声明取段命中框（票据 05）。方向取本招启动时锁定的

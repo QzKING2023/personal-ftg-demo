@@ -9,6 +9,7 @@ import contextlib
 import io
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import threading
@@ -340,7 +341,7 @@ class SweepTests(unittest.TestCase):
                     "fragments": []}
 
         code, summary, sweep, status = self.run_sweep_cli(
-            recorder, ["--sweep"], task_mock=fake_task, merge_mock=fake_merge)
+            recorder, ["--sweep", "--sweep-mode", "spawn"], task_mock=fake_task, merge_mock=fake_merge)
         self.assertEqual(code, 0)
         self.assertEqual(status, "exit=0")
         self.assertEqual(summary["mode"], "acceptance-sweep")
@@ -381,7 +382,7 @@ class SweepTests(unittest.TestCase):
                     "fragments": []}
 
         code, summary, sweep, status = self.run_sweep_cli(
-            recorder, ["--sweep"], task_mock=fake_task, merge_mock=fake_merge)
+            recorder, ["--sweep", "--sweep-mode", "spawn"], task_mock=fake_task, merge_mock=fake_merge)
         self.assertEqual(code, 0)
         self.assertEqual(sweep["enumerate"]["requests_total"], 4)
         self.assertEqual(sweep["enumerate"]["unique_descriptors"], 2)
@@ -405,7 +406,7 @@ class SweepTests(unittest.TestCase):
             return {"entries_after": 0, "merged_new": 0, "fragments": []}
 
         code, summary, sweep, status = self.run_sweep_cli(
-            recorder, ["--sweep"], task_mock=fake_task, merge_mock=fake_merge)
+            recorder, ["--sweep", "--sweep-mode", "spawn"], task_mock=fake_task, merge_mock=fake_merge)
         self.assertEqual(code, 0)
         self.assertEqual(sweep["sweep"]["covered"], 0)
         self.assertEqual(sweep["sweep"]["gaps"], ["d1"])
@@ -440,6 +441,299 @@ class SweepTests(unittest.TestCase):
             unique = ra._collect_unique_descriptors({"job": records})
             self.assertEqual(list(unique), ["aaa", "bbb"])
             self.assertEqual(ra._read_descriptor_file(Path(tmp) / "missing.jsonl"), [])
+
+
+FAKE_ENGINE_DRIVER = r'''
+import json, os, sys, time
+from pathlib import Path
+
+
+def _read(path):
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def _write(path, payload):
+    Path(path).write_text(json.dumps(payload), encoding="utf-8")
+
+
+def main():
+    control = Path(os.environ["FTG_POOL_CONTROL_DIR"])
+    task_ms = int(os.environ.get("FTG_FAKE_TASK_MS", "150"))
+    hang_digests = set(filter(None, os.environ.get("FTG_FAKE_HANG_DIGESTS", "").split(",")))
+    hang_n = int(os.environ.get("FTG_FAKE_HANG_N", "0"))
+    silent_digests = set(filter(None, os.environ.get("FTG_FAKE_SILENT_DIGESTS", "").split(",")))
+    stall_digest = os.environ.get("FTG_FAKE_PROGRESS_STALL", "")
+    die_digest = os.environ.get("FTG_FAKE_DIE_DIGEST", "")
+    slow_ms = int(os.environ.get("FTG_FAKE_SLOW_MS", "0"))
+    order_log = os.environ.get("FTG_FAKE_ORDER_LOG", "")
+    last_seq = -1
+    while True:
+        assignment = _read(control / "assignment.json")
+        if isinstance(assignment, dict):
+            if assignment.get("stop"):
+                break
+            seq = int(assignment.get("seq", -1))
+            task_name = str(assignment.get("task", ""))
+            if seq != last_seq and task_name:
+                last_seq = seq
+                _run_task(control, task_name, seq, task_ms, hang_digests, hang_n,
+                          silent_digests, stall_digest, die_digest, slow_ms, order_log)
+                continue
+        time.sleep(0.02)
+
+
+def _run_task(control, task_name, seq, task_ms, hang_digests, hang_n, silent_digests,
+              stall_digest, die_digest, slow_ms, order_log):
+    task = _read(control / task_name) or {}
+    digest = str(task.get("digest", "")) or "unknown"
+    if order_log:
+        with open(order_log, "a", encoding="utf-8") as handle:
+            handle.write("%s %d\n" % (digest, os.getpid()))
+    claims = control / ("claims-%s" % digest)
+    seen = 0
+    if claims.exists():
+        try:
+            seen = int(claims.read_text().strip() or "0")
+        except ValueError:
+            seen = 0
+    claims.write_text(str(seen + 1))
+    if die_digest and digest == die_digest and seen == 0:
+        sys.exit(3)
+    if digest in hang_digests and seen < hang_n:
+        _write(control / "heartbeat.json", {"state": "running", "digest": digest, "pause": 1,
+              "phase": "routes", "sources_done": 1, "cycles_done": 0, "spatial_done": 0})
+        time.sleep(3600)
+    if digest in silent_digests:
+        time.sleep(3600)
+    duration = (slow_ms or task_ms) / 1000.0
+    started = time.time()
+    beats = 0
+    while True:
+        beats += 1
+        if digest == stall_digest:
+            # Frozen stage counters forever: only the progress watchdog may end this.
+            heartbeat = {"state": "running", "digest": digest, "pause": beats,
+                         "phase": "routes", "sources_done": 1, "cycles_done": 0,
+                         "spatial_done": 0}
+        else:
+            heartbeat = {"state": "running", "digest": digest, "pause": beats,
+                         "phase": "routes", "sources_done": beats, "cycles_done": beats // 2,
+                         "spatial_done": beats // 3}
+        _write(control / "heartbeat.json", heartbeat)
+        time.sleep(0.03)
+        if digest != stall_digest and time.time() - started >= duration:
+            break
+    _write(control / "result.json", {"seq": seq, "digest": digest, "ok": True, "error": "",
+          "pauses": beats, "resumed": seen > 0, "seconds": round(duration, 3)})
+
+
+if __name__ == "__main__":
+    main()
+'''
+
+class PoolTests(unittest.TestCase):
+    """P6 reusable worker pool: kill/restart recovery, cache-hit skips, cache
+    corruption, no-progress watchdog, recovery interruption, slow quarantine,
+    longest-job-first. The engine is a real subprocess (this interpreter running
+    the fake driver via a Popen argv shim), so kills/exits/respawns are real."""
+
+    STALL = "0.6"
+
+    @classmethod
+    def setUpClass(cls):
+        cls._fake_tmp = tempfile.TemporaryDirectory()
+        driver = Path(cls._fake_tmp.name) / "fake_engine.py"
+        driver.write_text(FAKE_ENGINE_DRIVER, encoding="utf-8")
+        cls.fake_driver = str(driver)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._fake_tmp.cleanup()
+
+    def run_pool_cli(self, descriptors, cli_args=(), env_extra=None, canonical_lines=None,
+                     durations=None):
+        """One --sweep --sweep-mode pool run over Recorder-enumerated jobs with
+        the fake engine. descriptors: {job_name: [digests]}."""
+        recorder = Recorder(INVERTING_DELAYS, descriptors=descriptors)
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "out"
+            cache = Path(tmp) / "cache" / "solver-results.cache"
+            cache.parent.mkdir(parents=True)
+            if canonical_lines is not None:
+                cache.write_text("\n".join(canonical_lines) + "\n", encoding="utf-8")
+            if durations is not None:
+                cache.with_name(cache.name + ".durations.json").write_text(
+                    json.dumps(durations), encoding="utf-8")
+            order_log = Path(tmp) / "dispatch-order.log"
+            env = {"FTG_FAKE_ORDER_LOG": str(order_log)}
+            env.update(env_extra or {})
+            real_popen = subprocess.Popen
+
+            def engine_shim(argv, *pos_args, **kw_args):
+                # Swap [python, --headless, ...] for [python, fake_driver.py, ...]:
+                # real direct child process, real kills, same env/log plumbing.
+                if argv and argv[0] == sys.executable:
+                    argv = [sys.executable, self.fake_driver] + list(argv[1:])
+                return real_popen(argv, *pos_args, **kw_args)
+
+            patches = [
+                mock.patch.object(ra, "discover_jobs", return_value=[dict(j) for j in FAKE_JOBS]),
+                mock.patch.object(ra, "run_job", recorder),
+                mock.patch.dict(os.environ, env, clear=False),
+                mock.patch.object(ra.subprocess, "Popen", side_effect=engine_shim),
+            ]
+            with contextlib.ExitStack() as stack:
+                for patch in patches:
+                    stack.enter_context(patch)
+                stdout = io.StringIO()
+                with contextlib.redirect_stdout(stdout):
+                    code = ra.main(["--sweep", "--sweep-mode", "pool", "--engine", sys.executable,
+                                    "--output", str(output), "--cache", str(cache),
+                                    "--concurrency", "2", "--pool-stall-limit", self.STALL,
+                                    "--pool-watchdog-ms", "50"]
+                                   + list(cli_args))
+            with open(output / "sweep.json", encoding="utf-8-sig") as handle:
+                sweep = json.load(handle)
+            status = (output / "runner.status.txt").read_text(encoding="ascii").strip()
+            order = []
+            if order_log.is_file():
+                order = [line.split()[0] for line in
+                         order_log.read_text(encoding="utf-8").splitlines() if line.strip()]
+            sidecar = cache.with_name(cache.name + ".durations.json")
+            durations_after = None
+            if sidecar.is_file():
+                with open(sidecar, encoding="utf-8") as handle:
+                    durations_after = json.load(handle)
+        return code, sweep, status, order, durations_after
+
+    @staticmethod
+    def _rows_by_digest(sweep):
+        return {row["digest"]: row for row in sweep["sweep"]["task_rows"]}
+
+    def test_happy_path_completes_and_records_durations(self):
+        code, sweep, status, order, durations_after = self.run_pool_cli(
+            {"test_aaa": ["dA"], "test_bbb": ["dB"], "test_ccc": ["dC"]})
+        self.assertEqual(code, 0)
+        self.assertEqual(status, "exit=0")
+        self.assertEqual(sweep["sweep"]["status_counts"], {"complete": 3})
+        self.assertEqual(len(order), 3)
+        self.assertEqual(sorted(durations_after), ["dA", "dB", "dC"])
+
+    def test_worker_kill_restarts_and_completes_with_resume_evidence(self):
+        code, sweep, status, order, _ = self.run_pool_cli(
+            {"test_aaa": ["dH"]},
+            env_extra={"FTG_FAKE_HANG_DIGESTS": "dH", "FTG_FAKE_HANG_N": "1"})
+        self.assertEqual(code, 0)
+        row = self._rows_by_digest(sweep)["dH"]
+        self.assertEqual(row["status"], "complete")
+        self.assertEqual(row["attempts"], 2)
+        self.assertEqual(row["kill_reasons"], ["stall"])
+        self.assertTrue(row["killed"])
+        self.assertTrue(row["resumed"], "restart attempt must resume from the checkpoint")
+        # The fake engine never writes cache fragments, so even a completed
+        # digest stays a "gap" here — coverage is the real merge's job (proved
+        # by the cache tests and the live differential run).
+        self.assertEqual(sweep["sweep"]["gaps"], ["dH"])
+        self.assertEqual(sweep["sweep"]["status_counts"], {"complete": 1})
+
+    def test_worker_own_death_is_restarted_not_silent(self):
+        code, sweep, status, order, _ = self.run_pool_cli(
+            {"test_aaa": ["dD"]}, env_extra={"FTG_FAKE_DIE_DIGEST": "dD"})
+        self.assertEqual(code, 0)
+        row = self._rows_by_digest(sweep)["dD"]
+        self.assertEqual(row["status"], "complete")
+        self.assertEqual(row["attempts"], 2)
+        self.assertEqual(row["worker_exits"], [3])
+        self.assertFalse(row["killed"])
+
+    def test_recovery_interruption_exhausting_restarts_is_incomplete(self):
+        # Both restart allowances die mid-recovery: progress was observed
+        # (heartbeat with stage counters) → honest "incomplete", recorded gap,
+        # and the killed process is never counted as complete/passed.
+        code, sweep, status, order, _ = self.run_pool_cli(
+            {"test_aaa": ["dI"]}, cli_args=["--pool-restarts", "1"],
+            env_extra={"FTG_FAKE_HANG_DIGESTS": "dI", "FTG_FAKE_HANG_N": "5"})
+        self.assertEqual(code, 0)
+        row = self._rows_by_digest(sweep)["dI"]
+        self.assertEqual(row["status"], "incomplete")
+        self.assertEqual(row["attempts"], 2)
+        self.assertEqual(row["kill_reasons"], ["stall", "stall"])
+        self.assertFalse(row["replay_ok"])
+        self.assertIn("dI", sweep["sweep"]["gaps"])
+        self.assertEqual(sweep["sweep"]["status_counts"], {"incomplete": 1})
+
+    def test_zero_progress_hang_ends_failed(self):
+        # A worker that never emits any heartbeat: killed on stall, restarted,
+        # still nothing → attempts exhausted with zero progress → "failed".
+        code, sweep, status, order, _ = self.run_pool_cli(
+            {"test_aaa": ["dZ"]}, cli_args=["--pool-restarts", "1"],
+            env_extra={"FTG_FAKE_SILENT_DIGESTS": "dZ"})
+        self.assertEqual(code, 0)
+        row = self._rows_by_digest(sweep)["dZ"]
+        self.assertEqual(row["status"], "failed")
+        self.assertEqual(row["attempts"], 2)
+        self.assertIn("dZ", sweep["sweep"]["gaps"])
+        self.assertEqual(sweep["sweep"]["quarantined"], [])
+
+    def test_no_progress_heartbeats_are_killed_by_progress_watchdog(self):
+        # Heartbeat mtime keeps advancing (the mtime stall never fires) but the
+        # stage counters never move → the progress watchdog must kill it.
+        code, sweep, status, order, _ = self.run_pool_cli(
+            {"test_aaa": ["dP"]}, cli_args=["--pool-restarts", "0"],
+            env_extra={"FTG_FAKE_PROGRESS_STALL": "dP"})
+        self.assertEqual(code, 0)
+        row = self._rows_by_digest(sweep)["dP"]
+        self.assertEqual(row["kill_reasons"], ["no-progress"])
+        self.assertIn(row["status"], ("incomplete", "failed"))
+        self.assertIn("dP", sweep["sweep"]["gaps"])
+
+    def test_slow_quarantine_is_loud_and_never_passes(self):
+        code, sweep, status, order, _ = self.run_pool_cli(
+            {"test_aaa": ["dQ"]}, cli_args=["--pool-budget", "0.8"],
+            env_extra={"FTG_FAKE_SLOW_MS": "4000"})
+        self.assertEqual(code, 0)  # gap discipline: quarantine is not an acceptance failure
+        row = self._rows_by_digest(sweep)["dQ"]
+        self.assertEqual(row["status"], "failed")
+        self.assertEqual(row["kill_reasons"], ["slow-quarantine"])
+        self.assertEqual(sweep["sweep"]["quarantined"], ["dQ"])
+        self.assertIn("dQ", sweep["sweep"]["gaps"])
+        self.assertFalse(row["replay_ok"])
+
+    def test_precovered_digest_is_skipped_without_any_worker(self):
+        canonical = [json.dumps(ra.CACHE_HEADER),
+                     json.dumps({"digest": "dA", "entry": "e-existing"})]
+        code, sweep, status, order, _ = self.run_pool_cli(
+            {"test_aaa": ["dA"], "test_bbb": ["dB"]}, canonical_lines=canonical)
+        self.assertEqual(code, 0)
+        rows = self._rows_by_digest(sweep)
+        self.assertEqual(rows["dA"]["status"], "complete")
+        self.assertTrue(rows["dA"]["cache_hit"])
+        self.assertEqual(rows["dA"]["attempts"], 0)
+        self.assertEqual(order, ["dB"], "pre-covered digest must not spawn work")
+        self.assertEqual(sweep["sweep"]["pool"]["cache_hit_skips"], 1)
+
+    def test_corrupt_cache_line_is_not_a_cache_hit(self):
+        canonical = [json.dumps(ra.CACHE_HEADER),
+                     "this line is not json",
+                     '{"digest": "dA", "entry": ""}',
+                     json.dumps({"digest": "dB", "entry": "e-b"})]
+        code, sweep, status, order, _ = self.run_pool_cli(
+            {"test_aaa": ["dA", "dB"]}, canonical_lines=canonical)
+        self.assertEqual(code, 0)
+        rows = self._rows_by_digest(sweep)
+        self.assertEqual(rows["dB"]["cache_hit"], True)
+        self.assertEqual(rows["dA"]["cache_hit"], False)
+        self.assertEqual(order, ["dA"], "corrupt/empty entries must be recomputed, not trusted")
+
+    def test_longest_job_first_dispatch_order(self):
+        # dC unknown (assumed worst), dA known 100s, dB known 10s → dC, dA, dB.
+        code, sweep, status, order, _ = self.run_pool_cli(
+            {"test_aaa": ["dA", "dB", "dC"]}, durations={"dA": 100.0, "dB": 10.0})
+        self.assertEqual(code, 0)
+        self.assertEqual(order, ["dC", "dA", "dB"])
 
 
 if __name__ == "__main__":
