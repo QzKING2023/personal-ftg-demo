@@ -1,0 +1,36 @@
+{"test":"import","exit":0,"script_errors":0,"pass_lines":0,"assertions":0,"seconds":6.58,"solver_calls":0,"solver_underlying_calls":0,"solver_reuse_hits":0,"solver_reuse_hit_rate":0.0,"solver_elapsed_ms":0.0,"combo_cache":{},"solver_profile":{},"report_fingerprints":[],"solver_report_keys":[],"appdata":"D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\runA-spawn\\runtime-import"}
+sweep-task: 034f43c95d07 exit=0 replay_ok=True 0.7s
+sweep-task: 0840b84415e0 exit=0 replay_ok=True 0.7s
+sweep-task: 0fbb6d92ec55 exit=0 replay_ok=True 0.7s
+sweep-task: 1083d9133240 exit=0 replay_ok=True 0.8s
+sweep-task: 15f3b09671f5 exit=0 replay_ok=True 0.7s
+sweep-task: 21b2eae7d226 exit=0 replay_ok=True 0.7s
+sweep-task: 32fbba13d693 exit=0 replay_ok=True 85.8s
+sweep-task: 37645140e7d3 exit=0 replay_ok=True 0.7s
+sweep-task: 3f5aabe6f7c9 exit=0 replay_ok=True 0.9s
+sweep-task: 46745fc1159e exit=0 replay_ok=True 0.7s
+sweep-task: 5d514e9829df exit=0 replay_ok=True 0.7s
+sweep-task: 669db63c0b04 exit=0 replay_ok=True 0.7s
+sweep-task: 6dddfeff7f75 exit=0 replay_ok=True 85.6s
+sweep-task: 70a7cf352ab7 exit=0 replay_ok=True 0.7s
+sweep-task: 7df5630f5c21 exit=0 replay_ok=True 1.7s
+sweep-task: 8b548bb6d575 exit=0 replay_ok=True 0.8s
+sweep-task: 970ed0174e1f exit=0 replay_ok=True 0.8s
+sweep-task: a3b31e4fa5c1 exit=0 replay_ok=True 0.7s
+sweep-task: a4a4f7731762 exit=0 replay_ok=True 0.8s
+sweep-task: a5867968396a exit=0 replay_ok=True 0.7s
+sweep-task: a63e320f4821 exit=0 replay_ok=True 0.8s
+sweep-task: a66b7424d210 exit=0 replay_ok=True 0.8s
+sweep-task: abd40d4a0349 exit=0 replay_ok=True 0.8s
+sweep-task: cdd9011a2879 exit=0 replay_ok=True 1.1s
+sweep-task: d310898885f9 exit=0 replay_ok=True 0.8s
+sweep-task: d4d403e04c4b exit=0 replay_ok=True 0.8s
+sweep-task: dfd5601a525d exit=0 replay_ok=True 0.8s
+sweep-task: e32aa067df97 exit=0 replay_ok=True 0.7s
+sweep-task: ead2c3babc4e exit=0 replay_ok=True 0.7s
+sweep-task: ee405fdcbf67 exit=0 replay_ok=True 0.7s
+{"test":"test_hit_profiles","exit":1,"script_errors":2,"pass_lines":100,"assertions":100,"seconds":1.44,"solver_calls":2,"solver_underlying_calls":2,"solver_reuse_hits":0,"solver_reuse_hit_rate":0.0,"solver_elapsed_ms":132.885,"combo_cache":{"bypasses":0,"enabled":true,"entries":30,"hits":2,"misses":0},"solver_profile":{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"gap_enum_ms":0.0,"gap_enum_runs":0,"other_ms":138.266,"other_runs":0,"requests":2,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":138.266},"report_fingerprints":["3951e705aecdef07fb7c68580e15b6c6657b490be1ab202ee7bfad5a6451e09e","773655f6727b02cd03c1b8a1111f249064699bdb76d4404bff73c6f86ae2d69a"],"solver_report_keys":[["solve-1"],["solve-2"]],"appdata":"D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\runA-spawn\\runtime-test_hit_profiles"}
+{"test":"test_solver_cache","exit":0,"script_errors":0,"pass_lines":63,"assertions":63,"seconds":1.45,"solver_calls":0,"solver_underlying_calls":0,"solver_reuse_hits":0,"solver_reuse_hit_rate":0.0,"solver_elapsed_ms":0.0,"combo_cache":{},"solver_profile":{},"report_fingerprints":[],"solver_report_keys":[],"appdata":"D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\runA-spawn\\runtime-test_solver_cache"}
+{"test":"test_solver_growth","exit":0,"script_errors":0,"pass_lines":59,"assertions":59,"seconds":2.55,"solver_calls":0,"solver_underlying_calls":0,"solver_reuse_hits":0,"solver_reuse_hit_rate":0.0,"solver_elapsed_ms":0.0,"combo_cache":{},"solver_profile":{},"report_fingerprints":[],"solver_report_keys":[],"appdata":"D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\runA-spawn\\runtime-test_solver_growth"}
+{"test":"test_solver_index_equiv","exit":0,"script_errors":0,"pass_lines":76,"assertions":76,"seconds":2.84,"solver_calls":0,"solver_underlying_calls":0,"solver_reuse_hits":0,"solver_reuse_hit_rate":0.0,"solver_elapsed_ms":0.0,"combo_cache":{},"solver_profile":{},"report_fingerprints":[],"solver_report_keys":[],"appdata":"D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\runA-spawn\\runtime-test_solver_index_equiv"}
+cache-merge: 30 entries (+0 new from 3 fragment(s))

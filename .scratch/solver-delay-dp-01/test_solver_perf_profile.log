@@ -1,0 +1,51 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+PASS  profile v2 exposes exactly the documented count fields (14)
+PASS  profile v1 field set unchanged (acceptance profile_totals contract)
+PASS  v1 and v2 profiles stay disjoint (no timing fields in v2, no count fields in v1)
+PASS  growth fixture E=2 builds from the shared manifest
+SOLVER_PROFILE_V2_JSON={"cache_bypasses":0,"cache_hits":0,"cache_misses":1,"context_attempts":6,"cycle_state_snapshots":0,"delay_dfs_leaves":2,"delay_dfs_nodes":6,"edge_built":4,"gap_built":32,"prefix_frozen_returns":0,"prefix_restores":6,"session_steps":2932,"spatial_rechecks":0,"structure_candidates":36}
+PASS  fixture E=2 analysis is not refused
+PASS  edge_built == configured candidates x 2 facings (2 edges x [1,-1] = 4, got 4)
+PASS  structure_candidates == edge_built + gap_built (config + gap candidates cover all builds: 36 == 4 + 32)
+PASS  unconfigured pairs probe gap candidates (gap_built=32)
+PASS  context growth attempts counted (6)
+PASS  delay DFS exercised by the jump-cancel route (nodes=6 >= leaves=2 > 0)
+PASS  prefix restore engaged on the air seam (prefix_restores=6)
+PASS  session physics steps counted (2932)
+PASS  fixture E=2 produces at least one timing-valid route (fixture stays meaningful)
+PASS  cold cacheable request books exactly one miss (miss=1 hit=0 bypass=0)
+PASS  same fixture solved twice (cache cleared) yields identical v2 counts (deterministic search shape)
+PASS  cache-hit request performs no search work (all eleven counts zero)
+PASS  cache-hit request books exactly one hit
+PASS  cache-hit report is semantically identical to the computed report
+ERROR: Cannot open file 'res://tests/no-such-manifest.tres'.
+   at: load (scene/resources/resource_format_text.cpp:1387)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:35)
+       [1] analyze_manifest (res://scripts/combat/combo_solver.gd:800)
+       [2] _test_refused_request_counts_bypass_only (res://tests/test_solver_perf_profile.gd:146)
+       [3] _initialize (res://tests/test_solver_perf_profile.gd:36)
+ERROR: Failed loading resource: res://tests/no-such-manifest.tres.
+   at: _load (core/io/resource_loader.cpp:343)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:35)
+       [1] analyze_manifest (res://scripts/combat/combo_solver.gd:800)
+       [2] _test_refused_request_counts_bypass_only (res://tests/test_solver_perf_profile.gd:146)
+       [3] _initialize (res://tests/test_solver_perf_profile.gd:36)
+ERROR: Error loading resource: 'res://tests/no-such-manifest.tres'.
+   at: load (core/core_bind.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:35)
+       [1] analyze_manifest (res://scripts/combat/combo_solver.gd:800)
+       [2] _test_refused_request_counts_bypass_only (res://tests/test_solver_perf_profile.gd:146)
+       [3] _initialize (res://tests/test_solver_perf_profile.gd:36)
+PASS  missing manifest path is refused
+PASS  refused request does no search work (all counts zero)
+PASS  refused request books exactly one bypass (hits+misses+bypasses==calls stays auditable)
+PASS  cycle fixture analysis is not refused
+PASS  two-move cancel cycle drives per-lap settlement snapshots (snapshots=18)
+PASS  spatial_rechecks == timing-valid routes x 3 distances x 2 facings (1 x 3 x 2 == 6)
+
+ALL SOLVER PERF PROFILE TESTS PASSED

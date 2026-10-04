@@ -1,0 +1,2 @@
+{"test":"import","exit":0,"script_errors":0,"pass_lines":0,"assertions":0,"seconds":6.57,"solver_calls":0,"solver_underlying_calls":0,"solver_reuse_hits":0,"solver_reuse_hit_rate":0.0,"solver_elapsed_ms":0.0,"combo_cache":{},"solver_profile":{},"report_fingerprints":[],"solver_report_keys":[],"appdata":"D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\enumerate-census\\runtime-import"}
+sweep-enumerate: 188 request(s) → 74 unique descriptor(s), wall 48.9s

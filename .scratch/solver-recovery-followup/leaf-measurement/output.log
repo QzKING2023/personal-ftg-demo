@@ -1,0 +1,6 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+SCRIPT ERROR: Parse Error: Cannot call non-static function "clear_transition_memo()" on the class "ComboSolver" directly. Make an instance instead.
+   at: GDScript::reload (res://.scratch/solver-recovery-followup/probe_leaf_measurement.gd:18)
+ERROR: Failed to load script "res://.scratch/solver-recovery-followup/probe_leaf_measurement.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript.cpp:3041)

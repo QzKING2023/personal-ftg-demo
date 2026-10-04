@@ -1,0 +1,21 @@
+[
+  {
+    "digest": "dZ",
+    "status": "failed",
+    "exit": 1,
+    "seconds": 1.21,
+    "replay_ok": false,
+    "attempts": 2,
+    "restarts": 1,
+    "killed": true,
+    "kill_reasons": [
+      "stall",
+      "stall"
+    ],
+    "worker_exits": [],
+    "cache_hit": false,
+    "resumed": false,
+    "pauses": 0,
+    "error": "重启额度耗尽：stall（无进展信号）"
+  }
+]

@@ -1,0 +1,76 @@
+﻿{
+    "mode": "acceptance-sweep",
+    "total_seconds": 7.12,
+    "total_assertions": 100,
+    "total_solver_calls": 2,
+    "total_solver_underlying_calls": 2,
+    "total_solver_reuse_hits": 0,
+    "solver_reuse_hit_rate": 0.0,
+    "tests": [
+        {
+            "test": "import",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 0,
+            "assertions": 0,
+            "seconds": 5.89,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\runD-cachehit\\runtime-import"
+        },
+        {
+            "test": "test_hit_profiles",
+            "exit": 1,
+            "script_errors": 2,
+            "pass_lines": 100,
+            "assertions": 100,
+            "seconds": 1.23,
+            "solver_calls": 2,
+            "solver_underlying_calls": 2,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 110.446,
+            "combo_cache": {
+                "bypasses": 0,
+                "enabled": true,
+                "entries": 30,
+                "hits": 2,
+                "misses": 0
+            },
+            "solver_profile": {
+                "delay_leaf_ms": 0.0,
+                "delay_leaf_runs": 0,
+                "edge_probe_ms": 0.0,
+                "edge_probe_runs": 0,
+                "gap_enum_ms": 0.0,
+                "gap_enum_runs": 0,
+                "other_ms": 115.893,
+                "other_runs": 0,
+                "requests": 2,
+                "route_walk_ms": 0.0,
+                "route_walk_runs": 0,
+                "total_ms": 115.893
+            },
+            "report_fingerprints": [
+                "3951e705aecdef07fb7c68580e15b6c6657b490be1ab202ee7bfad5a6451e09e",
+                "773655f6727b02cd03c1b8a1111f249064699bdb76d4404bff73c6f86ae2d69a"
+            ],
+            "solver_report_keys": [
+                [
+                    "solve-1"
+                ],
+                [
+                    "solve-2"
+                ]
+            ],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\runD-cachehit\\runtime-test_hit_profiles"
+        }
+    ]
+}

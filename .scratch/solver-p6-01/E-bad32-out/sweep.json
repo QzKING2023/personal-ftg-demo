@@ -1,0 +1,21 @@
+﻿{
+    "mode": "acceptance-sweep",
+    "concurrency": 8,
+    "cache": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\E-bad32.cache",
+    "enumerate": {
+        "wall_seconds": 1.14,
+        "jobs": {
+            "test_hit_profiles": {
+                "exit": 1,
+                "seconds": 1.13,
+                "requests": 1
+            }
+        },
+        "requests_total": 1,
+        "unique_descriptors": 1
+    },
+    "stage_walls": {
+        "import": 6.27,
+        "enumerate": 1.14
+    }
+}

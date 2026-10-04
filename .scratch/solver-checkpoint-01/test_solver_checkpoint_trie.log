@@ -1,0 +1,27 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PASS  freeze: checkpoint deep-copies source (post-construction mutation invisible)
+PASS  freeze: as_prefix hands out a fresh projection (writes cannot reach checkpoint)
+PASS  freeze: round-trip capture keeps content identical
+PASS  hitstop/jump-cancel depth2: 1 leaves identical across zero-replay / cold-restore / warm-restore
+PASS  hitstop/jump-cancel depth2: live prefix captured (restore path exercised, boundary=15)
+PASS  landing/cancel-seam: 41 leaves identical across zero-replay / cold-restore / warm-restore
+PASS  landing/cancel-seam: live prefix captured (restore path exercised, boundary=15)
+PASS  air-exit/seam: 9 leaves identical across zero-replay / cold-restore / warm-restore
+PASS  air-exit/seam: live prefix captured (restore path exercised, boundary=11)
+FAIL  bounce: j214D has no cancel target for followup
+PASS  charge/hold-after-air: 41 leaves identical across zero-replay / cold-restore / warm-restore
+PASS  charge/hold-after-air: live prefix captured (restore path exercised, boundary=15)
+PASS  side-swap/facing-1 jump-cancel: 1 leaves identical across zero-replay / cold-restore / warm-restore
+PASS  failure/frozen prefix break: 64 leaves identical across zero-replay / cold-restore / warm-restore
+PASS  failure/over-extended depth4: 1 leaves identical across zero-replay / cold-restore / warm-restore
+PASS  failure/delay budget 1: 1 leaves identical across zero-replay / cold-restore / warm-restore
+PASS  failure/max_frames 60: 1 leaves identical across zero-replay / cold-restore / warm-restore
+PASS  failure/proof horizon search: final search result projection identical (old path vs checkpoint path)
+PASS  air-start/cancels prologue-skip: 1 leaves identical across zero-replay / cold-restore / warm-restore
+PASS  warm: cold and warm-search leaf logs identical
+PASS  warm: trie recorded nodes (stats={ "scopes": 1, "nodes": 4 })
+PASS  noninterference: re-run identical after unrelated search wrote trie branches
+PASS  scope: pin_dx change isolates trie scopes (no cross-scope graft)
+PASS  mutation: corrupted deep pivot checkpoint (verified at frame>30) detected by per-leaf diff
+TOTAL failures=1

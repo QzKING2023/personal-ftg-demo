@@ -1,0 +1,9 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+SCRIPT ERROR: Parse Error: Could not preload resource script "res://.scratch/solver-p5-01/combo_solver_p4.gd".
+   at: GDScript::reload (res://.scratch/solver-p5-01/probe_p4fp.gd:3)
+SCRIPT ERROR: Parse Error: Could not resolve script "res://.scratch/solver-p5-01/combo_solver_p4.gd".
+   at: GDScript::reload (res://.scratch/solver-p5-01/probe_p4fp.gd:3)
+ERROR: Failed to load script "res://.scratch/solver-p5-01/probe_p4fp.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript.cpp:3041)
+EXIT=1

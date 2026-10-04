@@ -1,0 +1,66 @@
+﻿{
+    "mode": "acceptance-sweep",
+    "total_seconds": 10.31,
+    "total_assertions": 46,
+    "total_solver_calls": 0,
+    "total_solver_underlying_calls": 0,
+    "total_solver_reuse_hits": 0,
+    "solver_reuse_hit_rate": 0.0,
+    "tests": [
+        {
+            "test": "import",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 0,
+            "assertions": 0,
+            "seconds": 6.29,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p7-01\\sweep-routes-only\\runtime-import"
+        },
+        {
+            "test": "test_solver_routes_cycles_refactor",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 46,
+            "assertions": 46,
+            "seconds": 4.02,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {
+                "bypasses": 0,
+                "enabled": true,
+                "entries": 0,
+                "hits": 0,
+                "misses": 1
+            },
+            "solver_profile": {
+                "delay_leaf_ms": 0.0,
+                "delay_leaf_runs": 0,
+                "edge_probe_ms": 0.0,
+                "edge_probe_runs": 0,
+                "gap_enum_ms": 0.0,
+                "gap_enum_runs": 0,
+                "other_ms": 0.0,
+                "other_runs": 0,
+                "requests": 0,
+                "route_walk_ms": 0.0,
+                "route_walk_runs": 0,
+                "total_ms": 0.0
+            },
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p7-01\\sweep-routes-only\\runtime-test_solver_routes_cycles_refactor"
+        }
+    ]
+}

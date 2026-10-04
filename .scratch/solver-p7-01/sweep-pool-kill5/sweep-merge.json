@@ -1,0 +1,44 @@
+{
+  "canonical": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p7-01\\sweep-pool-kill5\\cache.cache",
+  "entries_before": 0,
+  "fragments": [
+    {
+      "file": "pool-worker-00-g0.fragment",
+      "entries": 4,
+      "merged_new": 4,
+      "bad_lines": 0
+    },
+    {
+      "file": "pool-worker-01-g0.fragment",
+      "entries": 7,
+      "merged_new": 7,
+      "bad_lines": 0
+    },
+    {
+      "file": "pool-worker-02-g0.fragment",
+      "entries": 7,
+      "merged_new": 7,
+      "bad_lines": 0
+    },
+    {
+      "file": "pool-worker-03-g0.fragment",
+      "entries": 4,
+      "merged_new": 4,
+      "bad_lines": 0
+    },
+    {
+      "file": "pool-worker-04-g0.fragment",
+      "entries": 7,
+      "merged_new": 7,
+      "bad_lines": 0
+    },
+    {
+      "file": "pool-worker-05-g1.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    }
+  ],
+  "entries_after": 30,
+  "merged_new": 30
+}

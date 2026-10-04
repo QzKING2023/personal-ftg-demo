@@ -1,0 +1,26 @@
+{
+  "canonical": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p7-01\\sweep-pool-kill4\\cache.cache",
+  "entries_before": 30,
+  "fragments": [
+    {
+      "file": "test_solver_cache.fragment",
+      "entries": 16,
+      "merged_new": 0,
+      "bad_lines": 0
+    },
+    {
+      "file": "test_solver_growth.fragment",
+      "entries": 4,
+      "merged_new": 0,
+      "bad_lines": 0
+    },
+    {
+      "file": "test_solver_index_equiv.fragment",
+      "entries": 6,
+      "merged_new": 0,
+      "bad_lines": 0
+    }
+  ],
+  "entries_after": 30,
+  "merged_new": 0
+}

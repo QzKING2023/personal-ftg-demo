@@ -1,0 +1,49 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+PASS  the replayed table passes the solver's facing-mirror verification
+FAIL  the solver reports the representative route 5A → 5B → 5D
+FAIL  the solver reports the representative route 5B → 6A → jA → jB → j5D
+FAIL  the solver reports the representative route 5A → 5B → 6A → jA → jB → j5D
+PASS  latest Solver excludes the forbidden landing route
+PASS  legacy landing replay on the two-segment baseline lands 5A plus both 236C segments and stops there (no jump cancel exists; the old air schedule never connects)
+PASS  legacy schedule cannot start 5D on landing
+PASS  legacy landing replay on the two-segment baseline lands 5A plus both 236C segments and stops there (no jump cancel exists; the old air schedule never connects)
+PASS  legacy schedule cannot start 5D on landing
+PASS  pressing D at the cancel window's last valid age (3) still lands combo hit 2 (hit frame 20)
+PASS  pressing D one frame later never lands as combo hit 2 — the follow-up boundary is observable in replay (木桩自然受身)
+FAIL  the air route is available for the landing-lock replay
+PASS  without spatial data the report declares every route timing-valid only
+PASS  the guide states its frame tables are laid out at the fixed 70 px contact
+FAIL  the spatial run reports the air route
+FAIL  the keyboard replay finds route 5A → 5B → 5D
+FAIL  the keyboard replay finds route 5B → 6A → jA → jB → j5D
+FAIL  the keyboard replay finds route 5A → 5B → 6A → jA → jB → j5D
+PASS  5A → 236C → jA → jB → 5D / facing +1 / 48 px real knockback: the keyboard replay matches the session probe's hit ticks exactly ([7, 22, 35])
+PASS  5A → 236C → jA → jB → 5D / facing +1 / 48 px real knockback: the keyboard replay reproduces 3 combo hits and total damage 18.0
+PASS  5A → 236C → jA → jB → 5D / facing +1 / 48 px real knockback: the dummy's natural recovery lands on the same tick (61)
+PASS  5A → 236C → jA → jB → 5D / facing +1 / 48 px real knockback: the player lands on the same tick ([])
+PASS  legacy landing schedule lands the same three hits on the real keyboard path (the retired 236C launcher no longer jump-cancels)
+FAIL  the keyboard replay finds route 5A → 5B → 5D
+FAIL  the keyboard replay finds route 5B → 6A → jA → jB → j5D
+FAIL  the keyboard replay finds route 5A → 5B → 6A → jA → jB → j5D
+PASS  5A → 236C → jA → jB → 5D / facing -1 / 48 px real knockback: the keyboard replay matches the session probe's hit ticks exactly ([7, 22, 35])
+PASS  5A → 236C → jA → jB → 5D / facing -1 / 48 px real knockback: the keyboard replay reproduces 3 combo hits and total damage 18.0
+PASS  5A → 236C → jA → jB → 5D / facing -1 / 48 px real knockback: the dummy's natural recovery lands on the same tick (61)
+PASS  5A → 236C → jA → jB → 5D / facing -1 / 48 px real knockback: the player lands on the same tick ([])
+PASS  legacy landing schedule lands the same three hits on the real keyboard path (the retired 236C launcher no longer jump-cancels)
+PASS  the guide expresses the first press with the real physical key (F1 按 U)
+FAIL  the replay records cover the representative routes (pinned both facings + keyboard + spatial)
+FAIL  left-facing replay records mirror physical keys while retaining the relative forward fold
+PASS  each replay record line carries every required field (回放记录｜5A → 236C → jA → jB → 5D｜面向 +1｜站位：旧样本钉位 70 px｜输入 F1 按U F3 2[S] F4 3[S+D] F5 6[D] F6 按K F13 Space F39 按U F48 按I F54 按J｜命中帧 6, 13, 18｜3 hit｜伤害 18.0｜timing-invalid（恢复锁拒绝旧样本第5击；不作空间证明）)
+PASS  each replay record line carries every required field (回放记录｜5A → 236C → jA → jB → 5D｜面向 -1｜站位：旧样本钉位 70 px｜输入 F1 按U F3 2[S] F4 3[S+A] F5 6[A] F6 按K F13 Space F39 按U F48 按I F54 按J｜命中帧 6, 13, 18｜3 hit｜伤害 18.0｜timing-invalid（恢复锁拒绝旧样本第5击；不作空间证明）)
+PASS  each replay record line carries every required field (回放记录｜5A → 236C → jA → jB → 5D｜面向 +1｜站位：训练场真实键盘 48 px｜输入 F1 按U F3 2[S] F4 3[S+D] F5 6[D] F6 按K F13 Space F39 按U F48 按I F54 按J｜命中tick（物理，含前导空帧） 7, 22, 35｜3 hit｜伤害 18.0｜timing-invalid（旧落地样本负例：两段基线下旧 236C launcher 帧表失效、无 jump cancel；恢复锁仍拒绝第5击）)
+PASS  each replay record line carries every required field (回放记录｜5A → 236C → jA → jB → 5D｜面向 -1｜站位：训练场真实键盘 48 px｜输入 F1 按U F3 2[S] F4 3[S+A] F5 6[A] F6 按K F13 Space F39 按U F48 按I F54 按J｜命中tick（物理，含前导空帧） 7, 22, 35｜3 hit｜伤害 18.0｜timing-invalid（旧落地样本负例：两段基线下旧 236C launcher 帧表失效、无 jump cancel；恢复锁仍拒绝第5击）)
+
+回放记录｜5A → 236C → jA → jB → 5D｜面向 +1｜站位：旧样本钉位 70 px｜输入 F1 按U F3 2[S] F4 3[S+D] F5 6[D] F6 按K F13 Space F39 按U F48 按I F54 按J｜命中帧 6, 13, 18｜3 hit｜伤害 18.0｜timing-invalid（恢复锁拒绝旧样本第5击；不作空间证明）
+回放记录｜5A → 236C → jA → jB → 5D｜面向 -1｜站位：旧样本钉位 70 px｜输入 F1 按U F3 2[S] F4 3[S+A] F5 6[A] F6 按K F13 Space F39 按U F48 按I F54 按J｜命中帧 6, 13, 18｜3 hit｜伤害 18.0｜timing-invalid（恢复锁拒绝旧样本第5击；不作空间证明）
+回放记录｜5A → 236C → jA → jB → 5D｜面向 +1｜站位：训练场真实键盘 48 px｜输入 F1 按U F3 2[S] F4 3[S+D] F5 6[D] F6 按K F13 Space F39 按U F48 按I F54 按J｜命中tick（物理，含前导空帧） 7, 22, 35｜3 hit｜伤害 18.0｜timing-invalid（旧落地样本负例：两段基线下旧 236C launcher 帧表失效、无 jump cancel；恢复锁仍拒绝第5击）
+回放记录｜5A → 236C → jA → jB → 5D｜面向 -1｜站位：训练场真实键盘 48 px｜输入 F1 按U F3 2[S] F4 3[S+A] F5 6[A] F6 按K F13 Space F39 按U F48 按I F54 按J｜命中tick（物理，含前导空帧） 7, 22, 35｜3 hit｜伤害 18.0｜timing-invalid（旧落地样本负例：两段基线下旧 236C launcher 帧表失效、无 jump cancel；恢复锁仍拒绝第5击）
+
+ACCEPTANCE_SOLVER_METRICS_JSON={"calls":2,"combo_cache":{"bypasses":0,"enabled":true,"entries":2,"hits":0,"misses":2},"elapsed_ms":721401.404,"profile_totals":{"delay_leaf_ms":380894.047,"delay_leaf_runs":331956,"edge_probe_ms":6522.945,"edge_probe_runs":1098,"gap_enum_ms":8517.835,"gap_enum_runs":1672,"other_ms":292.688,"other_runs":20,"requests":2,"route_walk_ms":325184.886,"route_walk_runs":0,"total_ms":721412.401},"profiles":[{"delay_leaf_ms":185247.447,"delay_leaf_runs":165516,"edge_probe_ms":6453.616,"edge_probe_runs":1098,"fingerprint":"e071fdc661bffe47e5fd03036507ecc118a2a1a14193b3b8cb91ad1e9fcaca45","gap_enum_ms":7914.211,"gap_enum_runs":1672,"key":"solve-1","other_ms":134.875,"other_runs":10,"route_walk_ms":159056.862,"route_walk_runs":0,"total_ms":358807.011},{"delay_leaf_ms":195646.6,"delay_leaf_runs":166440,"edge_probe_ms":69.329,"edge_probe_runs":0,"fingerprint":"b0c0e255d814526417a2b1f639455d2cde07ed6ae193771c61e53d372279463b","gap_enum_ms":603.624,"gap_enum_runs":0,"key":"solve-2","other_ms":157.813,"other_runs":10,"route_walk_ms":166128.024,"route_walk_runs":0,"total_ms":362605.39}],"reports":[{"calls":1,"fingerprint":"b0c0e255d814526417a2b1f639455d2cde07ed6ae193771c61e53d372279463b","keys":["solve-2"]},{"calls":1,"fingerprint":"e071fdc661bffe47e5fd03036507ecc118a2a1a14193b3b8cb91ad1e9fcaca45","keys":["solve-1"]}],"reuse_enabled":false,"reuse_hit_rate":0.0,"reuse_hits":0,"test":"test_replay_acceptance","underlying_calls":2,"unique_reports":2}
+13 TEST(S) FAILED

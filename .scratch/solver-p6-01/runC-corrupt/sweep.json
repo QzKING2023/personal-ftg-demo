@@ -1,0 +1,110 @@
+﻿{
+    "mode": "acceptance-sweep",
+    "concurrency": 4,
+    "cache": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\cacheC.cache",
+    "enumerate": {
+        "wall_seconds": 1.14,
+        "jobs": {
+            "test_hit_profiles": {
+                "exit": 1,
+                "seconds": 1.14,
+                "requests": 1
+            }
+        },
+        "requests_total": 1,
+        "unique_descriptors": 1
+    },
+    "stage_walls": {
+        "import": 5.9,
+        "enumerate": 1.14,
+        "sweep": 82.61,
+        "warm": 1.15,
+        "total": 90.79
+    },
+    "sweep": {
+        "mode": "pool",
+        "wall_seconds": 82.61,
+        "lanes": 4,
+        "tasks": 1,
+        "task_busy_seconds": 82.11,
+        "lane_busy_ratio": 0.2485,
+        "covered": 1,
+        "gaps": [],
+        "status_counts": {
+            "complete": 1
+        },
+        "quarantined": [],
+        "task_rows": [
+            {
+                "digest": "32fbba13d69317253f51e46c7fda8941681005a790be14b792a28ec465a81e8c",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 82.11,
+                "replay_ok": true,
+                "attempts": 1,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": false,
+                "resumed": false,
+                "pauses": 1,
+                "error": ""
+            }
+        ],
+        "pool": {
+            "lanes": 4,
+            "watchdog_ms": 2000,
+            "stall_limit": 900.0,
+            "restarts_max": 2,
+            "budget_seconds": 3600.0,
+            "cache_hit_skips": 0,
+            "wall_seconds": 82.6,
+            "kills": 0,
+            "workers": [
+                {
+                    "slot": 0,
+                    "generations": 1,
+                    "served": 1,
+                    "kills": 0
+                },
+                {
+                    "slot": 1,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                },
+                {
+                    "slot": 2,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                },
+                {
+                    "slot": 3,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                }
+            ]
+        },
+        "merge": {
+            "canonical": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\cacheC.cache",
+            "entries_before": 28,
+            "fragments": [
+                {
+                    "file": "pool-worker-00-g0.fragment",
+                    "entries": 1,
+                    "merged_new": 1,
+                    "bad_lines": 0
+                }
+            ],
+            "entries_after": 29,
+            "merged_new": 1
+        }
+    },
+    "warm": {
+        "wall_seconds": 1.15,
+        "misses_total": 0
+    }
+}

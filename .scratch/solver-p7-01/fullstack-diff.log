@@ -1,0 +1,14 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+PHASE new-cold    fp=105c43c794619fd471eb73358d23aab132a661d29c40ccd31608e8243cc101fd ms=89746
+  counts {"cache_bypasses":0,"cache_hits":0,"cache_misses":0,"context_attempts":48,"cycle_state_snapshots":76,"delay_dfs_leaves":14882,"delay_dfs_nodes":21102,"edge_built":158,"gap_built":1822,"prefix_frozen_returns":0,"prefix_restores":21102,"session_steps":657434,"spatial_rechecks":0,"structure_candidates":1980}
+PHASE new-warm    fp=105c43c794619fd471eb73358d23aab132a661d29c40ccd31608e8243cc101fd ms=70883
+  counts {"cache_bypasses":0,"cache_hits":0,"cache_misses":0,"context_attempts":48,"cycle_state_snapshots":76,"delay_dfs_leaves":14882,"delay_dfs_nodes":21102,"edge_built":158,"gap_built":1822,"prefix_frozen_returns":0,"prefix_restores":21102,"session_steps":435304,"spatial_rechecks":0,"structure_candidates":1980}
+CHECK cold/warm equal=true
+PHASE old-oracle  fp=105c43c794619fd471eb73358d23aab132a661d29c40ccd31608e8243cc101fd ms=1031783
+  counts {"cache_bypasses":0,"cache_hits":0,"cache_misses":0,"context_attempts":48,"cycle_state_snapshots":181868,"delay_dfs_leaves":183002,"delay_dfs_nodes":205836,"edge_built":158,"gap_built":2002,"prefix_frozen_returns":0,"prefix_restores":0,"session_steps":13697206,"spatial_rechecks":0,"structure_candidates":2160}
+CHECK new/old   equal=true
+PHASE analyze-new fp=bb6387381bcdca590a717bdc893c9f43f43c5d20a2cfdf8fd3f8d921199085a1 ms=20653
+  counts {"cache_bypasses":0,"cache_hits":0,"cache_misses":0,"context_attempts":24,"cycle_state_snapshots":38,"delay_dfs_leaves":7441,"delay_dfs_nodes":10551,"edge_built":79,"gap_built":911,"prefix_frozen_returns":0,"prefix_restores":10551,"session_steps":328717,"spatial_rechecks":0,"structure_candidates":990}
+analyze ref fingerprint: bb6387381bcdca590a717bdc893c9f43f43c5d20a2cfdf8fd3f8d921199085a1

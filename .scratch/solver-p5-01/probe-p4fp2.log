@@ -1,0 +1,69 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+SCRIPT ERROR: Parse Error: Invalid argument for "_finish_analyze_request()" function: argument 2 should be "SolverReport" but is "SolverReport".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:838)
+SCRIPT ERROR: Parse Error: Invalid argument for "_finish_analyze_request()" function: argument 2 should be "SolverReport" but is "SolverReport".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:863)
+SCRIPT ERROR: Parse Error: Invalid argument for "_analyze()" function: argument 2 should be "SolverStartState" but is "SolverStartState".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1673)
+SCRIPT ERROR: Parse Error: Invalid argument for "_analyze()" function: argument 4 should be "SolverSpatialData" but is "SolverSpatialData".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1673)
+SCRIPT ERROR: Parse Error: Invalid argument for "_signature_sections()" function: argument 1 should be "SolverReport" but is "SolverReport".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1678)
+SCRIPT ERROR: Parse Error: Invalid argument for "_analyze()" function: argument 2 should be "SolverStartState" but is "SolverStartState".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1680)
+SCRIPT ERROR: Parse Error: Invalid argument for "_analyze()" function: argument 4 should be "SolverSpatialData" but is "SolverSpatialData".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1680)
+SCRIPT ERROR: Parse Error: Invalid argument for "_signature_sections()" function: argument 1 should be "SolverReport" but is "SolverReport".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1682)
+SCRIPT ERROR: Parse Error: Invalid argument for "_merge_route_spatial()" function: argument 1 should be "SolverReport" but is "SolverReport".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1694)
+SCRIPT ERROR: Parse Error: Invalid argument for "_merge_route_spatial()" function: argument 2 should be "SolverReport" but is "SolverReport".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1694)
+SCRIPT ERROR: Parse Error: Invalid argument for "_spatial_report_lines()" function: argument 1 should be "SolverReport" but is "SolverReport".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1698)
+SCRIPT ERROR: Parse Error: Invalid argument for "_cache_store()" function: argument 2 should be "SolverReport" but is "SolverReport".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1700)
+SCRIPT ERROR: Parse Error: Cannot return value of type "SolverReport" because the function return type is "SolverReport".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1701)
+SCRIPT ERROR: Parse Error: Too many arguments for "_analyze()" call. Expected at most 4 but received 5.
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1799)
+SCRIPT ERROR: Parse Error: Invalid argument for "_analyze()" function: argument 2 should be "SolverStartState" but is "SolverStartState".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1799)
+SCRIPT ERROR: Parse Error: Cannot return value of type "SolverReport" because the function return type is "SolverReport".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1799)
+SCRIPT ERROR: Parse Error: Too many arguments for "_analyze()" call. Expected at most 4 but received 5.
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1819)
+SCRIPT ERROR: Parse Error: Invalid argument for "_analyze()" function: argument 2 should be "SolverStartState" but is "SolverStartState".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1819)
+SCRIPT ERROR: Parse Error: Invalid argument for "_solve_paused_return()" function: argument 1 should be "SolverReport" but is "SolverReport".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1821)
+SCRIPT ERROR: Parse Error: Value of type "SolverReport" cannot be assigned to a variable of type "SolverReport".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1825)
+SCRIPT ERROR: Parse Error: Invalid argument for "_merge_facing_run()" function: argument 2 should be "SolverReport" but is "SolverReport".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1833)
+SCRIPT ERROR: Parse Error: Too many arguments for "_analyze()" call. Expected at most 4 but received 5.
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1835)
+SCRIPT ERROR: Parse Error: Invalid argument for "_analyze()" function: argument 2 should be "SolverStartState" but is "SolverStartState".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1835)
+SCRIPT ERROR: Parse Error: Invalid argument for "_solve_paused_return()" function: argument 1 should be "SolverReport" but is "SolverReport".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1837)
+SCRIPT ERROR: Parse Error: Invalid argument for "_merge_facing_run()" function: argument 2 should be "SolverReport" but is "SolverReport".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:1838)
+SCRIPT ERROR: Parse Error: Identifier "pair" not declared in the current scope.
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:3037)
+SCRIPT ERROR: Parse Error: Identifier "kind" not declared in the current scope.
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:3039)
+SCRIPT ERROR: Parse Error: Identifier "kind" not declared in the current scope.
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:3046)
+SCRIPT ERROR: Parse Error: Invalid argument for "_route_layer_tag()" function: argument 1 should be "SolverRoute" but is "SolverRoute".
+   at: GDScript::reload (res://.scratch/solver-p5-01/combo_solver_p4.gd:742)
+SCRIPT ERROR: Compile Error: Failed to compile depended scripts.
+   at: GDScript::reload (res://.scratch/solver-p5-01/probe_p4fp.gd:0)
+ERROR: Failed to load script "res://.scratch/solver-p5-01/probe_p4fp.gd" with error "Compilation failed".
+   at: load (modules/gdscript/gdscript.cpp:3041)
+SCRIPT ERROR: Invalid call. Nonexistent function 'set_result_cache_enabled' in base 'GDScript'.
+   at: _initialize (res://.scratch/solver-p5-01/probe_p4fp.gd:57)
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://.scratch/solver-p5-01/probe_p4fp.gd:57)
+EXIT=127

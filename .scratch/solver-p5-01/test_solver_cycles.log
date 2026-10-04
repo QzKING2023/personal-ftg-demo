@@ -1,0 +1,36 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+PASS  snapshots really sit at different physical frames (3 vs 8)
+PASS  settlement state normalizes absolute frame counters into relative ages (equal at matching phases)
+PASS  settlement state distinguishes player facing
+PASS  settlement state distinguishes jump-slot age (jump flag participates in the key)
+PASS  settlement state distinguishes direction-history ages (candidates derive from them)
+PASS  the valid back edge loop breaks by correction decay instead of being proven (state never recurs: the layers change every hit)
+PASS  the back edge itself is still timing-valid
+PASS  the structural loop is reported as broken in the lap simulation (hitstun decay, no global hit cap)
+PASS  an illegal landing seam never produces a recurrence proof
+PASS  landing back edge is rejected before cycle search; ground recurrence proofs remain independently tested
+PASS  a loop truncated by the frame cap is never reported as a cycle
+PASS  the truncated loop is reported as an observation truncation naming the cap
+PASS  the truncation note does not claim a complete proof and does not misreport a chain break
+PASS  the summary counts the truncated structural loop without claiming a detected cycle
+PASS  a never-recurring loop is never reported as a cycle even though the chain holds
+PASS  the laps-exhausted loop is reported as an incomplete observation, not a proof
+PASS  the incomplete-observation note does not misreport a chain break
+PASS  the self edge itself is timing-valid (the cap limits the loop proof, not the edge)
+PASS  the 5Y -> 5A cancel edge is timing-valid under the pinned geometry
+PASS  the edge reason marks the recovery age as a truncated observation, not a measured recovery
+PASS  a normally observed recovery carries no truncation mark
+PASS  the structural loop path appears in the report notes
+PASS  the loop is reported as broken by the lap simulation
+PASS  no replay block is fabricated without a proven cycle
+PASS  neither back edge is proven: the ground loop decays apart and the landing back edge is excluded
+PASS  cycles are stably sorted by their labels
+PASS  solving the same table twice yields identical reports, cycle section included
+PASS  the scope names the lap and frame caps
+PASS  the scope names the recovery-horizon and air-delay caps (40 frames per the frozen spec)
+PASS  the scope states that reaching a cap is reported as truncation, never a complete proof
+
+ACCEPTANCE_SOLVER_METRICS_JSON={"calls":10,"combo_cache":{"bypasses":0,"enabled":true,"entries":7,"hits":3,"misses":7},"elapsed_ms":1537131.901,"profile_totals":{"delay_leaf_ms":1027678.968,"delay_leaf_runs":1486808,"edge_probe_ms":23690.635,"edge_probe_runs":7710,"gap_enum_ms":40968.437,"gap_enum_runs":12364,"other_ms":943.607,"other_runs":70,"requests":10,"route_walk_ms":443883.72,"route_walk_runs":0,"total_ms":1537165.367},"profiles":[{"delay_leaf_ms":226160.558,"delay_leaf_runs":329612,"edge_probe_ms":3276.738,"edge_probe_runs":1104,"fingerprint":"68999ce0cdb90c571496e2f7c21ca558db6421af2be68da05b09bd8a2e1eccc0","gap_enum_ms":4510.594,"gap_enum_runs":1668,"key":"solve-1","other_ms":116.973,"other_runs":10,"route_walk_ms":97492.258,"route_walk_runs":0,"total_ms":331557.121},{"delay_leaf_ms":103426.0,"delay_leaf_runs":165516,"edge_probe_ms":3108.063,"edge_probe_runs":1098,"fingerprint":"09b7f595e104a660eda4b09bf8c5715abc4ca03adea14df74a29a987e4249e9e","gap_enum_ms":4487.686,"gap_enum_runs":1672,"key":"solve-2","other_ms":117.757,"other_runs":10,"route_walk_ms":44409.749,"route_walk_runs":0,"total_ms":155549.255},{"delay_leaf_ms":107628.993,"delay_leaf_runs":165518,"edge_probe_ms":3458.295,"edge_probe_runs":1102,"fingerprint":"773d4358af0719d633d0005cd10f0e480edbca31d911e6d2529c01695c649376","gap_enum_ms":11803.336,"gap_enum_runs":1896,"key":"solve-3","other_ms":92.791,"other_runs":10,"route_walk_ms":46654.641,"route_walk_runs":0,"total_ms":169638.056},{"delay_leaf_ms":109615.786,"delay_leaf_runs":165518,"edge_probe_ms":3107.68,"edge_probe_runs":1102,"fingerprint":"03d34100bcb47cb8e9f9eb286fb051883823a3d4d4285cbe63d46876df1c6db0","gap_enum_ms":5417.254,"gap_enum_runs":1890,"key":"solve-4","other_ms":95.849,"other_runs":10,"route_walk_ms":47464.855,"route_walk_runs":0,"total_ms":165701.424},{"delay_leaf_ms":106824.686,"delay_leaf_runs":165516,"edge_probe_ms":3245.613,"edge_probe_runs":1102,"fingerprint":"447a5be8846afec261d0fa9c7e2d03ec714eb054d195d308274205c043c953e1","gap_enum_ms":5072.477,"gap_enum_runs":1898,"key":"solve-5","other_ms":119.824,"other_runs":10,"route_walk_ms":46368.836,"route_walk_runs":0,"total_ms":161631.436},{"delay_leaf_ms":121685.629,"delay_leaf_runs":165516,"edge_probe_ms":3719.56,"edge_probe_runs":1098,"fingerprint":"fce77999b2ed2fec36bbb68243705a582ef88e613b2e8dc3a6197157daca6d94","gap_enum_ms":4885.063,"gap_enum_runs":1672,"key":"solve-6","other_ms":126.92,"other_runs":10,"route_walk_ms":52797.882,"route_walk_runs":0,"total_ms":183215.054},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"68999ce0cdb90c571496e2f7c21ca558db6421af2be68da05b09bd8a2e1eccc0","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-7","other_ms":29.58,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":29.58},{"delay_leaf_ms":252337.316,"delay_leaf_runs":329612,"edge_probe_ms":3774.686,"edge_probe_runs":1104,"fingerprint":"6dad140b35aa79eaecd67da7fe3763afbd25122a963a702ab63c7cb7b14c2306","gap_enum_ms":4792.027,"gap_enum_runs":1668,"key":"solve-8","other_ms":153.823,"other_runs":10,"route_walk_ms":108695.499,"route_walk_runs":0,"total_ms":369753.351},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"6dad140b35aa79eaecd67da7fe3763afbd25122a963a702ab63c7cb7b14c2306","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-9","other_ms":46.263,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":46.263},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"fce77999b2ed2fec36bbb68243705a582ef88e613b2e8dc3a6197157daca6d94","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-10","other_ms":43.827,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":43.827}],"reports":[{"calls":1,"fingerprint":"03d34100bcb47cb8e9f9eb286fb051883823a3d4d4285cbe63d46876df1c6db0","keys":["solve-4"]},{"calls":1,"fingerprint":"09b7f595e104a660eda4b09bf8c5715abc4ca03adea14df74a29a987e4249e9e","keys":["solve-2"]},{"calls":1,"fingerprint":"447a5be8846afec261d0fa9c7e2d03ec714eb054d195d308274205c043c953e1","keys":["solve-5"]},{"calls":2,"fingerprint":"68999ce0cdb90c571496e2f7c21ca558db6421af2be68da05b09bd8a2e1eccc0","keys":["solve-1","solve-7"]},{"calls":2,"fingerprint":"6dad140b35aa79eaecd67da7fe3763afbd25122a963a702ab63c7cb7b14c2306","keys":["solve-8","solve-9"]},{"calls":1,"fingerprint":"773d4358af0719d633d0005cd10f0e480edbca31d911e6d2529c01695c649376","keys":["solve-3"]},{"calls":2,"fingerprint":"fce77999b2ed2fec36bbb68243705a582ef88e613b2e8dc3a6197157daca6d94","keys":["solve-6","solve-10"]}],"reuse_enabled":false,"reuse_hit_rate":0.0,"reuse_hits":0,"test":"test_solver_cycles","underlying_calls":10,"unique_reports":7}
+ALL SOLVER CYCLE TESTS PASSED

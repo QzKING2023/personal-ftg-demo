@@ -1,0 +1,16 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2548)
+laps=1 alias=true disabled=false verified=3 reason=第 4 招（j6D）未能在第 40 帧前起手——取消窗口关闭或缓存过期
+laps=1 alias=true disabled=true verified=3 reason=第 4 招（j6D）未能在第 40 帧前起手——取消窗口关闭或缓存过期
+equal=true
+laps=1 alias=false disabled=false verified=3 reason=第 4 招（j6D）未能在第 40 帧前起手——取消窗口关闭或缓存过期
+laps=1 alias=false disabled=true verified=3 reason=第 4 招（j6D）未能在第 40 帧前起手——取消窗口关闭或缓存过期
+equal=true
+laps=2 alias=true disabled=false verified=2 reason=第 3 招（jC）未能在第 30 帧前起手——取消窗口关闭或缓存过期
+laps=2 alias=true disabled=true verified=3 reason=第 4 招（j6D）未能在第 40 帧前起手——取消窗口关闭或缓存过期
+equal=false
+laps=2 alias=false disabled=false verified=3 reason=第 4 招（j6D）未能在第 40 帧前起手——取消窗口关闭或缓存过期
+laps=2 alias=false disabled=true verified=3 reason=第 4 招（j6D）未能在第 40 帧前起手——取消窗口关闭或缓存过期
+equal=true

@@ -1,0 +1,23 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+SCRIPT ERROR: Parse Error: Too many arguments for "_analyze()" call. Expected at most 4 but received 5.
+   at: GDScript::reload (res://scripts/combat/combo_solver.gd:1800)
+SCRIPT ERROR: Parse Error: Too many arguments for "_analyze()" call. Expected at most 4 but received 5.
+   at: GDScript::reload (res://scripts/combat/combo_solver.gd:1820)
+SCRIPT ERROR: Parse Error: Too many arguments for "_analyze()" call. Expected at most 4 but received 5.
+   at: GDScript::reload (res://scripts/combat/combo_solver.gd:1836)
+SCRIPT ERROR: Parse Error: Identifier "pair" not declared in the current scope.
+   at: GDScript::reload (res://scripts/combat/combo_solver.gd:3038)
+SCRIPT ERROR: Parse Error: Identifier "kind" not declared in the current scope.
+   at: GDScript::reload (res://scripts/combat/combo_solver.gd:3040)
+SCRIPT ERROR: Parse Error: Identifier "kind" not declared in the current scope.
+   at: GDScript::reload (res://scripts/combat/combo_solver.gd:3047)
+SCRIPT ERROR: Compile Error: Failed to compile depended scripts.
+   at: GDScript::reload (res://.scratch/solver-p5-01/probe_p4fp.gd:0)
+ERROR: Failed to load script "res://.scratch/solver-p5-01/probe_p4fp.gd" with error "Compilation failed".
+   at: load (modules/gdscript/gdscript.cpp:3041)
+SCRIPT ERROR: Invalid call. Nonexistent function 'set_result_cache_enabled' in base 'GDScript'.
+   at: _initialize (res://.scratch/solver-p5-01/probe_p4fp.gd:56)
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://.scratch/solver-p5-01/probe_p4fp.gd:56)
+EXIT=127

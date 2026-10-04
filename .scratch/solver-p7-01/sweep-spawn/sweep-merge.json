@@ -1,0 +1,188 @@
+{
+  "canonical": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p7-01\\sweep-spawn\\cache.cache",
+  "entries_before": 0,
+  "fragments": [
+    {
+      "file": "worker-0000.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0001.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0002.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0003.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0004.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0005.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0006.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0007.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0008.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0009.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0010.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0011.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0012.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0013.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0014.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0015.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0016.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0017.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0018.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0019.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0020.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0021.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0022.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0023.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0024.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0025.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0026.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0027.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0028.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "worker-0029.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    }
+  ],
+  "entries_after": 30,
+  "merged_new": 30
+}

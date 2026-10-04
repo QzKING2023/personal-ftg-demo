@@ -1,0 +1,146 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+SCRIPT ERROR: Parse Error: Could not parse global class "ComboSolver" from "res://scripts/combat/combo_solver.gd".
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:150)
+SCRIPT ERROR: Parse Error: Could not parse global class "ComboSolver" from "res://scripts/combat/combo_solver.gd".
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:219)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:71)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "solver" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:71)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:72)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:74)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:76)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:117)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "solver" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:117)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:118)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:120)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:122)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:134)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "report" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:134)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:151)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:152)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:153)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "opts" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:153)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:157)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:158)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:190)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "off_report" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:191)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:192)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "off_counts" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:192)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:193)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "on_report" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:194)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:195)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "on_counts" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:195)
+SCRIPT ERROR: Parse Error: Could not resolve external class member "_fingerprint".
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:196)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:222)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:271)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:288)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:289)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:290)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "default_opts" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:290)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:293)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "default_report" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:293)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:294)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:295)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:301)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:302)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:303)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "complete_opts" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:303)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:307)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "complete_report" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:307)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:318)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:347)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:348)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:349)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "plain" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:349)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:355)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "report" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:355)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:366)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:377)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:378)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:379)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "plain_opts" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:379)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:381)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "plain_report" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:381)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:384)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:385)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:386)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "opts" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:386)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:390)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "paused" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:390)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:395)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:402)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "missing" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:402)
+SCRIPT ERROR: Parse Error: Could not resolve class "ComboSolver", because of a parser error.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:409)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "garbage" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:409)
+SCRIPT ERROR: Parse Error: The variable type is being inferred from a Variant value, so it will be typed as Variant. (Warning treated as error.)
+   at: GDScript::reload (res://tests/test_solver_routes_cycles_refactor.gd:392)
+ERROR: Failed to load script "res://tests/test_solver_routes_cycles_refactor.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript.cpp:3041)

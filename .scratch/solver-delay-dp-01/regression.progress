@@ -1,0 +1,21 @@
+=== test_solver_checkpoint_trie (appdata1) start 10:36:46
+=== test_solver_checkpoint_trie done 10:37:03
+=== test_delay_prefix_restore (appdata2) start 10:37:03
+=== test_delay_prefix_restore done 10:37:06
+=== test_solver_index_equiv (appdata3) start 10:37:06
+=== test_solver_index_equiv done 10:37:10
+=== test_solver_edge_cache_equivalence (appdata4) start 10:37:10
+=== test_solver_edge_cache_equivalence done 10:37:18
+=== test_solver_perf_profile (appdata5) start 10:37:18
+=== test_solver_perf_profile done 10:37:20
+=== test_solver_growth (appdata6) start 10:37:20
+=== test_solver_growth done 10:37:23
+=== test_solver_route (appdata7) start 10:37:23
+=== test_solver_route done 11:14:48
+=== test_solver_entry (appdata8) start 11:14:48
+=== test_solver_entry done 11:19:02
+=== test_combo_solver (appdata9) start 11:19:02
+=== test_combo_solver done 11:32:42
+=== test_solver_cycles (appdata10) start 11:32:42
+=== test_solver_cycles done 11:56:39
+ALL DONE

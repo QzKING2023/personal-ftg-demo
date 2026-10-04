@@ -1,0 +1,84 @@
+﻿{
+    "mode": "acceptance-sweep",
+    "concurrency": 4,
+    "cache": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\cacheD.cache",
+    "enumerate": {
+        "wall_seconds": 1.23,
+        "jobs": {
+            "test_hit_profiles": {
+                "exit": 1,
+                "seconds": 1.23,
+                "requests": 0
+            }
+        },
+        "requests_total": 0,
+        "unique_descriptors": 0
+    },
+    "stage_walls": {
+        "import": 5.89,
+        "enumerate": 1.23,
+        "sweep": 0.01,
+        "warm": 1.23,
+        "total": 8.37
+    },
+    "sweep": {
+        "mode": "pool",
+        "wall_seconds": 0.01,
+        "lanes": 4,
+        "tasks": 0,
+        "task_busy_seconds": 0,
+        "lane_busy_ratio": null,
+        "covered": 0,
+        "gaps": [],
+        "status_counts": {},
+        "quarantined": [],
+        "task_rows": [],
+        "pool": {
+            "lanes": 4,
+            "watchdog_ms": 2000,
+            "stall_limit": 900.0,
+            "restarts_max": 2,
+            "budget_seconds": 3600.0,
+            "cache_hit_skips": 0,
+            "wall_seconds": 0.0,
+            "kills": 0,
+            "workers": [
+                {
+                    "slot": 0,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                },
+                {
+                    "slot": 1,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                },
+                {
+                    "slot": 2,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                },
+                {
+                    "slot": 3,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                }
+            ]
+        },
+        "merge": {
+            "canonical": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\cacheD.cache",
+            "entries_before": 30,
+            "fragments": [],
+            "entries_after": 30,
+            "merged_new": 0
+        }
+    },
+    "warm": {
+        "wall_seconds": 1.23,
+        "misses_total": 0
+    }
+}

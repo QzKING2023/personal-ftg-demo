@@ -56,3 +56,12 @@ Solver 状态键必须加入 starter grade、三层修正、bounce_contact、bou
 - 复盘发现超长 solver 的真正成本在单请求内部：循环证明的延迟笛卡尔积（每个 jump 槽最多 41 个值，证明模式无 64 叶预算）以及扩展接续图带来的可读路线叶爆炸；并行/缓存只能分摊或复用，不能解决首次请求。
 - `ComboSolver` 现在对证明搜索使用真实 CombatSession 前缀剪枝；对包含 GROUND_BOUNCE/滑行反应的循环使用严格递减 `time_scale` 状态不变量，直接证明回边不能重现；可读路线最多输出 64 条，并在 notes 明确标记集合未完成。
 - 诊断记录：[solver-performance-09.md](../solver-performance-09.md)。后台 09 runner/worker 已停止，进程证据保存在 `.scratch/solver-scalability/`。
+
+### 2026-10-04 可扩展性 P3–P6 叠加与 P7 终差分、默认切换（全量验收回填）
+
+- 在途叠加（均未提交，feature 分支工作树）：P3 checkpoint 前缀 trie（`SessionCheckpoint`/`TransitionMemo`/`CompiledSchedule`）、P4 CycleInvariant + delay DP、P5 路线/循环/空间层重构（SCC+Johnson 保序环枚举、叶 trie 登记、complete 模式 + 看门狗 + resume_analysis）、P6 可复用 worker 池（`tools/solver_pool_worker.gd`，run_acceptance `--sweep` 默认 pool；spawn 降级差分 oracle）。
+- 恢复等价修复（2026-10-04 两票已 resolved，`.scratch/solver-restore-equivalence/issues/01`）：循环证明每圈独立 `ChainLink` 克隆（别名污染根因）+ memo scope 并入编译调度语义（compiled-scope 契约，`tests/test_solver_restore_schedule_scope.gd`）。
+- P7 终差分（`.scratch/solver-p7-01/`）：默认表 `solve()` 六开关全栈对拍新/旧路径指纹逐字节相等（105c43c7…，冷 89.7s/热 70.9s/旧路径 1031.8s＝11.5×）；HEAD 锚点复现 e071fd 并证明 e071fd↔abfc 的跨期差＝票据 04 恢复别名在 79 边表的既有缺口（字段级 diff 隔离到 6 条空中链循环注记），P7 树为干净语义（ADR 0006 修订七记账）。
+- `_sweep_replay` 补漏 `SolverOptions.complete` 重建（complete 模式请求此前必被重建门拒绝；定向 sweep 复证 4/4）。test_move_table 2 条 analyze_manifest 的可变 manifest 带外重放缺口开票：[solver-p7-01/issues/01](../../solver-p7-01/issues/01-mutable-manifest-replay-gaps.md)。
+- 全量验收（79 边表首个完整跑）：74 唯一请求 complete 71 / failed 3，总墙 483.6s（清扫 370.9s，8 车道饱和 0.758，最长单请求 229.6s）；3745 断言全过；票据 09 在途 FAIL 族与 P0 时代逐字一致（combo 11 条 FAIL 行 diff 为空），无新增失败；阶段门 13 套全绿 + runner 单测 29/29 + spawn↔pool（含两次实机击杀续算）缓存 30/30 字节全等。证据：[acceptance-full](../../solver-p7-01/acceptance-full/)、REPORT.md。
+- 回滚：六差分开关逐层回退 + 清两层缓存（`--sweep-mode spawn` 回退清扫层）；别名修复与 compiled-scope 无行为回退开关（回退＝回到已知 bug）。恢复别名修复后默认表 solve/analyze 指纹自 e071fd/85ec8b 旋转为 105c43c7/bb638738——已裁决为 bugfix 语义修正，旧 Tier B 归档对照时按修订七记账。

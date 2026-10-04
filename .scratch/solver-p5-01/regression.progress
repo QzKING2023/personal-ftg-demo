@@ -1,0 +1,31 @@
+=== test_solver_perf_profile start 13:37:01 ===
+=== test_solver_perf_profile exit 0 13:37:03 pass=24 fail=0 ===
+=== test_solver_index_equiv start 13:37:03 ===
+=== test_solver_index_equiv exit 0 13:37:05 pass=76 fail=0 ===
+=== test_solver_edge_cache_equivalence start 13:37:05 ===
+=== test_solver_edge_cache_equivalence exit 0 13:37:10 pass=47 fail=0 ===
+=== test_solver_checkpoint_trie start 13:37:10 ===
+=== test_solver_checkpoint_trie exit 0 13:37:22 pass=25 fail=0 ===
+=== test_delay_prefix_restore start 13:37:22 ===
+=== test_delay_prefix_restore exit 0 13:37:24 pass=34 fail=0 ===
+=== test_solver_delay_dp start 13:37:25 ===
+=== test_solver_delay_dp exit 0 13:37:56 pass=45 fail=0 ===
+=== test_solver_cycle_invariant start 13:37:56 ===
+=== test_solver_cycle_invariant exit 0 13:37:57 pass=30 fail=0 ===
+=== test_solver_growth start 13:37:57 ===
+=== test_solver_growth exit 0 13:37:59 pass=59 fail=0 ===
+=== test_solver_cache start 13:37:59 ===
+=== test_solver_cache exit 0 13:38:00 pass=63 fail=0 ===
+=== test_solver_spatial start 13:38:00 ===
+=== test_solver_spatial exit 1 13:48:43 pass=558 fail=1 ===
+=== test_solver_route start 13:48:43 ===
+=== test_solver_route exit 1 14:10:19 pass=541 fail=1 ===
+=== test_solver_entry start 14:10:19 ===
+=== test_solver_entry exit 1 14:14:29 pass=46 fail=4 ===
+=== test_solver_routes_cycles_refactor start 14:14:29 ===
+=== test_solver_routes_cycles_refactor exit 0 14:14:32 pass=46 fail=0 ===
+=== test_solver_cycles start 14:14:32 ===
+=== test_solver_cycles exit 0 14:40:10 pass=30 fail=0 ===
+=== test_combo_solver start 14:40:11 ===
+=== test_combo_solver exit 1 14:54:26 pass=226 fail=11 ===
+ALL DONE 14:54:26

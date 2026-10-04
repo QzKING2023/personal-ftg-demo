@@ -1,0 +1,59 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PASS  tap D starts the plain 5D
+PASS  tap 5D hits on the normal first active frame (start + 7, got 8)
+PASS  tap 5D deals the plain 5D damage
+PASS  tap D never commits the charged version
+PASS  holding D commits the charged version at the earliest normal frame with age = threshold (9, 8)
+PASS  the charged commit switches the running move id
+PASS  5[D] hits after the commit frame with the charged damage (10, 20.0)
+PASS  the charged resource declares a longer recovery
+PASS  releasing during the extended startup commits the plain version (9, false)
+PASS  the delayed plain commit still deals plain 5D damage (10, 18.0)
+PASS  the D request only starts on a fresh press (21)
+PASS  long-held D without a fresh press never starts the move
+PASS  charge age counts from the real move start, not the pre-start hold (29)
+PASS  the uncommitted charge window never opens cancel targets
+PASS  the swept active frame connects a mid-step target the start pose misses (8)
+PASS  startup frames do not move the player (0.0)
+PASS  the whiffed 5D completes its full declared displacement (-72.0)
+PASS  the whiffed 5[D] completes 120 px (-120.0)
+PASS  insufficient trajectory keeps the player on the origin side at the body boundary (-49.9)
+PASS  no sideswap without a legal far-side endpoint
+PASS  the standing guard blocks the 5D
+PASS  a blocked D is clamped to the origin-side body boundary (-48.0)
+PASS  a blocked D never swaps sides
+PASS  the corner 5D still connects its hit
+PASS  the wall truncation is observable
+PASS  the player never leaves the stage
+PASS  a wall-clamped D keeps the original side
+PASS  the special-entry D commits the charged version (30)
+PASS  the charged cross records SWITCHED_SIDES (42)
+PASS  the player physically passed the dummy
+PASS  the facing follows the real lateral relation after the swap
+PASS  the hit used the locked attack direction
+PASS  the running 5[D] hitbox keeps the locked direction after the swap
+PASS  mirror run also swaps sides (42)
+PASS  the mirror swap leaves the player left of the dummy facing right
+PASS  the cross happened (frame 42)
+PASS  a fresh 236 after the swap folds with the new facing
+PASS  the charged 5[D] opens the source-limited 5B link on full recovery
+PASS  with enough remaining stun the linked 5B lands as the third hit (3)
+PASS  a single-axis motion declaration is rejected
+PASS  a throw cannot declare planned motion
+PASS  a throw cannot declare in-action charge
+PASS  a zero charge threshold is rejected
+PASS  a charge target outside the table is rejected
+PASS  a charge target without charge_only is rejected
+PASS  an unreferenced charge_only move is rejected
+PASS  a charge_only move in a continuation target list is rejected
+PASS  a charged move cannot declare its own charge
+PASS  a valid charge pair passes
+PASS  solver accepts the table containing the charged move
+PASS  solver verifies the charged special-entry edge 236C → 5[D]
+PASS  solver verifies a charged chain-cancel edge into 5[D]
+PASS  solver honestly reports the charged link edge as timing-expired
+FAIL  solver reports timing-valid routes through 5[D]
+PASS  the charged move never enumerates as a single-key route start
+
+1 TEST(S) FAILED

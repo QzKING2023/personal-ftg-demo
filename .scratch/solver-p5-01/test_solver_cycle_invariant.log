@@ -1,0 +1,33 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PASS  bounce: default factors apply the monotonic invariant (j214D)
+PASS  bounce: APPLY reason byte-identical to the ticket-09 exclusion text
+PASS  bounce: no failed precondition on APPLY
+PASS  slide: injected LOW_FLOAT_TO_SLIDE clone applies the invariant
+PASS  slide: APPLY reason byte-identical
+PASS  scope: ordinary cycle falls back without a failed precondition (exact replay preserved)
+PASS  factor-one: NORMAL_HIT_TIME_SCALE = 1.0 falls back to exact replay (snapshots can repeat verbatim)
+PASS  factor-one: SLIDE_HIT_TIME_SCALE = 1.0 falls back to exact replay (snapshots can repeat verbatim)
+PASS  factor-one: BOUNCE_HIT_TIME_SCALE = 1.0 falls back to exact replay (snapshots can repeat verbatim)
+PASS  factor-one: LANDING_LINK_HIT_TIME_SCALE = 1.0 falls back to exact replay (snapshots can repeat verbatim)
+PASS  factor-one: STARTER_TIME_SCALE[3] = 1.0 falls back to exact replay (snapshots can repeat verbatim)
+PASS  illegal-factor: NORMAL_HIT_TIME_SCALE = 0.0 falls back (no monotonic argument)
+PASS  illegal-factor: NORMAL_HIT_TIME_SCALE = -0.5 falls back (no monotonic argument)
+PASS  illegal-factor: NORMAL_HIT_TIME_SCALE = inf falls back (no monotonic argument)
+PASS  illegal-factor: NORMAL_HIT_TIME_SCALE = nan falls back (no monotonic argument)
+PASS  underflow: moderate factor (0.5) stays in the normal-number domain (APPLY)
+PASS  underflow: 1e-200 factor underflows within the horizon (strict decrease no longer provable)
+PASS  multihit: hits_per_lap counts segments (1 vs 2 after adding one strike)
+PASS  multihit: multi-hit lap hits the underflow precondition
+PASS  multihit: single-lap exponent stays afloat at 0.5
+PASS  key-drift: settlement carrying float time_scale passes
+PASS  key-drift: settlement without time_scale is rejected
+PASS  key-drift: non-float time_scale is rejected
+PASS  key-drift: evaluate with drifted settlement falls back (exclusion loses its basis)
+PASS  key-drift: live settlement probe carries time_scale (no drift)
+PASS  lap-hit: cycle member missing from the table falls back (no guaranteed HIT per lap)
+PASS  end-to-end: default factors exclude the bounce cycle with the proof-level reason
+PASS  end-to-end: APPLY performs no lap snapshots (search skipped, count=0)
+PASS  end-to-end: factor==1 falls back to exact replay (not the monotonic shortcut)
+PASS  end-to-end: fallback search really snapshots lap states (count=1)
+TOTAL failures=0

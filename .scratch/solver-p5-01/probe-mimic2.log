@@ -1,0 +1,26 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+enum identical: true cycles=20
+t4 size: 5
+pre analyze routes: 3
+branch size: 3
+same  safe
+same  summary
+same  scope
+same  incomplete_cycle_count
+same  notes
+same  table_lines
+DIFF  start_lines
+  A: false
+  B: false
+same  first_candidates
+same  binding_lines
+same  spatial_lines
+same  guide_lines
+same  verified_facings
+same  section:edges
+same  section:gaps
+same  section:routes
+same  section:cycles
+fingerprint equal: true
+EXIT=0

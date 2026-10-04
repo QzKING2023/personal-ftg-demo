@@ -1,0 +1,15 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2548)
+disabled=true fingerprint=60e6b7e99187d2be524af4e65b92b03bf7f2b32666f21f2bd25895f2f2288026
+session_steps=330247
+prefix_restores=10613
+spatial_rechecks=21
+delay_dfs_leaves=7903
+disabled=false fingerprint=60e6b7e99187d2be524af4e65b92b03bf7f2b32666f21f2bd25895f2f2288026
+session_steps=330247
+prefix_restores=10613
+spatial_rechecks=21
+delay_dfs_leaves=7903
+PASS independent measurement

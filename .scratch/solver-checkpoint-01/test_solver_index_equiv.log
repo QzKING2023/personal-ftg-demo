@@ -1,0 +1,82 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+PASS  KIND_ORDER mirrors the _analyze kinds_and_targets enumeration order
+PASS  GAP_FIELD_BY_KIND mirrors _GAP_CONFIG_FIELDS field names
+PASS  GAP_WINDOW_PADS mirrors the _gap_probe_table injection defaults
+PASS  E=1: canonical table text is non-empty (residue check is meaningful)
+PASS  E=1: injected table byte-identical before/after the index path (no probe residue)
+PASS  E=1: full semantic fingerprint identical across old scan path and index path
+PASS  E=1: edge sequence identical in report order (1 edges)
+PASS  E=1: gap sequence identical in report order (3 gaps)
+PASS  E=1: shape count context_attempts frozen across paths (2 == 2)
+PASS  E=1: shape count edge_built frozen across paths (2 == 2)
+PASS  E=1: shape count delay_dfs_nodes frozen across paths (4 == 4)
+PASS  E=1: shape count delay_dfs_leaves frozen across paths (2 == 2)
+PASS  E=1: shape count prefix_restores frozen across paths (4 == 4)
+PASS  E=1: shape count prefix_frozen_returns frozen across paths (0 == 0)
+PASS  E=1/old: structure_candidates == edge_built + gap_built (18 == 2 + 16)
+PASS  E=1/new: structure_candidates == edge_built + gap_built (16 == 2 + 14)
+PASS  E=1: index path probes no more gap candidates (14 <= 16, LANDING_CANCEL structurally dead dropped)
+PASS  E=2: canonical table text is non-empty (residue check is meaningful)
+PASS  E=2: injected table byte-identical before/after the index path (no probe residue)
+PASS  E=2: full semantic fingerprint identical across old scan path and index path
+PASS  E=2: edge sequence identical in report order (2 edges)
+PASS  E=2: gap sequence identical in report order (12 gaps)
+PASS  E=2: shape count context_attempts frozen across paths (6 == 6)
+PASS  E=2: shape count edge_built frozen across paths (4 == 4)
+PASS  E=2: shape count delay_dfs_nodes frozen across paths (6 == 6)
+PASS  E=2: shape count delay_dfs_leaves frozen across paths (2 == 2)
+PASS  E=2: shape count prefix_restores frozen across paths (6 == 6)
+PASS  E=2: shape count prefix_frozen_returns frozen across paths (0 == 0)
+PASS  E=2/old: structure_candidates == edge_built + gap_built (40 == 4 + 36)
+PASS  E=2/new: structure_candidates == edge_built + gap_built (36 == 4 + 32)
+PASS  E=2: index path probes no more gap candidates (32 <= 36, LANDING_CANCEL structurally dead dropped)
+PASS  E=4: canonical table text is non-empty (residue check is meaningful)
+PASS  E=4: injected table byte-identical before/after the index path (no probe residue)
+PASS  E=4: full semantic fingerprint identical across old scan path and index path
+PASS  E=4: edge sequence identical in report order (4 edges)
+PASS  E=4: gap sequence identical in report order (32 gaps)
+PASS  E=4: shape count context_attempts frozen across paths (6 == 6)
+PASS  E=4: shape count edge_built frozen across paths (8 == 8)
+PASS  E=4: shape count delay_dfs_nodes frozen across paths (18 == 18)
+PASS  E=4: shape count delay_dfs_leaves frozen across paths (6 == 6)
+PASS  E=4: shape count prefix_restores frozen across paths (18 == 18)
+PASS  E=4: shape count prefix_frozen_returns frozen across paths (0 == 0)
+PASS  E=4/old: structure_candidates == edge_built + gap_built (120 == 8 + 112)
+PASS  E=4/new: structure_candidates == edge_built + gap_built (108 == 8 + 100)
+PASS  E=4: index path probes no more gap candidates (100 <= 112, LANDING_CANCEL structurally dead dropped)
+PASS  E=8: canonical table text is non-empty (residue check is meaningful)
+PASS  E=8: injected table byte-identical before/after the index path (no probe residue)
+PASS  E=8: full semantic fingerprint identical across old scan path and index path
+PASS  E=8: edge sequence identical in report order (8 edges)
+PASS  E=8: gap sequence identical in report order (144 gaps)
+PASS  E=8: shape count context_attempts frozen across paths (6 == 6)
+PASS  E=8: shape count edge_built frozen across paths (16 == 16)
+PASS  E=8: shape count delay_dfs_nodes frozen across paths (260 == 260)
+PASS  E=8: shape count delay_dfs_leaves frozen across paths (220 == 220)
+PASS  E=8: shape count prefix_restores frozen across paths (30 == 30)
+PASS  E=8: shape count prefix_frozen_returns frozen across paths (230 == 230)
+PASS  E=8/old: structure_candidates == edge_built + gap_built (472 == 16 + 456)
+PASS  E=8/new: structure_candidates == edge_built + gap_built (444 == 16 + 428)
+PASS  E=8: index path probes no more gap candidates (428 <= 456, LANDING_CANCEL structurally dead dropped)
+PASS  cycle: canonical table text is non-empty (residue check is meaningful)
+PASS  cycle: injected table byte-identical before/after the index path (no probe residue)
+PASS  cycle: full semantic fingerprint identical across old scan path and index path
+PASS  cycle: edge sequence identical in report order (2 edges)
+PASS  cycle: gap sequence identical in report order (14 gaps)
+PASS  cycle: shape count context_attempts frozen across paths (0 == 0)
+PASS  cycle: shape count edge_built frozen across paths (4 == 4)
+PASS  cycle: shape count delay_dfs_nodes frozen across paths (0 == 0)
+PASS  cycle: shape count delay_dfs_leaves frozen across paths (0 == 0)
+PASS  cycle: shape count prefix_restores frozen across paths (0 == 0)
+PASS  cycle: shape count prefix_frozen_returns frozen across paths (0 == 0)
+PASS  cycle/old: structure_candidates == edge_built + gap_built (32 == 4 + 28)
+PASS  cycle/new: structure_candidates == edge_built + gap_built (32 == 4 + 28)
+PASS  cycle: index path probes no more gap candidates (28 <= 28, LANDING_CANCEL structurally dead dropped)
+PASS  analyze-E2: injected table byte-identical before/after staged probing (no residue)
+PASS  analyze-E2: full semantic fingerprint identical across paths (enumeration-order sensitive entry)
+PASS  analyze-E2: edge/gap sequences identical in report order
+
+SOLVER_INDEX_EQUIV_JSON={"E=1":{"fingerprint_equal":true,"new":{"context_attempts":2,"delay_dfs_leaves":2,"delay_dfs_nodes":4,"edge_built":2,"gap_built":14,"prefix_restores":4,"session_steps":52,"structure_candidates":16},"old":{"context_attempts":2,"delay_dfs_leaves":2,"delay_dfs_nodes":4,"edge_built":2,"gap_built":16,"prefix_restores":4,"session_steps":1230,"structure_candidates":18}},"E=2":{"fingerprint_equal":true,"new":{"context_attempts":6,"delay_dfs_leaves":2,"delay_dfs_nodes":6,"edge_built":4,"gap_built":32,"prefix_restores":6,"session_steps":76,"structure_candidates":36},"old":{"context_attempts":6,"delay_dfs_leaves":2,"delay_dfs_nodes":6,"edge_built":4,"gap_built":36,"prefix_restores":6,"session_steps":2932,"structure_candidates":40}},"E=4":{"fingerprint_equal":true,"new":{"context_attempts":6,"delay_dfs_leaves":6,"delay_dfs_nodes":18,"edge_built":8,"gap_built":100,"prefix_restores":18,"session_steps":306,"structure_candidates":108},"old":{"context_attempts":6,"delay_dfs_leaves":6,"delay_dfs_nodes":18,"edge_built":8,"gap_built":112,"prefix_restores":18,"session_steps":6510,"structure_candidates":120}},"E=8":{"fingerprint_equal":true,"new":{"context_attempts":6,"delay_dfs_leaves":220,"delay_dfs_nodes":260,"edge_built":16,"gap_built":428,"prefix_restores":30,"session_steps":958,"structure_candidates":444},"old":{"context_attempts":6,"delay_dfs_leaves":220,"delay_dfs_nodes":260,"edge_built":16,"gap_built":456,"prefix_restores":30,"session_steps":21826,"structure_candidates":472}},"cycle":{"fingerprint_equal":true,"new":{"context_attempts":0,"delay_dfs_leaves":0,"delay_dfs_nodes":0,"edge_built":4,"gap_built":28,"prefix_restores":0,"session_steps":504,"structure_candidates":32},"old":{"context_attempts":0,"delay_dfs_leaves":0,"delay_dfs_nodes":0,"edge_built":4,"gap_built":28,"prefix_restores":0,"session_steps":2044,"structure_candidates":32}}}
+ALL SOLVER INDEX EQUIV TESTS PASSED

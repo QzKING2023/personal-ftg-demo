@@ -1,0 +1,20 @@
+[
+  {
+    "digest": "dQ",
+    "status": "failed",
+    "exit": 1,
+    "seconds": 0.81,
+    "replay_ok": false,
+    "attempts": 1,
+    "restarts": 0,
+    "killed": true,
+    "kill_reasons": [
+      "slow-quarantine"
+    ],
+    "worker_exits": [],
+    "cache_hit": false,
+    "resumed": false,
+    "pauses": 26,
+    "error": "重启额度耗尽：slow-quarantine（曾观察到进展）"
+  }
+]

@@ -1,0 +1,17 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+branch table size: 3
+=== routes off (4) ===
+  L1a | valid=true hits=[6] dmg=5.8 note= spatial=2 fail=["80 px：第 1 招（L1a）已起手但命中框未与木桩身体矩形相交（碰撞条件不成立）"]
+  L1b | valid=true hits=[6] dmg=5.8 note= spatial=2 fail=["80 px：第 1 招（L1b）已起手但命中框未与木桩身体矩形相交（碰撞条件不成立）"]
+  S → L1a | valid=true hits=[6, 11] dmg=11.0 note= spatial=2 fail=["80 px：第 1 招（S）已起手但命中框未与木桩身体矩形相交（碰撞条件不成立）"]
+  S → L1b | valid=true hits=[6, 11] dmg=11.0 note= spatial=2 fail=["80 px：第 1 招（S）已起手但命中框未与木桩身体矩形相交（碰撞条件不成立）"]
+=== routes on (4) ===
+  L1a | valid=true hits=[6] dmg=5.8 note= spatial=2 fail=["80 px：第 1 招（L1a）已起手但命中框未与木桩身体矩形相交（碰撞条件不成立）"]
+  L1b | valid=true hits=[6] dmg=5.8 note= spatial=2 fail=["80 px：第 1 招（L1b）已起手但命中框未与木桩身体矩形相交（碰撞条件不成立）"]
+  S → L1a | valid=true hits=[6, 11] dmg=11.0 note= spatial=2 fail=["80 px：第 1 招（S）已起手但命中框未与木桩身体矩形相交（碰撞条件不成立）"]
+  S → L1b | valid=true hits=[6, 11] dmg=11.0 note= spatial=2 fail=["80 px：第 1 招（S）已起手但命中框未与木桩身体矩形相交（碰撞条件不成立）"]
+=== notes off ===
+=== notes on ===
+fingerprint equal: true off=1f40d9bf01c9675c on=1f40d9bf01c9675c
+EXIT=0

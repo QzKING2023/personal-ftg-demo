@@ -50,6 +50,8 @@ Thumbs.db
 .scratch/**/sweep/
 .scratch/**/engine.log
 .scratch/**/*.stdout
+.scratch/**/*.cache
+.scratch/**/*.cache.durations.json
 
 # acceptance-speedup 闭票(04-08)后的本地复跑原始 dump（策展件已入库；
 # 目录不整档忽略，按具体子路径挡原始产物，避免 tracked-but-ignored 扩大）

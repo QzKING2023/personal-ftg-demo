@@ -1,0 +1,36 @@
+{"test":"import","exit":0,"script_errors":0,"pass_lines":0,"assertions":0,"seconds":7.23,"solver_calls":0,"solver_underlying_calls":0,"solver_reuse_hits":0,"solver_reuse_hit_rate":0.0,"solver_elapsed_ms":0.0,"combo_cache":{},"solver_profile":{},"report_fingerprints":[],"solver_report_keys":[],"appdata":"D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p7-01\\sweep-pool-kill3\\runtime-import"}
+sweep-task: 07aec898ef1b status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.8s
+sweep-task: 0b6cb8139190 status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.8s
+sweep-task: 107585e22791 status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.8s
+sweep-task: 131c8d464fa1 status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.8s
+sweep-task: 0436109b8c6e status=complete exit=0 replay_ok=True pauses=0 resumed=False 1.1s
+sweep-task: 23467a41718c status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: 2579296d3797 status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: 31b0595b918a status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: 33f5392f8982 status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: 38bbcb30eb18 status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: 4260cee6a914 status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: 44aae3a51eca status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: 62aff05946eb status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: 62dd3d64c2b4 status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: 6c5f8dca6932 status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: 7ba0523b0672 status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: 93737d6069bb status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: a39954ee878f status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: c59939e04042 status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: b277f74185f3 status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.4s
+sweep-task: c18999ab8789 status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.4s
+sweep-task: c80808336e62 status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: d9d3760dee0d status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: eacf58a12541 status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: f85bef3c4beb status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: ddcdbd0a8c61 status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.4s
+sweep-task: 96777a1c99d0 status=complete exit=0 replay_ok=True pauses=0 resumed=False 1.1s
+sweep-task: f9a01f42c334 status=complete exit=0 replay_ok=True pauses=0 resumed=False 0.2s
+sweep-task: 134fcb97a336 status=complete exit=0 replay_ok=True pauses=1 resumed=False 27.5s
+sweep-task: ae21e60649b4 status=complete exit=0 replay_ok=True pauses=1 resumed=False 27.0s
+{"test":"test_hit_profiles","exit":1,"script_errors":2,"pass_lines":100,"assertions":100,"seconds":1.37,"solver_calls":2,"solver_underlying_calls":2,"solver_reuse_hits":0,"solver_reuse_hit_rate":0.0,"solver_elapsed_ms":133.034,"combo_cache":{"bypasses":0,"enabled":true,"entries":30,"hits":2,"misses":0},"solver_profile":{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"gap_enum_ms":0.0,"gap_enum_runs":0,"other_ms":140.405,"other_runs":0,"requests":2,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":140.405},"report_fingerprints":["0c0b26675e18e5dae403dcb26a1f8af24aedcf7c4368dbf4adbc33b896ade3bd","5d5a1fe6dd6adea38fd607a4997f72846a5538ebc933f0a435d0ccbdb5779ef3"],"solver_report_keys":[["solve-2"],["solve-1"]],"appdata":"D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p7-01\\sweep-pool-kill3\\runtime-test_hit_profiles"}
+{"test":"test_solver_cache","exit":0,"script_errors":0,"pass_lines":63,"assertions":63,"seconds":1.37,"solver_calls":0,"solver_underlying_calls":0,"solver_reuse_hits":0,"solver_reuse_hit_rate":0.0,"solver_elapsed_ms":0.0,"combo_cache":{},"solver_profile":{},"report_fingerprints":[],"solver_report_keys":[],"appdata":"D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p7-01\\sweep-pool-kill3\\runtime-test_solver_cache"}
+{"test":"test_solver_growth","exit":0,"script_errors":0,"pass_lines":59,"assertions":59,"seconds":2.75,"solver_calls":0,"solver_underlying_calls":0,"solver_reuse_hits":0,"solver_reuse_hit_rate":0.0,"solver_elapsed_ms":0.0,"combo_cache":{},"solver_profile":{},"report_fingerprints":[],"solver_report_keys":[],"appdata":"D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p7-01\\sweep-pool-kill3\\runtime-test_solver_growth"}
+{"test":"test_solver_index_equiv","exit":0,"script_errors":0,"pass_lines":76,"assertions":76,"seconds":3.03,"solver_calls":0,"solver_underlying_calls":0,"solver_reuse_hits":0,"solver_reuse_hit_rate":0.0,"solver_elapsed_ms":0.0,"combo_cache":{},"solver_profile":{},"report_fingerprints":[],"solver_report_keys":[],"appdata":"D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p7-01\\sweep-pool-kill3\\runtime-test_solver_index_equiv"}
+cache-merge: 30 entries (+0 new from 3 fragment(s))

@@ -1,0 +1,200 @@
+﻿{
+    "mode": "acceptance-sweep",
+    "concurrency": 8,
+    "cache": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p7-01\\sweep-routes-only\\cache.cache",
+    "enumerate": {
+        "wall_seconds": 1.34,
+        "jobs": {
+            "test_solver_routes_cycles_refactor": {
+                "exit": 1,
+                "seconds": 1.34,
+                "requests": 6
+            }
+        },
+        "requests_total": 6,
+        "unique_descriptors": 4
+    },
+    "stage_walls": {
+        "import": 6.29,
+        "enumerate": 1.34,
+        "sweep": 2.83,
+        "warm": 4.02,
+        "total": 14.48
+    },
+    "sweep": {
+        "mode": "pool",
+        "wall_seconds": 2.83,
+        "lanes": 8,
+        "tasks": 4,
+        "task_busy_seconds": 5.28,
+        "lane_busy_ratio": 0.2336,
+        "covered": 4,
+        "gaps": [],
+        "status_counts": {
+            "complete": 4
+        },
+        "quarantined": [],
+        "task_rows": [
+            {
+                "digest": "3f3a741cde72b653ec61067ce05fd901a6bb132934bbae7b2ac9347205544031",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.83,
+                "replay_ok": true,
+                "attempts": 1,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": false,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "85b314311c04bb612b325fb008657d0cd4bb7b1bcd5ce99872425b5b8fbb9e6f",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 1.63,
+                "replay_ok": true,
+                "attempts": 1,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": false,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "f687efe0b9b399517b4bdfbdbe3b77290c0631d758e9f0053196728deaeb79d4",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 1.82,
+                "replay_ok": true,
+                "attempts": 1,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": false,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "fea0c5cc456ddda92c60a7dcf54fc4ad794840ffd0d2494e19d904b448b23c49",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 1.0,
+                "replay_ok": true,
+                "attempts": 1,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": false,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            }
+        ],
+        "pool": {
+            "lanes": 8,
+            "watchdog_ms": 30000,
+            "stall_limit": 900.0,
+            "restarts_max": 2,
+            "budget_seconds": 3600.0,
+            "cache_hit_skips": 0,
+            "wall_seconds": 2.82,
+            "kills": 0,
+            "workers": [
+                {
+                    "slot": 0,
+                    "generations": 1,
+                    "served": 1,
+                    "kills": 0
+                },
+                {
+                    "slot": 1,
+                    "generations": 1,
+                    "served": 1,
+                    "kills": 0
+                },
+                {
+                    "slot": 2,
+                    "generations": 1,
+                    "served": 1,
+                    "kills": 0
+                },
+                {
+                    "slot": 3,
+                    "generations": 1,
+                    "served": 1,
+                    "kills": 0
+                },
+                {
+                    "slot": 4,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                },
+                {
+                    "slot": 5,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                },
+                {
+                    "slot": 6,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                },
+                {
+                    "slot": 7,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                }
+            ]
+        },
+        "merge": {
+            "canonical": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p7-01\\sweep-routes-only\\cache.cache",
+            "entries_before": 0,
+            "fragments": [
+                {
+                    "file": "pool-worker-00-g0.fragment",
+                    "entries": 1,
+                    "merged_new": 1,
+                    "bad_lines": 0
+                },
+                {
+                    "file": "pool-worker-01-g0.fragment",
+                    "entries": 1,
+                    "merged_new": 1,
+                    "bad_lines": 0
+                },
+                {
+                    "file": "pool-worker-02-g0.fragment",
+                    "entries": 1,
+                    "merged_new": 1,
+                    "bad_lines": 0
+                },
+                {
+                    "file": "pool-worker-03-g0.fragment",
+                    "entries": 1,
+                    "merged_new": 1,
+                    "bad_lines": 0
+                }
+            ],
+            "entries_after": 4,
+            "merged_new": 4
+        }
+    },
+    "warm": {
+        "wall_seconds": 4.02,
+        "misses_total": 1
+    }
+}

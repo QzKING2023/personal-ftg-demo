@@ -1,0 +1,20 @@
+{
+  "canonical": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\cacheE.cache",
+  "entries_before": 0,
+  "fragments": [
+    {
+      "file": "pool-worker-00-g0.fragment",
+      "entries": 17,
+      "merged_new": 17,
+      "bad_lines": 0
+    },
+    {
+      "file": "pool-worker-01-g0.fragment",
+      "entries": 13,
+      "merged_new": 13,
+      "bad_lines": 0
+    }
+  ],
+  "entries_after": 30,
+  "merged_new": 30
+}

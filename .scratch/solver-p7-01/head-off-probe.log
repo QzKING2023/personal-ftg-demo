@@ -1,0 +1,5 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+PHASE head-off fp=abfcfcceff918331cdb61d3c6b6cd1fe4743b5eb6f4399afe940173ae8742c27 ms=672803
+  counts {"cache_bypasses":0,"cache_hits":0,"cache_misses":0,"context_attempts":48,"cycle_state_snapshots":181868,"delay_dfs_leaves":183002,"delay_dfs_nodes":205836,"edge_built":158,"gap_built":1822,"prefix_frozen_returns":0,"prefix_restores":0,"session_steps":13696450,"spatial_rechecks":0,"structure_candidates":1980}

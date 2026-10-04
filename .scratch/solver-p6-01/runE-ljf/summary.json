@@ -1,0 +1,130 @@
+﻿{
+    "mode": "acceptance-sweep",
+    "total_seconds": 13.5,
+    "total_assertions": 298,
+    "total_solver_calls": 2,
+    "total_solver_underlying_calls": 2,
+    "total_solver_reuse_hits": 0,
+    "solver_reuse_hit_rate": 0.0,
+    "tests": [
+        {
+            "test": "import",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 0,
+            "assertions": 0,
+            "seconds": 5.89,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\runE-ljf\\runtime-import"
+        },
+        {
+            "test": "test_hit_profiles",
+            "exit": 1,
+            "script_errors": 2,
+            "pass_lines": 100,
+            "assertions": 100,
+            "seconds": 1.24,
+            "solver_calls": 2,
+            "solver_underlying_calls": 2,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 124.382,
+            "combo_cache": {
+                "bypasses": 0,
+                "enabled": true,
+                "entries": 30,
+                "hits": 2,
+                "misses": 0
+            },
+            "solver_profile": {
+                "delay_leaf_ms": 0.0,
+                "delay_leaf_runs": 0,
+                "edge_probe_ms": 0.0,
+                "edge_probe_runs": 0,
+                "gap_enum_ms": 0.0,
+                "gap_enum_runs": 0,
+                "other_ms": 130.184,
+                "other_runs": 0,
+                "requests": 2,
+                "route_walk_ms": 0.0,
+                "route_walk_runs": 0,
+                "total_ms": 130.184
+            },
+            "report_fingerprints": [
+                "3951e705aecdef07fb7c68580e15b6c6657b490be1ab202ee7bfad5a6451e09e",
+                "773655f6727b02cd03c1b8a1111f249064699bdb76d4404bff73c6f86ae2d69a"
+            ],
+            "solver_report_keys": [
+                [
+                    "solve-1"
+                ],
+                [
+                    "solve-2"
+                ]
+            ],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\runE-ljf\\runtime-test_hit_profiles"
+        },
+        {
+            "test": "test_solver_cache",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 63,
+            "assertions": 63,
+            "seconds": 1.23,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\runE-ljf\\runtime-test_solver_cache"
+        },
+        {
+            "test": "test_solver_growth",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 59,
+            "assertions": 59,
+            "seconds": 2.43,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\runE-ljf\\runtime-test_solver_growth"
+        },
+        {
+            "test": "test_solver_index_equiv",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 76,
+            "assertions": 76,
+            "seconds": 2.71,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\solver-p6-01\\runE-ljf\\runtime-test_solver_index_equiv"
+        }
+    ]
+}

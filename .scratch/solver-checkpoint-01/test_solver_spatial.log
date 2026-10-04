@@ -1,0 +1,565 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+PASS  the default table reports routes to layer
+PASS  a truncated default route carries its break note
+PASS  without spatial data every route stays spatially unverified
+PASS  no spatial failure is invented without spatial data
+PASS  a truncated default route carries its break note
+PASS  without spatial data every route stays spatially unverified
+PASS  no spatial failure is invented without spatial data
+PASS  a truncated default route carries its break note
+PASS  without spatial data every route stays spatially unverified
+PASS  no spatial failure is invented without spatial data
+PASS  a truncated default route carries its break note
+PASS  without spatial data every route stays spatially unverified
+PASS  no spatial failure is invented without spatial data
+PASS  a truncated default route carries its break note
+PASS  without spatial data every route stays spatially unverified
+PASS  no spatial failure is invented without spatial data
+PASS  a truncated default route carries its break note
+PASS  without spatial data every route stays spatially unverified
+PASS  no spatial failure is invented without spatial data
+PASS  a truncated default route carries its break note
+PASS  without spatial data every route stays spatially unverified
+PASS  no spatial failure is invented without spatial data
+PASS  without spatial data every route stays spatially unverified
+PASS  no spatial failure is invented without spatial data
+PASS  a truncated default route carries its break note
+PASS  without spatial data every route stays spatially unverified
+PASS  no spatial failure is invented without spatial data
+PASS  a truncated default route carries its break note
+PASS  without spatial data every route stays spatially unverified
+PASS  no spatial failure is invented without spatial data
+PASS  without spatial data every route stays spatially unverified
+PASS  no spatial failure is invented without spatial data
+PASS  without spatial data every route stays spatially unverified
+PASS  no spatial failure is invented without spatial data
+PASS  without spatial data every route stays spatially unverified
+PASS  no spatial failure is invented without spatial data
+PASS  without spatial data every route stays spatially unverified
+PASS  no spatial failure is invented without spatial data
+PASS  without spatial data every route stays spatially unverified
+PASS  no spatial failure is invented without spatial data
+PASS  without spatial data every route stays spatially unverified
+PASS  no spatial failure is invented without spatial data
+PASS  the A-starter decay produces at least one honestly truncated default route
+PASS  every route has a readable line in the report
+PASS  a truncated route line never claims spatial-valid
+PASS  a truncated route line never claims spatial-valid
+PASS  a truncated route line never claims spatial-valid
+PASS  a truncated route line never claims spatial-valid
+PASS  a truncated route line never claims spatial-valid
+PASS  a truncated route line never claims spatial-valid
+PASS  a truncated route line never claims spatial-valid
+PASS  each verified route line is marked timing-valid with the spatial layer unverified
+PASS  no route line claims spatial-valid without spatial data
+PASS  a truncated route line never claims spatial-valid
+PASS  a truncated route line never claims spatial-valid
+PASS  each verified route line is marked timing-valid with the spatial layer unverified
+PASS  no route line claims spatial-valid without spatial data
+PASS  each verified route line is marked timing-valid with the spatial layer unverified
+PASS  no route line claims spatial-valid without spatial data
+PASS  each verified route line is marked timing-valid with the spatial layer unverified
+PASS  no route line claims spatial-valid without spatial data
+PASS  each verified route line is marked timing-valid with the spatial layer unverified
+PASS  no route line claims spatial-valid without spatial data
+PASS  each verified route line is marked timing-valid with the spatial layer unverified
+PASS  no route line claims spatial-valid without spatial data
+PASS  each verified route line is marked timing-valid with the spatial layer unverified
+PASS  no route line claims spatial-valid without spatial data
+PASS  the spatial section states that no spatial data was provided and the fixed contact is not a spatial proof
+PASS  a truncated route is not spatially re-verified (timing failure is not a spatial claim)
+PASS  a truncated route is not spatially re-verified (timing failure is not a spatial claim)
+PASS  a truncated route is not spatially re-verified (timing failure is not a spatial claim)
+PASS  a truncated route is not spatially re-verified (timing failure is not a spatial claim)
+PASS  a truncated route is not spatially re-verified (timing failure is not a spatial claim)
+PASS  a truncated route is not spatially re-verified (timing failure is not a spatial claim)
+PASS  a truncated route is not spatially re-verified (timing failure is not a spatial claim)
+PASS  with spatial data a 5A/2A-started route honestly fails the 80 px standing (tuning hitbox reach 55–56 px, boundary touch does not intersect)
+PASS  the short-reach boundary failure names only the 80 px standing
+PASS  a truncated route is not spatially re-verified (timing failure is not a spatial claim)
+PASS  a truncated route is not spatially re-verified (timing failure is not a spatial claim)
+PASS  with spatial data a 5A/2A-started route honestly fails the 80 px standing (tuning hitbox reach 55–56 px, boundary touch does not intersect)
+PASS  the short-reach boundary failure names only the 80 px standing
+PASS  with spatial data a 5A/2A-started route honestly fails the 80 px standing (tuning hitbox reach 55–56 px, boundary touch does not intersect)
+PASS  the short-reach boundary failure names only the 80 px standing
+PASS  with spatial data a 5A/2A-started route honestly fails the 80 px standing (tuning hitbox reach 55–56 px, boundary touch does not intersect)
+PASS  the short-reach boundary failure names only the 80 px standing
+PASS  with spatial data a 5A/2A-started route honestly fails the 80 px standing (tuning hitbox reach 55–56 px, boundary touch does not intersect)
+PASS  the short-reach boundary failure names only the 80 px standing
+PASS  with spatial data a 5A/2A-started route honestly fails the 80 px standing (tuning hitbox reach 55–56 px, boundary touch does not intersect)
+PASS  the short-reach boundary failure names only the 80 px standing
+PASS  with spatial data a 5A/2A-started route honestly fails the 80 px standing (tuning hitbox reach 55–56 px, boundary touch does not intersect)
+PASS  the short-reach boundary failure names only the 80 px standing
+PASS  5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid
+PASS  5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid
+PASS  5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid
+PASS  5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid
+PASS  5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid
+PASS  5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid
+PASS  5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid
+PASS  5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid
+PASS  5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid
+PASS  5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid
+PASS  5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid
+PASS  5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid
+PASS  5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid
+PASS  5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid
+PASS  5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid
+PASS  5A/2A-started route lines keep the honest spatial-failure (or truncation) mark, never spatial-valid
+PASS  the spatial section documents the grid item 48
+PASS  the spatial section documents the grid item 64
+PASS  the spatial section documents the grid item 80
+PASS  the spatial section documents the grid item +1
+PASS  the spatial section documents the grid item -1
+PASS  the spatial section documents the grid item spatial-valid
+PASS  spatial verification stays mirror-consistent across both facings
+PASS  the short-reach route is walked from the configured cancel
+PASS  the route stays timing-valid at the fixed 70 px contact
+PASS  the route fails the spatial grid at 80 px while 48/64 px hold
+PASS  the spatial failure names the standing (80 px) and the collision condition (hitbox vs body rect)
+PASS  the nearer standings are not reported as failures
+PASS  the route line keeps timing-valid while flagging the spatial failure
+FAIL  the default-reach route on the same table stays spatial-valid
+PASS  providing spatial data does not change the config-gap set
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  gap reasons keep their missing-configuration wording under spatial verification
+PASS  the whiffed pair stays excluded
+PASS  the whiff exclusion keeps its timing wording, with no spatial wording
+PASS  the slow pair stays excluded
+PASS  the recovery-timeout exclusion keeps its timing wording
+PASS  excluded moves never appear inside spatial failures
+PASS  excluded moves never appear inside spatial failures
+PASS  excluded moves never appear inside spatial failures
+PASS  excluded moves never appear inside spatial failures
+PASS  excluded moves never appear inside spatial failures
+PASS  excluded moves never appear inside spatial failures
+PASS  excluded moves never appear inside spatial failures
+PASS  a body rect differing from the runtime geometry refuses the analysis
+PASS  the refusal names the mismatch against the runtime geometry
+PASS  the refused spatial data produces no routes, edges or cycles
+PASS  spatial verification with an explicit air start is refused — the v1 grid is ground-only
+PASS  the refused combination produces no routes or candidates
+PASS  the report declares what the spatial layer does not search
+PASS  the report names 走位 as outside the spatial search scope
+PASS  the report names 中立 as outside the spatial search scope
+PASS  the report names 墙角 as outside the spatial search scope
+PASS  the report names 推挤 as outside the spatial search scope
+PASS  the report names 跨身 as outside the spatial search scope
+PASS  the report names 屏幕边界 as outside the spatial search scope
+PASS  the report declares what the spatial layer does not search
+PASS  the report names 走位 as outside the spatial search scope
+PASS  the report names 中立 as outside the spatial search scope
+PASS  the report names 墙角 as outside the spatial search scope
+PASS  the report names 推挤 as outside the spatial search scope
+PASS  the report names 跨身 as outside the spatial search scope
+PASS  the report names 屏幕边界 as outside the spatial search scope
+PASS  solving twice with spatial data yields identical reports
+PASS  spatial probes leave every observable field of a live session untouched
+PASS  the live session is still inside its 5A hit-confirmed combo, unbothered by spatial probes
+
+ACCEPTANCE_SOLVER_METRICS_JSON={"calls":13,"combo_cache":{"bypasses":2,"enabled":true,"entries":6,"hits":5,"misses":6},"elapsed_ms":1302283.101,"profile_totals":{"delay_leaf_ms":893685.46,"delay_leaf_runs":996672,"edge_probe_ms":12640.561,"edge_probe_runs":3300,"gap_enum_ms":20006.553,"gap_enum_runs":5586,"other_ms":1123.055,"other_runs":60,"requests":13,"route_walk_ms":374876.705,"route_walk_runs":0,"total_ms":1302332.334},"profiles":[{"delay_leaf_ms":118148.441,"delay_leaf_runs":165516,"edge_probe_ms":3472.142,"edge_probe_runs":1098,"fingerprint":"e071fdc661bffe47e5fd03036507ecc118a2a1a14193b3b8cb91ad1e9fcaca45","gap_enum_ms":4996.967,"gap_enum_runs":1672,"key":"solve-1","other_ms":94.036,"other_runs":10,"route_walk_ms":49193.328,"route_walk_runs":0,"total_ms":175904.914},{"delay_leaf_ms":127666.857,"delay_leaf_runs":166440,"edge_probe_ms":21.028,"edge_probe_runs":0,"fingerprint":"b0c0e255d814526417a2b1f639455d2cde07ed6ae193771c61e53d372279463b","gap_enum_ms":402.916,"gap_enum_runs":0,"key":"solve-2","other_ms":110.629,"other_runs":10,"route_walk_ms":52915.053,"route_walk_runs":0,"total_ms":181116.483},{"delay_leaf_ms":128922.369,"delay_leaf_runs":166320,"edge_probe_ms":4314.041,"edge_probe_runs":1100,"fingerprint":"a0fe422ef51d037605682c9641d856a8fea3cc16b5cd434b9cf642d84ff3419e","gap_enum_ms":6646.55,"gap_enum_runs":1898,"key":"solve-3","other_ms":102.315,"other_runs":10,"route_walk_ms":53696.788,"route_walk_runs":0,"total_ms":193682.063},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"e071fdc661bffe47e5fd03036507ecc118a2a1a14193b3b8cb91ad1e9fcaca45","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-4","other_ms":50.418,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":50.418},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"b0c0e255d814526417a2b1f639455d2cde07ed6ae193771c61e53d372279463b","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-5","other_ms":43.238,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":43.238},{"delay_leaf_ms":131917.755,"delay_leaf_runs":166440,"edge_probe_ms":4786.753,"edge_probe_runs":1102,"fingerprint":"59994ce1168a036196002675bfd84c5a8588e04dff78a5f32ad74d90206f1884","gap_enum_ms":6928.224,"gap_enum_runs":2016,"key":"solve-6","other_ms":153.663,"other_runs":10,"route_walk_ms":55088.909,"route_walk_runs":0,"total_ms":198875.304},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"02b43ce7da05ec8993483dcd8fa939860b45840951da5ad880e3ea4d47dc4640","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-7","other_ms":0.196,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":0.196},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"d86f14bdbbdc008f1f40445b17b1a5fe24f1449e8ef05c513d30b233f4288369","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-8","other_ms":0.168,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":0.168},{"delay_leaf_ms":212255.576,"delay_leaf_runs":165516,"edge_probe_ms":23.743,"edge_probe_runs":0,"fingerprint":"e071fdc661bffe47e5fd03036507ecc118a2a1a14193b3b8cb91ad1e9fcaca45","gap_enum_ms":502.31,"gap_enum_runs":0,"key":"solve-9","other_ms":173.73,"other_runs":10,"route_walk_ms":89360.338,"route_walk_runs":0,"total_ms":302315.697},{"delay_leaf_ms":174774.462,"delay_leaf_runs":166440,"edge_probe_ms":22.854,"edge_probe_runs":0,"fingerprint":"b0c0e255d814526417a2b1f639455d2cde07ed6ae193771c61e53d372279463b","gap_enum_ms":529.586,"gap_enum_runs":0,"key":"solve-10","other_ms":185.757,"other_runs":10,"route_walk_ms":74622.289,"route_walk_runs":0,"total_ms":250134.948},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"b0c0e255d814526417a2b1f639455d2cde07ed6ae193771c61e53d372279463b","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-11","other_ms":70.648,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":70.648},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"b0c0e255d814526417a2b1f639455d2cde07ed6ae193771c61e53d372279463b","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-12","other_ms":71.492,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":71.492},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"b0c0e255d814526417a2b1f639455d2cde07ed6ae193771c61e53d372279463b","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-13","other_ms":66.765,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":66.765}],"reports":[{"calls":1,"fingerprint":"02b43ce7da05ec8993483dcd8fa939860b45840951da5ad880e3ea4d47dc4640","keys":["solve-7"]},{"calls":1,"fingerprint":"59994ce1168a036196002675bfd84c5a8588e04dff78a5f32ad74d90206f1884","keys":["solve-6"]},{"calls":1,"fingerprint":"a0fe422ef51d037605682c9641d856a8fea3cc16b5cd434b9cf642d84ff3419e","keys":["solve-3"]},{"calls":6,"fingerprint":"b0c0e255d814526417a2b1f639455d2cde07ed6ae193771c61e53d372279463b","keys":["solve-2","solve-5","solve-10","solve-11","solve-12","solve-13"]},{"calls":1,"fingerprint":"d86f14bdbbdc008f1f40445b17b1a5fe24f1449e8ef05c513d30b233f4288369","keys":["solve-8"]},{"calls":3,"fingerprint":"e071fdc661bffe47e5fd03036507ecc118a2a1a14193b3b8cb91ad1e9fcaca45","keys":["solve-1","solve-4","solve-9"]}],"reuse_enabled":false,"reuse_hit_rate":0.0,"reuse_hits":0,"test":"test_solver_spatial","underlying_calls":13,"unique_reports":6}
+1 TEST(S) FAILED
