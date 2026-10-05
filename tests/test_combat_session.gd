@@ -58,7 +58,7 @@ func _initialize() -> void:
 	_test_float_landing_keeps_remaining_hitstun()
 	_test_independent_move_cannot_hit_floating_dummy()
 	_test_5A_cancels_into_236C_relaunch()
-	_test_5B_cancels_into_214D_finisher()
+	_test_5B_late_214c_starts_independently()
 	_test_jump_cancel_requires_hit_config_and_window()
 	_test_jump_cancel_6A_into_jA_pursuit()
 	_test_jump_cancel_5C_into_jA_pursuit()
@@ -406,15 +406,18 @@ func _test_turn_keeps_direction_history() -> void:
 
 
 func _test_qcf_qcb_work_in_both_facings() -> void:
-	# 左右面向使用同一套相对方向输入（issue 12）：236C 与 214D 在两侧面向的
+	# 左右面向使用同一套相对方向输入（issue 12）：236C 与 214C 在两侧面向的
 	# 地面中立均能识别并执行；后退后的方向历史不再因移动翻转而失败。
-	# 右面向 214D：木桩在右，S → S+A → A+J（世界左 = 后）。
+	# 右面向 214C：木桩在右，S → S+A → A+K（世界左 = 后）。C 是投组合成员键
+	# （表内含 BC 投）：单键在配对窗口末帧（+3f）起手，脚本补 3 帧（票据 10：
+	# 旧地面 214D 移除后，214 后撤指令的识别主体迁移至 214C）。
 	var right_qcb := CombatSession.new()
 	right_qcb.dummy_position = right_qcb.player_position + Vector2(70, 0)
 	var right_qcb_hits := _play_script(right_qcb, [
-		[0, true, ""], [-1, true, ""], [-1, false, "D"],
+		[0, true, ""], [-1, true, ""], [-1, false, "C"],
+		[0, false, ""], [0, false, ""], [0, false, ""],
 	])
-	_check(right_qcb.player_move_id == "214D", "ground-neutral 214 starts 214D while facing right")
+	_check(right_qcb.player_move_id == "214C", "ground-neutral 214 starts 214C while facing right")
 	right_qcb_hits += _run_neutral(right_qcb, 30)
 	_check(right_qcb_hits == 1, "the backward quarter circle connects as a single hit while facing right")
 	# 左面向 236C：木桩在左，先走向木桩使面向 -1，S → S+A → A+K（世界左 = 前）。
@@ -429,14 +432,15 @@ func _test_qcf_qcb_work_in_both_facings() -> void:
 	_check(left_qcf.player_move_id == "236C", "mirror 236 starts 236C while facing left")
 	left_qcf_hits += _run_neutral(left_qcf, 30)
 	_check(left_qcf_hits == 2, "the mirror quarter circle connects with both 236C segments while facing left")
-	# 左面向 214D：木桩在左，S → S+D → D+J（世界右 = 后）。
+	# 左面向 214C：木桩在左，S → S+D → D+K（世界右 = 后）。
 	var left_qcb := CombatSession.new()
 	left_qcb.dummy_position = left_qcb.player_position - Vector2(70, 0)
 	var left_qcb_hits := _play_script(left_qcb, [
 		[-1, false, ""], [-1, false, ""],
-		[0, true, ""], [1, true, ""], [1, false, "D"],
+		[0, true, ""], [1, true, ""], [1, false, "C"],
+		[0, false, ""], [0, false, ""], [0, false, ""],
 	])
-	_check(left_qcb.player_move_id == "214D", "mirror 214 starts 214D while facing left")
+	_check(left_qcb.player_move_id == "214C", "mirror 214 starts 214C while facing left")
 	left_qcb_hits += _run_neutral(left_qcb, 35)
 	_check(left_qcb_hits == 1, "the mirror backward quarter circle connects while facing left")
 
@@ -924,16 +928,21 @@ func _test_damage_floor_and_no_hit_cap() -> void:
 
 func _test_direction_window_age_boundary() -> void:
 	# 窗口按实际 variant 步数计（issue 13）：214 为三步 × 10 = 30 帧，含首段帧。
-	# F1–F3 输入 214，F30 按 D（首段年龄 29）仍识别；F31（年龄 30）过期回落 5D。
+	# 票据 10 起识别主体为 214C（旧地面 214D 已移除）：C 是投组合成员键，但方向
+	# 解析发生在按下当帧（缓存行即刻显示 214C），配对等待只推迟起手 3 帧——
+	# 窗口口径仍是「按下当帧的首段年龄」：F1–F3 输入 214，F30 按 C（年龄 29）仍
+	# 识别、F33 起手；F31 按（年龄 30）过期回落 5C（F34 起手）。
 	# 左右面向成功/失败帧一致（左面向用下、下右、右的物理镜像）。
 	var session := CombatSession.new()
 	for frame in range(1, 31):
-		session.step(_qcb_input(frame, 30, "D"))
-	_check(session.player_move_id == "214D", "three-step command at age 29 (F30) is the last valid boundary")
+		session.step(_qcb_input(frame, 30, "C"))
+	_pairing_wait(session)
+	_check(session.player_move_id == "214C", "three-step command pressed at age 29 (F30) is the last valid boundary")
 	var late_session := CombatSession.new()
 	for frame in range(1, 32):
-		late_session.step(_qcb_input(frame, 31, "D"))
-	_check(late_session.player_move_id == "5D", "age 30 (F31) expires before the key press and falls back to the plain move")
+		late_session.step(_qcb_input(frame, 31, "C"))
+	_pairing_wait(late_session)
+	_check(late_session.player_move_id == "5C", "age 30 (F31) expires before the key press and falls back to the plain move")
 	var mirror := CombatSession.new()
 	mirror.dummy_position = mirror.player_position + Vector2(-200, 0)
 	mirror.step(FrameInput.new())
@@ -941,8 +950,9 @@ func _test_direction_window_age_boundary() -> void:
 		mirror.step(_relative_input(mirror, digit))
 	for i in range(26):
 		mirror.step(FrameInput.new())
-	mirror.step(_relative_input(mirror, 5, "D"))
-	_check(mirror.player_move_id == "214D", "left-facing mirror keeps the same success frame (F31, age 29)")
+	mirror.step(_relative_input(mirror, 5, "C"))
+	_pairing_wait(mirror)
+	_check(mirror.player_move_id == "214C", "left-facing mirror keeps the same success frame (press F31 at age 29)")
 	var mirror_late := CombatSession.new()
 	mirror_late.dummy_position = mirror_late.player_position + Vector2(-200, 0)
 	mirror_late.step(FrameInput.new())
@@ -950,8 +960,9 @@ func _test_direction_window_age_boundary() -> void:
 		mirror_late.step(_relative_input(mirror_late, digit))
 	for i in range(27):
 		mirror_late.step(FrameInput.new())
-	mirror_late.step(_relative_input(mirror_late, 5, "D"))
-	_check(mirror_late.player_move_id == "5D", "left-facing mirror keeps the same failure frame (F32, age 30)")
+	mirror_late.step(_relative_input(mirror_late, 5, "C"))
+	_pairing_wait(mirror_late)
+	_check(mirror_late.player_move_id == "5C", "left-facing mirror keeps the same failure frame (press F32 at age 30)")
 
 
 func _test_direction_sequence_consumed_after_lock() -> void:
@@ -1402,44 +1413,43 @@ func _test_5A_cancels_into_236C_relaunch() -> void:
 	_check(_approx(session.combo_last_scale, 0.5832), "third hit damage layer is 0.72×0.90×0.90")
 
 
-func _test_5B_cancels_into_214D_finisher() -> void:
-	# 旧路线 5B→214D 已废弃（新基线 5B 的取消目标只有 5C/6A/5D 与必杀 236C）：
-	# 命中后搓入的 214D 不被任何取消窗口消费；5B 完全收招后它只能作为独立招式
-	# 起手，此时木桩已自然受身，命中按新连段首击结算（214D 自身倒地职责保留，
-	# D 起手时间修正 floor(30×0.96)=28 帧）。
+func _test_5B_late_214c_starts_independently() -> void:
+	# 旧路线 5B→214D 已随票据 10 移除（地面 214D 不再存在；倒地收尾职责在
+	# 214C~C，D 起手缩放见 test_bounce_corrections 与 replay_04）。本场景迁移为
+	# 同输入形状的 214C：5B 的必杀取消窗口（接触起 0–5 正常帧）早已关闭——
+	# 搓入的 214C 不被取消消费；5B 完全收招后它作为独立招式起手，此时木桩已
+	# 自然受身，命中按新连段首击结算（首段 GROUND_HITSTUN 14，D 起手
+	# floor(14×0.96)=13 帧）。
 	var session := CombatSession.new()
 	session.dummy_position = session.player_position + Vector2(70, 0)
 	var hit_frames: Array[int] = []
 	var combo_end_frames: Array[int] = []
-	var finisher_knockdown := -1
 	var recovered_events := 0
 	for frame in range(1, 90):
 		# 5B 于 F4 起手（B@F1+3 等待）、F10 命中；停顿 F11–F18；214 在 F11–F13 搓入、
-		# D@F30 缓存（在 6 帧缓存有效期内覆盖 5B 完全恢复的 F34）；
-		# 5B 收招后独立起手 214D，F41 命中中立木桩。
+		# C@F30 按下当帧解析为 214C（配对等待 3 帧也计入缓存年龄——6 帧缓存恰
+		# 覆盖 5B 完全恢复的 F34）；5B 收招后独立起手 214C（8/4/20），F42 首段
+		# 命中中立木桩。
 		var down := frame == 11 or frame == 12
 		var axis := -1 if frame == 12 or frame == 13 else 0
 		var key := ""
 		if frame == 1:
 			key = "B"
 		elif frame == 30:
-			key = "D"
+			key = "C"
 		var frame_events := session.step(FrameInput.make(axis, false, key, down))
 		if _count_events(frame_events, CombatEvent.Type.HIT) > 0:
 			hit_frames.append(frame)
 		if frame >= 19 and frame <= 33:
 			if frame == 19:
-				_check(session.player_move_id == "5B", "buffered 214D is not consumed as a cancel (no configured edge)")
-		if _combo_end_events(frame_events, CombatEvent.ComboEndReason.DUMMY_RECOVERED) > 0 and frame < 41:
+				_check(session.player_move_id == "5B", "window-closed 214C is not consumed as a cancel (special window 0-5 from contact)")
+		if _combo_end_events(frame_events, CombatEvent.ComboEndReason.DUMMY_RECOVERED) > 0:
 			combo_end_frames.append(frame)
-		if _combo_end_events(frame_events, CombatEvent.ComboEndReason.KNOCKDOWN) > 0:
-			finisher_knockdown = session.dummy_knockdown_left
 		recovered_events += _count_events(frame_events, CombatEvent.Type.DUMMY_RECOVERED)
-	_check(hit_frames == [10, 41], "5B hits on frame 10; the undeclared 214D only starts independently after full recovery")
-	_check(combo_end_frames == [29], "the first combo ends when the dummy recovers naturally (F29) before 5B finishes")
-	_check(session.combo_hits == 1, "the independent 214D hit starts a fresh combo count")
-	_check(finisher_knockdown == 28, "direction finisher puts the dummy into independent knockdown for the D-starter scaled 28 frames")
-	_check(recovered_events == 2, "dummy recovers naturally after the 5B stun and again after the knockdown")
+	_check(hit_frames == [10, 42], "5B hits on frame 10; the late 214C only starts independently after full recovery")
+	_check(combo_end_frames == [29], "the first combo ends when the dummy recovers naturally (F29) before 5B finishes; the fresh 214C combo closes on its own cancel window (F59) ahead of the F63 recovery")
+	_check(session.combo_hits == 1, "the independent 214C hit starts a fresh combo count")
+	_check(recovered_events == 2, "dummy recovers naturally after the 5B stun and again after the 214C stun")
 	_check(session.dummy_state == CombatSession.DummyState.NEUTRAL, "dummy is neutral again after recovery")
 
 
@@ -2418,7 +2428,7 @@ func _test_hitstop_records_input_and_pauses_ages() -> void:
 	# 停顿中仍记录物理键、方向历史及动作键事件；缓存、方向窗口和取消窗口年龄
 	# 只按正常战斗帧增加——停顿帧不消耗它们；恢复后的首个正常帧才消费。
 	# 5A 于 F6 命中，F7–F14 停顿：停顿中 B 覆盖旧 D 缓存、年龄保持 0，
-	# F15（恢复首个正常帧）消费 5B；方向窗口不被 8 个停顿帧消耗（D@F39 识别 214D）。
+	# F15（恢复首个正常帧）消费 5B；方向窗口不被 8 个停顿帧消耗（C@F39 识别 214C）。
 	var session := CombatSession.new()
 	session.dummy_position = session.player_position + Vector2(70, 0)
 	var ages_during_stop: Array[int] = []
@@ -2464,24 +2474,27 @@ func _test_hitstop_records_input_and_pauses_ages() -> void:
 
 func _test_hitstop_does_not_consume_direction_window() -> void:
 	# 方向窗口按正常帧计龄：命中停顿插入的 8 个物理帧不消耗指令窗口——
-	# 214 于 F2–F4 输入，F6 命中触发 8 帧停顿；F39 按时首段正常年龄 29 仍识别 214D，
-	# F40（年龄 30）过期回落 5D。
+	# 214 于 F2–F4 输入，F6 命中触发 8 帧停顿；C（投组合成员键）方向解析在
+	# 按下当帧、配对等待只推迟起手——F39 按下时首段正常年龄 29 仍识别 214C
+	# （F42 起手）；F40 按则（年龄 30）过期回落 5C。
 	var late := CombatSession.new()
 	late.dummy_position = late.player_position + Vector2(70, 0)
 	for frame in range(1, 40):
-		var key := "A" if frame == 1 else ("D" if frame == 39 else "")
+		var key := "A" if frame == 1 else ("C" if frame == 39 else "")
 		var down := frame == 2 or frame == 3
 		var axis := -1 if frame == 3 or frame >= 4 else 0
 		late.step(FrameInput.make(axis, false, key, down))
-	_check(late.player_move_id == "214D", "D at normal age 29 (physics 39 with 8 frozen frames inside) still recognizes 214D")
+	_pairing_wait(late)
+	_check(late.player_move_id == "214C", "C pressed at normal age 29 (physics 39 with 8 frozen frames inside) still recognizes 214C")
 	var expired := CombatSession.new()
 	expired.dummy_position = expired.player_position + Vector2(70, 0)
 	for frame in range(1, 41):
-		var key := "A" if frame == 1 else ("D" if frame == 40 else "")
+		var key := "A" if frame == 1 else ("C" if frame == 40 else "")
 		var down := frame == 2 or frame == 3
 		var axis := -1 if frame == 3 or frame >= 4 else 0
 		expired.step(FrameInput.make(axis, false, key, down))
-	_check(expired.player_move_id == "5D", "D at normal age 30 (physics 40) expires: the freeze never extended the window")
+	_pairing_wait(expired)
+	_check(expired.player_move_id == "5C", "C pressed at normal age 30 (physics 40) expires: the freeze never extended the window")
 
 
 func _test_cancel_age_counts_normal_frames() -> void:
@@ -4642,6 +4655,13 @@ func _qcb_input(frame: int, key_frame: int, key: String) -> FrameInput:
 	var axis := -1 if frame == 2 or frame == 3 else 0
 	var down := frame == 1 or frame == 2
 	return FrameInput.make(axis, false, key if frame == key_frame else "", down)
+
+
+## C 键投组合配对等待（≤3 帧）：单键起手在配对窗口末帧——按完 C 后补 3 个
+## 空帧再断言起手结果（票据 10 迁移 214C 识别主体的固定补偿）。
+func _pairing_wait(session: CombatSession) -> void:
+	for i in range(3):
+		session.step(FrameInput.new())
 
 
 ## 相对小键盘方向 → FrameInput：按会话当前面向折算世界水平轴（3/6/9 为前），

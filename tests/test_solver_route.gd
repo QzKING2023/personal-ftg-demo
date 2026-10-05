@@ -108,8 +108,8 @@ func _test_timing_invalid_or_structural_pairs_not_gaps() -> void:
 		"a pair whose hit lands after dummy recovery is not a gap")
 	_check(_find_gap(report, "5F", "5A", ComboSolver.EdgeKind.CANCEL) == null,
 		"the 4-frame stun admits no cancel-gap followup either")
-	_check(_find_gap(report, "214D", "5A", ComboSolver.EdgeKind.CANCEL) == null,
-		"a finisher source (214D stays a finisher) is never a gap (configuring it would not open the cancel)")
+	_check(_find_gap(report, "214C~C", "5A", ComboSolver.EdgeKind.CANCEL) == null,
+		"a finisher source (214C~C stays a finisher) is never a gap (configuring it would not open the cancel)")
 	_check(_find_gap(report, "5B", "jA", ComboSolver.EdgeKind.CANCEL) == null,
 		"stance-mismatched cancel pairs are not gaps")
 
@@ -163,8 +163,8 @@ func _test_binding_and_variant_lines() -> void:
 	_check("5A｜U 键（A）｜无方向指令" in text, "plain binding moves are listed without a direction command")
 	_check("236C｜K 键（C）｜variant 236（严格，3 步，窗口 30 帧）：验证成立" in text,
 		"the 236C variant is enumerated with its strict notation, step count and window, and verified")
-	_check("214D｜J 键（D）｜variant 214（严格，3 步，窗口 30 帧）：验证成立" in text,
-		"the 214D variant is enumerated and verified")
+	_check("214C｜K 键（C）｜variant 214（严格，3 步，窗口 30 帧）：验证成立" in text,
+		"the 214C variant is enumerated and verified (票据 10：旧地面 214D 移除后，214 记法的地面主体是 214C；空中 j214D 不在地面起始绑定枚举内，由空侧起手与回放覆盖)")
 	# 宽松指令与显式替代串：每个声明 variant 独立验证（窗口按实际步数计）。
 	var table := MoveData.default_table()
 	var lenient := _injected_move("623A", "A")
@@ -222,7 +222,7 @@ func _test_whiff_reason_distinguishable() -> void:
 	whiffy_two.hitbox_gap = 500.0
 	table["5V"] = whiffy_two
 	(table["5A"] as MoveData).cancel_targets = ["5W"]
-	(table["5B"] as MoveData).cancel_targets = ["5D", "214D", "5V"]
+	(table["5B"] as MoveData).cancel_targets = ["5D", "214C", "5V"]
 	var report := _metrics.solve(_options(table))
 	var edge := _find_edge(report, "5A", "5W", ComboSolver.EdgeKind.CANCEL)
 	_check(edge != null and not edge.valid, "the whiffed target edge is excluded")

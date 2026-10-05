@@ -59,7 +59,7 @@ func _test_default_manifest_loads_shared_table() -> void:
 	var result := MoveTable.load_default()
 	_check(result.ok, "default manifest loads and validates")
 	_check(result.errors.is_empty(), "default manifest reports no errors")
-	var expected_ids := ["5A", "2A", "5B", "2B", "5C", "2C", "6A", "236C", "214C", "214C~B", "214C~C", "jA", "jB", "jC", "j5D", "j6D", "j2D", "j214D", "5D", "5[D]", "6D", "2D", "214D", "BC"]
+	var expected_ids := ["5A", "2A", "5B", "2B", "5C", "2C", "6A", "236C", "214C", "214C~B", "214C~C", "jA", "jB", "jC", "j5D", "j6D", "j2D", "j214D", "5D", "5[D]", "6D", "2D", "BC"]
 	_check(result.moves.keys() == expected_ids, "table preserves manifest order and ids (stable enumeration)")
 	for move_id in expected_ids:
 		var move := result.moves[move_id] as MoveData
@@ -72,7 +72,7 @@ func _test_default_table_entries_match_manifest() -> void:
 	var expected := {
 		"5A": [5, 4, 10, 8], "2A": [5, 4, 10, 8], "5B": [6, 5, 12, 12], "2B": [7, 5, 12, 11],
 		"5C": [8, 5, 16, 16], "2C": [9, 3, 18, 14], "236C": [6, 2, 22, 8],
-		"5D": [7, 4, 18, 18], "214D": [7, 5, 20, 22],
+		"5D": [7, 4, 18, 18],
 		"jA": [4, 6, 10, 8], "jB": [4, 6, 12, 12], "jC": [7, 5, 14, 14],
 		"j5D": [6, 4, 16, 16], "j6D": [7, 4, 18, 17], "j2D": [8, 4, 20, 18],
 		"6D": [9, 4, 20, 18], "2D": [8, 4, 18, 17],

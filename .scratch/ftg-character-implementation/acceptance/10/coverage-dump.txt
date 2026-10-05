@@ -1,0 +1,94 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+5A | mid A键 5/4/10 伤8 起手A
+   资料: grounded/n→HITSTUNs14；grounded/c→HITSTUNs18
+   接续: 链式:5B/2B；必杀:236C/214C；连接:5B
+   标记: —
+2A | low A键 5/4/10 伤8 蹲姿限定 起手A
+   资料: grounded/n→HITSTUNs14；grounded/c→HITSTUNs18
+   接续: 链式:5A/2A/5B/2B；必杀:214C
+   标记: —
+5B | mid B键 6/5/12 伤12 起手B
+   资料: grounded/n→HITSTUNs14；grounded/c→HITSTUNs18；bounce/n→LAUNCHu18；bounce/c→LAUNCHu24
+   接续: 链式:5C/2C/6A/5D；必杀:236C/214C；连接:5C/5D
+   标记: —
+2B | low B键 7/5/12 伤11 蹲姿限定 起手B
+   资料: grounded/n→HITSTUNs14；grounded/c→HITSTUNs18
+   接续: 链式:5C/2C/6A
+   标记: —
+5C | mid C键 8/5/16 伤16 起手C
+   资料: grounded/n→HITSTUNs14；grounded/c→HITSTUNs18
+   接续: 链式:6A/5D；必杀:236C/214C；连接:5D
+   标记: —
+2C | low C键 9/3/18 伤14 蹲姿限定 起手C
+   资料: grounded/n→LOW_FLOAT；grounded/c→LOW_FLOAT
+   接续: 链式:6D/2D；必杀:214C
+   标记: —
+6A | high A键 8/6/20 伤16 指令6A 起手C
+   资料: grounded/n→LAUNCHu36；grounded/c→LAUNCHu42；bounce/n→LAUNCHu30；bounce/c→LAUNCHu36
+   接续: jc:jA/jB/jC
+   标记: —
+236C | mid C键 6/2/22 伤8 指令236C 起手D
+   资料: grounded/n→LAUNCHu32；airborne/n→LAUNCHu34
+   接续: 特殊进入:5D
+   标记: —
+214C | mid C键 8/4/20 伤10 指令214C 起手D
+   资料: grounded/n→HITSTUNs14；grounded/c→HITSTUNs18；airborne/n→LAUNCHu28；airborne/c→LAUNCHu34；bounce/n→LAUNCHu28；bounce/c→LAUNCHu34
+   接续: Rekka:~B/~C
+   标记: —
+214C~B | low B键 7/3/18 伤8 起手B
+   资料: grounded/n→KNOCKDOWNk30；grounded/c→KNOCKDOWNk30；airborne/n→LAUNCHu36；airborne/c→LAUNCHu44
+   接续: 连接:5B
+   标记: rekka_only
+214C~C | overhead C键 9/3/24 伤14 起手C
+   资料: grounded/n→KNOCKDOWNk30；grounded/c→KNOCKDOWNk30；airborne/n→LOW_SLIDEu-1；airborne/c→LOW_SLIDEu-1
+   接续: —
+   标记: rekka_only；收尾
+jA | high A键 4/6/10 伤8 空中+air 起手A
+   资料: grounded/n→HITSTUNs12；airborne/n→LAUNCHu12
+   接续: 命中确认:jB/jC/j5D/j6D/j2D/j214D
+   标记: —
+jB | high B键 4/6/12 伤12 空中+air 起手B
+   资料: grounded/n→HITSTUNs12；airborne/n→LAUNCHu20
+   接续: 命中确认:jC/j5D/j6D/j2D/j214D
+   标记: —
+jC | mid C键 7/5/14 伤14 空中+air 起手C
+   资料: grounded/n→HITSTUNs12；grounded/c→HITSTUNs16；airborne/n→LAUNCHu20；airborne/c→LAUNCHu26
+   接续: 命中确认:j5D/j6D/j2D/j214D
+   标记: motion(4,0)
+j5D | mid D键 6/4/16 伤16 空中+air 起手D
+   资料: grounded/n→HITSTUNs14；grounded/c→HITSTUNs18；airborne/n→LAUNCHu22；airborne/c→LAUNCHu28
+   接续: —
+   标记: motion(74,0)
+j6D | mid D键 7/4/18 伤17 空中+air 指令6D 起手D
+   资料: grounded/n→HITSTUNs14；grounded/c→HITSTUNs18；airborne/n→LAUNCHu26；airborne/c→LAUNCHu32
+   接续: 连接:5B
+   标记: motion(68,26)
+j2D | mid D键 8/4/20 伤18 空中+air 指令2D 起手D
+   资料: grounded/n→HITSTUNs16；grounded/c→HITSTUNs20；airborne/n→LAUNCHu24；airborne/c→LAUNCHu30
+   接续: 落地取消:214C
+   标记: motion(0,70)；落地+2
+j214D | mid D键 9/4/22 伤20 空中+air 指令214D 起手D
+   资料: grounded/n→BOUNCEu12；grounded/c→BOUNCEu16；airborne/n→BOUNCEu24；airborne/c→BOUNCEu30
+   接续: 连接:5B/6A/214C
+   标记: motion(12,64)
+5D | mid D键 7/4/18 伤18 起手D
+   资料: grounded/n→HITSTUNs14；airborne/n→LAUNCHu32；slide/n→LAUNCHu32
+   接续: 来源限定连接:5B
+   标记: motion(72,0)；蓄力8→5[D]
+5[D] | mid D键 7/4/22 伤20 起手D
+   资料: grounded/n→HITSTUNs14；airborne/n→LAUNCHu32；slide/n→LAUNCHu32
+   接续: 来源限定连接:5B
+   标记: motion(120,0)；charge_only
+6D | mid D键 9/4/20 伤18 指令6D 起手D
+   资料: airborne/n→LAUNCHu30；airborne/c→LAUNCHu36
+   接续: 空出口:jA/jB/jC/j5D/j6D/j2D/j214D
+   标记: motion(88,-48)
+2D | mid D键 8/4/18 伤17 蹲姿限定 起手D
+   资料: airborne/n→LAUNCHu26；airborne/c→LAUNCHu32
+   接续: 空出口:jA/jB/jC/j5D/j6D/j2D/j214D
+   标记: motion(0,-64)；y_offset -70
+BC | ? 无键键 5/11/10 伤-1 起手-
+   资料: 
+   接续: —
+   标记: 投距64

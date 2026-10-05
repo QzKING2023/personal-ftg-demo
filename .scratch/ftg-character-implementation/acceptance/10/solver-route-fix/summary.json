@@ -1,0 +1,107 @@
+﻿{
+    "mode": "acceptance-reuse",
+    "total_seconds": 10.6,
+    "total_assertions": 518,
+    "total_solver_calls": 15,
+    "total_solver_underlying_calls": 15,
+    "total_solver_reuse_hits": 0,
+    "solver_reuse_hit_rate": 0.0,
+    "tests": [
+        {
+            "test": "import",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 0,
+            "assertions": 0,
+            "seconds": 7.16,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-character-implementation\\acceptance\\10\\solver-route-fix\\runtime-import"
+        },
+        {
+            "test": "test_solver_route",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 518,
+            "assertions": 518,
+            "seconds": 3.44,
+            "solver_calls": 15,
+            "solver_underlying_calls": 15,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 1628.967,
+            "combo_cache": {
+                "bypasses": 0,
+                "enabled": true,
+                "entries": 93,
+                "hits": 15,
+                "misses": 0
+            },
+            "solver_profile": {
+                "delay_leaf_ms": 0.0,
+                "delay_leaf_runs": 0,
+                "edge_probe_ms": 0.0,
+                "edge_probe_runs": 0,
+                "gap_enum_ms": 0.0,
+                "gap_enum_runs": 0,
+                "other_ms": 1680.183,
+                "other_runs": 0,
+                "requests": 15,
+                "route_walk_ms": 0.0,
+                "route_walk_runs": 0,
+                "total_ms": 1680.183
+            },
+            "report_fingerprints": [
+                "03fe546713ca0e2a37fb4d7022a6258337f2fb25b923d1827b1a001f7f16b8cf",
+                "26d556fd275d86c7d9c3e1c40f48149017ec0f0efb9dba5f7024829e0d3e03f3",
+                "4a01d7e3eb1f5896f880ca04504894321d748f25ab934ddcd1570cf9c429de07",
+                "99227b6179cdafae0dd05e4cfde786ac961ae3c6bd92f694bb6d9cac194f63fb",
+                "a3ce94f41a0558891003c6ac6a7373d81a1bfb1584014b7a094baabb94fb8c84",
+                "dc78409762cb0821e631b6cb907537b733767d4456a36caabe31bc0006d1f1f6",
+                "f828fd0ed92f6309af154c5de4f1bf261cfacd023419b6999903c30f0ab57d9b",
+                "fe50a5d48f1fef7f351b75b7ec22f6c90ae6b05661bba1c0c8944c3995499600"
+            ],
+            "solver_report_keys": [
+                [
+                    "solve-9"
+                ],
+                [
+                    "solve-11"
+                ],
+                [
+                    "solve-4"
+                ],
+                [
+                    "solve-3"
+                ],
+                [
+                    "solve-12"
+                ],
+                [
+                    "solve-6"
+                ],
+                [
+                    "solve-10"
+                ],
+                [
+                    "solve-1",
+                    "solve-2",
+                    "solve-5",
+                    "solve-7",
+                    "solve-8",
+                    "solve-13",
+                    "solve-14",
+                    "solve-15"
+                ]
+            ],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-character-implementation\\acceptance\\10\\solver-route-fix\\runtime-test_solver_route"
+        }
+    ]
+}

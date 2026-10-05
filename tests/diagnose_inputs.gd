@@ -78,9 +78,11 @@ func _s2_qcf_facing_left() -> void:
 
 
 func _s3_qcb_ground_neutral() -> void:
-	# 地面中立的 214D：面向右、木桩在右，S → S+A → A（后 = A 键）再按 J（动作 D）。
-	# 期望：识别 214D、成功出招并命中。怀疑：按住“后”一帧后面向翻转为 -1，
+	# 地面中立的 214C（票据 10：旧地面 214D 移除，识别主体迁移到 214C）：
+	# 面向右、木桩在右，S → S+A → A（后 = A 键）再按 K（动作 C）。
+	# 期望：识别 214C、成功出招并命中。怀疑：按住“后”一帧后面向翻转为 -1，
 	# 后续同键输入被折算成“前”，方向序列被污染（见逐帧行的面向与序列列）。
+	# C 是投组合成员键：单键在配对窗口末帧（+3f）起手，尾部空帧覆盖等待。
 	var session := CombatSession.new()
 	_place_dummy(session, NEAR_OFFSET)
 	var trace: Array[String] = []
@@ -88,17 +90,17 @@ func _s3_qcb_ground_neutral() -> void:
 		_step("S", 0, true),
 		_step("S+A", -1, true, "", false, 2),
 		_step("A", -1, false, "", false, 4),
-		_step("A+J", -1, false, "D"),
+		_step("A+K", -1, false, "C"),
 		_step("—", 0, false, "", false, 25),
 	], trace)
-	_print_scenario("S3 地面中立 214D（S → S+A → A → J）", trace)
-	_expect(run["move_ids"].has("214D"), "S3: 214D 被识别并起手（识别阶段）")
-	_expect(int(run["hits"]) == 1, "S3: 214D 命中一次（命中阶段）")
-	if not run["move_ids"].has("214D"):
-		var fallback: bool = run["move_ids"].has("5D")
-		_note("S3 分类：未识别——实际回落 %s（识别阶段失败，非接续或命中问题）" % ("5D" if fallback else "空"))
+	_print_scenario("S3 地面中立 214C（S → S+A → A → K）", trace)
+	_expect(run["move_ids"].has("214C"), "S3: 214C 被识别并起手（识别阶段）")
+	_expect(int(run["hits"]) == 1, "S3: 214C 命中一次（命中阶段；首段单发，无派生输入）")
+	if not run["move_ids"].has("214C"):
+		var fallback: bool = run["move_ids"].has("5C")
+		_note("S3 分类：未识别——实际回落 %s（识别阶段失败，非接续或命中问题）" % ("5C" if fallback else "空"))
 
-	# 最小化变体：逐帧紧凑输入（S 一帧、S+A 一帧、当帧 A+J），证明即使帧级精确
+	# 最小化变体：逐帧紧凑输入（S 一帧、S+A 一帧、当帧 A+K），证明即使帧级精确
 	# 搓招也无法录得 “4”——按住“后”的下一帧它已被折算为“前”。
 	var tight := CombatSession.new()
 	_place_dummy(tight, NEAR_OFFSET)
@@ -106,21 +108,21 @@ func _s3_qcb_ground_neutral() -> void:
 	var tight_run := _play(tight, [
 		_step("S", 0, true),
 		_step("S+A", -1, true),
-		_step("A+J", -1, false, "D"),
+		_step("A+K", -1, false, "C"),
 		_step("—", 0, false, "", false, 25),
 	], tight_trace)
-	_print_scenario("S3m 最小化：逐帧紧凑 214（S → S+A → A+J 同帧起手）", tight_trace)
-	_expect(tight_run["move_ids"].has("214D"), "S3m: 帧级紧凑 214D 仍应被识别（证明“4”不可达）")
+	_print_scenario("S3m 最小化：逐帧紧凑 214（S → S+A → A+K 同帧起手）", tight_trace)
+	_expect(tight_run["move_ids"].has("214C"), "S3m: 帧级紧凑 214C 仍应被识别（证明“4”不可达）")
 
 
 func _s4_qcb_during_move() -> void:
-	# 出招期间的 214D：5A 命中确认 → 取消进 5B → 5B 出招期间搓 214 按 J。
-	# 出招期间运动阶段不改面向，方向序列应稳定录得 214 → 经取消窗口接续 214D。
+	# 出招期间的 214C（票据 10 起的识别主体）：5A 命中确认 → 取消进 5B →
+	# 5B 出招期间搓 214 按 K。出招期间运动阶段不改面向，方向序列应稳定录得 214。
 	# 该场景与 S3 的对照用于证伪/证实“面向翻转污染”假设。
-	# 新基线（2026-09-24）：214D 不再是 5B 的取消目标。B@F12 在停顿内按下、等待
+	# 新基线（2026-09-24）：214C 不是 5B 的取消目标。B@F12 在停顿内按下、等待
 	# 到期，恢复首帧 F15 以链式取消起手 5B（F21 命中）；214 于 F38–F40 搓入、
-	# D@F40 缓存（6 帧缓存覆盖 5B 完全恢复的 F45），5B 收招后作为独立招式起手
-	# 214D（F52 以新连段命中中立木桩）。
+	# C@F40 按下、配对窗口末帧 F43 成为起手请求（6 帧缓存覆盖 5B 完全恢复的
+	# F45），5B 收招后作为独立招式起手 214C（以新连段命中中立木桩）。
 	var session := CombatSession.new()
 	_place_dummy(session, NEAR_OFFSET)
 	var trace: Array[String] = []
@@ -131,12 +133,12 @@ func _s4_qcb_during_move() -> void:
 		_step("—", 0, false, "", false, 25),
 		_step("S", 0, true),
 		_step("S+A", -1, true),
-		_step("A+J", -1, false, "D"),
+		_step("A+K", -1, false, "C"),
 		_step("—", 0, false, "", false, 30),
 	], trace)
-	_print_scenario("S4 出招期间 214D（U → I → S → S+A → A+J，命中确认取消）", trace)
-	_expect(run["move_ids"].has("214D"), "S4: 出招期间 214D 被识别并起手（识别阶段；已废弃取消路线改为收招后独立起手）")
-	_expect(int(run["hits"]) == 3, "S4: 5A → 5B 两击经链式取消命中，214D 于 5B 完全恢复后独立命中（新连段）")
+	_print_scenario("S4 出招期间 214C（U → I → S → S+A → A+K，命中确认取消）", trace)
+	_expect(run["move_ids"].has("214C"), "S4: 出招期间 214C 被识别并起手（识别阶段；无取消路线、收招后独立起手）")
+	_expect(int(run["hits"]) == 3, "S4: 5A → 5B 两击经链式取消命中，214C 于 5B 完全恢复后独立命中（新连段）")
 
 	# 挥空变体：木桩在射程外，同样的输入。挥空不产生取消资格，缓存按年龄过期——
 	# 这是现行设计（挥空不产生命中确认取消），记录为“识别后未能接续”的预期行为。
@@ -150,12 +152,12 @@ func _s4_qcb_during_move() -> void:
 		_step("—", 0, false, "", false, 25),
 		_step("S", 0, true),
 		_step("S+A", -1, true),
-		_step("A+J", -1, false, "D"),
+		_step("A+K", -1, false, "C"),
 		_step("—", 0, false, "", false, 30),
 	], whiff_trace)
-	_print_scenario("S4w 挥空时的出招期间 214D（现行设计：无取消资格，缓存过期）", whiff_trace)
-	_expect(whiff_run["move_ids"].has("214D") and int(whiff_run["hits"]) == 0,
-		"S4w: 挥空时 214D 识别并独立起手，但木桩在射程外挥空零命中（现行设计的预期行为）")
+	_print_scenario("S4w 挥空时的出招期间 214C（现行设计：无取消资格，缓存过期）", whiff_trace)
+	_expect(whiff_run["move_ids"].has("214C") and int(whiff_run["hits"]) == 0,
+		"S4w: 挥空时 214C 识别并独立起手，但木桩在射程外挥空零命中（现行设计的预期行为）")
 	_note("S4w 分类：识别后按独立招式起手，无取消资格、无命中（挥空不产生连段）")
 
 
@@ -221,7 +223,7 @@ func _s6_air_direction_sequence() -> void:
 	_expect((snaps[25]["velocity"] as Vector2).x > 300.0, "S6: 空中搓招期间横向速度保留起跳速度（方向输入不改变速度）")
 	_expect(int(snaps[25]["facing"]) == 1, "S6: 空中搓招期间面向不变")
 	var move_ids: Array = run["move_ids"]
-	_expect(not move_ids.has("jC") and not move_ids.has("236C") and not move_ids.has("214D"),
+	_expect(not move_ids.has("jC") and not move_ids.has("236C"),
 		"S6: 空中按 K 不起手任何招式（无 jC 配置，现状）")
 	_expect(move_ids.has("j214D"), "S6: 空中 2→1→4 搓招后按 J 独立解析为 j214D（票据 09：空中弹地招式为独立指令输入，不再回落 j5D）")
 	_note("S6 分类：空中方向序列按锁定面向记录；空中方向输入不改变速度与面向，j214D 命中弹地为票据 09 统一行为")

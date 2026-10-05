@@ -32,6 +32,7 @@ func _run_tests() -> void:
 	await _test_direction_derivative_and_float(main, session)
 	await _test_jump_cancel_air_pursuit(main, session)
 	await _test_full_air_route_keyboard(main, session)
+	await _test_weapon_presentation(player, session)
 	await _test_backward_qcb_keyboard(main, session)
 	for facing in [1, -1]:
 		await _test_air_derivation_keyboard(facing)
@@ -156,6 +157,83 @@ func _test_crouch_and_guard_presentation(main: Node2D, player: Player, session: 
 	await physics_frame
 	_check(not session.player_crouching and session.player_guard == CombatSession.GuardPosture.NONE, "releasing everything returns to plain standing")
 	_check(not player.is_showing_guard() and not player.is_showing_crouch(), "visuals return to normal after the posture clears")
+
+
+func _test_weapon_presentation(player: Player, session: CombatSession) -> void:
+	# 票据 10 原生形状反馈：C 系出刀（5C 蓄势/刺出/收刀卡点）、A 系徒手（拳形）、
+	# 中立短刀贴臂收起。呈现是会话状态的纯函数（visual_report 可观察口径）。
+	for i in 60:
+		await physics_frame
+		if session.player_phase == CombatSession.PlayerPhase.NEUTRAL and session.dummy_state == CombatSession.DummyState.NEUTRAL:
+			break
+	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
+	session.player_velocity = Vector2.ZERO
+	session.player_facing = 1
+	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_velocity = Vector2.ZERO
+	await physics_frame
+	# 5C（K 键，投组合成员：配对窗口末帧起手）——出刀型。
+	Input.action_press("attack_c")
+	var saw_knife_drawn := false
+	var saw_snap := false
+	for i in 70:
+		await physics_frame
+		if i == 2:
+			Input.action_release("attack_c")
+		var report := player.visual_report()
+		if report.get("phase") == CombatSession.PlayerPhase.STARTUP and bool(report.get("knife_move")):
+			saw_knife_drawn = true
+		if bool(report.get("snap")):
+			saw_snap = true
+	_check(saw_knife_drawn, "5C startup draws the knife (C-family weapon semantics)")
+	_check(saw_snap, "5C recovery flashes the sheath snap at the forearm anchor (收刀卡点)")
+	# 回中立后短刀贴臂：刀可见但未出鞘。
+	for i in 90:
+		await physics_frame
+		if session.player_phase == CombatSession.PlayerPhase.NEUTRAL:
+			break
+	var idle_report := player.visual_report()
+	_check(bool(idle_report.get("knife_visible")) and not bool(idle_report.get("knife_drawn")),
+		"idle keeps the knife sheathed along the forearm")
+	# 5A（U 键）——徒手型：前摇以拳形代替刀姿。
+	Input.action_press("attack_a")
+	var saw_fist := false
+	for i in 40:
+		await physics_frame
+		if i == 1:
+			Input.action_release("attack_a")
+		var report := player.visual_report()
+		if report.get("phase") == CombatSession.PlayerPhase.STARTUP \
+				and not bool(report.get("knife_move")) and bool(report.get("fist_visible")):
+			saw_fist = true
+	_check(saw_fist, "5A startup raises the bare-hand fist instead of the knife")
+	Input.action_release("attack_a")
+	for i in 60:
+		await physics_frame
+		if session.player_phase == CombatSession.PlayerPhase.NEUTRAL:
+			break
+	# 6A（前方向 + A 键）：A 键上的出刀型专用 launcher——按短刀呈现。
+	Input.action_press("move_right")
+	await physics_frame
+	Input.action_press("attack_a")
+	var saw_6a_knife := false
+	for i in 40:
+		await physics_frame
+		if i == 1:
+			Input.action_release("attack_a")
+		Input.action_release("move_right")
+		var report := player.visual_report()
+		if report.get("move_id") == "6A" and bool(report.get("knife_move")):
+			saw_6a_knife = true
+	_check(saw_6a_knife, "6A renders as a knife move despite the A key (出刀型专用 launcher)")
+	for i in 90:
+		await physics_frame
+		if session.player_phase == CombatSession.PlayerPhase.NEUTRAL and session.dummy_state == CombatSession.DummyState.NEUTRAL:
+			break
+	for i in 90:
+		await physics_frame
+		if session.player_phase == CombatSession.PlayerPhase.NEUTRAL and session.dummy_state == CombatSession.DummyState.NEUTRAL:
+			break
 
 
 func _test_throw_keyboard(main: Node2D, session: CombatSession) -> void:
@@ -632,9 +710,10 @@ func _wait_hitstop_over(session: CombatSession) -> void:
 
 
 func _test_backward_qcb_keyboard(main: Node2D, session: CombatSession) -> void:
-	# 后退不翻面（issue 12）：真实键盘路径下地面中立直接搓 214——S → S+A → A → J。
-	# 按住“后”不翻转面向，214D 被识别、执行并命中（阶段 1 的用户症状经真实
-	# 输入适配路径回归）。
+	# 后退不翻面（issue 12）：真实键盘路径下地面中立直接搓 214——S → S+A → A → K。
+	# 按住“后”不翻转面向，214C 被识别、执行并命中（阶段 1 的用户症状经真实
+	# 输入适配路径回归；票据 10 起识别主体从旧 214D 迁移至 214C，C 键有
+	# ≤3 帧投组合配对等待）。
 	for i in 60:
 		await physics_frame
 		if session.player_phase == CombatSession.PlayerPhase.NEUTRAL and session.dummy_state == CombatSession.DummyState.NEUTRAL:
@@ -651,17 +730,17 @@ func _test_backward_qcb_keyboard(main: Node2D, session: CombatSession) -> void:
 	Input.action_press("move_left")
 	await physics_frame
 	Input.action_release("move_down")
-	Input.action_press("attack_d")
+	Input.action_press("attack_c")
 	await physics_frame
-	Input.action_release("attack_d")
+	Input.action_release("attack_c")
 	Input.action_release("move_left")
 	var locked := false
 	for i in 6:
 		await physics_frame
-		if session.player_move_id == "214D":
+		if session.player_move_id == "214C":
 			locked = true
 			break
-	_check(locked, "keyboard 214 from ground neutral (holding back) locks 214D")
+	_check(locked, "keyboard 214 from ground neutral (holding back) locks 214C")
 	_check(session.player_facing == 1, "holding back keeps facing the dummy through the whole keyboard input")
 	var hit := false
 	for i in 30:
@@ -669,7 +748,7 @@ func _test_backward_qcb_keyboard(main: Node2D, session: CombatSession) -> void:
 		if session.dummy_hp < hp_before:
 			hit = true
 			break
-	_check(hit, "the keyboard 214D connects on the nearby dummy")
+	_check(hit, "the keyboard 214C connects on the nearby dummy")
 
 
 func _test_air_derivation_keyboard(facing: int) -> void:

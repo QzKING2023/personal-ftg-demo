@@ -2,7 +2,7 @@ extends SceneTree
 ## 上下文命中资料垂直切片验收（.scratch/ftg-move-design spec §2–§7 / issue 01）：
 ## HitProfile 类型与默认值、MoveTable 组合校验、(target_state, hit_context)
 ## 精确匹配无回退、三种 reaction 的运行时状态/计时/速度/结束事件、Counter Hit
-## 生命周期（startup/recovery 触发、active 排除、挥空结束、命中消耗）、5A/6A/214D
+## 生命周期（startup/recovery 触发、active 排除、挥空结束、命中消耗）、5A/6A/倒地注入探针
 ## 三组验收样例、以及共享表 profile 数据在 CombatSession 与 Combo Solver 两端
 ## 产生一致变化的同步性。既有 Hitstop/落地恢复/自然受身回归由既有测试套件承载。
 ## 运行：godot --headless --path . -s res://tests/test_hit_profiles.gd
@@ -22,7 +22,7 @@ func _initialize() -> void:
 	_test_sample_5a_ground_normal()
 	_test_missing_profile_miss_has_no_side_effects()
 	_test_sample_6a_launch_entry_and_jump_cancel_boundary()
-	_test_sample_214d_knockdown_lifecycle()
+	_test_sample_knockdown_lifecycle()
 	_test_counter_hit_lifecycle()
 	_test_counter_damage_override()
 	_test_player_side_uses_profile_selection()
@@ -100,15 +100,15 @@ func _test_shared_table_samples_declared() -> void:
 		"6A leaves the airborne profile undeclared (unmatched when targeted airborne)")
 	_check(six_a.jump_cancel_targets == ["jA", "jB", "jC"], "6A declares its jump cancel targets into the delivered air normals (ticket 07)")
 	_check((table["5A"] as MoveData).chain_cancel_targets.has("5B"), "5A chains into 5B (ground chain confirm)")
-	var d := table["214D"] as MoveData
+	var d := table["214C~B"] as MoveData
 	var d_normal := MoveData.profile_for(d, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)
 	var d_counter := MoveData.profile_for(d, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.COUNTER)
 	_check(d_normal != null and d_normal.reaction == HitProfile.Reaction.GROUND_KNOCKDOWN
 		and d_normal.knockdown_frames >= 1 and is_equal_approx(d_normal.upward_speed_px_s, 0.0),
-		"214D grounded normal is GROUND_KNOCKDOWN with an independent timer and 0 upward speed")
+		"214C~B grounded normal is GROUND_KNOCKDOWN with an independent timer and 0 upward speed (旧地面 214D 移除后的倒地资料样本)")
 	_check(d_counter != null and d_counter.reaction == HitProfile.Reaction.GROUND_KNOCKDOWN
-		and d_counter.knockdown_frames != d_normal.knockdown_frames,
-		"214D grounded counter is a GROUND_KNOCKDOWN variant")
+		and d_counter.knockdown_frames >= 1,
+		"214C~B grounded counter declares the GROUND_KNOCKDOWN pair (normal/counter 同为 30 帧：旧 214D 的 counter 差异计时不随样本迁移)")
 	for move_id in ["5B", "5D", "5C", "236C"]:
 		var move := table[move_id] as MoveData
 		_check(MoveData.profile_for(move, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL) != null,
@@ -438,10 +438,12 @@ func _test_sample_6a_launch_entry_and_jump_cancel_boundary() -> void:
 	_check(whiff.dummy_hp == GameParams.DUMMY_MAX_HP, "the whiff never touches the dummy")
 
 
-func _test_sample_214d_knockdown_lifecycle() -> void:
-	# 样例 C：214D 直接起手（214+D）。命中 → KNOCKED_DOWN + 连段结束；倒地期间
+func _test_sample_knockdown_lifecycle() -> void:
+	# 样例 C：倒地生命周期（旧 214D 资源已随票据 10 移除——默认表不再有单键
+	# 倒地招式，样例迁移为注入表 214P：与旧 214D 同形 214+D、7/5/20、伤 22、
+	# 倒地 30/40，D 起手）。直接起手。命中 → KNOCKED_DOWN + 连段结束；倒地期间
 	# 打击不命中、不刷新；计时结束自然恢复；恢复后的下一次命中开新连段。
-	var session := CombatSession.new()
+	var session := CombatSession.new(_knockdown_probe_table())
 	session.dummy_position = session.player_position + Vector2(70, 0)
 	var combo_ends: Array[int] = []
 	var recovers: Array[int] = []
@@ -474,7 +476,7 @@ func _test_sample_214d_knockdown_lifecycle() -> void:
 		"the knockdown hit connects once and the post-recovery 5A starts a fresh combo hit")
 	_check(at_knockdown.get("state") == CombatSession.DummyState.KNOCKED_DOWN
 		and int(at_knockdown.get("knockdown", -1)) == 28,
-		"214D's hit puts the dummy into independent knockdown for the D-starter time-scaled 28 frames (floor(30×0.96))")
+		"the knockdown hit puts the dummy into independent knockdown for the D-starter time-scaled 28 frames (floor(30×0.96))")
 	_check(int(at_knockdown.get("stun", -1)) == 0, "knockdown is not disguised as ground hitstun")
 	_check(is_equal_approx(at_knockdown.get("hp", 0.0), GameParams.DUMMY_MAX_HP - 22.0),
 		"the knockdown hit deals its base damage once")
@@ -484,8 +486,9 @@ func _test_sample_214d_knockdown_lifecycle() -> void:
 	_check(session.combo_hits == 1,
 		"the post-recovery hit opened a fresh combo (count restarted at 1)")
 
-	# Counter 窗口内的 214D 只改本次结果（倒地 40 帧），不改不可追击规则。
-	var counter_session := CombatSession.new(_counter_probe_table())
+	# Counter 窗口内的倒地招式只改本次结果（倒地 40 帧），不改不可追击规则。
+	# （表内同时注入木桩慢攻 D_S，与 _counter_probe_table 同形。）
+	var counter_session := CombatSession.new(_knockdown_probe_table())
 	counter_session.dummy_position = counter_session.player_position + Vector2(70, 0)
 	var counter_capture := {}
 	for frame in range(1, 16):
@@ -501,7 +504,7 @@ func _test_sample_214d_knockdown_lifecycle() -> void:
 		_capture_hit(counter_session, events, counter_capture, frame)
 	var counter_event: CombatEvent = counter_capture.get("event")
 	_check(counter_event != null and counter_event.is_counter,
-		"214D hitting the dummy's startup selects the counter profile (reported in the event)")
+		"the knockdown probe hitting the dummy's startup selects the counter profile (reported in the event)")
 	_check(int(counter_capture.get("knockdown", -1)) == 38,
 		"the counter knockdown variant uses its own timer at the D-starter time layer (floor(40×0.96) = 38)")
 
@@ -738,11 +741,36 @@ func _strike_with(profiles: Array) -> MoveData:
 	return move
 
 
-## Counter 探针表：共享表 + D_S（木桩慢速挥空攻击，微命中框不触及玩家，
-## startup 10 / active 2 / recovery 6）+ D_G（木桩快攻，normal 硬直 10 /
-## counter 硬直 14，仅 grounded——玩家空中时必 MISS）。
-func _counter_probe_table() -> Dictionary:
+## 倒地探针表（票据 10）：共享表 + 214P（旧地面 214D 的同形注入副本——
+## 214+D 派生、7/5/20、伤 22、64×60 gap 4、倒地 30/40、D 起手；资源本体已
+## 随旧招式移除，倒地生命周期的样例语义由注入副本承载）+ D_S（与
+## _counter_probe_table 同形的木桩慢攻，counter 场景用）。
+func _knockdown_probe_table() -> Dictionary:
 	var table := MoveData.default_table()
+	var qcb := _strike_with([
+		_profile(HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL,
+			HitProfile.Reaction.GROUND_KNOCKDOWN, {"knockdown_frames": 30, "horizontal_speed_px_s": 400.0, "upward_speed_px_s": 0.0}),
+		_profile(HitProfile.TargetState.GROUNDED, HitProfile.HitContext.COUNTER,
+			HitProfile.Reaction.GROUND_KNOCKDOWN, {"knockdown_frames": 40, "horizontal_speed_px_s": 400.0, "upward_speed_px_s": 0.0}),
+	])
+	qcb.move_id = "214P"
+	qcb.action_key = "D"
+	qcb.direction_derivation = "214D"
+	qcb.command_tier = MoveData.CommandTier.SPECIAL
+	qcb.startup_frames = 7
+	qcb.active_frames = 5
+	qcb.recovery_frames = 20
+	qcb.base_damage = 22
+	qcb.hitbox_size = Vector2(64, 60)
+	qcb.hitbox_gap = 4.0
+	qcb.is_finisher = true
+	table["214P"] = qcb
+	table["D_S"] = _dummy_slow_strike()
+	return table
+
+
+## 木桩慢速挥空攻击探针（D_S）：微命中框不触及玩家，counter 场景共用。
+func _dummy_slow_strike() -> MoveData:
 	var slow := _strike_with([
 		_profile(HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL,
 			HitProfile.Reaction.GROUND_HITSTUN, {"ground_stun_frames": 5, "horizontal_speed_px_s": 0.0, "upward_speed_px_s": 0.0}),
@@ -754,7 +782,15 @@ func _counter_probe_table() -> Dictionary:
 	slow.startup_frames = 10
 	slow.active_frames = 2
 	slow.recovery_frames = 6
-	table["D_S"] = slow
+	return slow
+
+
+## Counter 探针表：共享表 + D_S（木桩慢速挥空攻击，微命中框不触及玩家，
+## startup 10 / active 2 / recovery 6）+ D_G（木桩快攻，normal 硬直 10 /
+## counter 硬直 14，仅 grounded——玩家空中时必 MISS）。
+func _counter_probe_table() -> Dictionary:
+	var table := MoveData.default_table()
+	table["D_S"] = _dummy_slow_strike()
 	var quick := _strike_with([
 		_profile(HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL,
 			HitProfile.Reaction.GROUND_HITSTUN, {"ground_stun_frames": 10, "horizontal_speed_px_s": 100.0, "upward_speed_px_s": 0.0}),

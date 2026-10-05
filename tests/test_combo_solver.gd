@@ -158,12 +158,12 @@ func _test_injected_stance_back_edge_not_misreported() -> void:
 
 func _test_finisher_back_edge_not_misreported() -> void:
 	# 收尾招式命中即结束连段、不开放命中确认取消：5D 不再是收尾（新基线），
-	# 仍为收尾的 214D 的结构回边不可行。
+	# 仍为收尾的 214C~C（旧 214D 已随票据 10 移除）的结构回边不可行。
 	var table := MoveData.default_table()
-	(table["214D"] as MoveData).cancel_targets = ["5A"]
+	(table["214C~C"] as MoveData).cancel_targets = ["5A"]
 	var report := _metrics.analyze(table)
-	var edge := _find_edge(report, "214D", "5A")
-	_check(edge != null and not edge.valid, "finisher back edge 214D -> 5A is excluded")
+	var edge := _find_edge(report, "214C~C", "5A")
+	_check(edge != null and not edge.valid, "finisher back edge 214C~C -> 5A is excluded")
 	if edge != null:
 		_check("收尾" in edge.reason, "exclusion reason says the finisher ends the combo and opens no cancel")
 	_check(report.safe and report.cycles.is_empty(), "a finisher back edge is never misreported as a cycle")

@@ -1,45 +1,53 @@
 # Combo Solver 使用与回放
 
-在项目目录直接运行，无需启动训练场或跑测试套件：
+在项目目录直接运行，无需启动训练场或跑测试套件（独立 APPDATA 约定见 [training-guide.md](training-guide.md)）：
 
 ```powershell
-$env:APPDATA = "$PWD/.scratch/ftg-combat-foundation/acceptance-2026-09-17/runtime"
-& D:/Godot/Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . --log-file .scratch/ftg-combat-foundation/acceptance-2026-09-17/engine.log -s res://tools/solver_report.gd
+$env:APPDATA = "$PWD/.scratch/solver-run/runtime"
+& D:/Godot/Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tools/solver_report.gd
 # 加上静态空间网格
-& D:/Godot/Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . --log-file .scratch/ftg-combat-foundation/acceptance-2026-09-17/engine.log -s res://tools/solver_report.gd -- --spatial
+& D:/Godot/Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tools/solver_report.gd -- --spatial
 ```
 
-程序调用为 `ComboSolver.solve(options)`；`SolverOptions` 可指定 `manifest_path`、`move_table`、`start`、`facings`、`spatial`（以类声明为准）。默认共享表、地面中立、空缓存/方向历史、木桩地面中立、左右面向分别验证；显式空中起点通过 `SolverStartState.stance` 和 `air_frames` 描述。当前接口不能导入任意完整会话快照。
+程序调用为 `ComboSolver.solve(options)`；`SolverOptions` 可指定 `manifest_path`、`move_table`、`start`、`facings`、`spatial`、`complete`、`watchdog_ms`（以类声明为准）。默认共享表、地面中立、空缓存/方向历史、木桩地面中立、左右面向分别验证；显式空中起点通过 `SolverStartState.stance` 和 `air_frames` 描述。当前接口不能导入任意完整会话快照。
 
-## 结论范围
+**精确路线查询（票据 09 验收尾巴）**：`ComboSolver.route_report(move_ids, options)` 按给定招式序列做与完整枚举共用模拟/缓存管路的精确查询——默认表在 79 边规模下完整枚举的呈现上限（MAX_ROUTE_REPORTS=16）不再是查询瓶颈；截断路线的反例查询必须把「断开的那一招」也包含进序列才能复现 timing_valid=false（蓄力路线的正确查询序是 5B→5[D]，5[D]→5B 的目押过期是如实结果）。
 
-2026-09-17 修正落地锁后，默认报告为 9 条配置边：8 有效、1 排除；34 条配置缺口、7 条可读路线、左右镜像一致、无已证明循环。
+## 结论范围（2026-10-05，票据 10 口径）
 
-- `timing-valid`：70px 固定接触位探针的时序成立，木桩每帧被钉回相对距离。
-- `spatial-valid`：可选地面左右镜像 48/64/80px **钉位**网格通过，身体为48×80、命中框取资源、垂直轨迹走真实会话；每个距离允许重新寻找空中延迟。它没有验证真实水平击退的累积，不是完整训练场命中保证。
-- 真实击退回放：不钉位，从指定距离输入同一帧表才可验证该站位。当前地面和派生70px、空中48px在双面向训练场输入回放中接通；空中70px实际只完成前3击、伤害32.6，不能宣称五连可达。
-- 配置缺口不进入合法路线；规则禁止的落地取消不再误报为“补配置即可成立”。循环仍需完整结算状态逐圈重现。8圈/2400帧/240帧恢复观测/40帧空中延迟上限均未增加，触顶仍报告截断或未完成观测。
-- 被防路径标注（2026-09-25 票据 03）：每条链式/必杀边另在「来源招式被木桩站防/蹲防挡下」的探针中验证取消时序——来源在预期接触帧被防（ATTACK_BLOCKED，不产生命中）、目标在被防取消窗口内起手，目标自身接触结果（再被防/属性漏出命中/资料缺失/挥空）如实入注。被防不是 HIT：标注不改变路线/循环图；探针中预期命中帧收到被防结果按 blocked 断链上报。被防安全性（指定反击招式、时机、距离、版中/版边、左右面向）不在静态证明范围，一律 replay-required，由保留真实位置的训练场回放下结论（见 acceptance/03 反击矩阵）。
+默认表（23 招、79 条配置边）的 solve 报告：链式/必杀（命中或被防）、命中确认、jump cancel、Rekka 派生、特殊进入与来源限定连接、空中出口、空技延迟普通连接、j2D 命中落地取消、弹地等待的延迟目押——全部按真实 CombatSession 结算验证；普通连接与取消分别按不同边类型报告；配置缺口（时序成立但未声明）不进合法路线。左右镜像一致；循环判定不设全局命中数/时长上限，以逐圈会话状态快照重现证明（弹地/滑行域自票据 09 起有 CycleInvariant 声明式前置，见 P4 节）。
 
-不搜索走位、中立、墙角、推挤、跨身或边界；循环仅属于 timing 层。旧落地边 jB→5D 被排除，因为空技着地恢复不可取消；恢复后的普通连接没有被证明。
+- `timing-valid`：70px 固定接触位探针的时序成立（木桩每帧被钉回相对距离）。
+- `spatial-valid`：可选地面左右镜像 48/64/80px **钉位**网格通过——静态钉位假设，不是完整训练场命中保证。
+- 真实击退/位移回放：不钉位、从指定距离输入同一帧表才可验证该站位（联合口径见 `.scratch/ftg-character-implementation/acceptance/10/replay-joint.log`：中板蓄力穿越、版边墙截断、双面向全部保留真实位置）。
+- 被防分层：链式/必杀/Rekka 派生边附「来源被防」探针标注；被防安全性（反击招式/时机/距离/版边/面向）不在静态证明范围，一律 replay-required（acceptance/03/04 反击矩阵）。
+- **Solver 不搜索**：走位、中立、墙角、推挤、跨身几何、屏幕边界；这些结论只能由保留真实位置的训练场回放证明。弹地速度/触地节拍/起手手感、j2D 落地节拍与地空目标差异、D 系扫掠边界容差同样 replay-required。
+- **「允许取消 ≠ 来得及命中」的边界**是证明范围的正常产物：票据 10 J5 演示主路线尾部即为一例（j2D untech 在深时间层下覆盖不了落地+前摇、214C 击退超出 ~C 触及）——Solver 与回放按断链原因如实上报，不用调参掩盖也不用截断冒充。
+- 搜索未完成（预算/观测上限/看门狗暂停）如实标记 `paused_incomplete`/截断，不得写成「无循环」；完整结算的循环证明不受呈现上限限制。
 
-## 代表帧表
+## 性能口径（票据 09 后的成本警示）
 
-F 为**正常战斗帧**；命中后的8个冻结物理帧用空输入跳过，不增加 F。未列帧为空输入，各动作键按一次后松开。输入恰在命中当帧的样本可用于脚本复现，不代表真人能在该帧看见命中后作出反应。
+默认表单次全表 analyze 在 79 边规模下 >35 分钟（票据 08 基线 562s 的 3×+，路线 ×1.8/初等环 ×2.8/空间网格复验叠乘）；带空间复验的 solve 单请求 >5 小时。全量验收必须走 `run_acceptance.py --sweep`（枚举去重 + 跨进程缓存 + 并行车道；P0–P7 六层默认开启，见下文各节与 `.scratch/solver-p7-01/`、`.scratch/acceptance-speedup/final-07/`）；任何 `combo_solver.gd` 文本改动会轮换语义签名使持久缓存全量重建（by design），修复合验证须发新请求不能重放旧 descriptor。已知缓存缺口模式：全新缓存下枚举期 warm miss 5 次左右（hit/move_table/replay 族），每次冷跑重付 ≈550–600s×2 车道后自愈。
 
-| 路线 | 正常帧输入（面向右） | 命中正常帧 | 总伤害 | 真实击退复验 |
-| --- | --- | --- | --- | --- |
-| 5A→5B→5D | F1 U；F6 I；F11 J | 6/11/16 | 35.2 | 70px，两侧3击 |
-| 5B→214D | F1 I；F5 S；F6 S+A；F7 A；F8 J | 8/15 | 31.8 | 70px，两侧2击 |
-| 5A→236C→jA→jB→jD | F1 U；F3 S；F4 S+D；F5 D；F6 K；F13 Space；F18 U；F22 I；F27 J | 6/13/22/27/31 | 53.0 | 48px，两侧5击；70px失败 |
+## 代表帧表（联合口径锚点，acceptance/10/replay-joint.log）
 
-面向左时仅镜像世界水平键：236 的 S+D/D 改为 S+A/A；214 的 S+A/A 改为 S+D/D。相对数字仍是236/214，U/I/K/J、Space和帧号不变。
+F 为**正常战斗帧**；命中后 8 个冻结物理帧用空输入跳过。未列帧为空输入；C/B 键有 ≤3 帧投组合配对（方向解析在按下当帧）。输入恰在命中当帧的样本用于脚本复现，不代表真人能在该帧看见命中后反应。
 
-训练场注入含一帧前导空帧：地面命中 tick=7/20/33，派生=9/24，48px空中=7/22/39/52/64。这些是输入适配测试的物理 tick，不要直接当成人类按键节拍。
+| 路线 | 站位/面向 | 命中帧 | 备注 |
+| --- | --- | --- | --- |
+| 5A>5B>5C>5D | 60px 双面向 | F6/21/38/54 | 链式取消链 |
+| 2C>214C>~B>5B | 48px 双面向 | F12/30/43/80 | 扫倒→空中延长→目押 |
+| 236C 两段>5D>5B | 50px 双面向 | 段 F13/26、5D F41、5B F76 | 特殊进入 + 恢复后目押 |
+| 236C(段1)>5[D]>5B | 50px 双面向 | 三击成立、真实穿越换边 | 按住 D 至阈值提交；下一帧面向翻转 |
+| 5A>5B>5C>6A>jc.jB>jC>j2D>214C | 50px 双面向 | 前缀 F6/21/38/54/75/91/108；214C 于落地恢复中消费 | 尾部 1 帧断链：受身 F127 vs 首命中帧 F128（调校候选 D1/D2） |
+| 2C>6D>j2D>214C | 50px 双面向 | F13/31/48/65 | j2D 落地例外全帧序（票据 08 R1） |
+| 2C>6D>j6D>5B | 50px 双面向 | F13/31/47/66 | 落地恢复后延迟普通连接 |
+| B 起手 juggle>j214D>6A>jc.jA | 50px 双面向 | 七击 F10/27/44/67/85/116/136 | 弹地一次性追击（A 起手对照：七击后 BOUNCE_END） |
+| 独立跳 j214D | 50px 双面向 | 命中 F22、触地反弹 F39 | solo 弹地全流程 |
 
-旧落地样本保留作负例：沿空中起手到 F13 Space，改为 F39 U、F48 I、F54 J。钉位70px只命中 F6/13/43/55，共4击、41伤害；落地不启动5D。48px真实输入也只完成4击。它是 `timing-invalid`，不能再作为合法连段或循环证明。
+负例锚点：被防 6A 无 jump cancel（N1a）；236C 段 1 被防整招终止、窗口内 D 只起手独立普通 5D（N1b）；射程外挥空无取消、恢复中链式请求可观察拒绝（N2）；普通来源 5D>5B 无反向出口（N3）；2C 后 2D 高度失配挥空（N4）；A 起手弹地后命中即收尾（N5）。完整输入脚本在 `tests/acceptance_replay_10.gd`。
 
-完整回放和失败断点在 `tests/test_replay_acceptance.gd` 输出。当前独立入口输出可读文本；规格要求的稳定 `version=1` JSON 导出仍未实现，不能把普通文本日志称为该导出。
+面向左时仅镜像世界水平键：236 的 S+D/D 改为 S+A/A；214 的 S+A/A 改为 S+D/D。相对数字仍是 236/214，U/I/K/J、Space 和帧号不变。训练场注入含一帧前导空帧，物理 tick 不与 F 直接比较。稳定 `version=1` JSON 导出仍未实现，不能把可读文本日志称为该导出。
 
 ## 性能 profile v2（确定性计数）
 

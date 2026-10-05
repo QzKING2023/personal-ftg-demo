@@ -1,0 +1,65 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+PASS  synthetic-0: Johnson 枚举与旧路径同序同集（0 环）
+PASS  synthetic-0: 每环恰一次且为字典序最小起点旋转
+PASS  synthetic-1: Johnson 枚举与旧路径同序同集（1 环）
+PASS  synthetic-1: 每环恰一次且为字典序最小起点旋转
+PASS  synthetic-2: Johnson 枚举与旧路径同序同集（0 环）
+PASS  synthetic-2: 每环恰一次且为字典序最小起点旋转
+PASS  synthetic-3: Johnson 枚举与旧路径同序同集（1 环）
+PASS  synthetic-3: 每环恰一次且为字典序最小起点旋转
+PASS  synthetic-4: Johnson 枚举与旧路径同序同集（1 环）
+PASS  synthetic-4: 每环恰一次且为字典序最小起点旋转
+PASS  synthetic-5: Johnson 枚举与旧路径同序同集（2 环）
+PASS  synthetic-5: 每环恰一次且为字典序最小起点旋转
+PASS  synthetic-6: Johnson 枚举与旧路径同序同集（20 环）
+PASS  synthetic-6: 每环恰一次且为字典序最小起点旋转
+PASS  synthetic-7: Johnson 枚举与旧路径同序同集（2 环）
+PASS  synthetic-7: 每环恰一次且为字典序最小起点旋转
+PASS  synthetic-8: Johnson 枚举与旧路径同序同集（1 环）
+PASS  synthetic-8: 每环恰一次且为字典序最小起点旋转
+PASS  synthetic-9: Johnson 枚举与旧路径同序同集（2 环）
+PASS  synthetic-9: 每环恰一次且为字典序最小起点旋转
+PASS  synthetic-reversed-insertion: Johnson 枚举与旧路径同序同集（2 环）
+PASS  synthetic-reversed-insertion: 每环恰一次且为字典序最小起点旋转
+PASS  120 张确定性随机图全部同序同集（mismatch=0）
+PASS  fixture-E4-adj: Johnson 枚举与旧路径同序同集（0 环）
+PASS  fixture-E4-adj: 每环恰一次且为字典序最小起点旋转
+PASS  spatial solve 全语义指纹在叶登记开关两侧全等（10 条路线）
+PASS  叶登记后 session_steps 不增（4973 → 4973，trie 记账零重放放大）
+PASS  全跨调度夹具上无恢复发生（prefix_restores=0，跨调度共享在等价证明前保持阻断）
+PASS  空间复验次数不受叶登记影响（30）
+PASS  多钉位空间失败按路线逐条相等
+PASS  默认模式在 16 条报告上限截断（实际 16）
+PASS  默认模式如实注记路线集合未完成
+PASS  complete 模式不按报告上限剪枝（94 条）
+PASS  complete 模式不携带截断注记
+PASS  complete 路线数 == 邻接图暴力叶计数（94 == 94）
+PASS  默认截断集合是完整集合的子集
+PASS  无看门狗的分析不暂停
+PASS  暂停腿 1 持久化了快照
+PASS  续算最终完成（暂停 1 次）
+PASS  看门狗确实触发过暂停
+PASS  续算完成报告与不中断路径指纹全等
+PASS  solve 级续算最终完成（轮次 1）
+PASS  solve 级看门狗确实触发（暂停或换面向持久化）
+PASS  solve 级续算完成报告与不中断路径指纹全等
+PASS  无看门狗的空间 solve 不暂停
+PASS  不中断空间 solve 有过验路线（回归断言前提）
+PASS  空间 solve 级续算最终完成（轮次 2）
+PASS  空间 solve 级看门狗确实触发
+PASS  续算报告无 timing-valid 路线缺空间验证（0 条缺失）
+PASS  空间 solve 续算完成报告与不中断路径指纹全等
+PASS  缺失快照文件被拒绝并说明原因
+ERROR: Parse JSON failed. Error at line 0: Expected 'true', 'false', or 'null', got 'this'
+   at: parse_string (core/io/json.cpp:604)
+   GDScript backtrace (most recent call first):
+       [0] _load_resume_snapshot (res://scripts/combat/combo_solver.gd:1758)
+       [1] resume_analysis (res://scripts/combat/combo_solver.gd:1808)
+       [2] _test_resume_failures_refused (res://tests/test_solver_routes_cycles_refactor.gd:462)
+       [3] _initialize (res://tests/test_solver_routes_cycles_refactor.gd:36)
+PASS  损坏快照文件被拒绝并说明原因
+
+ACCEPTANCE_SOLVER_METRICS_JSON={"calls":0,"combo_cache":{"bypasses":0,"enabled":true,"entries":0,"hits":0,"misses":1},"elapsed_ms":0.0,"profile_totals":{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"gap_enum_ms":0.0,"gap_enum_runs":0,"other_ms":0.0,"other_runs":0,"requests":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":0.0},"profiles":[],"reports":[],"reuse_enabled":false,"reuse_hit_rate":0.0,"reuse_hits":0,"test":"test_solver_routes_cycles_refactor","underlying_calls":0,"unique_reports":0}
+ALL SOLVER ROUTES-CYCLES REFACTOR TESTS PASSED

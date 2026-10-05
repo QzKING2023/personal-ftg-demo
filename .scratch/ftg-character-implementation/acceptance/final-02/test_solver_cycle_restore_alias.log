@@ -1,0 +1,4 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PASS cycle restore on/off preserves representative result
+TOTAL failures=0

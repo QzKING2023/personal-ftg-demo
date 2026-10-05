@@ -1,0 +1,37 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PASS  selfcheck: old path records 1 leaves
+PASS  selfcheck: old path leaf count stable (1 == 1)
+PASS  selfcheck: old-vs-old leaf projections identical (deterministic replay)
+PASS  sensitivity: corrupted recording caught (solver counter verified)
+PASS  sensitivity: corrupted recording caught (break text)
+PASS  sensitivity: sample leaf has no snapshots (skip snapshot-field probe)
+PASS  route/jump-cancel depth2: 1 leaves identical (lexicographic order + full run dict)
+PASS  route/jump-cancel depth2: live prefix captured (restore path exercised, boundary=15)
+PASS  route/over-extended depth4: 1 leaves identical (lexicographic order + full run dict)
+PASS  single-adjustable sample has exactly one slot (got 1)
+PASS  route/single-adjustable: 1 leaves identical (lexicographic order + full run dict)
+PASS  proof/snapshot-every-2: 369 leaves identical (lexicographic order + full run dict)
+PASS  route/air-start cancels: 64 leaves identical (lexicographic order + full run dict)
+PASS  route/air-start cancels: live prefix captured (restore path exercised, boundary=5)
+PASS  unpredicted_tail: restored run == full-replay run (tail release + extra-hit recording intact)
+PASS  frozen sample: prefix-region break freezes the search
+PASS  route/frozen prefix break: 64 leaves identical (lexicographic order + full run dict)
+PASS  boundary frame >= 2 (prefix owns at least one replayed frame)
+PASS  prefix frame == boundary - 1 (resume point right before the boundary)
+PASS  prefix carries CombatSessionState/v1 clone
+PASS  prefix carries solver-side state: frame
+PASS  prefix carries solver-side state: physics
+PASS  prefix carries solver-side state: verified
+PASS  prefix carries solver-side state: ended_reasons
+PASS  prefix carries solver-side state: snapshots
+PASS  prefix carries solver-side state: extra_hit_frames
+PASS  prefix carries solver-side state: extra_hit_moves
+PASS  prefix carries solver-side state: extra_hit_counts
+PASS  prefix carries solver-side state: proven_period
+PASS  prefix carries solver-side state: laps_observed
+PASS  prefix verified the launcher hit (boundary past it)
+PASS  prefix has no premature proof state
+PASS  mutation/session combo.hits: corrupted session combo counter detected by per-leaf diff
+PASS  mutation/solver verified: corrupted solver-side verified counter detected by per-leaf diff
+TOTAL failures=0

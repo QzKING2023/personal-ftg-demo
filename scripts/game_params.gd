@@ -230,6 +230,15 @@ const DUMMY_COLOR := Color(0.82, 0.56, 0.24)
 const VISOR_COLOR := Color(0.08, 0.08, 0.10)
 const HITBOX_COLOR := Color(1.0, 0.85, 0.25, 0.35)
 const HIT_FLASH_COLOR := Color(4.0, 4.0, 4.0)
+# 短刀/徒手原生形状反馈（票据 10）：刀身冷色、收刀卡点用暗红锚点、拳形暖色、
+# 位移残影用玩家色低透明度——只做呈现，不影响任何结算。
+const KNIFE_COLOR := Color(0.86, 0.89, 0.96)
+const KNIFE_SHEATH_COLOR := Color(0.72, 0.22, 0.25)
+const KNIFE_SHEATH_SNAP_COLOR := Color(1.40, 0.45, 0.42)
+const FIST_COLOR := Color(0.96, 0.82, 0.55)
+const MOTION_TRAIL_COLOR := Color(0.30, 0.62, 0.90, 0.22)
+# 收刀卡点的可视时长（正常物理帧）：出刀招式后摇首帧起亮起、随后淡出。
+const SHEATH_SNAP_FRAMES := 4
 const HP_BAR_BG_COLOR := Color(0.05, 0.05, 0.06)
 const HP_BAR_FILL_COLOR := Color(0.30, 0.85, 0.35)
 const HP_BAR_LOW_COLOR := Color(0.90, 0.25, 0.20)
