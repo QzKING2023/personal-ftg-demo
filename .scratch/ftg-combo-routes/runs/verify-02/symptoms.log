@@ -1,0 +1,190 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+=== ground-full facing=1 dx=50.0 ===
+F10 N10 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F27 N19 {"combo_hits":2,"move":"5C","order":0,"segment":1,"type":"HIT"}
+F42 N26 {"combo_hits":3,"move":"236C","order":0,"segment":1,"type":"HIT"}
+F60 N36 {"combo_hits":4,"move":"5[D]","order":0,"segment":1,"type":"HIT"}
+F89 N57 {"combo_hits":0,"move":"5[D]","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+F108 N76 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F127 N87 {"combo_hits":0,"move":"5B","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  FAIL  ground-full continuous hits=["5B", "5C", "236C", "5[D]"] late=[{ "frame": 108, "order": 0, "move": "5B", "action": 7, "segment": 1, "combo_hits": 1 }]
+  FAIL  ground-full actual crossing swaps=0
+=== ground-full facing=-1 dx=50.0 ===
+F10 N10 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F27 N19 {"combo_hits":2,"move":"5C","order":0,"segment":1,"type":"HIT"}
+F42 N26 {"combo_hits":3,"move":"236C","order":0,"segment":1,"type":"HIT"}
+F60 N36 {"combo_hits":4,"move":"5[D]","order":0,"segment":1,"type":"HIT"}
+F89 N57 {"combo_hits":0,"move":"5[D]","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+F108 N76 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F127 N87 {"combo_hits":0,"move":"5B","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  FAIL  ground-full continuous hits=["5B", "5C", "236C", "5[D]"] late=[{ "frame": 108, "order": 0, "move": "5B", "action": 7, "segment": 1, "combo_hits": 1 }]
+  FAIL  ground-full actual crossing swaps=0
+=== air-full facing=1 dx=50.0 ===
+F9 N9 {"combo_hits":1,"move":"6A","order":0,"segment":1,"type":"HIT"}
+F33 N25 {"combo_hits":2,"move":"jC","order":0,"segment":1,"type":"HIT"}
+F50 N34 {"combo_hits":3,"move":"j214D","order":0,"segment":1,"type":"HIT"}
+F77 N53 {"combo_hits":0,"move":"","order":0,"segment":1,"type":"BOUNCE_CONTACT"}
+F83 N59 {"combo_hits":4,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F104 N72 {"combo_hits":0,"move":"5B","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  PASS  air-full continuous hits=["6A", "jC", "j214D", "5B"] late=[]
+=== air-full facing=-1 dx=50.0 ===
+F9 N9 {"combo_hits":1,"move":"6A","order":0,"segment":1,"type":"HIT"}
+F33 N25 {"combo_hits":2,"move":"jC","order":0,"segment":1,"type":"HIT"}
+F50 N34 {"combo_hits":3,"move":"j214D","order":0,"segment":1,"type":"HIT"}
+F77 N53 {"combo_hits":0,"move":"","order":0,"segment":1,"type":"BOUNCE_CONTACT"}
+F83 N59 {"combo_hits":4,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F104 N72 {"combo_hits":0,"move":"5B","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  PASS  air-full continuous hits=["6A", "jC", "j214D", "5B"] late=[]
+=== ground-buffered facing=1 dx=50.0 ===
+F10 N10 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F27 N19 {"combo_hits":2,"move":"5C","order":0,"segment":1,"type":"HIT"}
+F42 N26 {"combo_hits":3,"move":"236C","order":0,"segment":1,"type":"HIT"}
+F60 N36 {"combo_hits":4,"move":"5[D]","order":0,"segment":1,"type":"HIT"}
+F89 N57 {"combo_hits":0,"move":"5[D]","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+F93 N61 {"combo_hits":0,"link_move":"5B","move":"5[D]","order":0,"reason":"TARGET_RECOVERED","segment":1,"type":"LINK_FAILED"}
+  FAIL  ground-buffered continuous hits=["5B", "5C", "236C", "5[D]"] late=[]
+  FAIL  ground-buffered actual crossing swaps=0
+=== ground-buffered facing=-1 dx=50.0 ===
+F10 N10 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F27 N19 {"combo_hits":2,"move":"5C","order":0,"segment":1,"type":"HIT"}
+F42 N26 {"combo_hits":3,"move":"236C","order":0,"segment":1,"type":"HIT"}
+F60 N36 {"combo_hits":4,"move":"5[D]","order":0,"segment":1,"type":"HIT"}
+F89 N57 {"combo_hits":0,"move":"5[D]","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+F93 N61 {"combo_hits":0,"link_move":"5B","move":"5[D]","order":0,"reason":"TARGET_RECOVERED","segment":1,"type":"LINK_FAILED"}
+  FAIL  ground-buffered continuous hits=["5B", "5C", "236C", "5[D]"] late=[]
+  FAIL  ground-buffered actual crossing swaps=0
+=== ground-early facing=1 dx=50.0 ===
+F10 N10 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F27 N19 {"combo_hits":2,"move":"5C","order":0,"segment":1,"type":"HIT"}
+F42 N26 {"combo_hits":3,"move":"236C","order":0,"segment":1,"type":"HIT"}
+F60 N36 {"combo_hits":4,"move":"5[D]","order":0,"segment":1,"type":"HIT"}
+F89 N57 {"combo_hits":0,"move":"5[D]","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  FAIL  ground-early continuous hits=["5B", "5C", "236C", "5[D]"] late=[]
+  FAIL  ground-early actual crossing swaps=0
+=== ground-early facing=-1 dx=50.0 ===
+F10 N10 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F27 N19 {"combo_hits":2,"move":"5C","order":0,"segment":1,"type":"HIT"}
+F42 N26 {"combo_hits":3,"move":"236C","order":0,"segment":1,"type":"HIT"}
+F60 N36 {"combo_hits":4,"move":"5[D]","order":0,"segment":1,"type":"HIT"}
+F89 N57 {"combo_hits":0,"move":"5[D]","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  FAIL  ground-early continuous hits=["5B", "5C", "236C", "5[D]"] late=[]
+  FAIL  ground-early actual crossing swaps=0
+=== ground-minus-5B facing=1 dx=50.0 ===
+F12 N12 {"combo_hits":1,"move":"5C","order":0,"segment":1,"type":"HIT"}
+F27 N19 {"combo_hits":2,"move":"236C","order":0,"segment":1,"type":"HIT"}
+F45 N29 {"combo_hits":3,"move":"5[D]","order":0,"segment":1,"type":"HIT"}
+F56 N32 {"combo_hits":0,"move":"5[D]","order":0,"segment":1,"type":"SWITCHED_SIDES"}
+F78 N54 {"combo_hits":0,"move":"5[D]","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+F93 N69 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F112 N80 {"combo_hits":0,"move":"5B","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  FAIL  ground-minus-5B continuous hits=["5C", "236C", "5[D]"] late=[{ "frame": 93, "order": 0, "move": "5B", "action": 6, "segment": 1, "combo_hits": 1 }]
+  PASS  ground-minus-5B actual crossing swaps=1
+=== ground-minus-5B facing=-1 dx=50.0 ===
+F12 N12 {"combo_hits":1,"move":"5C","order":0,"segment":1,"type":"HIT"}
+F27 N19 {"combo_hits":2,"move":"236C","order":0,"segment":1,"type":"HIT"}
+F45 N29 {"combo_hits":3,"move":"5[D]","order":0,"segment":1,"type":"HIT"}
+F56 N32 {"combo_hits":0,"move":"5[D]","order":0,"segment":1,"type":"SWITCHED_SIDES"}
+F78 N54 {"combo_hits":0,"move":"5[D]","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+F93 N69 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F112 N80 {"combo_hits":0,"move":"5B","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  FAIL  ground-minus-5B continuous hits=["5C", "236C", "5[D]"] late=[{ "frame": 93, "order": 0, "move": "5B", "action": 6, "segment": 1, "combo_hits": 1 }]
+  PASS  ground-minus-5B actual crossing swaps=1
+=== ground-minus-5C facing=1 dx=50.0 ===
+F10 N10 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F28 N20 {"combo_hits":2,"move":"236C","order":0,"segment":1,"type":"HIT"}
+F46 N30 {"combo_hits":3,"move":"5[D]","order":0,"segment":1,"type":"HIT"}
+F57 N33 {"combo_hits":0,"move":"5[D]","order":0,"segment":1,"type":"SWITCHED_SIDES"}
+F77 N53 {"combo_hits":0,"move":"5[D]","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+F94 N70 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F113 N81 {"combo_hits":0,"move":"5B","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  FAIL  ground-minus-5C continuous hits=["5B", "236C", "5[D]"] late=[{ "frame": 94, "order": 0, "move": "5B", "action": 6, "segment": 1, "combo_hits": 1 }]
+  PASS  ground-minus-5C actual crossing swaps=1
+=== ground-minus-5C facing=-1 dx=50.0 ===
+F10 N10 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F28 N20 {"combo_hits":2,"move":"236C","order":0,"segment":1,"type":"HIT"}
+F46 N30 {"combo_hits":3,"move":"5[D]","order":0,"segment":1,"type":"HIT"}
+F57 N33 {"combo_hits":0,"move":"5[D]","order":0,"segment":1,"type":"SWITCHED_SIDES"}
+F77 N53 {"combo_hits":0,"move":"5[D]","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+F94 N70 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F113 N81 {"combo_hits":0,"move":"5B","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  FAIL  ground-minus-5C continuous hits=["5B", "236C", "5[D]"] late=[{ "frame": 94, "order": 0, "move": "5B", "action": 6, "segment": 1, "combo_hits": 1 }]
+  PASS  ground-minus-5C actual crossing swaps=1
+=== ground-min-link facing=1 dx=50.0 ===
+F13 N13 {"combo_hits":1,"move":"236C","order":0,"segment":1,"type":"HIT"}
+F31 N23 {"combo_hits":2,"move":"5[D]","order":0,"segment":1,"type":"HIT"}
+F42 N26 {"combo_hits":0,"move":"5[D]","order":0,"segment":1,"type":"SWITCHED_SIDES"}
+F67 N51 {"combo_hits":0,"move":"5B","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+F70 N54 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F89 N65 {"combo_hits":0,"move":"5B","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  FAIL  ground-min-link continuous hits=["236C", "5[D]"] late=[{ "frame": 70, "order": 0, "move": "5B", "action": 4, "segment": 1, "combo_hits": 1 }]
+  PASS  ground-min-link actual crossing swaps=1
+=== ground-min-link facing=-1 dx=50.0 ===
+F13 N13 {"combo_hits":1,"move":"236C","order":0,"segment":1,"type":"HIT"}
+F31 N23 {"combo_hits":2,"move":"5[D]","order":0,"segment":1,"type":"HIT"}
+F42 N26 {"combo_hits":0,"move":"5[D]","order":0,"segment":1,"type":"SWITCHED_SIDES"}
+F67 N51 {"combo_hits":0,"move":"5B","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+F70 N54 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F89 N65 {"combo_hits":0,"move":"5B","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  FAIL  ground-min-link continuous hits=["236C", "5[D]"] late=[{ "frame": 70, "order": 0, "move": "5B", "action": 4, "segment": 1, "combo_hits": 1 }]
+  PASS  ground-min-link actual crossing swaps=1
+=== air-observe-5C facing=1 dx=50.0 ===
+F9 N9 {"combo_hits":1,"move":"6A","order":0,"segment":1,"type":"HIT"}
+F33 N25 {"combo_hits":2,"move":"jC","order":0,"segment":1,"type":"HIT"}
+F50 N34 {"combo_hits":3,"move":"j214D","order":0,"segment":1,"type":"HIT"}
+F77 N53 {"combo_hits":0,"move":"","order":0,"segment":1,"type":"BOUNCE_CONTACT"}
+F83 N59 {"combo_hits":4,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F100 N68 {"combo_hits":0,"move":"5C","order":0,"segment":1,"type":"HIT_MISS"}
+F104 N72 {"combo_hits":0,"move":"5C","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  PASS  air-observe-5C continuous hits=["6A", "jC", "j214D", "5B"] late=[]
+=== air-observe-5C facing=-1 dx=50.0 ===
+F9 N9 {"combo_hits":1,"move":"6A","order":0,"segment":1,"type":"HIT"}
+F33 N25 {"combo_hits":2,"move":"jC","order":0,"segment":1,"type":"HIT"}
+F50 N34 {"combo_hits":3,"move":"j214D","order":0,"segment":1,"type":"HIT"}
+F77 N53 {"combo_hits":0,"move":"","order":0,"segment":1,"type":"BOUNCE_CONTACT"}
+F83 N59 {"combo_hits":4,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F100 N68 {"combo_hits":0,"move":"5C","order":0,"segment":1,"type":"HIT_MISS"}
+F104 N72 {"combo_hits":0,"move":"5C","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  PASS  air-observe-5C continuous hits=["6A", "jC", "j214D", "5B"] late=[]
+=== ground-min-cross facing=1 dx=50.0 ===
+F10 N10 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F27 N19 {"combo_hits":2,"move":"5C","order":0,"segment":1,"type":"HIT"}
+F42 N26 {"combo_hits":3,"move":"236C","order":0,"segment":1,"type":"HIT"}
+F60 N36 {"combo_hits":4,"move":"5[D]","order":0,"segment":1,"type":"HIT"}
+F89 N57 {"combo_hits":0,"move":"5[D]","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  PASS  ground-min-cross continuous hits=["5B", "5C", "236C", "5[D]"] late=[]
+  FAIL  ground-min-cross actual crossing swaps=0
+=== ground-min-cross facing=-1 dx=50.0 ===
+F10 N10 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F27 N19 {"combo_hits":2,"move":"5C","order":0,"segment":1,"type":"HIT"}
+F42 N26 {"combo_hits":3,"move":"236C","order":0,"segment":1,"type":"HIT"}
+F60 N36 {"combo_hits":4,"move":"5[D]","order":0,"segment":1,"type":"HIT"}
+F89 N57 {"combo_hits":0,"move":"5[D]","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  PASS  ground-min-cross continuous hits=["5B", "5C", "236C", "5[D]"] late=[]
+  FAIL  ground-min-cross actual crossing swaps=0
+=== ground-full-seg2 facing=1 dx=50.0 ===
+F10 N10 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F27 N19 {"combo_hits":2,"move":"5C","order":0,"segment":1,"type":"HIT"}
+F42 N26 {"combo_hits":3,"move":"236C","order":0,"segment":1,"type":"HIT"}
+F55 N31 {"combo_hits":4,"move":"236C","order":0,"segment":2,"type":"HIT"}
+F73 N41 {"combo_hits":5,"move":"5[D]","order":0,"segment":1,"type":"HIT"}
+F101 N61 {"combo_hits":0,"move":"5[D]","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+F121 N81 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F140 N92 {"combo_hits":0,"move":"5B","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  FAIL  ground-full-seg2 continuous hits=["5B", "5C", "236C", "236C", "5[D]"] late=[{ "frame": 121, "order": 0, "move": "5B", "action": 7, "segment": 1, "combo_hits": 1 }]
+  FAIL  ground-full-seg2 actual crossing swaps=0
+=== ground-full-seg2 facing=-1 dx=50.0 ===
+F10 N10 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F27 N19 {"combo_hits":2,"move":"5C","order":0,"segment":1,"type":"HIT"}
+F42 N26 {"combo_hits":3,"move":"236C","order":0,"segment":1,"type":"HIT"}
+F55 N31 {"combo_hits":4,"move":"236C","order":0,"segment":2,"type":"HIT"}
+F73 N41 {"combo_hits":5,"move":"5[D]","order":0,"segment":1,"type":"HIT"}
+F101 N61 {"combo_hits":0,"move":"5[D]","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+F121 N81 {"combo_hits":1,"move":"5B","order":0,"segment":1,"type":"HIT"}
+F140 N92 {"combo_hits":0,"move":"5B","order":1,"reason":"DUMMY_RECOVERED","segment":1,"type":"COMBO_ENDED"}
+  FAIL  ground-full-seg2 continuous hits=["5B", "5C", "236C", "236C", "5[D]"] late=[{ "frame": 121, "order": 0, "move": "5B", "action": 7, "segment": 1, "combo_hits": 1 }]
+  FAIL  ground-full-seg2 actual crossing swaps=0
+  PASS  selected at least one fixed input plan
+TARGET FAILURES=24 (known failures remain failures)
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2548)

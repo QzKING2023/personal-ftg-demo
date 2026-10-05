@@ -1,0 +1,9 @@
+{
+  "runs": [
+    "verify-02",
+    "verify-03"
+  ],
+  "same_trace_sha256": true,
+  "trace_count": 20,
+  "same_job_verdicts": true
+}

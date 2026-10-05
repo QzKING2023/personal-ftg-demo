@@ -149,11 +149,11 @@ func _214(step: int, facing: int, key := "") -> FrameInput:
 	return input
 
 
-func _log_event(frame: int, tag: String, event: CombatEvent, session: CombatSession) -> void:
+func _log_event(frame: int, tag: String, event: CombatEvent, session: CombatSession, hit_move_id := "") -> void:
 	match event.type:
 		CombatEvent.Type.HIT:
 			print("  F%-3d %s HIT %s seg%d 第%d击 伤%.1f | 修正 伤%.3f/时%.3f/轨%.3f | 玩家x=%.1f 木桩x=%.1f 木桩y=%.1f" % [
-				frame, tag, session.player_move_id, event.move_segment, event.combo_hits, event.damage,
+				frame, tag, hit_move_id if hit_move_id != "" else session.player_move_id, event.move_segment, event.combo_hits, event.damage,
 				session.combo_damage_scale, session.combo_time_scale, session.combo_trajectory_scale,
 				session.player_position.x, session.dummy_position.x, session.dummy_position.y])
 		CombatEvent.Type.ATTACK_BLOCKED:
@@ -172,34 +172,41 @@ func _log_event(frame: int, tag: String, event: CombatEvent, session: CombatSess
 			print("  F%-3d %s COMBO_ENDED 原因%d" % [frame, tag, event.combo_end_reason])
 
 
-## 通用运行：按 plan 帧号取输入（缺省空帧），记录命中招式序列与结束原因。
+## 通用运行：固定物理帧输入。moves 是首段连段的逐 HIT 投影；
+## move_sequence 按动作分组，hits 携带判定段，hits_after_end 单列首次结束后的 HIT。
 func _run_route(plan: Dictionary, facing: int, horizon: int, tag: String, dx := NEAR_DX,
 		guard := 0) -> Dictionary:
 	var session := _spawn(dx, facing)
-	var moves: Array[String] = []
-	var ends: Array[Dictionary] = []
+	var evidence := preload("res://tests/replay_combo_evidence.gd").new()
 	var links: Array[Dictionary] = []
 	var blocked := 0
 	var swaps := 0
+	var action := 0
 	for frame in range(1, horizon + 1):
 		var input: FrameInput = plan[frame] if plan.has(frame) else FrameInput.new()
 		if guard != 0:
 			input.dummy_guard_request = guard
 		var move_at_start := session.player_move_id
-		for event in session.step(input):
-			_log_event(frame, tag, event, session)
+		var move_frame_at_start: int = session.clone_state().player_move.frame
+		var events := session.step(input)
+		for order in events.size():
+			var event: CombatEvent = events[order]
+			evidence.record(frame, order, move_at_start, action, event)
+			_log_event(frame, tag, event, session, move_at_start)
 			match event.type:
-				CombatEvent.Type.HIT:
-					moves.append(move_at_start)
 				CombatEvent.Type.ATTACK_BLOCKED:
 					blocked += 1
 				CombatEvent.Type.SWITCHED_SIDES:
 					swaps += 1
-				CombatEvent.Type.COMBO_ENDED:
-					ends.append({"frame": frame, "reason": event.combo_end_reason})
 				CombatEvent.Type.LINK_FAILED:
 					links.append({"frame": frame, "move": event.link_move_id, "reason": event.link_fail_reason})
-	return {"session": session, "moves": moves, "ends": ends, "links": links,
+		# Startup/charge/cancel is committed after this frame's hit resolution.
+		if session.player_move_id != move_at_start or int(session.clone_state().player_move.frame) < move_frame_at_start:
+			action += 1
+	print("  %s combo move_sequence=%s hits=%s hits_after_end=%s" % [tag,
+		str(evidence.move_sequence), str(evidence.hits), str(evidence.hits_after_end)])
+	return {"session": session, "moves": evidence.moves, "ends": evidence.ends, "links": links,
+		"move_sequence": evidence.move_sequence, "hits": evidence.hits, "hits_after_end": evidence.hits_after_end,
 		"blocked": blocked, "swaps": swaps}
 
 
@@ -356,7 +363,7 @@ func _joint_j3b_236c_charged_cross(facing: int) -> void:
 	var run := _run_route(plan, facing, 110, "J3b", NEAR_DX)
 	var session: CombatSession = run["session"]
 	_check(run["moves"] == ["236C", "5[D]", "5B"],
-		"J3b 段 1 特殊进入>蓄力 5[D]>恢复后目押 5B 三击成立 %s（窗口内按住 D：236C 于段 1 后取消进 D、按住至阈值提交蓄力版）| 面向 %+d" % [str(run["moves"]), facing])
+		"J3b 目标三击须在首次 COMBO_ENDED 前完成（基线已知失败，断连后命中另列）%s| 面向 %+d" % [str(run["moves"]), facing])
 	_check(run["swaps"] == 1 and session.player_facing == -facing,
 		"J3b 实际命中且穿越才换边（换边后面向 %+d）| 面向 %+d" % [session.player_facing, facing])
 	print("")
@@ -416,7 +423,7 @@ func _joint_j5_full_demo_route(facing: int) -> void:
 		var input: FrameInput = plan[frame] if plan.has(frame) else FrameInput.new()
 		var move_at_start := session.player_move_id
 		for event in session.step(input):
-			_log_event(frame, "J5", event, session)
+			_log_event(frame, "J5", event, session, move_at_start)
 			match event.type:
 				CombatEvent.Type.HIT:
 					if combo_over:
@@ -592,7 +599,7 @@ func _negative_n1b_blocked_236c_no_entry() -> void:
 		input.dummy_guard_request = CombatSession.GuardPosture.STANDING
 		var move_before := session.player_move_id
 		for event in session.step(input):
-			_log_event(frame, "N1b", event, session)
+			_log_event(frame, "N1b", event, session, move_before)
 			if event.type == CombatEvent.Type.HIT:
 				hits += 1
 			elif event.type == CombatEvent.Type.ATTACK_BLOCKED:
@@ -623,7 +630,7 @@ func _negative_n2_whiff_no_cancel() -> void:
 		var key := "A" if frame == 1 else ("B" if frame == 16 or frame == 24 else "")
 		var move_before := session.player_move_id
 		for event in session.step(FrameInput.make(0, false, key)):
-			_log_event(frame, "N2", event, session)
+			_log_event(frame, "N2", event, session, move_before)
 			if event.type == CombatEvent.Type.HIT:
 				hits += 1
 			elif event.type == CombatEvent.Type.LINK_FAILED and event.link_move_id == "5B":
@@ -749,7 +756,7 @@ func _negative_n6_whiffed_j2d_no_landing_cancel(facing: int) -> void:
 		var move_before := session.player_move_id
 		var on_ground_before := session.player_on_ground
 		for event in session.step(input):
-			_log_event(frame, "N6", event, session)
+			_log_event(frame, "N6", event, session, move_before)
 			if event.type == CombatEvent.Type.HIT:
 				hits += 1
 		if not on_ground_before:

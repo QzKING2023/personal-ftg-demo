@@ -1,0 +1,5 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2548)
+FOUND c=23 d=33 b=72 hits=[9, 33, 50, 83] inputs=[[1,2,1,false,false,"A"],[14,14,0,false,true,""],[23,23,0,false,false,"C"],[30,30,0,true,false,""],[31,31,-1,true,false,""],[32,32,-1,false,false,""],[33,33,-1,false,false,"D"],[72,72,0,false,false,"B"]] ms=63

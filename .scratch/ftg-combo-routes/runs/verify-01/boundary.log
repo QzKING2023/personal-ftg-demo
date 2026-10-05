@@ -1,0 +1,53 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+  F13  boundary HIT 236C seg1 第1击 伤8.0 | 修正 伤1.000/时0.960/轨0.960 | 玩家x=242.0 木桩x=290.8 木桩y=437.4
+  F30  boundary CHARGE_COMMITTED 5D→5[D]（按住 8 帧）
+  F31  boundary HIT 5[D] seg1 第2击 伤18.0 | 修正 伤0.900/时0.902/轨0.912 | 玩家x=244.9 木桩x=294.0 木桩y=429.6
+  F42  boundary SWITCHED_SIDES 下一帧面向 -1
+  F64  boundary COMBO_ENDED 原因2
+  F79  boundary HIT 5B seg1 第1击 伤10.1 | 修正 伤0.840/时0.820/轨0.850 | 玩家x=362.0 木桩x=295.5 木桩y=440.0
+  F98  boundary COMBO_ENDED 原因3
+  boundary combo move_sequence=["236C", "5[D]"] hits=[{ "frame": 13, "order": 0, "move": "236C", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 31, "order": 0, "move": "5[D]", "action": 3, "segment": 1, "combo_hits": 2 }] hits_after_end=[{ "frame": 79, "order": 0, "move": "5B", "action": 5, "segment": 1, "combo_hits": 1 }]
+PASS first combo excludes the fresh 5B after COMBO_ENDED
+PASS post-end hit retained separately as a new combo
+PASS two segments are two hits of one move; terminal hit before end is included
+PASS same-frame HIT after END and later hits stay outside first combo
+PASS END then HIT order cannot be inferred from end-of-frame combo state
+=== J3a 236C(两段)>5D(特殊进入)>5B(目押) | 面向 +1 | 间距 50 px ===
+  F13  J3a HIT 236C seg1 第1击 伤8.0 | 修正 伤1.000/时0.960/轨0.960 | 玩家x=242.0 木桩x=290.8 木桩y=437.4
+  F26  J3a HIT 236C seg2 第2击 伤10.8 | 修正 伤0.900/时0.902/轨0.912 | 玩家x=242.0 木桩x=293.2 木桩y=428.7
+  F40  J3a CHARGE_COMMITTED 5D→5D（按住 0 帧）
+  F41  J3a HIT 5D seg1 第3击 伤14.6 | 修正 伤0.810/时0.848/轨0.866 | 玩家x=245.8 木桩x=294.8 木桩y=420.8
+  F76  J3a HIT 5B seg1 第4击 伤8.7 | 修正 伤0.729/时0.797/轨0.823 | 玩家x=248.4 木桩x=300.0 木桩y=440.0
+  F95  J3a COMBO_ENDED 原因3
+  J3a combo move_sequence=["236C", "5D", "5B"] hits=[{ "frame": 13, "order": 0, "move": "236C", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 26, "order": 0, "move": "236C", "action": 1, "segment": 2, "combo_hits": 2 }, { "frame": 41, "order": 0, "move": "5D", "action": 2, "segment": 1, "combo_hits": 3 }, { "frame": 76, "order": 0, "move": "5B", "action": 3, "segment": 1, "combo_hits": 4 }] hits_after_end=[]
+PASS J3a 两段命中→特殊进入 D→恢复后目押 5B 四击成立 ["236C", "236C", "5D", "5B"] | 面向 +1
+
+=== J7 弹地 A/B 起手差异 | 面向 +1 ===
+  F10  J7B HIT 5B seg1 第1击 伤10.1 | 修正 伤0.840/时0.820/轨0.850 | 玩家x=240.0 木桩x=292.1 木桩y=440.0
+  F27  J7B HIT 5C seg1 第2击 伤12.1 | 修正 伤0.756/时0.771/轨0.808 | 玩家x=240.0 木桩x=305.9 木桩y=440.0
+  F44  J7B HIT 6A seg1 第3击 伤10.9 | 修正 伤0.680/时0.725/轨0.767 | 玩家x=240.0 木桩x=316.6 木桩y=432.8
+  F67  J7B HIT jB seg1 第4击 伤7.3 | 修正 伤0.612/时0.681/轨0.729 | 玩家x=240.0 木桩x=328.0 木桩y=373.2
+  F85  J7B HIT j214D seg1 第5击 伤11.0 | 修正 伤0.551/时0.640/轨0.692 | 玩家x=243.0 木桩x=330.3 木桩y=390.3
+  F108 J7B BOUNCE_CONTACT 反弹vy=-228 追击窗10
+  F116 J7B HIT 6A seg1 第6击 伤7.8 | 修正 伤0.485/时0.589/轨0.644 | 玩家x=252.7 木桩x=332.1 木桩y=417.0
+  F136 J7B HIT jA seg1 第7击 伤3.5 | 修正 伤0.436/时0.554/轨0.612 | 玩家x=252.7 木桩x=340.3 木桩y=392.7
+  F150 J7B COMBO_ENDED 原因3
+  J7B combo move_sequence=["5B", "5C", "6A", "jB", "j214D", "6A", "jA"] hits=[{ "frame": 10, "order": 0, "move": "5B", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 27, "order": 0, "move": "5C", "action": 2, "segment": 1, "combo_hits": 2 }, { "frame": 44, "order": 0, "move": "6A", "action": 3, "segment": 1, "combo_hits": 3 }, { "frame": 67, "order": 0, "move": "jB", "action": 5, "segment": 1, "combo_hits": 4 }, { "frame": 85, "order": 0, "move": "j214D", "action": 6, "segment": 1, "combo_hits": 5 }, { "frame": 116, "order": 0, "move": "6A", "action": 8, "segment": 1, "combo_hits": 6 }, { "frame": 136, "order": 0, "move": "jA", "action": 10, "segment": 1, "combo_hits": 7 }] hits_after_end=[]
+PASS J7B B 起手弹地后 6A 消费一次性资格并 jump cancel 延长 ["5B", "5C", "6A", "jB", "j214D", "6A", "jA"]
+  F6   J7A HIT 5A seg1 第1击 伤5.8 | 修正 伤0.720/时0.700/轨0.750 | 玩家x=240.0 木桩x=291.9 木桩y=440.0
+  F21  J7A HIT 5B seg1 第2击 伤7.8 | 修正 伤0.648/时0.658/轨0.712 | 玩家x=240.0 木桩x=301.9 木桩y=440.0
+  F38  J7A HIT 5C seg1 第3击 伤9.3 | 修正 伤0.583/时0.619/轨0.677 | 玩家x=240.0 木桩x=312.4 木桩y=440.0
+  F54  J7A HIT 6A seg1 第4击 伤8.4 | 修正 伤0.525/时0.581/轨0.643 | 玩家x=240.0 木桩x=320.1 木桩y=434.0
+  F75  J7A HIT jB seg1 第5击 伤5.7 | 修正 伤0.472/时0.547/轨0.611 | 玩家x=240.0 木桩x=327.7 木桩y=392.3
+  F93  J7A HIT j214D seg1 第6击 伤8.5 | 修正 伤0.425/时0.514/轨0.580 | 玩家x=243.0 木桩x=329.3 木桩y=410.1
+  F112 J7A BOUNCE_CONTACT 反弹vy=-192 追击窗8
+  F119 J7A HIT 5B seg1 第7击 伤4.5 | 修正 伤1.000/时1.000/轨1.000 | 玩家x=252.0 木桩x=329.8 木桩y=426.1
+  F119 J7A COMBO_ENDED 原因5
+  J7A combo move_sequence=["5A", "5B", "5C", "6A", "jB", "j214D", "5B"] hits=[{ "frame": 6, "order": 0, "move": "5A", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 21, "order": 0, "move": "5B", "action": 2, "segment": 1, "combo_hits": 2 }, { "frame": 38, "order": 0, "move": "5C", "action": 3, "segment": 1, "combo_hits": 3 }, { "frame": 54, "order": 0, "move": "6A", "action": 4, "segment": 1, "combo_hits": 4 }, { "frame": 75, "order": 0, "move": "jB", "action": 6, "segment": 1, "combo_hits": 5 }, { "frame": 93, "order": 0, "move": "j214D", "action": 7, "segment": 1, "combo_hits": 6 }, { "frame": 119, "order": 0, "move": "5B", "action": 9, "segment": 1, "combo_hits": 7 }] hits_after_end=[]
+PASS J7A A 起手弹地后 5B 只能收尾 ["5A", "5B", "5C", "6A", "jB", "j214D", "5B"]
+PASS J7A 收尾命中立即 BOUNCE_END（A 起手无追击资格）
+
+BOUNDARY FAILURES=0
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2548)
