@@ -631,7 +631,10 @@ func _test_player_side_uses_profile_selection() -> void:
 func _test_profile_edits_sync_session_and_solver() -> void:
 	var table := MoveData.default_table()
 	var report := _metrics.solve(_options(table))
-	var route := _find_route(report, ["5A", "5B", "6A", "jA", "jB", "j5D"])
+	## 可读路线报告上限（票据 09 起 16 条）触顶后代表路线不再保证入默认报告；
+	## 路线断言经精确路线查询解析（与枚举报告同一套模拟，票据 09 验收尾巴）。
+	var air_ids: Array[String] = ["5A", "5B", "6A", "jA", "jB", "j5D"]
+	var route := _find_route(_metrics.route_report(air_ids, _options(table)), air_ids)
 	_check(route != null and route.timing_valid,
 		"the solver walks the 5A → 5B → 6A (chain cancels) → jump cancel → jA → jB → j5D route on the shared table")
 	if route == null:
@@ -645,7 +648,7 @@ func _test_profile_edits_sync_session_and_solver() -> void:
 	six_normal.damage_override = 25
 	six_normal.horizontal_speed_px_s = 90.0
 	var edited_report := _metrics.solve(_options(table))
-	var edited_route := _find_route(edited_report, ["5A", "5B", "6A", "jA", "jB", "j5D"])
+	var edited_route := _find_route(_metrics.route_report(air_ids, _options(table)), air_ids)
 	## 6A 现为路线第三击：伤害层 0.72×0.9²=0.5832 → (25−16)×0.5832 ≈ 5.2。
 	_check(edited_route != null and _approx(edited_route.total_damage, base_damage + 5.3),
 		"editing the 6A normal profile raises the solver route total by (25-16)*0.5832 with per-hit rounding")
@@ -655,8 +658,9 @@ func _test_profile_edits_sync_session_and_solver() -> void:
 	var six_counter := MoveData.profile_for(table["6A"] as MoveData,
 		HitProfile.TargetState.GROUNDED, HitProfile.HitContext.COUNTER)
 	six_counter.damage_override = 40
-	var counter_report := _metrics.solve(_options(table))
-	var counter_route := _find_route(counter_report, ["5A", "5B", "6A", "jA", "jB", "j5D"])
+	## counter 域改动同样经精确路线查询解析（可读路线报告上限触顶，票据 09 验收尾巴）：
+	## 正常上下文路线不应读到 counter 资料伤害（无 fallback 泄漏）。
+	var counter_route := _find_route(_metrics.route_report(air_ids, _options(table)), air_ids)
 	_check(counter_route != null and _approx(counter_route.total_damage, edited_route.total_damage),
 		"counter-profile edits never leak into the solver's normal-context routes (no fallback)")
 

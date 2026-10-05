@@ -198,9 +198,9 @@ func _s5_jump_reverse_input() -> void:
 func _s6_air_direction_sequence() -> void:
 	# 空中输入方向序列：空中搓 2 → 1 → 4（S → S+A → A）后按 K / J。
 	# 已明确的规则：空中方向输入不改变横向速度或面向（与 S5 同一回归）。
-	# 现状记录：空中方向历史按锁定面向折算；共享表未配置空中派生，C 无 jC
-	# 配置不起手，D 回落解析为无派生 jD——空中派生的识别路径由注入表的
-	# session 测试与 smoke 临时 manifest 用例覆盖，此处保持现状基线。
+	# 现状记录（票据 09 起）：共享表配置了空中 j214D，本场景的 2→1→4 + D
+	# 恰为其指令输入，按独立输入解析为 j214D（不再回落无派生 jD）；无方向
+	# 搓招时的 j5D 回落由注入表 session 测试与 smoke 临时 manifest 用例覆盖。
 	var session := CombatSession.new()
 	_place_dummy(session, FAR_OFFSET)
 	var trace: Array[String] = []
@@ -223,8 +223,8 @@ func _s6_air_direction_sequence() -> void:
 	var move_ids: Array = run["move_ids"]
 	_expect(not move_ids.has("jC") and not move_ids.has("236C") and not move_ids.has("214D"),
 		"S6: 空中按 K 不起手任何招式（无 jC 配置，现状）")
-	_expect(move_ids.has("j5D"), "S6: 空中按 J（无方向）回落解析为 j5D（票据 08：空中 D 系无派生变体，j6D/j2D 需 6/2 方向段）")
-	_note("S6 分类：空中方向序列按锁定面向记录；未配置空中派生时回落无派生招式，属数据配置而非能力缺口")
+	_expect(move_ids.has("j214D"), "S6: 空中 2→1→4 搓招后按 J 独立解析为 j214D（票据 09：空中弹地招式为独立指令输入，不再回落 j5D）")
+	_note("S6 分类：空中方向序列按锁定面向记录；空中方向输入不改变速度与面向，j214D 命中弹地为票据 09 统一行为")
 
 
 func _s7_qcf_after_walkback() -> void:

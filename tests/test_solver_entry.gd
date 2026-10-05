@@ -112,8 +112,12 @@ func _test_guide_uses_real_keys_for_both_facings() -> void:
 	_check("面向右" in guide and "面向左" in guide, "the guide covers both facings")
 	_check("前=D/→ 后=A/←" in guide and "前=A/← 后=D/→" in guide,
 		"each facing header maps forward/back onto the real direction keys")
+	## 可读路线报告上限（票据 09 起 16 条）触顶后代表路线不再保证入默认报告；
+	## 路线指南断言经精确路线查询解析（同一套模拟与指南生成，票据 09 验收尾巴）。
+	var route_ids: Array[String] = ["5A", "5B", "5D"]
+	var route_report := ComboSolver.route_report(route_ids)
 	var route_line := ""
-	for line in report.guide_lines:
+	for line in route_report.guide_lines:
 		if line.begins_with("5A → 5B → 5D"):
 			route_line = line
 			break
@@ -125,8 +129,10 @@ func _test_guide_uses_real_keys_for_both_facings() -> void:
 	## 票据 05：有效 236C 入口路线改经链式取消（如 2A/5A > … > 236C > 5D），
 	## 直接 5A > 236C 前缀只剩断链残根（无回放输入）；折叠断言改为定位任一
 	## 含 236C 按键的有效指南行。
+	var derivative_ids: Array[String] = ["5B", "236C", "5D"]
+	var derivative_report := ComboSolver.route_report(derivative_ids)
 	var derivative_line := ""
-	for line in report.guide_lines:
+	for line in derivative_report.guide_lines:
 		if "按 K（236C）" in line and "↓[S]" in line and not line.contains("断链路线"):
 			derivative_line = line
 			break
@@ -137,7 +143,7 @@ func _test_guide_uses_real_keys_for_both_facings() -> void:
 	# 面向左分节：同一相对输入折叠为镜像物理键。
 	var in_left_section := false
 	var left_feed := false
-	for line in report.guide_lines:
+	for line in derivative_report.guide_lines:
 		if "面向左" in line:
 			in_left_section = true
 		elif in_left_section and "按 K（236C）" in line and not line.contains("断链路线"):
@@ -161,8 +167,8 @@ func _test_explicit_air_start_switches_candidates() -> void:
 	var ids: Array[String] = []
 	for line in report.first_candidates:
 		ids.append(line.split("｜")[0])
-	_check(ids == ["j2D", "j5D", "j6D", "jA", "jB", "jC"],
-		"an explicitly provided air start enumerates only the currently executable air moves in lexicographic order (air D series with ticket 08: j2D/j5D/j6D on J-key D notations, jC delivered with ticket 07)")
+	_check(ids == ["j214D", "j2D", "j5D", "j6D", "jA", "jB", "jC"],
+		"an explicitly provided air start enumerates only the currently executable air moves in lexicographic order (air D series with ticket 08: j2D/j5D/j6D on J-key D notations, jC delivered with ticket 07; j214D unified bounce with ticket 09 sorts before j2D)")
 	var text := "\n".join(report.start_lines)
 	_check("空中" in text and "第 1 个空中帧" in text,
 		"start lines describe the explicitly provided air state and its probe prologue")

@@ -376,10 +376,13 @@ func _test_solver_charge_edges_and_routes() -> void:
 	_check(entry_valid, "solver verifies the charged special-entry edge 236C → 5[D]")
 	_check(chain_valid, "solver verifies a charged chain-cancel edge into 5[D]")
 	_check(link_honest, "solver honestly reports the charged link edge as timing-expired")
-	var charged_route := false
-	for route in report.routes:
-		if route.move_ids.has("5[D]") and route.timing_valid:
-			charged_route = true
+	## 可读路线报告上限（票据 09 起 16 条）触顶后代表路线不再保证入默认报告；
+	## 蓄力路线断言经精确路线查询解析（与枚举报告同一套模拟，票据 09 验收尾巴）：
+	## 5B 链式取消进入蓄力变体 5[D]（与上文 chain_valid 同源边）；5[D] → 5B 的
+	## 目押连接已如上报为超时，timing-valid 路线在 5[D] 收招即止。
+	var charged_ids: Array[String] = ["5B", "5[D]"]
+	var charged_report := ComboSolver.route_report(charged_ids)
+	var charged_route := (not charged_report.refused) and (not charged_report.routes.is_empty()) 		and charged_report.routes[0].timing_valid
 	_check(charged_route, "solver reports timing-valid routes through 5[D]")
 	var charged_solo_start := false
 	for route in report.routes:

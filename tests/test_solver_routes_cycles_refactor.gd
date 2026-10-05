@@ -32,6 +32,7 @@ func _initialize() -> void:
 	_test_complete_mode_full_route_set()
 	_test_interrupt_resume_analysis()
 	_test_interrupt_resume_solve()
+	_test_interrupt_resume_solve_spatial()
 	_test_resume_failures_refused()
 	print("")
 	_metrics.emit("test_solver_routes_cycles_refactor")
@@ -403,6 +404,51 @@ func _test_interrupt_resume_solve() -> void:
 	_check(not report.paused_incomplete, "solve 级续算最终完成（轮次 %d）" % rounds)
 	_check(rounds > 0, "solve 级看门狗确实触发（暂停或换面向持久化）")
 	_check(_metrics._fingerprint(report) == plain_fp, "solve 级续算完成报告与不中断路径指纹全等")
+
+
+## solve 级中断续算的空间开关保持（09-full-01 回归）：带空间数据的 solve 暂停
+## 后续算，完成报告必须与不中断路径指纹全等。曾因 solve 级快照丢失线程载荷
+##（spatial 开关/看门狗/进度游标），续算把空间验证整段丢掉——all-UNVERIFIED
+## 路线进结果缓存，污染同型请求。
+func _test_interrupt_resume_solve_spatial() -> void:
+	var table := _fixture.table(2)
+	if table.is_empty():
+		_check(false, "fixture E=2 table available")
+		return
+	ComboSolver.clear_result_cache()
+	ComboSolver.clear_edge_probe_cache()
+	var plain_opts := ComboSolver.SolverOptions.new()
+	plain_opts.move_table = table
+	plain_opts.spatial = ComboSolver.SolverSpatialData.new()
+	var plain_report := ComboSolver.solve(plain_opts)
+	var plain_fp := _metrics._fingerprint(plain_report)
+	_check(not plain_report.paused_incomplete, "无看门狗的空间 solve 不暂停")
+	var timing_valid := 0
+	for route in plain_report.routes:
+		if route.timing_valid and route.spatial_state != 0:
+			timing_valid += 1
+	_check(timing_valid > 0, "不中断空间 solve 有过验路线（回归断言前提）")
+	var resume_path := "res://.scratch/solver-p5-01/resume-solve-spatial.json"
+	ComboSolver.clear_result_cache()
+	ComboSolver.clear_edge_probe_cache()
+	var opts := ComboSolver.SolverOptions.new()
+	opts.move_table = table
+	opts.spatial = ComboSolver.SolverSpatialData.new()
+	opts.watchdog_ms = 1
+	opts.resume_path = resume_path
+	var rounds := 0
+	var report := ComboSolver.solve(opts)
+	while report.paused_incomplete and rounds < 200:
+		rounds += 1
+		report = ComboSolver.resume_analysis(resume_path)
+	_check(not report.paused_incomplete, "空间 solve 级续算最终完成（轮次 %d）" % rounds)
+	_check(rounds > 0, "空间 solve 级看门狗确实触发")
+	var unverified := 0
+	for route in report.routes:
+		if route.timing_valid and route.spatial_state == 0:
+			unverified += 1
+	_check(unverified == 0, "续算报告无 timing-valid 路线缺空间验证（%d 条缺失）" % unverified)
+	_check(_metrics._fingerprint(report) == plain_fp, "空间 solve 续算完成报告与不中断路径指纹全等")
 
 
 func _test_resume_failures_refused() -> void:

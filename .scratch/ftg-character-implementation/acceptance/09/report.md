@@ -39,7 +39,10 @@
 
 ## 全量自动化
 
-（待 `tools/run_acceptance.ps1` 回填：summary.json 位置、通过数、退出码。）
+- **2026-10-05 `tools/run_acceptance.py --sweep`（pool 模式）→ [09-full-02/](09-full-02/)**：33 job 全过（每 job exit=0，无失败族）、**3896 断言**、总墙 **294.0s**；清扫 89 请求 = 87 complete + 2 已知重建门设计缺口（与 09-full-01 同源，热跑原地重算覆盖）；cache-merge 93 条（+6 新）。**4 个 solve+空间任务实际暂停续算（pauses=1）且 replay_ok=True**——暂停续算空间回归修复的在位证明。退出码 0。
+- **09-full-01 尾巴修复记录**：09-full-01 唯一失败为 test_solver_spatial 3 FAIL——solve 级暂停续算把空间验证整段丢掉（`_solve_paused_return` 只改写快照顶层、未按 `_resume_solve` 的读取形态持久化 `thread` 载荷，续算腿 `spatial=false` 重算主面向，all-UNVERIFIED 路线经 worker `_sweep_store_completed` 入结果缓存，29 条 solve+空间缓存条目全部污染）。修复 + 回归测试 `test_solver_routes_cycles_refactor._test_interrupt_resume_solve_spatial`（反证：临时摘除修复，恰好「续算无缺验路线」「指纹全等」2 条断言 FAIL，其余全过）。验收尾巴的 36+ FAIL 在途族（9 套件，根因=79 边表扩容后 MAX_ROUTE_REPORTS=16 呈现上限触顶）经新增 `ComboSolver.route_report()` 精确路线查询改写后全部转绿。
+- 环境健壮性顺带修复：首跑 09-full-02 在 42 任务后因 `_write_json_atomic` 的 Windows `os.replace` WinError 5（杀软/索引器短暂握住目标文件）崩溃，已加有界退避重试（6 次）。
+- fingerprint 门：全 33 job 内置指纹断言 exit=0（P7 canonical 105c43c7 语义在本票改动下不旋转）。
 
 ## 回放证据（replay-bounce.log）
 

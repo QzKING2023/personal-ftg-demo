@@ -136,7 +136,11 @@ func _test_spatial_failure_names_standing_and_collision() -> void:
 				_check("timing-valid" in line and "空间失败" in line,
 					"the route line keeps timing-valid while flagging the spatial failure")
 	# 对照：同表的非 5A 起手默认路线不受短 reach 影响（仍然 spatial-valid）。
-	var full := _find_route(report, ["5B", "5D"])
+	## 可读路线报告上限（票据 09 起 16 条）触顶后代表路线不再保证入默认报告；
+	## 该路线经精确路线查询解析并按同一空间网格复验（票据 09 验收尾巴）。
+	var full_ids: Array[String] = ["5B", "5D"]
+	var full_report := _metrics.route_report(full_ids, _spatial_options(table))
+	var full := _find_route(full_report, full_ids)
 	_check(full != null and full.spatial_state == ComboSolver.SolverRoute.SpatialState.VALID,
 		"the default-reach route on the same table stays spatial-valid")
 

@@ -69,8 +69,8 @@ func _test_default_table_reports_ground_route() -> void:
 	var link := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.NORMAL_LINK)
 	_check(link != null and not link.valid and "目押超时" in link.reason,
 		"the declared normal-link edge 5A -> 5B is reported as its own type and honestly excluded (dummy recovers at 9 before full recovery at 14)")
-	var route := _find_route(report, ["5A", "5B", "5D"])
-	_check(route != null, "report contains the readable 5A -> 5B -> 5D route")
+	var route := _query_route(["5A", "5B", "5D"])
+	_check(route != null, "the readable 5A -> 5B -> 5D route verifies via the exact-route query")
 	if route != null:
 		_check(route.hit_frames == [6, 13, 20], "route hit frames are 6/13/20 (B cancels land one normal frame after each confirm)")
 		_check(route.combo_hits == 3, "route counts 3 hits")
@@ -98,7 +98,7 @@ func _test_numbers_match_runtime_session() -> void:
 	var ab := _find_edge(report, "5A", "5B")
 	_check(hit_frame == 6 and recover_frame == 6 + GameParams.HITSTOP_FRAMES + 9, "runtime 5A hits on frame 6 and naturally recovers after the freeze plus the A-starter-scaled hitstun (floor(14x0.70) = 9)")
 	_check(ab != null and ab.valid and ab.recover_age == recover_frame - hit_frame - GameParams.HITSTOP_FRAMES, "solver recover age (9 normal frames) matches the runtime session minus the frozen frames")
-	var route := _find_route(report, ["5A", "5B", "5D"])
+	var route := _query_route(["5A", "5B", "5D"])
 	_check(route != null and route.hit_frames == [6, 13, 20], "solver route hit frames follow the B pairing-wait timing (w=0 cancels resume on the first normal frame)")
 
 
@@ -235,9 +235,8 @@ func _test_default_table_air_edges() -> void:
 func _test_full_air_route_matches_runtime() -> void:
 	# 验收 2：完整空中路线的合法接续与运行时一致——把 Solver 发现的输入表回放到
 	# 真实 CombatSession（同一几何假设：木桩钉在玩家面前），命中帧/连段数/伤害逐项对拍。
-	var report := _default_analyze()
-	var route := _find_route(report, ["5A", "5B", "6A", "jA", "jB", "j5D"])
-	_check(route != null, "the full air route 5A -> 5B -> 6A -> Space -> jA -> jB -> j5D is reported")
+	var route := _query_route(["5A", "5B", "6A", "jA", "jB", "j5D"])
+	_check(route != null, "the full air route 5A -> 5B -> 6A -> Space -> jA -> jB -> j5D verifies via the exact-route query")
 	if route == null:
 		return
 	_check(route.hit_frames == [6, 13, 21, 30, 35, 41], "air route hits on frames 6/13/21/30/35/41 (w=0 cancels with the B pairing wait, earliest air press after pre-jump, j5D startup 6)")
@@ -329,7 +328,9 @@ func _test_injected_landing_back_edge_reports_cycle() -> void:
 	_check(report.safe and report.cycles.is_empty(), "configured landing back edge cannot bypass recovery or prove a cycle")
 	var edge := _find_edge(report, "jB", "5A", ComboSolver.EdgeKind.LANDING_CANCEL)
 	_check(edge != null and not edge.valid, "landing back edge is excluded")
-	var finite := _find_route(report, ["5A", "5B", "6A", "jA", "jB", "j5D"])
+	var route_opts := ComboSolver.SolverOptions.new()
+	route_opts.move_table = table
+	var finite := _query_route(["5A", "5B", "6A", "jA", "jB", "j5D"], route_opts)
 	_check(finite != null and finite.combo_hits == 6, "finite air route remains available (six hits after the 6A launcher migration)")
 
 
@@ -352,7 +353,7 @@ func _test_crouch_moves_and_low_float() -> void:
 	var sweep_edge := _find_edge(report, "2B", "2C", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	_check(sweep_edge != null and sweep_edge.valid,
 		"2B -> 2C is validated and puts the dummy into the low float on hit")
-	var route := _find_route(report, ["2B", "2C", "214C", "214C~B"])
+	var route := _query_route(["2B", "2C", "214C", "214C~B"])
 	_check(route != null and route.timing_valid and route.combo_hits == 4,
 		"the readable 2B -> 2C -> 214C -> 214C~B sweep route replays with both crouch presses carrying down (ticket 04 extends the dead end into the rekka route)")
 	if route != null:
@@ -364,13 +365,16 @@ func _test_crouch_moves_and_low_float() -> void:
 	## 票据 05 起 5D → 5B 是来源限定边：普通来源 5D 的延长（如 2A > 2B > 5C > 5D
 	## 之后接 5B）在逐帧模拟中如实断链，路线记录截断为四招前缀——四招本身仍经
 	## 上面 2A > 2B > 214C > 214C~B 的可读路线证明蹲姿→站立链可用。
-	var crouch_route := _find_route(report, ["2A", "2B", "5C", "5D"])
-	_check(crouch_route != null and not crouch_route.timing_valid and "在此截断" in crouch_route.note,
+	## 精确路线查询带入被断的第 5 招（5B）：解析器如枚举遍历一样在第 4 招后
+	## 如实断链，记录四招前缀——与旧枚举路线记录同形（票据 09 验收尾巴）。
+	var crouch_route := _query_route(["2A", "2B", "5C", "5D", "5B"])
+	_check(crouch_route != null and not crouch_route.timing_valid and crouch_route.move_ids.size() == 4 		and "在此截断" in crouch_route.note,
 		"the 2A > 2B > 5C > 5D walk is recorded truncated at the source-limited 5B extension (normal-source 5D keeps no reverse link)")
 	## A 起手时间层衰减的诚实截断：2A > 2B 后接 2C 的第三击因 2B 受击窗口
 	## （floor(14×0.658)=9）短于 2C 前摇到达而不成立——按截断路线如实报告，
 	## 不伪装成时序成立。
-	var truncated := _find_route(report, ["2A", "2B"])
+	## 精确路线查询带入接不上的第 3 招（2C）：逐帧模拟在 2C 处断链并截断。
+	var truncated := _query_route(["2A", "2B", "2C"])
 	if truncated != null:
 		_check(not truncated.timing_valid and "断开" in truncated.note,
 			"the truncated 2A -> 2B entry (2C too slow behind the A-starter-decayed 2B stun) is honestly reported as broken")
@@ -411,10 +415,10 @@ func _test_rekka_derive_edges_and_routes() -> void:
 	for line in report.first_candidates:
 		_check(not line.begins_with("214C~"),
 			"rekka-only derived moves never appear as first candidates (%s)" % line)
-	var route_b := _find_route(report, ["2C", "214C", "214C~B"])
+	var route_b := _query_route(["2C", "214C", "214C~B"])
 	_check(route_b != null and route_b.timing_valid and route_b.combo_hits == 3,
 		"the canonical 2C > 214C > 214C~B route replays with three real hits")
-	var route_c := _find_route(report, ["5B", "2C", "214C", "214C~C"])
+	var route_c := _query_route(["5B", "2C", "214C", "214C~C"])
 	_check(route_c != null and route_c.timing_valid and route_c.combo_hits == 4
 		and route_c.note.contains("收尾"),
 		"the 5B > 2C > 214C > 214C~C route ends as a finisher with four hits")
@@ -445,7 +449,7 @@ func _test_special_entry_edges_and_slide_scope() -> void:
 			"the link edge names its entry context and the source limitation")
 	_check(_find_edge(report, "5D", "5B", ComboSolver.EdgeKind.NORMAL_LINK) == null,
 		"no unconditional 5D -> 5B link edge exists (normal-source 5D keeps no reverse link)")
-	var route := _find_route(report, ["5B", "236C", "5D"])
+	var route := _query_route(["5B", "236C", "5D"])
 	_check(route != null and route.timing_valid and route.combo_hits == 4,
 		"the 5B > 236C(both segments) > 5D route is timing-valid with all four hits predicted")
 	var cycle_route := _find_route(report, ["5B", "236C", "5D", "5B"])
@@ -513,7 +517,8 @@ func _test_solver_claims_only_configured_connections() -> void:
 	# 空中段只能经配置的 jump cancel 进入，路线只从地面普通动作键起手。
 	var report := _default_analyze()
 	## 配置关系集 = 声明的取消/连接边：6 条链式、3 条必杀、4 条普通连接
-	## （5A→5B、5B→5C、5B→5D、5C→5D）、2 条 jump cancel、2 条空中取消、1 条落地接续。
+	## （5A→5B、5B→5C、5B→5D、5C→5D）、2 条 jump cancel、2 条空中取消、1 条落地接续；
+	## 票据 06-09 随扩表追加（见下方分组注记），当前 79 边。
 	var pairs := [
 		["5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL], ["5A", "2B", ComboSolver.EdgeKind.CHAIN_CANCEL],
 		["5B", "5C", ComboSolver.EdgeKind.CHAIN_CANCEL], ["5B", "2C", ComboSolver.EdgeKind.CHAIN_CANCEL],
@@ -568,6 +573,13 @@ func _test_solver_claims_only_configured_connections() -> void:
 		["2D", "j2D", ComboSolver.EdgeKind.AIR_EXIT],
 		["j6D", "5B", ComboSolver.EdgeKind.NORMAL_LINK],
 		["j2D", "214C", ComboSolver.EdgeKind.HIT_LANDING_CANCEL],
+		## 票据 09：j214D 统一弹地入表——jA/jB/jC 空中取消 3、6D/2D 空中出口
+		## 2（2D 侧枚举但 valid=false）、j214D 弹地延迟连接 5B/6A/214C 共 3。
+		["jA", "j214D", ComboSolver.EdgeKind.CANCEL], ["jB", "j214D", ComboSolver.EdgeKind.CANCEL],
+		["jC", "j214D", ComboSolver.EdgeKind.CANCEL],
+		["6D", "j214D", ComboSolver.EdgeKind.AIR_EXIT], ["2D", "j214D", ComboSolver.EdgeKind.AIR_EXIT],
+		["j214D", "5B", ComboSolver.EdgeKind.NORMAL_LINK], ["j214D", "6A", ComboSolver.EdgeKind.NORMAL_LINK],
+		["j214D", "214C", ComboSolver.EdgeKind.NORMAL_LINK],
 	]
 	_check(report.edges.size() == pairs.size(), "the default report enumerates exactly the configured continuation relations")
 	var reported := {}
@@ -616,7 +628,9 @@ func _test_report_lines_readable() -> void:
 	var lines := report.to_lines()
 	var text := "\n".join(lines)
 	_check(lines.size() >= 8, "report has enough lines (summary/scope/edges/routes/cycles sections)")
-	_check("5A → 5B → 5D" in text, "report contains the 5A -> 5B -> 5D route text")
+	var route_text := "
+".join(_metrics.route_report(["5A", "5B", "5D"]).to_lines())
+	_check("5A → 5B → 5D" in route_text, "the exact-route query's report carries the 5A -> 5B -> 5D route text")
 	_check("236C → jA" in text and "jB → 5D" in text, "air seams appear in the edge report")
 	_check("接续边" in text and "可读路线" in text and "循环" in text, "report sections are complete")
 	_check("jump cancel" in text and "落地接续" in text, "edge kinds are labeled")
@@ -682,6 +696,16 @@ func _find_route(report: ComboSolver.SolverReport, move_ids: Array[String]) -> C
 		if route.move_ids == move_ids:
 			return route
 	return null
+
+
+## 可读路线报告上限（票据 09 起 16 条）触顶后，代表路线不再保证出现在默认报告
+## 里——路线断言经精确路线查询解析（与枚举报告同一套入口上下文、接缝种类解析
+## 与逐帧模拟，票据 09 验收尾巴）；边级断言仍用完整报告。
+func _query_route(move_ids: Array[String], options: ComboSolver.SolverOptions = null) -> ComboSolver.SolverRoute:
+	var report := _metrics.route_report(move_ids, options)
+	if report.refused or report.routes.is_empty():
+		return null
+	return report.routes[0]
 
 
 ## 把 Solver 发现的输入表回放到全新 CombatSession（木桩按同一几何假设钉在玩家面前）。

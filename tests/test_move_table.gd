@@ -870,12 +870,12 @@ func _test_startup_edit_syncs_session_and_solver() -> void:
 			if event.type == CombatEvent.Type.HIT:
 				session_hit = frame
 	_check(session_hit == 9, "session hit frame follows the edited startup (6 -> 9)")
-	var report := _metrics.analyze(moves)
-	var route := _find_route(report, ["5A", "5B", "5D"])
+	## 可读路线报告上限（票据 09 起 16 条）触顶后代表路线不再保证入默认报告；
+	## 路线断言经精确路线查询解析（与枚举报告同一套模拟，票据 09 验收尾巴）。
+	var route := _query_route(["5A", "5B", "5D"], moves)
 	_check(route != null and route.hit_frames == [9, 16, 23],
 		"solver report follows the same edited startup (route hit frames 9/16/23; the B chain cancel lands one normal frame after the confirm)")
-	var baseline := _metrics.analyze()
-	var baseline_route := _find_route(baseline, ["5A", "5B", "5D"])
+	var baseline_route := _query_route(["5A", "5B", "5D"], null)
 	_check(baseline_route != null and baseline_route.hit_frames == [6, 13, 20],
 		"unmodified shared table keeps the baseline route (6/13/20 with the B pairing wait)")
 
@@ -890,8 +890,7 @@ func _test_damage_edit_syncs_session_and_solver() -> void:
 	## A 起手首击：round0.1(25 × 0.72) = 18.0。
 	_check(absf(session.dummy_hp - (GameParams.DUMMY_MAX_HP - 18.0)) < 0.05,
 		"session damage follows the edited base damage through the A starter scale")
-	var report := _metrics.analyze(moves)
-	var route := _find_route(report, ["5A", "5B", "5D"])
+	var route := _query_route(["5A", "5B", "5D"], moves)
 	## 18.0 + round0.1(12 × 0.72×0.90) + round0.1(18 × 0.72×0.90×0.90) = 18.0 + 7.8 + 10.5。
 	_check(route != null and _approx(route.total_damage, 36.3),
 		"solver route total damage follows the same edit (25 scaled by the three-layer corrections: 18.0 + 7.8 + 10.5)")
@@ -1089,6 +1088,21 @@ func _write_text(path: String, text: String) -> void:
 	file.store_string(text)
 	file.close()
 
+
+## 可读路线报告上限（票据 09 起 16 条）触顶后代表路线不再保证入默认报告；
+## 路线断言经精确路线查询解析（与枚举报告同一套模拟，票据 09 验收尾巴）。
+## table 为 null 时查询共享 manifest 默认表，否则作为注入表查询。
+func _query_route(move_ids: Array, table) -> ComboSolver.SolverRoute:
+	var ids: Array[String] = []
+	for id in move_ids:
+		ids.append(str(id))
+	if table == null:
+		var plain := ComboSolver.route_report(ids)
+		return plain.routes[0] if not plain.refused and not plain.routes.is_empty() else null
+	var opts := ComboSolver.SolverOptions.new()
+	opts.move_table = table
+	var report := ComboSolver.route_report(ids, opts)
+	return report.routes[0] if not report.refused and not report.routes.is_empty() else null
 
 func _find_route(report, move_ids: Array) -> ComboSolver.SolverRoute:
 	for route in report.routes:

@@ -71,7 +71,7 @@ func _test_pinned_replay_reproduces_solver_results(report: ComboSolver.SolverRep
 	_check(report.mirror_consistent, "the replayed table passes the solver's facing-mirror verification")
 	var table := _shared_table()
 	for route_ids in [GROUND_ROUTE, DERIVATIVE_ROUTE, AIR_ROUTE]:
-		var route := _find_route(report, route_ids)
+		var route := _route_of(route_ids)
 		if route == null:
 			_check(false, "the solver reports the representative route %s" % " → ".join(route_ids))
 			continue
@@ -109,7 +109,7 @@ func _test_pinned_replay_reproduces_solver_results(report: ComboSolver.SolverRep
 				"命中帧", "timing-valid（空间未验证）"))
 	# 确定性：同一输入重放一遍，事件载荷与逐击结算状态快照完全一致
 	#（checkbox 2「相同 CombatEvent、状态」的可观察口径）。
-	var air := _find_route(report, AIR_ROUTE)
+	var air := _route_of(AIR_ROUTE)
 	if air != null:
 		var first := _replay_route(air, 1, ComboSolver.PIN_DX, table, true)
 		var second := _replay_route(air, 1, ComboSolver.PIN_DX, table, true)
@@ -147,7 +147,10 @@ func _legacy_landing_fixture() -> ComboSolver.SolverRoute:
 	return route
 
 func _test_rejected_landing_replay(report: ComboSolver.SolverReport) -> void:
-	_check(_find_route(report, LANDING_ROUTE) == null, "latest Solver excludes the forbidden landing route")
+	## 负例升级为实质检查（票据 09 验收尾巴）：恢复锁拒绝第 5 击——精确查询如实
+	## 报断链，不因报告上限而失去这层排除证明。
+	var forbidden := _route_of(LANDING_ROUTE)
+	_check(forbidden == null or not forbidden.timing_valid, "latest Solver excludes the forbidden landing route")
 	var route := _legacy_landing_fixture()
 	for facing in [1, -1]:
 		var run := _replay_route(route, facing, 70.0, _shared_table(), true)
@@ -189,7 +192,7 @@ func _test_replay_boundary_variants(report: ComboSolver.SolverReport) -> void:
 		"pressing D one frame later never lands as combo hit 2 — the follow-up boundary is observable in replay (%s)" % String(late["end_reasons_text"]))
 	# 空技着地恢复锁定：空中路线收尾后，恢复期间按 A 不起手；恢复归零当帧
 	#（首个自由帧）的新按下起手 5A。
-	var air := _find_route(report, AIR_ROUTE)
+	var air := _route_of(AIR_ROUTE)
 	if air == null:
 		_check(false, "the air route is available for the landing-lock replay")
 		return
@@ -215,7 +218,7 @@ func _test_timing_spatial_layering_and_whiff_replay(plain: ComboSolver.SolverRep
 	_check("未提供空间数据" in no_spatial and "不构成空间证明" in no_spatial,
 		"without spatial data the report declares every route timing-valid only")
 	for route_ids in [GROUND_ROUTE, AIR_ROUTE]:
-		var route := _find_route(plain, route_ids)
+		var route := _route_of(route_ids)
 		if route == null:
 			continue
 		_check(route.timing_valid and route.spatial_state == ComboSolver.SolverRoute.SpatialState.UNVERIFIED,
@@ -225,8 +228,8 @@ func _test_timing_spatial_layering_and_whiff_replay(plain: ComboSolver.SolverRep
 		"the guide states its frame tables are laid out at the fixed %d px contact" % ComboSolver.PIN_DX)
 
 	# 提供空间数据：默认表路线 spatial-valid，48/64/80 px 钉位复验逐档重现。
-	var spatial := _metrics.solve(_spatial_options())
-	var air := _find_route(spatial, AIR_ROUTE)
+	## 空间档代表路线经精确查询解析并按 48/64/80 px 网格复验（票据 09 验收尾巴）。
+	var air := _route_of(AIR_ROUTE, true)
 	if air == null:
 		_check(false, "the spatial run reports the air route")
 		return
@@ -255,8 +258,11 @@ func _test_timing_spatial_layering_and_whiff_replay(plain: ComboSolver.SolverRep
 	## 5A 在 80 px 自身脱靶（边界相邻）：以 5B（远缘 69 px）为来源，80 px 上
 	## 来源命中、5R（远缘 48 px）挥空——短 reach 空间失败由回放证实。
 	(short_table["5B"] as MoveData).cancel_targets.append("5R")
-	var short_report := _metrics.solve(_spatial_options(short_table))
-	var short_route := _find_route(short_report, ["5B", "5R"])
+	## 注入表路线经精确路线查询解析（可读路线报告上限触顶，票据 09 验收尾巴）：
+	## 5B（远缘 69 px）→ 5R（远缘 48 px）在同一空间档下时序可成、空间失败。
+	var short_ids: Array[String] = ["5B", "5R"]
+	var short_report := _metrics.route_report(short_ids, _spatial_options(short_table))
+	var short_route := _find_route(short_report, short_ids)
 	if short_route == null:
 		_check(false, "the short-reach injected table reports the 5B → 5R route")
 		return
@@ -292,7 +298,7 @@ func _test_keyboard_replay_matches_session_probe(plain: ComboSolver.SolverReport
 		["air", AIR_ROUTE, -1], ["landing", LANDING_ROUTE, -1],
 	]:
 		var kind: String = combo[0]
-		var route := _legacy_landing_fixture() if kind == "landing" else _find_route(plain, combo[1])
+		var route := _legacy_landing_fixture() if kind == "landing" else _route_of(combo[1])
 		var facing: int = combo[2]
 		if route == null:
 			_check(false, "the keyboard replay finds route %s" % " → ".join(PackedStringArray(combo[1])))
@@ -324,11 +330,11 @@ func _test_keyboard_replay_matches_session_probe(plain: ComboSolver.SolverReport
 	# 测试者可按说明执行：每条回放路线在对应面向分节里有真实键位行。
 	var guide_text := "\n".join(plain.guide_lines)
 	for route_ids in [GROUND_ROUTE, DERIVATIVE_ROUTE, AIR_ROUTE]:
-		var route := _find_route(plain, route_ids)
+		var route := _route_of(route_ids)
 		if route == null:
 			continue
 		var has_guide := false
-		for line in plain.guide_lines:
+		for line in _route_report_of(route_ids).guide_lines:
 			if line.begins_with(route.label() + "（"):
 				has_guide = true
 				break
@@ -676,6 +682,27 @@ func _find_route(report: ComboSolver.SolverReport, move_ids: Array) -> ComboSolv
 		if route.move_ids == move_ids:
 			return route
 	return null
+
+
+## 代表路线解析：可读路线报告上限（票据 09 起 16 条）触顶后，默认报告不再保证
+## 携带它们——经精确路线查询解析（与枚举报告同一套模拟，票据 09 验收尾巴），
+## 结果按 id 序与站位选项缓存，钉位/键盘/空间各级回放共用同一份路线输入表。
+func _route_of(move_ids: Array, spatial := false) -> ComboSolver.SolverRoute:
+	var report := _route_report_of(move_ids, spatial)
+	return null if report == null else report.routes[0]
+
+
+func _route_report_of(move_ids: Array, spatial := false) -> ComboSolver.SolverReport:
+	var key := "%s|%s" % ["|".join(PackedStringArray(move_ids)), spatial]
+	if not _route_cache.has(key):
+		var ids: Array[String] = []
+		for id in move_ids:
+			ids.append(str(id))
+		var report := ComboSolver.route_report(ids, _spatial_options() if spatial else null)
+		_route_cache[key] = null if report.refused or report.routes.is_empty() else report
+	return _route_cache[key]
+
+var _route_cache: Dictionary = {}
 
 
 func _find_edge(report: ComboSolver.SolverReport, from_id: String, to_id: String, kind: int) -> ComboSolver.SolverEdge:

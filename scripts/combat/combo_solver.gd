@@ -1845,7 +1845,10 @@ static func _resume_solve(table: Dictionary, snapshot: Dictionary) -> SolverRepo
 	var start := _start_from_snapshot(thread)
 	var run := ComboSolver.new(table)._analyze(thread_facing, start, bool(thread.get("sort_outputs", true)), spatial, mode)
 	if run.paused_incomplete:
-		return _solve_paused_return(run, null, facings, 0, mode, {})
+		## 续算腿再暂停：冻结的 primary/镜像签名原样带回（thread 恢复了看门狗
+		## 预算后此路径可达），不能让包装层把 primary 清成 null。
+		var rethread_primary = _thaw_report(snapshot["primary"]) if snapshot.get("primary", null) != null else null
+		return _solve_paused_return(run, rethread_primary, facings, 0, mode, snapshot.get("pristine_sections", {}))
 	var primary: SolverReport
 	var pristine: Dictionary = snapshot.get("pristine_sections", {})
 	if snapshot.get("primary", null) == null:
@@ -1887,6 +1890,20 @@ static func _solve_paused_return(paused_report: SolverReport, primary: SolverRep
 			snap["primary"] = _freeze_report(primary) if primary != null else null
 			snap["pristine_sections"] = pristine
 			snap["pending_facings"] = pending
+			## 线程字段镜像 _pause_and_persist 写下的面向载荷：_resume_solve 以
+			## snapshot["thread"] 续算暂停腿，缺了它空间开关/看门狗/进度游标
+			## 全部丢失（曾致续算报告丢空间验证——all-UNVERIFIED 进缓存）。
+			snap["thread"] = {
+				"complete": bool(snap.get("complete", false)),
+				"watchdog_ms": int(snap.get("watchdog_ms", 0)),
+				"resume_path": path,
+				"sort_outputs": bool(snap.get("sort_outputs", true)),
+				"spatial": bool(snap.get("spatial", false)),
+				"start": snap.get("start", null),
+				"report": snap.get("report", {}),
+				"route_search_truncated": bool(snap.get("route_search_truncated", false)),
+				"progress": snap.get("progress", {}),
+			}
 			wrapped = _persist_resume_snapshot(path, snap)
 	if wrapped:
 		paused_report.notes.append("%ssolve 已在面向 %s 的枚举中途暂停并把未完成状态连同剩余面向持久化（%s）；ComboSolver.resume_analysis 续算" % [
@@ -1918,6 +1935,203 @@ static func _merge_facing_run(primary: SolverReport, run: SolverReport, facing: 
 		])
 	_merge_route_spatial(primary, run)
 	primary.guide_lines.append_array(run.guide_lines)
+
+
+# --- 精确路线查询（票据 09 验收尾巴）---
+
+## 可读路线报告（_walk_routes）最多输出 MAX_ROUTE_REPORTS 条叶路线——这是呈现
+## 预算，不是连段语义：招式表扩边后 DFS 前缀在预算内触不到某些路线时，报告
+## 如实注记「路线集合未完成」。路线的存在性由「已验证边集 ∩ ≤MAX_ROUTE_NODES
+## 简单路径」结构保证；逐击时序/伤害/输入表由本入口按同一套模拟给出——入口
+## 上下文（_build_contexts）、接缝种类解析（与完整枚举同一固定 kind 序下首个
+## 验证成立的接缝，含蓄力变体派生，与 _register_edge 的记录规则一致）与
+## _simulate_route 逐字节复用，不引入第二套搜索。
+## 返回只携带该路线的报告（无其他边/缺口/循环/路线）；多面向走 solve() 同一套
+## 镜像对拍与合并；提供空间数据时对该路线做 48/64/80 px 复验。语义维度
+## （表、起始、面向、空间、路线 id 序）全部进请求键，走 solve() 同一结果缓存与
+## 清扫枚举管路；单条路线模规模有界，看门狗/complete 不适用（字段被忽略）。
+static func route_report(move_ids: Array[String], options: SolverOptions = null) -> SolverReport:
+	_profile_reset()
+	_profile_v2_reset()
+	var opts := options if options != null else SolverOptions.new()
+	## 与 solve() 同一选项守卫（拒绝文案同源，拒绝形态不进缓存）。
+	if opts.start != null and opts.start.stance == MoveData.Stance.AIR \
+			and (opts.start.air_frames < 0 or opts.start.air_frames >= GameParams.PLAYER_JUMP_AIRTIME_FRAMES):
+		_count_cache_bypass()
+		return _refused_start_state("air_frames=%d 超出普通跳 %d 帧滞空（落地后不再是空中姿态）" % [
+			opts.start.air_frames, GameParams.PLAYER_JUMP_AIRTIME_FRAMES,
+		])
+	if opts.spatial != null:
+		if opts.spatial.body_size != GameParams.BODY_SIZE:
+			_count_cache_bypass()
+			return _refused_spatial(
+				"空间数据的身体矩形 %s 与运行时身体矩形 %s 不一致——空间复验在真实 CombatSession 结算中进行，Solver 不维护第二套碰撞物理" % [
+					opts.spatial.body_size, GameParams.BODY_SIZE,
+				],
+				"调整 SolverSpatialData.body_size 与 GameParams.BODY_SIZE 一致后重新分析。")
+		if opts.start != null and opts.start.stance == MoveData.Stance.AIR:
+			_count_cache_bypass()
+			return _refused_spatial(
+				"首版空间探针只验证地面站位（双方站地）的 48/64/80 px 距离网格，与显式空中起始不匹配",
+				"使用地面起始做空间验证（空中站位的网格不在首版范围）。")
+	var injected := not opts.move_table.is_empty()
+	var table := opts.move_table
+	if table.is_empty():
+		var result := MoveTable.load_manifest(opts.manifest_path)
+		if not result.ok:
+			_count_cache_bypass()
+			return _refused_report(result)
+		table = result.moves
+	else:
+		var copied := _clone_move_table(table)
+		if copied["ok"]:
+			table = copied["table"]
+	## id 校验：非空、存在、简单路径、不超过可读路线节点上限。
+	if move_ids.is_empty():
+		_count_cache_bypass()
+		return _refused_route_ids("路线查询需要至少一个招式 id")
+	if move_ids.size() > MAX_ROUTE_NODES:
+		_count_cache_bypass()
+		return _refused_route_ids("路线超过可读路线的 %d 招简单路径上限（MAX_ROUTE_NODES）" % MAX_ROUTE_NODES)
+	var seen := {}
+	for id in move_ids:
+		if not table.has(id):
+			_count_cache_bypass()
+			return _refused_route_ids("路线引用了表中不存在的招式 id：%s" % id)
+		if seen.has(id):
+			_count_cache_bypass()
+			return _refused_route_ids("路线重复经过 %s（可读路线按简单路径枚举，回边经循环层单独证明）" % id)
+		seen[id] = true
+	var request := _build_route_request(options != null, opts, move_ids, table, injected)
+	var cached := _cache_query(request)
+	if cached != null:
+		return cached
+	var stub := _enumerate_intercept(request)
+	if stub != null:
+		return stub
+	var facings: Array[int] = opts.facings.duplicate() if not opts.facings.is_empty() else [1, -1]
+	var primary := ComboSolver.new(table)._route_leg(facings[0], opts.start, opts.spatial, move_ids)
+	var facing_texts: Array[String] = []
+	for facing in facings:
+		facing_texts.append(_facing_text(facing))
+	primary.start_lines.append("验证面向：%s" % "、".join(facing_texts))
+	var pristine_sections := _signature_sections(primary, facings[0])
+	for i in range(1, facings.size()):
+		var run := ComboSolver.new(table)._route_leg(facings[i], opts.start, opts.spatial, move_ids)
+		_merge_facing_run(primary, run, facings[i], pristine_sections)
+	if facings.size() > 1:
+		primary.summary += "左右面向分别验证%s。" % ("，镜像一致" if primary.mirror_consistent else "，但结果不一致（见注）")
+	primary.spatial_lines = _spatial_report_lines(primary, facings, opts.spatial != null)
+	if bool(request.get("cacheable", false)) and result_cache_enabled() and not primary.refused:
+		return _cache_store(request, primary)
+	return primary
+
+
+## 单面向精确路线腿：为该面向重建入口上下文，逐对接缝解析种类后模拟整条路线。
+func _route_leg(facing: int, start: SolverStartState, spatial: SolverSpatialData, move_ids: Array[String]) -> SolverReport:
+	_facing = facing
+	_start = start
+	_pin_dx = PIN_DX
+	var report := SolverReport.new()
+	report.scope = SCOPE_TEXT
+	report.verified_facings = [facing]
+	report.table_lines = _table_summary_lines()
+	report.start_lines = _start_state_lines()
+	report.first_candidates = _first_candidates()
+	var contexts := _build_contexts()
+	_profile_enter(_PROFILE_EDGE)
+	var timing_cache := {}
+	var edge_kinds := {}
+	var broken_pair := -1
+	for i in range(1, move_ids.size()):
+		var kind := _route_pair_kind(move_ids[i - 1], move_ids[i], contexts, timing_cache)
+		if kind < 0:
+			broken_pair = i
+			break
+		edge_kinds["%s|%s" % [move_ids[i - 1], move_ids[i]]] = kind
+	_profile_exit()
+	if broken_pair >= 0:
+		var missing := SolverRoute.new()
+		missing.move_ids.assign(move_ids.slice(0, broken_pair))
+		missing.timing_valid = false
+		missing.note = "路线在第 %d 招后断开（%s → %s 在本表无已验证接续边；补配后的候选缺口见完整报告的配置缺口节），路线在此截断" % [
+			broken_pair + 1, move_ids[broken_pair - 1], move_ids[broken_pair],
+		]
+		report.routes = [missing]
+	else:
+		_profile_enter(_PROFILE_ROUTE)
+		var route := _simulate_route(move_ids, contexts, edge_kinds)
+		_profile_exit()
+		if spatial != null and route.timing_valid:
+			_verify_route_spatial(route, contexts, edge_kinds)
+		report.routes = [route]
+	## 起点上下文缺失（如空中招式作首招而起始为地面）由 _route_run 记为断链路线，
+	## 与 _walk_routes 产出的截断路线同一口径。
+	report.safe = true
+	report.summary = _route_query_summary(report, move_ids)
+	report.guide_lines = _guide_lines(report)
+	return report
+
+
+## 精确路线查询的摘要行：只描述该路线本身，不宣称完整枚举。
+func _route_query_summary(report: SolverReport, move_ids: Array[String]) -> String:
+	if report.routes.is_empty():
+		return "精确路线查询 %s：无结果。" % " → ".join(move_ids)
+	var route := report.routes[0]
+	if route.timing_valid:
+		return "精确路线查询：%s 时序成立（%d 击，伤害 %.1f）；本查询只验证该路线本身，不构成完整枚举。" % [
+			route.label(), route.combo_hits, route.total_damage,
+		]
+	return "精确路线查询：%s 未成立（%s）；本查询只验证该路线本身，不构成完整枚举。" % [
+		route.label(), route.note,
+	]
+
+
+## 单对接缝的种类解析：与完整枚举同一固定 kind 序（含蓄力变体派生的同序检查），
+## 返回首个在真实结算探针中验证成立的接缝种类；全部不成立返回 -1（调用方按
+## 断链上报）——与 _register_edge「首个验证成立者入路线图」的记录规则一致。
+func _route_pair_kind(from_id: String, to_id: String, contexts: Dictionary, timing_cache: Dictionary) -> int:
+	var from_move := _table.get(from_id) as MoveData
+	if from_move == null:
+		return -1
+	var kinds_and_targets := [
+		[EdgeKind.CANCEL, from_move.cancel_targets],
+		[EdgeKind.CHAIN_CANCEL, from_move.chain_cancel_targets],
+		[EdgeKind.SPECIAL_CANCEL, from_move.special_cancel_targets],
+		[EdgeKind.JUMP_CANCEL, from_move.jump_cancel_targets],
+		[EdgeKind.LANDING_CANCEL, from_move.landing_cancel_targets],
+		[EdgeKind.NORMAL_LINK, from_move.link_targets],
+		[EdgeKind.REKKA_DERIVE, _rekka_targets_of(from_move)],
+		[EdgeKind.SPECIAL_ENTRY, from_move.special_entry_targets],
+		[EdgeKind.SPECIAL_ENTRY_LINK, from_move.special_entry_link_targets],
+		[EdgeKind.AIR_EXIT, from_move.air_exit_targets],
+		[EdgeKind.HIT_LANDING_CANCEL, from_move.hit_landing_cancel_targets],
+	]
+	for pair in kinds_and_targets:
+		var kind: EdgeKind = pair[0]
+		for candidate in pair[1]:
+			var probe_to := ""
+			if str(candidate) == to_id:
+				probe_to = to_id
+			else:
+				var charged := _table.get(str(candidate)) as MoveData
+				if charged != null and charged.is_chargeable() and charged.charge_move_id == to_id:
+					probe_to = to_id
+			if probe_to == "":
+				continue
+			var edge := _build_edge(from_id, probe_to, kind, contexts, timing_cache)
+			if edge.valid:
+				return kind
+	return -1
+
+
+static func _refused_route_ids(reason: String) -> SolverReport:
+	var report := SolverReport.new()
+	report.refused = true
+	report.refusal_reason = reason
+	report.refusal_advice = "route_report 的招式 id 序必须来自表内既有招式、不超过 %d 招且不重复经过同一招式。" % MAX_ROUTE_NODES
+	report.scope = SCOPE_TEXT
+	return report
 
 
 static func _clone_move_table(table: Dictionary) -> Dictionary:
@@ -2017,6 +2231,59 @@ static func _build_analyze_request(entrypoint: String, manifest_path: String, ta
 			"max_cycle_laps": MAX_CYCLE_LAPS,
 			"max_cycle_frames": MAX_CYCLE_FRAMES,
 			"recover_horizon": RECOVER_HORIZON,
+			"max_route_nodes": MAX_ROUTE_NODES,
+			"max_route_delay_trials": MAX_ROUTE_DELAY_TRIALS,
+			"max_air_delay": MAX_AIR_DELAY,
+			"cancel_window_frames": GameParams.CANCEL_WINDOW_FRAMES,
+			"route_delay_budget": MAX_ROUTE_DELAY_TRIALS,
+		},
+		"engine_version": Engine.get_version_info(),
+		"semantics": _solver_semantics_signature(),
+	}
+	var canonical := _canonical_variant(descriptor)
+	if canonical == "":
+		return {"cacheable": false, "text": "", "digest": ""}
+	return {"cacheable": true, "text": canonical, "digest": _sha256_text(canonical)}
+
+
+## 精确路线查询的同型 descriptor（票据 09 验收尾巴）：维度与 _build_solve_request
+## 一致，另携带路线 id 序本身（route_ids）——id 序是语义维度，进请求键；
+## complete/看门狗不是本入口的维度（单路线模拟有界、无枚举上限），不入键。
+static func _build_route_request(options_present: bool, opts: SolverOptions, move_ids: Array[String], table: Dictionary, injected: bool) -> Dictionary:
+	var effective_facings: Array[int] = opts.facings.duplicate() if not opts.facings.is_empty() else [1, -1]
+	var table_text := _canonical_variant(table)
+	if table_text == "":
+		return {"cacheable": false, "text": "", "digest": ""}
+	var start_value = null
+	if opts.start != null:
+		start_value = {"stance": opts.start.stance, "air_frames": opts.start.air_frames}
+	var spatial_value = null
+	if opts.spatial != null:
+		spatial_value = {"body_size": opts.spatial.body_size}
+	var descriptor := {
+		"request_schema_version": _REQUEST_SCHEMA_VERSION,
+		"report_snapshot_version": _REPORT_SNAPSHOT_VERSION,
+		"entrypoint": "route",
+		"sort_outputs": true,
+		"options_present": options_present,
+		"route_ids": move_ids.duplicate(),
+		"table_source": "injected" if injected else "manifest",
+		"injected_nonempty": injected,
+		"table_schema_version": 1,
+		"table_content_digest": _sha256_text(table_text),
+		"manifest_path": opts.manifest_path,
+		"manifest_signature": {"status": "not_used"} if injected else _manifest_signature(opts.manifest_path),
+		"manifest_load_status": "not_used" if injected else "ok",
+		"table": table,
+		"start": {"present": opts.start != null, "value": start_value},
+		"facings": {"raw": opts.facings.duplicate(), "effective": effective_facings},
+		"spatial": {"present": opts.spatial != null, "value": spatial_value},
+		"probe": {
+			"pin_dx": PIN_DX,
+			"spatial_distances": SPATIAL_PROBE_DISTANCES.duplicate(),
+			"runtime_body_size": GameParams.BODY_SIZE,
+		},
+		"limits": {
 			"max_route_nodes": MAX_ROUTE_NODES,
 			"max_route_delay_trials": MAX_ROUTE_DELAY_TRIALS,
 			"max_air_delay": MAX_AIR_DELAY,
@@ -2531,6 +2798,38 @@ static func _sweep_replay(descriptor_text: String, overrides: Dictionary = {}) -
 				report = analyze({}, overrides)
 		"analyze_manifest":
 			report = analyze_manifest(str(descriptor.get("manifest_path", "")), overrides)
+		"route":
+			if bool(descriptor.get("options_present", false)):
+				var opts := SolverOptions.new()
+				opts.manifest_path = str(descriptor.get("manifest_path", MoveTable.DEFAULT_MANIFEST_PATH))
+				if str(descriptor.get("table_source", "")) == "injected":
+					opts.move_table = _rehydrated_table(descriptor.get("table", {}))
+				var raw: Array = facings_value.get("raw", [])
+				if not raw.is_empty():
+					var typed_facings: Array[int] = []
+					for facing in raw:
+						typed_facings.append(int(facing))
+					opts.facings = typed_facings
+				var start_value = descriptor.get("start", {}).get("value", null)
+				if start_value != null:
+					var start := SolverStartState.new()
+					start.stance = int((start_value as Dictionary).get("stance", 1))
+					start.air_frames = int((start_value as Dictionary).get("air_frames", 0))
+					opts.start = start
+				var spatial_value = descriptor.get("spatial", {}).get("value", null)
+				if spatial_value != null:
+					var spatial := SolverSpatialData.new()
+					spatial.body_size = (spatial_value as Dictionary).get("body_size", GameParams.BODY_SIZE)
+					opts.spatial = spatial
+				var route_ids: Array[String] = []
+				for id in descriptor.get("route_ids", []):
+					route_ids.append(str(id))
+				report = route_report(route_ids, opts)
+			else:
+				var default_ids: Array[String] = []
+				for id in descriptor.get("route_ids", []):
+					default_ids.append(str(id))
+				report = route_report(default_ids)
 		_:
 			return {"ok": false, "error": "未知 entrypoint：%s" % descriptor.get("entrypoint", "")}
 	if str(_last_request.get("text", "")) != descriptor_text:

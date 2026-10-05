@@ -23,6 +23,17 @@ func solve_reused(_key: String, options: ComboSolver.SolverOptions = null) -> Co
 	return _run_solve(options)
 
 
+func route_report(move_ids: Array[String], options: ComboSolver.SolverOptions = null) -> ComboSolver.SolverReport:
+	_calls += 1
+	_next_call += 1
+	_underlying_calls += 1
+	var started := Time.get_ticks_usec()
+	var report := ComboSolver.route_report(move_ids, options)
+	_elapsed_ms += float(Time.get_ticks_usec() - started) / 1000.0
+	_record("route-%d" % _next_call, report)
+	return report
+
+
 func analyze(table: Dictionary = {}) -> ComboSolver.SolverReport:
 	return _run_analyze(table)
 

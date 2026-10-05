@@ -378,7 +378,16 @@ def _write_json_atomic(path: Path, payload) -> None:
     tmp = path.with_name(path.name + ".tmp")
     with open(tmp, "w", encoding="utf-8") as handle:
         json.dump(payload, handle, separators=(",", ":"))
-    os.replace(str(tmp), str(path))
+    # Windows 上杀软/索引器会短暂握住目标文件令 os.replace 报 WinError 5；
+    # 有界退避重试（09-full-02 首跑在 42 个任务后因此崩掉）。
+    for attempt in range(6):
+        try:
+            os.replace(str(tmp), str(path))
+            return
+        except PermissionError:
+            if attempt == 5:
+                raise
+            time.sleep(0.05 * (2 ** attempt))
 
 
 def _load_durations(cache: Path) -> dict:
