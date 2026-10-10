@@ -75,7 +75,7 @@ None - can start immediately。规格已收敛，当前无未决设计问题。�
 
 ## Completion evidence
 
-- **审查起点/实施阶段基线**：`2eebb175d86b4e378d9d1679bc8e73f543a411db`（拆票 HEAD，也是整个实施阶段基线——开工时工作树无其他代码提交）。实现提交：本记录所在提交（SHA 由其后的纯文档提交在 progress.md 回填）。
+- **审查起点/实施阶段基线**：`2eebb175d86b4e378d9d1679bc8e73f543a411db`（拆票 HEAD，也是整个实施阶段基线——开工时工作树无其他代码提交）。实现提交：`c6d21a93578aba213078df3b58a508c875b8913d`。
 - **交付**：BODY_SIZE 12×20（头部/眼罩同比，攻击框/投距/运动值保留，墙限 30/930、ground_stand_y 470）；jC 7→4、j214D 9→1（恢复不变）；j214D AIRBORNE N/C 24/30→32/32；5B 新增 AIRBORNE N/C（LAUNCH 18/24、h60/up100）与 GROUND_BOUNCE 18/24→19/25；动作键 D 招式实际接地命中水平受击速度置 0（combat_session `_apply_player_hit`，按 action_key×dummy_on_ground，反应/垂直/计时/资格保留）；撤销 STARTER_BOUNCE_FOLLOWUP/combo_bounce_followup/BOUNCE_END——弹地目标命中自然接续、可再次弹地（多层修正不重置）；Solver PIN_DX=26、空间网格 12/24/44（44=5A/2A 判框远缘相切位）。
 - **新测试**：`tests/test_ground_bounce_finish.gd`（52 断言：尺度、全 D 接地矩阵与例外面、BOUNCE_END 撤销、双弹地八击有限性、R4-G 参考路线双面向、3612 点保证域扫描（g 全整数×r 步长 35 + 边界行 r 全量 + 非整数样点，如实记录非穷尽）、六键 ±4F 连续区间、64 向量联合扰动、8 组负例）。
 - **再锚定与回归**（12×20 几何 + 新选值，均为必要回归非重设计）：约 22 个既有套件距离/帧号迁移；A 起手弹地 5B 为 1F 目押窗（D72 允许 1F）；A 起手 juggle 以 jC 中介再挑空（6A 弹地 untech 17F 不够直接 j214D）；再弹地 6A 后 jc.jC 中介；j2D→214C 在 6D 换边后 214 指令按换边后面向镜像（世界方向 +原facing）；smoke/回放空中收尾 j5D→j2D（薄身下漂出触及）；test_solver_entry 的票据 08 dive 正例（垂直跳空中起始 jA→j6D）改记为如实负例（air_frames 0–37 全扫描挥空；俯冲在 launcher 语境由 test_air_d_landing/test_launcher_air_exits 承载）；test_solver_growth oracle 随已批准语义变更重生成（计数与 P1 基线逐字段一致，仅指纹轮换）。

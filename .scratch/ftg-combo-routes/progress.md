@@ -1,6 +1,6 @@
 ## 2026-10-10 阶段 6（票据 01）：6A 对地弹地六击倒地已实施，full-04 全绿
 
-- **实施阶段基线/本票审查起点**：`2eebb175d86b4e378d9d1679bc8e73f543a411db`（开工时工作树无其他代码提交，基线与审查起点重合）。实现提交：见票据 01 所在提交（SHA 由其后的纯文档提交回填）。
+- **实施阶段基线/本票审查起点**：`2eebb175d86b4e378d9d1679bc8e73f543a411db`（开工时工作树无其他代码提交，基线与审查起点重合）。实现提交：`c6d21a93578aba213078df3b58a508c875b8913d`（本条由其后的纯文档提交回填）。
 - **交付（票据 01 全部共用行为）**：BODY_SIZE 12×20（攻击框/投距/运动值保留，墙限 30/930）；jC 7→4、j214D 9→1；j214D AIRBORNE 24/30→32/32；5B 新增 AIRBORNE N/C（LAUNCH 18/24、h60/up100）与 GROUND_BOUNCE 19/25；动作键 D 招式实际接地命中水平归零；撤销 STARTER_BOUNCE_FOLLOWUP/BOUNCE_END——弹地自然接续、可再次弹地、修正不重置。新套件 `tests/test_ground_bounce_finish.gd`（52 断言，含 3612 点保证域扫描与负例）。
 - **再锚定（必要回归，非重设计）**：约 22 套件距离/帧号迁移至 12×20 口径（NEAR 26/TOUCH 12 等）；A 起手弹地 5B 为 1F 目押窗；A 起手 juggle 以 jC 中介再挑空；j2D→214C 换边后 214 指令镜像；空中收尾 j5D→j2D；票据 08 的垂直跳空中起始 jA→j6D dive 正例改记为如实负例（air_frames 全扫描挥空，launcher 语境仍由 test_air_d_landing/test_launcher_air_exits 承载）；solver growth oracle 随已批准语义变更重生成（计数逐字段与 P1 基线一致）。
 - **验收命令与结果**：完整验收 `python tools/run_acceptance.py --sweep --output .scratch/ftg-combo-routes/runs/full-04` → **35 job 全绿 exit=0、3811 断言、0 脚本错误**；未编排路线回放 `python tools/run_combo_route_diagnostics.py --output .scratch/ftg-combo-routes/runs/impl01-sym/full-01` → boundary 10/0、replay10 99/2（仅 J3b）、symptoms 14 连续性失败（形状与基线一致）。开发期单套件逐个验证（代表性全绿见票据 01）。
