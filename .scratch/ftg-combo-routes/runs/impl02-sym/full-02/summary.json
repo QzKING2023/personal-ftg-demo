@@ -1,0 +1,87 @@
+{
+  "jobs": [
+    {
+      "job": "boundary",
+      "command": [
+        "D:/Godot/Godot_v4.5.1-stable_mono_win64_console.exe",
+        "--headless",
+        "--path",
+        "D:\\Godot\\Program\\ftgdemo",
+        "--log-file",
+        "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\impl02-sym\\full-02\\runtime\\boundary.log",
+        "-s",
+        "res://tests/test_acceptance_combo_boundary.gd"
+      ],
+      "exit": 0,
+      "script_errors": 0,
+      "completed": true,
+      "seconds": 0.811,
+      "passes": 10,
+      "failures": 0
+    },
+    {
+      "job": "replay10",
+      "command": [
+        "D:/Godot/Godot_v4.5.1-stable_mono_win64_console.exe",
+        "--headless",
+        "--path",
+        "D:\\Godot\\Program\\ftgdemo",
+        "--log-file",
+        "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\impl02-sym\\full-02\\runtime\\replay10.log",
+        "-s",
+        "res://tests/acceptance_replay_10.gd"
+      ],
+      "exit": 1,
+      "script_errors": 0,
+      "completed": true,
+      "seconds": 1.455,
+      "passes": 99,
+      "failures": 2
+    },
+    {
+      "job": "symptoms",
+      "command": [
+        "D:/Godot/Godot_v4.5.1-stable_mono_win64_console.exe",
+        "--headless",
+        "--path",
+        "D:\\Godot\\Program\\ftgdemo",
+        "--log-file",
+        "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\impl02-sym\\full-02\\runtime\\symptoms.log",
+        "-s",
+        "res://tests/replay_combo_routes.gd",
+        "--",
+        "all",
+        "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\impl02-sym\\full-02\\traces"
+      ],
+      "exit": 1,
+      "script_errors": 0,
+      "completed": true,
+      "seconds": 2.112,
+      "passes": 23,
+      "failures": 14
+    }
+  ],
+  "trace_sha256": {
+    "air-full-left.jsonl": "312fece2d59c60e02b36d03c254cc765d35aba3e8ffec179c1d89b38fc8600bb",
+    "air-full-right.jsonl": "3b4be869fabd048e4acac9c7271f78427364c76bee37ebea2864baafe0e2c968",
+    "air-observe-5C-left.jsonl": "b87944ee96ba758b9e2c80c976eab48dcf92558b44ccf1d29cfc830ba4eb8c27",
+    "air-observe-5C-right.jsonl": "06f376a0cd994e55cdfdd510907190a518752bc5b9670e588b9ff7c4e0a5aff8",
+    "ground-buffered-left.jsonl": "9fe79660b5b28071fcd949f33ec67f41944b18d2ee6d9b23fe3bf0d6f611adff",
+    "ground-buffered-right.jsonl": "70807c29dc5f26e8ea60f413c0c0a80936ddb649d5c945e972dc32bc842d7110",
+    "ground-early-left.jsonl": "927c4f6de07976722841fe7fe86b7c95540b0d4ce4a091087f8eb6b2c6ba1539",
+    "ground-early-right.jsonl": "4bf95950fa66b6466484924d1e1ce6f91b9061af1f538a0a308ac14f4e79a5da",
+    "ground-full-left.jsonl": "183f4c9169ebfef87ac17b3dc6482022cd84656ce206b8e6f8e31382154a9a7c",
+    "ground-full-right.jsonl": "54af3ef0b564ff6515f02c516e52087d87795d27ad74ef21776e16942422c15a",
+    "ground-full-seg2-left.jsonl": "ef3141808d789a433f92a70beae951f6a519ec6d28cab5d4c657f1887f663832",
+    "ground-full-seg2-right.jsonl": "db02e582355a42f2d637cecf19c1e3c80170d1ca196a7d3f8857198c58669e07",
+    "ground-min-cross-left.jsonl": "83bd79c7e17169b2ac4ee414043d106c533c0f0577886d221a5fbf327f9799a9",
+    "ground-min-cross-right.jsonl": "f167c91687b7f4d70dd27d109072421f0b9f41bad6e45f49c1dc6b861da944ab",
+    "ground-min-link-left.jsonl": "83abc4aa3d80d49a6e20e9e136bf61aa1459616aaa4753c5c74a271a959183c2",
+    "ground-min-link-right.jsonl": "af0630bd66af510f5457847d6f8b11490c6ed4742db6a4c477fd6923aafbe537",
+    "ground-minus-5B-left.jsonl": "1350a4b1623092511ddf641172ca84eb33bf78214e65eecfa75a2c9ac7a23799",
+    "ground-minus-5B-right.jsonl": "a5ef4473311189745d043d569d806520abcb9baba52090fe02bba9f0608dc6ad",
+    "ground-minus-5C-left.jsonl": "c4157e472c5d09a2df4a8664da8764f48fce1b5e37e4ffd20f34f64e5e4418f0",
+    "ground-minus-5C-right.jsonl": "77ea5c42f29dcb1404545a3e0dfea3036405b5ada0055734928ed3f755a91eaf"
+  },
+  "scope": "Acceptance tools only. Route failures are not converted to success."
+}

@@ -599,17 +599,17 @@ func _test_r4g_key_windows() -> void:
 					hits.append(delta)
 			## 折叠为连续闭区间的文本（∪ 分隔）。
 			var text := ""
-			var last := -99
+			var prev := -99
 			for delta in hits:
-				if last == -99 or delta > last + 1:
-					if text != "":
-						text += " ∪ "
+				if prev == -99:
 					text += "[%d" % delta
-				last = delta
-				if delta == hits[hits.size() - 1]:
-					text += "]"
-			if text == "":
+				elif delta > prev + 1:
+					text += ",%d] ∪ [%d" % [prev, delta]
+				prev = delta
+			if prev == -99:
 				text = "∅"
+			else:
+				text += ",%d]" % prev
 			intervals.append("f%+d %s" % [facing, text])
 		print("  key %-6s windows: %s" % [key, " | ".join(PackedStringArray(intervals))])
 		_check(true, "window scan for %s recorded (continuous intervals above; not a full-route tolerance claim)" % key)

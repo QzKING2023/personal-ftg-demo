@@ -97,8 +97,16 @@ func _test_shared_table_samples_declared() -> void:
 	_check(six_counter != null and six_counter.reaction == HitProfile.Reaction.LAUNCH
 		and six_counter.air_untech_frames != six_normal.air_untech_frames,
 		"6A grounded counter is a LAUNCH variant observable from normal")
-	_check(MoveData.profile_for(six_a, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL) == null,
-		"6A leaves the airborne profile undeclared (unmatched when targeted airborne)")
+	var six_air_n := MoveData.profile_for(six_a, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL)
+	var six_air_c := MoveData.profile_for(six_a, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.COUNTER)
+	_check(six_air_n != null and six_air_n.reaction == HitProfile.Reaction.LAUNCH
+		and six_air_n.air_untech_frames == 30
+		and is_equal_approx(six_air_n.horizontal_speed_px_s, 150.0)
+		and is_equal_approx(six_air_n.upward_speed_px_s, 460.0),
+		"6A airborne normal is the explicit descending anti-air profile (LAUNCH, 30N, 150/460; ticket 02)")
+	_check(six_air_c != null and six_air_c.reaction == HitProfile.Reaction.LAUNCH
+		and six_air_c.air_untech_frames == 36,
+		"6A airborne counter is a LAUNCH variant not shorter than normal (36N)")
 	_check(six_a.jump_cancel_targets == ["jA", "jB", "jC"], "6A declares its jump cancel targets into the delivered air normals (ticket 07)")
 	_check((table["5A"] as MoveData).chain_cancel_targets.has("5B"), "5A chains into 5B (ground chain confirm)")
 	var d := table["214C~B"] as MoveData
@@ -330,19 +338,21 @@ func _test_sample_5a_ground_normal() -> void:
 
 
 func _test_missing_profile_miss_has_no_side_effects() -> void:
-	# 样例 A.2/B.4（运行时侧）：6A 未声明 airborne profile——注入浮空入口 PL 把
-	# 木桩送入浮空后用 6A 追击必须 MISS_NO_PROFILE：不造成伤害、不改状态、
-	# 不刷新受身计时、不取得命中确认、不开启停顿。
+	# 样例 A.2/B.4（运行时侧）：5A 未声明 airborne profile——注入浮空入口 PL 把
+	# 木桩送入浮空后用 5A 追击必须 MISS_NO_PROFILE：不造成伤害、不改状态、
+	# 不刷新受身计时、不取得命中确认、不开启停顿。（票据 02 前 6A 亦缺空中
+	# 资料、曾作本样例载体；6A 现已声明显式 AIRBORNE N/C，缺资料机制由 5A
+	# 继续承载。）
 	var table := MoveData.default_table()
 	var launcher := _strike_with([
 		_profile(HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL, HitProfile.Reaction.LAUNCH,
-			{"air_untech_frames": 40, "horizontal_speed_px_s": 0.0, "upward_speed_px_s": 300.0}),
+			{"air_untech_frames": 40, "horizontal_speed_px_s": 0.0, "upward_speed_px_s": 200.0}),
 	])
 	launcher.move_id = "PL"
 	launcher.action_key = "L"
 	launcher.startup_frames = 3
 	launcher.active_frames = 3
-	launcher.cancel_targets = ["6A"]
+	launcher.cancel_targets = ["5A"]
 	table["PL"] = launcher
 	var session := CombatSession.new(table)
 	session.dummy_position = session.player_position + Vector2(26, 0)
@@ -359,8 +369,7 @@ func _test_missing_profile_miss_has_no_side_effects() -> void:
 			key = "L"
 		elif frame == 13:
 			key = "A"
-		var digit := 6 if frame == 11 else 5
-		var events := session.step(_relative_input(session, digit, key))
+		var events := session.step(_relative_input(session, 5, key))
 		for event in events:
 			if event.type == CombatEvent.Type.HIT:
 				hits += 1
@@ -370,16 +379,16 @@ func _test_missing_profile_miss_has_no_side_effects() -> void:
 				state_at_miss = session.dummy_state
 				untech_after = session.dummy_hitstun_left
 				cancel_open = session.debug_snapshot()["cancel_open"]
-		if frame == 20:
+		if frame == 17:
 			untech_before = session.dummy_hitstun_left
-	_check(hits == 1, "the injected launcher connects exactly once before the 6A followup")
-	_check(miss_frame == 21, "6A connecting with the airborne dummy reports HIT_MISS on its first active frame")
+	_check(hits == 1, "the injected launcher connects exactly once before the 5A followup")
+	_check(miss_frame == 18, "5A connecting with the airborne dummy reports HIT_MISS on its first active frame (start F13 + startup 5)")
 	_check(is_equal_approx(hp_at_miss, GameParams.DUMMY_MAX_HP - 10.0),
 		"the miss deals no damage beyond the launcher's own hit")
 	_check(state_at_miss == CombatSession.DummyState.AIR_HITSTUN,
 		"the miss changes no hit state (still air hitstun at the miss frame)")
-	_check(untech_after < untech_before,
-		"the miss does not refresh or extend the air untech timer")
+	_check(untech_before > 0 and untech_after == untech_before - 1,
+		"the miss does not refresh or extend the air untech timer (exactly one normal frame of decay)")
 	_check(not cancel_open and not session.hitstop_active(),
 		"the miss grants no hit confirmation, no cancel window, and no hitstop")
 
@@ -929,7 +938,13 @@ func _test_route01_shared_profile_values() -> void:
 		and is_equal_approx(j_g_n.horizontal_speed_px_s, 80.0)
 		and is_equal_approx(j_g_n.upward_speed_px_s, 100.0),
 		"route01: j214D grounded entry profile unchanged (12, 80/100)")
-	## 6A 空中资料不在本票（缺省即无命中，归票据 02）。
+	## 6A 空中资料已由票据 02 声明（LAUNCH 30/36N、150/460）；对地 36/42 保持。
 	var six_a: MoveData = moves["6A"]
-	_check(MoveData.profile_for(six_a, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL) == null,
-		"route01: 6A still declares no AIRBORNE profile (ticket 02 scope)")
+	var six_air: HitProfile = MoveData.profile_for(six_a, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL)
+	var six_air_c: HitProfile = MoveData.profile_for(six_a, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.COUNTER)
+	_check(six_air != null and six_air.air_untech_frames == 30
+		and is_equal_approx(six_air.horizontal_speed_px_s, 150.0)
+		and is_equal_approx(six_air.upward_speed_px_s, 460.0),
+		"route01: 6A declares its AIRBORNE normal profile (ticket 02: LAUNCH 30N, 150/460)")
+	_check(six_air_c != null and six_air_c.air_untech_frames == 36,
+		"route01: 6A AIRBORNE counter declared alongside (36N)")

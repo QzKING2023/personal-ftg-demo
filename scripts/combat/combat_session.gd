@@ -2540,7 +2540,15 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 			or dummy_state == DummyState.SPIKE_FALL or dummy_state == DummyState.LOW_FLOAT_TO_SLIDE \
 			or dummy_state == DummyState.GROUND_SLIDE or dummy_state == DummyState.GROUND_BOUNCE:
 		friction = GameParams.DUMMY_HITSTUN_FRICTION
-	dummy_velocity.x = move_toward(dummy_velocity.x, 0.0, friction * GameParams.PHYSICS_TICK)
+	## 未受击且真正离地的木桩按跳跃者运动（票据 02，D84）：对空初态来自普通
+	## 跳跃的成对状态，其空中段保持水平速度（与真实跳跃一致，E45 jumps 记录
+	## 为常 vx），重力、墙限与落地照常；首次被命中或被防后回到标准木桩物理。
+	## 离地判定按位置导出（含外部注入初态的首帧；判定完全由已序列化状态
+	## 组成，保存/续跑无需新增字段）。
+	var unhit_airborne := dummy_state == DummyState.NEUTRAL and dummy_blockstun_left == 0 \
+		and dummy_position.y < GameParams.ground_stand_y() - 0.001
+	if not unhit_airborne:
+		dummy_velocity.x = move_toward(dummy_velocity.x, 0.0, friction * GameParams.PHYSICS_TICK)
 	if not dummy_on_ground:
 		dummy_velocity.y = minf(dummy_velocity.y + GameParams.GRAVITY * GameParams.PHYSICS_TICK, GameParams.MAX_FALL_SPEED)
 	dummy_position += dummy_velocity * GameParams.PHYSICS_TICK

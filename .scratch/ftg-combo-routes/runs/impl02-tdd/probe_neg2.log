@@ -1,0 +1,13 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+grounded-contact probe (k30 vx-200 g100): { "f": 11, "type": "HIT", "h": 0.0, "air": false, "vy": 0.0, "gap": 66.5001831054688 }
+k30 vx0 g2 probe: { "f": 9, "type": "HIT", "h": 7.38888549804688, "air": true, "vy": 420.000061035156, "gap": 1.27777099609375 }
+k26 wrong tier G: ["6A", "jC", "j214D", "5C"]
+k26 wrong dir 9 (gap~2): ["6A", "jC", "j6D", "5B"]
+k24 wrong dir 8 (gap 28+): ["6A", "jC", "j214D", "5B", "214C", "214C~C"]
+k24 jc-10: ["6A", "5B", "214C", "214C~C"]
+k24 jc+25: ["6A", "5B", "214C", "214C~C"]
+k24 5B-12: ["6A", "jC", "j214D"]
+k24 5B+8: ["6A", "jC", "j214D", "5C"]
+k24 j214D+7: ["6A", "jC", "j214D"]
+k26 H21 wrong low tier: ["6A", "jC", "j214D"]

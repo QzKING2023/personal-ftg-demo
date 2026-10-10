@@ -1,0 +1,6 @@
+test_solver_growth exit=0 pass=59 fail=0
+test_solver_spatial exit=0 pass=487 fail=0
+test_solver_entry exit=0 pass=52 fail=0
+test_solver_checkpoint_trie exit=0 pass=25 fail=0
+test_combat_session_restore exit=0 pass=102 fail=0
+done

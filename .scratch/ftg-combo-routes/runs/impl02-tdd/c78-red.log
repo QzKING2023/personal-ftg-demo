@@ -1,0 +1,67 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+=== 6A AIRBORNE N/C 资料：精确匹配；对地与弹地保持 ===
+PASS  6A AIRBORNE normal: LAUNCH, untech 30N, horizontal 150 / upward 460 (ticket 02 value table)
+PASS  6A AIRBORNE counter: LAUNCH, untech 36N, same speeds (counter not shorter than normal)
+PASS  6A GROUNDED normal unchanged (untech 36N, upward 560)
+PASS  6A GROUNDED counter unchanged (untech 42N, upward 560)
+PASS  6A still declares no GROUND_SLIDE profile (no fallback expansion)
+PASS  both AIRBORNE contexts are explicit keys on the shared manifest resource
+=== 未受击空中木桩：保持水平速度、重力/墙限照常、落地回标准物理 ===
+PASS  airborne neutral dummy falls under gravity and lands (landed F19, 18 airborne frames)
+PASS  while un-hit and airborne the dummy keeps its horizontal speed like a real jump (no ground friction)
+PASS  an un-hit landing keeps the dummy NEUTRAL (no invented stun)
+PASS  standard dummy friction resumes after landing (vx decays to 0 within ~6 frames)
+PASS  an airborne neutral dummy is clamped to the legal wall limit while moving
+=== R4-A 参考路线 k=24 vx=0 g=2 r=350 | 面向 +1（探针定档 + 固定计划）===
+PASS  probe: 6A reaches a descending un-hit airborne target ({ "contact": true, "frame": 10, "h": 38.5, "front_gap": 1.27777099609375, "airborne": true, "descending": true, "crossed": false })
+PASS  R4-A reference six-hit + first knockdown lands exactly (facing +1, tier G, contact h=38.500 F10, KD F134)
+=== R4-A 参考路线 k=24 vx=0 g=2 r=350 | 面向 -1（探针定档 + 固定计划）===
+PASS  probe: 6A reaches a descending un-hit airborne target ({ "contact": true, "frame": 10, "h": 38.5, "front_gap": 1.27777099609375, "airborne": true, "descending": true, "crossed": false })
+PASS  R4-A reference six-hit + first knockdown lands exactly (facing -1, tier G, contact h=38.500 F10, KD F134)
+=== R4-A 三档参考：G 迟接触（δ=+4）、H38、H21（含最低档）===
+PASS  tier G: k20 f+1 completes exactly (contact h=38.500 F14 tier G, KD F138)
+PASS  tier H38: k26 f+1 completes exactly (contact h=33.056 F9 tier H38, KD F130)
+PASS  tier H38: k26 f-1 completes exactly (contact h=33.056 F9 tier H38, KD F130)
+PASS  tier H21: k27 f+1 completes exactly (contact h=27.222 F9 tier H21, KD F126)
+PASS  tier H21: k29 f+1 completes exactly (contact h=14.389 F9 tier H21, KD F125)
+=== R4-A 28px 方向分界：front gap 27.99 用 8 / 28.0 用 9 ===
+PASS  front-gap boundary gap<28→8 (gap=27.9476, vx=177.8) completes the exact route
+PASS  front-gap boundary gap≥28→9 (gap=28.0377, vx=178.4) completes the exact route
+PASS  plan generation picks 8 below 28px and 9 at/above (axis 0 vs 1)
+=== R4-A 保证域扫描：k×水平速度(含中间值) × g(负/零/非整数) × r(含墙钳制) × 双面向 ===
+  sweep points=192 categories={ "no_contact": 72, "guarantee": 114, "illegal_start": 6 } no_contact_breakdown={ "k20": 8, "vx-340": 22, "vx-217": 22, "vx-100": 20, "vx+340": 4, "k21": 8, "k22": 6, "k23": 6, "k24": 7, "k25": 6, "k26": 8, "k27": 6, "k28": 6, "k29": 7, "k30": 4, "vx+0": 2, "vx-173": 1, "vx-71": 1 }
+PASS  domain sweep: every in-guarantee contact completes the exact six-hit route (114 guarantee points; out-of-scope categories recorded above, not failures)
+=== 保存/续跑等价：对空参考路线逐切点 clone→restore→续算 ===
+PASS  save/restore: 37 cut points reproduce the uninterrupted replay event-for-event and endpoint-exact
+=== R4-A 关键键连续成功区间（±4F 逐帧，其余固定，k24 vx0 g2 r350 双面向）===
+  key jc     windows: f+1 [-4] | f-1 [-4]
+PASS  window scan for jc recorded (continuous intervals above; local windows, not a full-route tolerance claim)
+  key jC     windows: f+1 [0] | f-1 [0]
+PASS  window scan for jC recorded (continuous intervals above; local windows, not a full-route tolerance claim)
+  key j214D  windows: f+1 [-4] | f-1 [-4]
+PASS  window scan for j214D recorded (continuous intervals above; local windows, not a full-route tolerance claim)
+  key 5B     windows: f+1 [-2] | f-1 [-2]
+PASS  window scan for 5B recorded (continuous intervals above; local windows, not a full-route tolerance claim)
+  key 214C   windows: f+1 [-4] | f-1 [-4]
+PASS  window scan for 214C recorded (continuous intervals above; local windows, not a full-route tolerance claim)
+  key ~C     windows: f+1 [-4] | f-1 [-4]
+PASS  window scan for ~C recorded (continuous intervals above; local windows, not a full-route tolerance claim)
+=== R4-A 六键联合 ±1F 扰动（64 向量 × 双面向 = 128）===
+  joint ±1: 64/128 (denominator 64 vectors × 2 facings; breakpoints by first off-route hit: { "-": 64 })
+PASS  joint perturbation recorded honestly (D72: 1F accepted, old 244/256 gate not applied)
+=== R4-A 负例：错档 / 错方向 / 早晚输入 / 对地接触 / 范围外对照 ===
+PASS  negative: wrong tier (G timing on an H38 contact) breaks the route honestly (["6A", "jC", "j214D"])
+PASS  negative: forward jump cancel on a close contact breaks the exact route (["6A", "jC", "j6D"])
+PASS  observation: 8 on a far contact (gap≈28) may still complete legally (T28 is a reference, not a feasibility boundary)
+PASS  negative: jump cancel 10F early breaks the route honestly (["6A"])
+PASS  negative: jump cancel 25F late breaks the route honestly (["6A"])
+PASS  negative: 5B pressed 12F early never lands in-combo (["6A", "jC", "j214D"])
+PASS  negative: 5B pressed 8F late does not complete the six-hit route (["6A", "jC", "j214D"])
+PASS  negative: j214D final key 7F late breaks the route honestly (["6A", "jC", "j214D"])
+PASS  negative: a start that lands before contact is probed as a grounded contact (对地), not anti-air ({ "contact": true, "frame": 11, "h": 0.0, "front_gap": 66.5001831054688, "airborne": false, "descending": true, "crossed": false })
+PASS  negative: the strict judge refuses the grounded-contact start as an anti-air route (moves=["6A"] | hits_after_end=[{ "frame": 81, "order": 0, "move": "5B", "action": 0, "segment": 1, "combo_hits": 1 }] | 6A_target_grounded)
+PASS  contrast: a rising start (k19, out of domain) whiffs honestly (no fabricated contact)
+PASS  contrast: an out-of-domain gap (g=140 > 120) whiffs honestly
+
+ALL DESCENDING ANTIAIR FINISH TESTS PASSED

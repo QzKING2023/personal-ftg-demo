@@ -1,0 +1,33 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+=== 6A AIRBORNE N/C 资料：精确匹配；对地与弹地保持 ===
+PASS  6A AIRBORNE normal: LAUNCH, untech 30N, horizontal 150 / upward 460 (ticket 02 value table)
+PASS  6A AIRBORNE counter: LAUNCH, untech 36N, same speeds (counter not shorter than normal)
+PASS  6A GROUNDED normal unchanged (untech 36N, upward 560)
+PASS  6A GROUNDED counter unchanged (untech 42N, upward 560)
+PASS  6A still declares no GROUND_SLIDE profile (no fallback expansion)
+PASS  both AIRBORNE contexts are explicit keys on the shared manifest resource
+=== 未受击空中木桩：保持水平速度、重力/墙限照常、落地回标准物理 ===
+PASS  airborne neutral dummy falls under gravity and lands (landed F19, 18 airborne frames)
+PASS  while un-hit and airborne the dummy keeps its horizontal speed like a real jump (no ground friction)
+PASS  an un-hit landing keeps the dummy NEUTRAL (no invented stun)
+PASS  standard dummy friction resumes after landing (vx decays to 0 within ~6 frames)
+PASS  an airborne neutral dummy is clamped to the legal wall limit while moving
+=== R4-A 参考路线 k=24 vx=0 g=2 r=350 | 面向 +1（探针定档 + 固定计划）===
+PASS  probe: 6A reaches a descending un-hit airborne target ({ "contact": true, "frame": 10, "h": 38.5, "front_gap": 1.27777099609375, "airborne": true, "descending": true, "crossed": false })
+PASS  R4-A reference six-hit + first knockdown lands exactly (facing +1, tier G, contact h=38.500 F10, KD F134)
+=== R4-A 参考路线 k=24 vx=0 g=2 r=350 | 面向 -1（探针定档 + 固定计划）===
+PASS  probe: 6A reaches a descending un-hit airborne target ({ "contact": true, "frame": 10, "h": 38.5, "front_gap": 1.27777099609375, "airborne": true, "descending": true, "crossed": false })
+PASS  R4-A reference six-hit + first knockdown lands exactly (facing -1, tier G, contact h=38.500 F10, KD F134)
+=== R4-A 三档参考：G 迟接触（δ=+4）、H38、H21（含最低档）===
+PASS  tier G: k20 f+1 completes exactly (contact h=38.500 F14 tier G, KD F138)
+PASS  tier H38: k26 f+1 completes exactly (contact h=33.056 F9 tier H38, KD F130)
+PASS  tier H38: k26 f-1 completes exactly (contact h=33.056 F9 tier H38, KD F130)
+PASS  tier H21: k27 f+1 completes exactly (contact h=27.222 F9 tier H21, KD F126)
+PASS  tier H21: k29 f+1 completes exactly (contact h=14.389 F9 tier H21, KD F125)
+=== R4-A 28px 方向分界：front gap 27.99 用 8 / 28.0 用 9 ===
+PASS  front-gap boundary gap<28→8 (gap=27.2577, vx=173.2) completes the exact route
+PASS  front-gap boundary gap≥28→9 (gap=27.2879, vx=173.4) completes the exact route
+PASS  plan generation picks 8 below 28px and 9 at/above (axis 0 vs 1)
+
+ALL DESCENDING ANTIAIR FINISH TESTS PASSED

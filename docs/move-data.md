@@ -12,7 +12,7 @@
 | 2B | B 蹲姿 | 7/5/12 | 11 | B | grounded n/c 硬直 | 链式 5C/2C/6A |
 | 5C | C | 8/5/16 | 16 | C | grounded n/c 硬直；不再是专用 launcher | 链式 6A/5D；必杀 236C/214C；连接 5D |
 | 2C | C 蹲姿 | 9/3/18 | 14 | C | LOW_FLOAT_SWEEP（低浮空触地转普通倒地） | 链式 6D/2D；必杀 214C；无 jump cancel |
-| 6A | 指令 6A | 8/6/20 | 16 | C | grounded LAUNCH u36/42；弹地键 u30/36；出刀型专用击飞 | jump cancel jA/jB/jC（仅实际 HIT） |
+| 6A | 指令 6A | 8/6/20 | 16 | C | grounded LAUNCH u36/42；airborne LAUNCH u30/36（h150/up460，票据 02 对空首击）；弹地键 u30/36；出刀型专用击飞 | jump cancel jA/jB/jC（仅实际 HIT） |
 | 5D | D | 7/4/18 | 18 | D | grounded 硬直；airborne LAUNCH u32；slide 捞起 u32 | motion 72px；蓄力 8 帧→5[D]；来源限定连接 5B |
 | 5[D] | D 按住 | 7/4/22 | 20 | D | 与 5D 同三组资料（镜像） | motion 120px；charge_only（唯一入口）；来源限定连接 5B |
 | 6D | 指令 6D | 9/4/20 | 18 | D | 仅 airborne u30/36（对地 MISS_NO_PROFILE） | motion 88/−48 斜上真实离地；空中出口 jA/jB/jC/j5D/j6D/j2D/j214D |

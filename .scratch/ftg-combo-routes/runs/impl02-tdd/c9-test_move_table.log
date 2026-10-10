@@ -1,0 +1,370 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PASS  default manifest loads and validates
+PASS  default manifest reports no errors
+PASS  table preserves manifest order and ids (stable enumeration)
+PASS  5A carries its own stable id, not the file name
+PASS  2A carries its own stable id, not the file name
+PASS  5B carries its own stable id, not the file name
+PASS  2B carries its own stable id, not the file name
+PASS  5C carries its own stable id, not the file name
+PASS  2C carries its own stable id, not the file name
+PASS  6A carries its own stable id, not the file name
+PASS  236C carries its own stable id, not the file name
+PASS  214C carries its own stable id, not the file name
+PASS  214C~B carries its own stable id, not the file name
+PASS  214C~C carries its own stable id, not the file name
+PASS  jA carries its own stable id, not the file name
+PASS  jB carries its own stable id, not the file name
+PASS  jC carries its own stable id, not the file name
+PASS  j5D carries its own stable id, not the file name
+PASS  j6D carries its own stable id, not the file name
+PASS  j2D carries its own stable id, not the file name
+PASS  j214D carries its own stable id, not the file name
+PASS  5D carries its own stable id, not the file name
+PASS  5[D] carries its own stable id, not the file name
+PASS  6D carries its own stable id, not the file name
+PASS  2D carries its own stable id, not the file name
+PASS  BC carries its own stable id, not the file name
+PASS  5A carries the baseline tuning windows and damage
+PASS  2A carries the baseline tuning windows and damage
+PASS  5B carries the baseline tuning windows and damage
+PASS  2B carries the baseline tuning windows and damage
+PASS  5C carries the baseline tuning windows and damage
+PASS  2C carries the baseline tuning windows and damage
+PASS  236C carries the baseline tuning windows and damage
+PASS  5D carries the baseline tuning windows and damage
+PASS  jA carries the baseline tuning windows and damage
+PASS  jB carries the baseline tuning windows and damage
+PASS  jC carries the baseline tuning windows and damage
+PASS  j5D carries the baseline tuning windows and damage
+PASS  j6D carries the baseline tuning windows and damage
+PASS  j2D carries the baseline tuning windows and damage
+PASS  6D carries the baseline tuning windows and damage
+PASS  2D carries the baseline tuning windows and damage
+PASS  BC carries the baseline tuning windows and damage
+PASS  236C declares its direction derivation and a grounded launch profile
+PASS  236C no longer declares jump cancel (6A owns the launcher role)
+PASS  236C declares its second segment (gap 3f, active F11-12, total 35 frames)
+PASS  236C segment 2 grounded hit launches into a ground slide (LOW_FLOAT_TO_SLIDE)
+PASS  236C declares its special D entry qualification with the 16f window
+PASS  j2D is the air move carrying the 214C hit-landing cancel qualification
+PASS  5C grounded hit is a normal ground hitstun profile (no longer a dedicated launcher)
+PASS  5C no longer declares jump cancel
+PASS  5D is no longer a finisher and declares no reverse 5B link or cancel edge
+PASS  5A declares its chain cancel edges to 5B and the crouch 2B with the 3f window
+PASS  5A declares its special cancel edges to 236C and 214C with the 5f window
+PASS  5A declares the normal link edge to 5B
+PASS  5B declares its chain cancel and link edges per the baseline matrix
+PASS  5C declares its chain cancel and link edges per the baseline matrix
+PASS  the crouch normals declare the crouch requirement from the resource
+PASS  2A chains within the A system and into the B system per the matrix
+PASS  2B chains into the C system and 6A per the matrix
+PASS  2C declares its 6D/2D air-chase chain edges (ticket 07) and the 214C special cancel from ticket 04
+PASS  2C declares the LOW_FLOAT_SWEEP profile (window 20f, lift 120px/s, knockdown 30f)
+PASS  2C declares no AIRBORNE key: the exact-match selector must not fall back to grounded
+PASS  2C declares its counter pair and the C starter grade
+PASS  6A declares jump cancel into the delivered air normals (jA/jB/jC)
+PASS  the air normals cancel into the air D series and j214D (ticket 09)
+PASS  6D derives from 6+D and 2D requires the crouch stance at input
+PASS  6D/2D declare their planned motion (diagonal rise / vertical rise)
+PASS  6D/2D declare airborne-only profiles: grounded targets report no-profile, never a fallback
+PASS  6D/2D declare their air exits into the delivered air moves (normals + ticket 08 air D series + ticket 09 j214D)
+PASS  2D declares the raised vertical hitbox while 6D stays centered
+PASS  5A explicitly declares its starter grade
+PASS  2A explicitly declares its starter grade
+PASS  5B explicitly declares its starter grade
+PASS  2B explicitly declares its starter grade
+PASS  5C explicitly declares its starter grade
+PASS  2C explicitly declares its starter grade
+PASS  5D explicitly declares its starter grade
+PASS  5A declares move kind strike
+PASS  5A declares input binding and priority
+PASS  5A declares an attack attribute
+PASS  5A declares a starter grade
+PASS  2A declares move kind strike
+PASS  2A declares input binding and priority
+PASS  2A declares an attack attribute
+PASS  2A declares a starter grade
+PASS  5B declares move kind strike
+PASS  5B declares input binding and priority
+PASS  5B declares an attack attribute
+PASS  5B declares a starter grade
+PASS  2B declares move kind strike
+PASS  2B declares input binding and priority
+PASS  2B declares an attack attribute
+PASS  2B declares a starter grade
+PASS  5C declares move kind strike
+PASS  5C declares input binding and priority
+PASS  5C declares an attack attribute
+PASS  5C declares a starter grade
+PASS  2C declares move kind strike
+PASS  2C declares input binding and priority
+PASS  2C declares an attack attribute
+PASS  2C declares a starter grade
+PASS  6A declares move kind strike
+PASS  6A declares input binding and priority
+PASS  6A declares an attack attribute
+PASS  6A declares a starter grade
+PASS  236C declares move kind strike
+PASS  236C declares input binding and priority
+PASS  236C declares an attack attribute
+PASS  236C declares a starter grade
+PASS  214C declares move kind strike
+PASS  214C declares input binding and priority
+PASS  214C declares an attack attribute
+PASS  214C declares a starter grade
+PASS  214C~B declares move kind strike
+PASS  214C~B declares input binding and priority
+PASS  214C~B declares an attack attribute
+PASS  214C~B declares a starter grade
+PASS  214C~C declares move kind strike
+PASS  214C~C declares input binding and priority
+PASS  214C~C declares an attack attribute
+PASS  214C~C declares a starter grade
+PASS  jA declares move kind strike
+PASS  jA declares input binding and priority
+PASS  jA declares an attack attribute
+PASS  jA declares a starter grade
+PASS  jB declares move kind strike
+PASS  jB declares input binding and priority
+PASS  jB declares an attack attribute
+PASS  jB declares a starter grade
+PASS  jC declares move kind strike
+PASS  jC declares input binding and priority
+PASS  jC declares an attack attribute
+PASS  jC declares a starter grade
+PASS  j5D declares move kind strike
+PASS  j5D declares input binding and priority
+PASS  j5D declares an attack attribute
+PASS  j5D declares a starter grade
+PASS  j6D declares move kind strike
+PASS  j6D declares input binding and priority
+PASS  j6D declares an attack attribute
+PASS  j6D declares a starter grade
+PASS  j2D declares move kind strike
+PASS  j2D declares input binding and priority
+PASS  j2D declares an attack attribute
+PASS  j2D declares a starter grade
+PASS  j214D declares move kind strike
+PASS  j214D declares input binding and priority
+PASS  j214D declares an attack attribute
+PASS  j214D declares a starter grade
+PASS  5D declares move kind strike
+PASS  5D declares input binding and priority
+PASS  5D declares an attack attribute
+PASS  5D declares a starter grade
+PASS  5[D] declares move kind strike
+PASS  5[D] declares input binding and priority
+PASS  5[D] declares an attack attribute
+PASS  5[D] declares a starter grade
+PASS  6D declares move kind strike
+PASS  6D declares input binding and priority
+PASS  6D declares an attack attribute
+PASS  6D declares a starter grade
+PASS  2D declares move kind strike
+PASS  2D declares input binding and priority
+PASS  2D declares an attack attribute
+PASS  2D declares a starter grade
+PASS  BC stays the B+C combination throw with its range (no single-key binding)
+PASS  two loads return distinct move instances
+PASS  mutating one copy does not leak into other loads
+PASS  strike missing base_damage rejects the table
+PASS  rejection for base_damage names the move id and field
+PASS  strike missing attack_attribute rejects the table
+PASS  rejection for attack_attribute names the move id and field
+PASS  strike missing hitbox_size rejects the table
+PASS  rejection for hitbox_size names the move id and field
+PASS  strike missing hit_profiles rejects the table
+PASS  rejection for hit_profiles names the move id and field
+PASS  strike missing action_key rejects the table
+PASS  rejection for action_key names the move id and field
+PASS  strike missing starter_grade rejects the table
+PASS  rejection for starter_grade names the move id and field
+PASS  rejected table exposes no partial move table
+PASS  throw with throw_range and startup 5 is legal
+PASS  throw without throw_range is rejected on the throw_range field
+PASS  throw startup must stay the fixed 5f domain rule, not resource-overridable
+PASS  throw active must stay the grab frame plus the ten tech-window frames (about-15f domain rule)
+PASS  two throws in one table are an illegal tie for the single B+C combination
+PASS  negative startup_frames is rejected naming the field
+PASS  negative active_frames is rejected naming the field
+PASS  negative recovery_frames is rejected naming the field
+PASS  negative cancel_window_frames is rejected naming the field
+PASS  unknown attack attribute enum value is rejected
+PASS  unknown enum error names the field and the offending value
+PASS  unknown profile target_state enum value is rejected
+PASS  illegal direction predicate 25C is rejected on the derivation field
+PASS  illegal direction predicate 056C is rejected on the derivation field
+PASS  illegal direction predicate 236 is rejected on the derivation field
+PASS  illegal direction predicate 236CC is rejected on the derivation field
+PASS  illegal direction predicate 235 is rejected on the derivation field
+PASS  derivation key mismatching the declared action key is rejected
+PASS  finisher with cancel targets is a contradictory field combination
+PASS  air move declaring jump cancel targets is contradictory
+PASS  ground move declaring landing continuation is contradictory
+PASS  strike declaring throw_range is contradictory
+PASS  throw declaring a single action key is contradictory (B+C combo is the domain rule)
+PASS  dangling cancel target is rejected naming the missing move id
+PASS  duplicate stable ids across resources are rejected
+PASS  two moves sharing stance+binding+priority are an illegal tie
+PASS  tie error names both conflicting moves
+PASS  same binding with distinct priorities is a legal, resolvable table
+PASS  runtime resolves the same binding by declared priority
+PASS  a grounded LOW_FLOAT_SWEEP profile with window, lift and knockdown timers is legal
+PASS  LOW_FLOAT_SWEEP profile with illegal target_state is rejected naming the field
+PASS  LOW_FLOAT_SWEEP profile with illegal knockdown_frames is rejected naming the field
+PASS  LOW_FLOAT_SWEEP profile with illegal air_untech_frames is rejected naming the field
+PASS  LOW_FLOAT_SWEEP profile with illegal ground_stun_frames is rejected naming the field
+PASS  LOW_FLOAT_SWEEP must declare a positive lift speed (it leaves the ground by design)
+PASS  a LOW_FLOAT counter without its same-state normal pair is rejected
+PASS  a grounded LOW_FLOAT_TO_SLIDE profile with window, lift and slide duration is legal
+PASS  LOW_FLOAT_TO_SLIDE profile with illegal target_state is rejected naming the field
+PASS  LOW_FLOAT_TO_SLIDE profile with illegal slide_frames is rejected naming the field
+PASS  LOW_FLOAT_TO_SLIDE profile with illegal air_untech_frames is rejected naming the field
+PASS  LOW_FLOAT_TO_SLIDE profile with illegal knockdown_frames is rejected naming the field
+PASS  LOW_FLOAT_TO_SLIDE profile with illegal ground_stun_frames is rejected naming the field
+PASS  LOW_FLOAT_TO_SLIDE must declare a positive lift speed
+PASS  a 1 profile on the GROUND_SLIDE key is rejected (only the scoop LAUNCH is legal there)
+PASS  a 3 profile on the GROUND_SLIDE key is rejected (only the scoop LAUNCH is legal there)
+PASS  a 4 profile on the GROUND_SLIDE key is rejected (only the scoop LAUNCH is legal there)
+PASS  a scoop LAUNCH profile on the GROUND_SLIDE key is legal
+PASS  a strike with a fully declared second segment keeps the table legal
+PASS  a segment with illegal startup_frames is rejected naming the field
+PASS  a segment with illegal active_frames is rejected naming the field
+PASS  a segment with illegal base_damage is rejected naming the field
+PASS  a segment with illegal hitbox_gap is rejected naming the field
+PASS  a segment without hit profiles is rejected
+PASS  an illegal profile inside a segment is rejected with the segment-scoped label
+PASS  a throw declaring segments is rejected
+PASS  a declared special entry target with its window keeps the table legal
+PASS  special entry targets without a window are rejected naming the field
+PASS  a special entry window without targets is rejected
+PASS  a special entry target missing from the table is rejected naming the id
+PASS  a special entry target with a mismatched stance is rejected
+PASS  a source-limited link target missing from the table is rejected naming the id
+PASS  an air move declaring the crouch requirement is rejected (crouch is ground-only)
+PASS  a ground move with the crouch requirement validates next to other bindings
+PASS  same key + tier + priority stays an illegal tie even when one side requires crouch
+PASS  same binding and priority across different tiers is resolvable and legal
+PASS  same stance+binding+tier+priority with different notations is still an illegal tie
+PASS  tier tie error names both conflicting moves
+PASS  unknown command tier enum value is rejected naming the field
+PASS  lenient command without any direction notation is a contradictory field
+PASS  declared block result fields keep the table legal
+PASS  strike missing block_freeze_frames rejects the table naming the move id and field
+PASS  strike missing block_stun_frames rejects the table naming the move id and field
+PASS  strike missing block_pushback_px_s is rejected naming the field
+PASS  negative block_stun_frames is rejected naming the field
+PASS  throw declaring block result fields is a contradiction rejected on the field
+PASS  default manifest still loads after the block-result migration
+PASS  5A declares the TUNING_INITIAL block result 8/9/45
+PASS  2A declares the TUNING_INITIAL block result 8/9/45
+PASS  5B declares the TUNING_INITIAL block result 8/9/45
+PASS  2B declares the TUNING_INITIAL block result 8/9/45
+PASS  5C declares the TUNING_INITIAL block result 8/9/45
+PASS  2C declares the TUNING_INITIAL block result 8/9/45
+PASS  6A declares the TUNING_INITIAL block result 8/9/45
+PASS  236C declares the TUNING_INITIAL block result 8/9/45
+PASS  214C declares the TUNING_INITIAL block result 8/9/45
+PASS  214C~B declares the TUNING_INITIAL block result 8/9/45
+PASS  214C~C declares the TUNING_INITIAL block result 8/9/45
+PASS  jA declares the TUNING_INITIAL block result 8/9/45
+PASS  jB declares the TUNING_INITIAL block result 8/9/45
+PASS  jC declares the TUNING_INITIAL block result 8/9/45
+PASS  j5D declares the TUNING_INITIAL block result 8/9/45
+PASS  j6D declares the TUNING_INITIAL block result 8/9/45
+PASS  j2D declares the TUNING_INITIAL block result 8/9/45
+PASS  j214D declares the TUNING_INITIAL block result 8/9/45
+PASS  5D declares the TUNING_INITIAL block result 8/9/45
+PASS  5[D] declares the TUNING_INITIAL block result 8/9/45
+PASS  6D declares the TUNING_INITIAL block result 8/9/45
+PASS  2D declares the TUNING_INITIAL block result 8/9/45
+PASS  BC is a throw and keeps block result fields undeclared
+PASS  a declared rekka opener with rekka-only targets keeps the table legal
+PASS  declaring a derivation window without any branch target rejects the table
+PASS  declaring branch targets without a window is rejected naming the field
+PASS  pointing both branches at the same derived move is rejected
+PASS  a branch target without rekka_only is rejected (derivation is the only entry)
+PASS  a B-branch target bound to another key is rejected naming the branch field
+PASS  referencing a rekka-only move from cancel targets is rejected
+PASS  a rekka-only move declaring a command notation is rejected (not input-selectable)
+PASS  a branch target missing from the table is rejected naming the id
+PASS  default manifest loads with the rekka moves
+PASS  214C declares the TUNING_INITIAL window 12 and both branch targets
+PASS  both derived moves are rekka_only (not input-selectable)
+PASS  the ~C finisher keeps no link edges while ~B carries the 5B link
+PASS  2C declares the 214C special cancel edge (the 2C > 214C~B route)
+PASS  5A declares the 214C special cancel edge per the cancel matrix
+PASS  2A declares the 214C special cancel edge per the cancel matrix
+PASS  5B declares the 214C special cancel edge per the cancel matrix
+PASS  5C declares the 214C special cancel edge per the cancel matrix
+PASS  hand-edited tres missing a core field rejects the whole table
+PASS  rejection reports resource source, move id and field for the hand edit
+PASS  tres with a type error in a frame field rejects the table
+PASS  type-error rejection names the resource source
+ERROR: Cannot open file 'user://mt_missing_manifest.tres'.
+   at: load (scene/resources/resource_format_text.cpp:1387)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:35)
+       [1] _test_manifest_errors_rejected (res://tests/test_move_table.gd:821)
+       [2] _initialize (res://tests/test_move_table.gd:38)
+ERROR: Failed loading resource: user://mt_missing_manifest.tres.
+   at: _load (core/io/resource_loader.cpp:343)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:35)
+       [1] _test_manifest_errors_rejected (res://tests/test_move_table.gd:821)
+       [2] _initialize (res://tests/test_move_table.gd:38)
+ERROR: Error loading resource: 'user://mt_missing_manifest.tres'.
+   at: load (core/core_bind.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:35)
+       [1] _test_manifest_errors_rejected (res://tests/test_move_table.gd:821)
+       [2] _initialize (res://tests/test_move_table.gd:38)
+PASS  missing manifest path is rejected naming the manifest source
+ERROR: Cannot open file 'user://mt_no_such_move.tres'.
+   at: load (scene/resources/resource_format_text.cpp:1387)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:47)
+       [1] _test_manifest_errors_rejected (res://tests/test_move_table.gd:829)
+       [2] _initialize (res://tests/test_move_table.gd:38)
+ERROR: Failed loading resource: user://mt_no_such_move.tres.
+   at: _load (core/io/resource_loader.cpp:343)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:47)
+       [1] _test_manifest_errors_rejected (res://tests/test_move_table.gd:829)
+       [2] _initialize (res://tests/test_move_table.gd:38)
+ERROR: Error loading resource: 'user://mt_no_such_move.tres'.
+   at: load (core/core_bind.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:47)
+       [1] _test_manifest_errors_rejected (res://tests/test_move_table.gd:829)
+       [2] _initialize (res://tests/test_move_table.gd:38)
+PASS  manifest referencing a missing move file is rejected
+PASS  missing-move rejection names manifest source and the missing path
+PASS  manifest without any move reference is rejected
+PASS  wrong manifest resource type is rejected naming the expected type
+PASS  rejected table never yields a runnable move table
+PASS  rejection does not silently substitute GameParams values
+PASS  session hit frame follows the edited startup (6 -> 9)
+PASS  solver report follows the same edited startup (route hit frames 9/16/23; the B chain cancel lands one normal frame after the confirm)
+PASS  unmodified shared table keeps the baseline route (6/13/20 with the B pairing wait)
+PASS  session damage follows the edited base damage through the A starter scale
+PASS  solver route total damage follows the same edit (25 scaled by the three-layer corrections: 18.0 + 7.8 + 10.5)
+PASS  session diagnostics expose the edited attack attribute of the active move
+PASS  solver move-table summary reflects the edited attribute
+PASS  removing the configured chain cancel and link drops the solver edges
+PASS  the remaining configured special cancel is still analyzed
+PASS  session no longer cancels 5A into 5B without the configured chain target
+PASS  invalid table is rejected by the loader
+PASS  solver refuses to analyze the invalid manifest
+PASS  solver refusal carries the same observable reason as the loader
+PASS  refused solver report claims no analysis results
+PASS  refused report lines expose the refusal and the offending field
+PASS  the first manifest analysis consults the cache exactly once (miss when cold, hit when warm)
+PASS  an identical manifest analysis hits the cache without recomputing (cold or warm)
+PASS  manifest cache hit preserves the complete report
+PASS  editing a move resource file never reuses the stale entry: the request resolves to a different report (semantic signature)
+
+ACCEPTANCE_SOLVER_METRICS_JSON={"calls":6,"combo_cache":{"bypasses":1,"enabled":true,"entries":7,"hits":1,"misses":7},"elapsed_ms":33255.209,"profile_totals":{"delay_leaf_ms":12316.348,"delay_leaf_runs":5426,"edge_probe_ms":4756.333,"edge_probe_runs":815,"gap_enum_ms":9733.713,"gap_enum_runs":1489,"other_ms":333.531,"other_runs":8,"requests":6,"route_walk_ms":6126.221,"route_walk_runs":0,"total_ms":33266.146},"profiles":[{"delay_leaf_ms":7791.18,"delay_leaf_runs":2649,"edge_probe_ms":2099.202,"edge_probe_runs":409,"fingerprint":"b2280c9f8c01c7a9da41a74447c21bf71a25f6c6ac1a13e6168f8157776630e8","gap_enum_ms":4337.437,"gap_enum_runs":738,"key":"analyze-1","other_ms":169.411,"other_runs":4,"route_walk_ms":3548.068,"route_walk_runs":0,"total_ms":17945.298},{"delay_leaf_ms":4523.784,"delay_leaf_runs":2775,"edge_probe_ms":2657.113,"edge_probe_runs":406,"fingerprint":"3b4c005845bdc61463f68f019b7daf5ca1e3172707916eaacfc361e6d71bb860","gap_enum_ms":5364.388,"gap_enum_runs":741,"key":"analyze-2","other_ms":136.089,"other_runs":4,"route_walk_ms":2578.011,"route_walk_runs":0,"total_ms":15259.385},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"bd066a4506cc8a26d275de7669671e988aeadb8b019a08a99a0ac8ac62de4bed","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"analyze-manifest-3","other_ms":1.419,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":1.419},{"delay_leaf_ms":0.725,"delay_leaf_runs":1,"edge_probe_ms":0.01,"edge_probe_runs":0,"fingerprint":"0984f0cf35374209beb6ab114dcaa4d1607b1de07ec9a87ab0c02035753396dd","gap_enum_ms":16.202,"gap_enum_runs":5,"key":"analyze-manifest-4","other_ms":10.487,"other_runs":0,"route_walk_ms":0.065,"route_walk_runs":0,"total_ms":27.489},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"0984f0cf35374209beb6ab114dcaa4d1607b1de07ec9a87ab0c02035753396dd","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"analyze-manifest-5","other_ms":8.147,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":8.147},{"delay_leaf_ms":0.659,"delay_leaf_runs":1,"edge_probe_ms":0.008,"edge_probe_runs":0,"fingerprint":"781937e674a9f46124c6601583be51f62e546b082a4d4d938455f2e3abb33d26","gap_enum_ms":15.686,"gap_enum_runs":5,"key":"analyze-manifest-6","other_ms":7.978,"other_runs":0,"route_walk_ms":0.077,"route_walk_runs":0,"total_ms":24.408}],"reports":[{"calls":2,"fingerprint":"0984f0cf35374209beb6ab114dcaa4d1607b1de07ec9a87ab0c02035753396dd","keys":["analyze-manifest-4","analyze-manifest-5"]},{"calls":1,"fingerprint":"3b4c005845bdc61463f68f019b7daf5ca1e3172707916eaacfc361e6d71bb860","keys":["analyze-2"]},{"calls":1,"fingerprint":"781937e674a9f46124c6601583be51f62e546b082a4d4d938455f2e3abb33d26","keys":["analyze-manifest-6"]},{"calls":1,"fingerprint":"b2280c9f8c01c7a9da41a74447c21bf71a25f6c6ac1a13e6168f8157776630e8","keys":["analyze-1"]},{"calls":1,"fingerprint":"bd066a4506cc8a26d275de7669671e988aeadb8b019a08a99a0ac8ac62de4bed","keys":["analyze-manifest-3"]}],"reuse_enabled":false,"reuse_hit_rate":0.0,"reuse_hits":0,"test":"test_move_table","underlying_calls":6,"unique_reports":5}
+ALL MOVE TABLE TESTS PASSED

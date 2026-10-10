@@ -1,0 +1,17 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+=== 6A AIRBORNE N/C 资料：精确匹配；对地与弹地保持 ===
+PASS  6A AIRBORNE normal: LAUNCH, untech 30N, horizontal 150 / upward 460 (ticket 02 value table)
+PASS  6A AIRBORNE counter: LAUNCH, untech 36N, same speeds (counter not shorter than normal)
+PASS  6A GROUNDED normal unchanged (untech 36N, upward 560)
+PASS  6A GROUNDED counter unchanged (untech 42N, upward 560)
+PASS  6A still declares no GROUND_SLIDE profile (no fallback expansion)
+PASS  both AIRBORNE contexts are explicit keys on the shared manifest resource
+=== 未受击空中木桩：保持水平速度、重力/墙限照常、落地回标准物理 ===
+PASS  airborne neutral dummy falls under gravity and lands (landed F19, 18 airborne frames)
+PASS  while un-hit and airborne the dummy keeps its horizontal speed like a real jump (no ground friction)
+PASS  an un-hit landing keeps the dummy NEUTRAL (no invented stun)
+PASS  standard dummy friction resumes after landing (vx decays to 0 within ~6 frames)
+PASS  an airborne neutral dummy is clamped to the legal wall limit while moving
+
+ALL DESCENDING ANTIAIR FINISH TESTS PASSED

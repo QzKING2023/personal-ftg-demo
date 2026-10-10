@@ -1,0 +1,11 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+=== 6A AIRBORNE N/C 资料：精确匹配；对地与弹地保持 ===
+PASS  6A AIRBORNE normal: LAUNCH, untech 30N, horizontal 150 / upward 460 (ticket 02 value table)
+PASS  6A AIRBORNE counter: LAUNCH, untech 36N, same speeds (counter not shorter than normal)
+PASS  6A GROUNDED normal unchanged (untech 36N, upward 560)
+PASS  6A GROUNDED counter unchanged (untech 42N, upward 560)
+PASS  6A still declares no GROUND_SLIDE profile (no fallback expansion)
+PASS  both AIRBORNE contexts are explicit keys on the shared manifest resource
+
+ALL DESCENDING ANTIAIR FINISH TESTS PASSED
