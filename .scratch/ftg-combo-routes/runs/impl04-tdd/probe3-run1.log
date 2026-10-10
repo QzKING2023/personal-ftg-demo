@@ -1,0 +1,32 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+SCRIPT ERROR: Invalid access to property or key 'jc' on a base object of type 'Dictionary'.
+   at: _climb (res://.scratch/ftg-combo-routes/runs/impl04-tdd/probe3_r3.gd:239)
+   GDScript backtrace (most recent call first):
+       [0] _climb (res://.scratch/ftg-combo-routes/runs/impl04-tdd/probe3_r3.gd:239)
+       [1] _hill_climb (res://.scratch/ftg-combo-routes/runs/impl04-tdd/probe3_r3.gd:212)
+       [2] _initialize (res://.scratch/ftg-combo-routes/runs/impl04-tdd/probe3_r3.gd:14)
+SCRIPT ERROR: Invalid access to property or key 'jc' on a base object of type 'Dictionary'.
+   at: _climb (res://.scratch/ftg-combo-routes/runs/impl04-tdd/probe3_r3.gd:239)
+   GDScript backtrace (most recent call first):
+       [0] _climb (res://.scratch/ftg-combo-routes/runs/impl04-tdd/probe3_r3.gd:239)
+       [1] _hill_climb (res://.scratch/ftg-combo-routes/runs/impl04-tdd/probe3_r3.gd:212)
+       [2] _initialize (res://.scratch/ftg-combo-routes/runs/impl04-tdd/probe3_r3.gd:14)
+=== R3-C 爬山 ===
+失败：爬山未找到完整计划
+SCRIPT ERROR: Invalid access to property or key 'a3' on a base object of type 'Dictionary'.
+   at: _climb (res://.scratch/ftg-combo-routes/runs/impl04-tdd/probe3_r3.gd:239)
+   GDScript backtrace (most recent call first):
+       [0] _climb (res://.scratch/ftg-combo-routes/runs/impl04-tdd/probe3_r3.gd:239)
+       [1] _hill_climb (res://.scratch/ftg-combo-routes/runs/impl04-tdd/probe3_r3.gd:212)
+       [2] _initialize (res://.scratch/ftg-combo-routes/runs/impl04-tdd/probe3_r3.gd:14)
+SCRIPT ERROR: Invalid access to property or key 'a3' on a base object of type 'Dictionary'.
+   at: _climb (res://.scratch/ftg-combo-routes/runs/impl04-tdd/probe3_r3.gd:239)
+   GDScript backtrace (most recent call first):
+       [0] _climb (res://.scratch/ftg-combo-routes/runs/impl04-tdd/probe3_r3.gd:239)
+       [1] _hill_climb (res://.scratch/ftg-combo-routes/runs/impl04-tdd/probe3_r3.gd:212)
+       [2] _initialize (res://.scratch/ftg-combo-routes/runs/impl04-tdd/probe3_r3.gd:14)
+=== R3-B 爬山 ===
+失败：爬山未找到完整计划
+=== B 墙验证：d2 × b3 × a3 全扫（5B#9 → 6A 是否可同连段命中）===
+B: 5B#9 后 6A 同连段命中的组合数 = 0（无）
