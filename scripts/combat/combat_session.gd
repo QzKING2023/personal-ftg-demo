@@ -276,6 +276,14 @@ var _move_via_special_entry := false
 ## 收招当帧快照的命中与来源标记（收招后 _move_* 已清零，普通连接消费阶段读取）。
 var _finished_move_hit := false
 var _finished_move_via_entry := false
+## 地面稍晚普通连接 M（连段路线票据 03，规则 7/8）：地面招式完整恢复后保留
+## 已声明普通连接机会——收招当帧未消费时开放等待，此后每个消费阶段评估；
+## 无固定等待帧数上限，由目标恢复/受身/普通倒地、连段结束、玩家受击、其他
+## 招式开始或可执行未声明攻击清理（自然截止）。等待期间声明目标的缓存不被
+## 独立起手窃取；空缓存/组合等待可稍晚输入，缓存正常老化，不可执行请求不
+## 刷新资格或延寿缓存。资格跨走/蹲/实际跳/实际冲刺保留（不绕过姿态、
+## pre-jump、冲刺、受击、落地恢复与启动优先级）。
+var _link_wait := false
 
 # --- 空技落地接缝（票据 08，L-01 / j6D 普通落地连接）---
 ## 命中落地取消资格：声明 hit_landing_cancel_targets 的空中招式（j2D）在实际
@@ -325,6 +333,9 @@ var _motion_anchor_x := 0.0
 var _motion_anchor_y := 0.0
 ## 已提交计划位移的 active 帧数（累计分布分子）。
 var _motion_frames_done := 0
+## 本招位移是否已按停止规则终止（连段路线票据 03：身后/正面停止当帧在提交
+## 中置位、当帧运动阶段末尾消费，跳过余下 active；随招式跟踪清零，不跨帧）。
+var _motion_stop_end := false
 ## 方向候选参考面向（M-04）：方向历史为空（无进行中候选）时重锁帧首面向；
 ## 候选进行中保持首次输入时锁定的相对面向，不因换边重解释后续方向段。
 var _direction_ref_facing := 1
@@ -453,6 +464,7 @@ func reset_to_initial_state() -> void:
 	_hit_landing_input_move_id = ""
 	_hit_landing_landed_frame = -1
 	_pending_air_link = false
+	_link_wait = false
 	_reset_move_tracking()
 	_direction_ref_facing = 1
 
@@ -543,6 +555,7 @@ func clone_state() -> Dictionary:
 			"via_air_link": _move_via_air_link,
 			"finished_move_id": _move_id(_finished_move),
 			"pending_link_check": _pending_link_check,
+			"link_wait": _link_wait,
 			"finished_move_hit": _finished_move_hit,
 			"finished_move_via_entry": _finished_move_via_entry,
 			"pending_air_link": _pending_air_link,
@@ -724,6 +737,7 @@ func restore_state(state: Dictionary) -> bool:
 	_move_via_air_link = bool(move_state.get("via_air_link", false))
 	_finished_move = _move_from_id(String(move_state.get("finished_move_id", "")))
 	_pending_link_check = bool(move_state.get("pending_link_check", false))
+	_link_wait = bool(move_state.get("link_wait", false))
 	_finished_move_hit = bool(move_state.get("finished_move_hit", false))
 	_finished_move_via_entry = bool(move_state.get("finished_move_via_entry", false))
 	_pending_air_link = bool(move_state.get("pending_air_link", false))
@@ -1000,6 +1014,7 @@ func debug_snapshot() -> Dictionary:
 		"hit_landing_input_move_id": _hit_landing_input_move_id,
 		"hit_landing_landed": _hit_landing_landed_frame >= 0,
 		"air_link_pending": _pending_air_link,
+		"link_wait": _link_wait,
 	}
 
 
@@ -1128,6 +1143,7 @@ func settlement_state() -> Dictionary:
 		"hit_landing_input_move_id": _hit_landing_input_move_id,
 		"hit_landing_landed": _hit_landing_landed_frame >= 0,
 		"pending_air_link": _pending_air_link,
+		"link_wait": _link_wait,
 		"air_link_move_id": (_move_id(_finished_move) if _pending_air_link else ""),
 		# 木桩姿态/阶段、受击计时与速度（滑行计时影响追击窗口与自然恢复时点；
 		# 弹地触地标记与追击窗口计时影响可追击域与弹地分支——票据 09）
@@ -2024,6 +2040,7 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 	_evaluate_throw_tech(events)
 	_apply_throw_result(events)
 	_resolve_pending_link(events)
+	_resolve_link_wait(events)
 	_resolve_air_link(events)
 	_try_consume_hit_landing(events)
 	var action := _buffer_action_candidate()
@@ -2056,6 +2073,7 @@ func _phase_consume_buffer(events: Array[CombatEvent]) -> void:
 	## 的落地消费在落地接缝结算）时，同样推迟到窗口关闭/完全恢复/落地。
 	if _current_move != null and _move_hit_confirmed and combo_active \
 			and _current_move.link_targets.is_empty() \
+			and not (_move_hit_confirmed and not _current_move.hit_link_targets.is_empty()) \
 			and not _special_entry_live() \
 			and not (_move_via_special_entry and not _current_move.special_entry_link_targets.is_empty()) \
 			and not _hit_landing_open \
@@ -2084,6 +2102,38 @@ func _resolve_pending_link(events: Array[CombatEvent]) -> void:
 	_finished_move = null
 	_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
 
+
+## M 等待评估（规则 7/8）：目标进入不可追击状态（恢复/受身/普通倒地）即清理
+## 资格并按自然截止结束连段；候选可消费时按普通连接起手（连段延续）；否则
+## 继续等待——资格跨走/蹲/实际跳/实际冲刺保留，姿态、pre-jump、冲刺、受击、
+## 落地恢复与启动优先级照常生效，缓存正常老化。新招式起手/连段结束的清理在
+## _start_move/_end_combo 内完成。
+func _resolve_link_wait(events: Array[CombatEvent]) -> void:
+	if not _link_wait:
+		return
+	if _current_move != null:
+		_link_wait = false
+		return
+	if not combo_active:
+		_link_wait = false
+		_finished_move = null
+		return
+	if not _dummy_pursuable():
+		## 目标不可追击：资格清理；持有声明目标的缓存按可读失败上报后作废。
+		if _link_declared_but_gated(_finished_move):
+			events.append(CombatEvent.link_failed(_link_fail_reason(_moves.get(_buffered_move_id) as MoveData), _buffered_move_id))
+			_clear_buffer()
+		_link_wait = false
+		_finished_move = null
+		_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
+		return
+	if _link_candidate_available(_finished_move):
+		var target := _moves.get(_buffered_move_id) as MoveData
+		_start_move(_buffered_move_id, target, true)
+		_move_via_link = true
+		_note_buffer_consumed(_buffered_move_id)
+		_clear_buffer()
+		return
 
 ## 空技收招/落地截断是否把连段存续推迟到落地接缝（票据 08）：命中落地资格
 ## 开放时（j2D 实际 HIT，L-01），或声明了普通连接边且连段仍活跃时（j6D）。
@@ -2187,6 +2237,10 @@ func _buffer_action_candidate() -> Dictionary:
 	if _bounce_wait_active():
 		## 弹地等待中缓存不作为独立起手消费（票据 09）：留给触地后的延迟连接
 		## 评估；年龄照常增长，过早输入会自然过期并按目押失败上报。
+		return {}
+	if _link_wait and _finished_move != null and _link_edge_declared(_finished_move):
+		## M 等待中声明目标的缓存留给连接消费（规则 8）：不被独立起手窃取；
+		## 未声明攻击照常独立起手并在 _start_move 清理资格。
 		return {}
 	if _startable_cancel(_buffered_move_id):
 		return {"move_id": _buffered_move_id, "is_followup": true}
@@ -2469,12 +2523,47 @@ func _commit_planned_step() -> void:
 	## 向下的计划位移段（票据 08：j2D/j6D）不越过地面——钳到站地高度，
 	## 是否构成落地由 _motion_player 的落地结算判定。
 	target.y = minf(target.y, GameParams.ground_stand_y())
+	## 蓄力 D 身后停止 / 交界余量（连段路线票据 03，规则 3/4）：实际 HIT 已授予
+	## 穿越许可、本招仍 active 且玩家仍在目标正面时，本帧计划位移将到达/越过
+	## 正面贴身位置——检查当时身后贴身停点（身体边缘刚分离处）：场内且距前进
+	## 墙不少于交界余量则越过并在停点停止；场内但余量不足改在正面停止；场外
+	## 停点沿用原墙分支（不截断，后续帧照常被墙截断）。停止当帧结束余下
+	## active（_motion_stop_end），随后按声明恢复完整收招；本帧命中不撤销或
+	## 重复（命中判定已按计划扫掠结算）；被防/挥空无穿越许可，不进入本分支。
+	if _current_move != null and _current_move.stop_behind_target and _cross_ok \
+			and player_phase == PlayerPhase.ACTIVE and _move_direction != 0:
+		var stop_dir := float(_move_direction)
+		var behind_x := dummy_position.x + stop_dir * GameParams.BODY_SIZE.x
+		var front_x := dummy_position.x - stop_dir * GameParams.BODY_SIZE.x
+		var stop_left := GameParams.stage_left_limit()
+		var stop_right := GameParams.stage_right_limit()
+		if (player_position.x - behind_x) * stop_dir >= 0.0:
+			## 命中帧已越过停点（穿越许可在命中应用阶段才授予）：就地结束余下运动。
+			target.x = player_position.x
+			_motion_stop_end = true
+		elif (target.x - front_x) * stop_dir >= 0.0:
+			var behind_in_field := behind_x <= stop_right and behind_x >= stop_left
+			if behind_in_field:
+				var wall_gap := (stop_right - behind_x) if stop_dir > 0.0 else (behind_x - stop_left)
+				if wall_gap < GameParams.CHARGE_FRONT_STOP_WALL_MARGIN_PX:
+					target.x = front_x
+					_motion_stop_end = true
+				elif (target.x - behind_x) * stop_dir >= 0.0:
+					target.x = behind_x
+					_motion_stop_end = true
 	if absf(target.y - dummy_position.y) < GameParams.BODY_SIZE.y:
 		var origin_side := 1.0 if player_position.x >= dummy_position.x else -1.0
 		var dx := target.x - dummy_position.x
 		if absf(dx) < GameParams.BODY_SIZE.x or (signf(dx) != origin_side and not _cross_ok):
-			target.x = clampf(dummy_position.x + GameParams.BODY_SIZE.x * origin_side,
-				GameParams.stage_left_limit(), GameParams.stage_right_limit())
+			## 原侧被墙钳制时把玩家改放到合法场内侧（规则 5）：不移动目标，
+			## 也不在所有重合时一律向场中推。
+			var origin_x := dummy_position.x + GameParams.BODY_SIZE.x * origin_side
+			var origin_clamped := clampf(origin_x, GameParams.stage_left_limit(), GameParams.stage_right_limit())
+			if is_equal_approx(origin_clamped, origin_x):
+				target.x = origin_clamped
+			else:
+				target.x = clampf(dummy_position.x - GameParams.BODY_SIZE.x * origin_side,
+					GameParams.stage_left_limit(), GameParams.stage_right_limit())
 	player_position = target
 	## 计划位移造成的真实离地（票据 07）：声明向上位移的招式（6D/2D）在位移提交
 	## 当帧真实转为空中姿态——后续帧自然受重力回落；这不是姿态瞬移，空中出口、
@@ -2701,8 +2790,14 @@ func _resolve_body_overlap() -> void:
 	if absf(player_position.y - dummy_position.y) >= GameParams.BODY_SIZE.y:
 		return
 	var side := 1.0 if dx >= 0.0 else -1.0
-	player_position.x = dummy_position.x + GameParams.BODY_SIZE.x * side
-	player_position.x = clampf(player_position.x, GameParams.stage_left_limit(), GameParams.stage_right_limit())
+	## 原侧被墙钳制时把玩家改放到合法场内侧（规则 5）：不移动目标，也不在所有
+	## 重合时一律向场中推；速度清零仍按原推挤方向判定。
+	var push_x := dummy_position.x + GameParams.BODY_SIZE.x * side
+	var clamped := clampf(push_x, GameParams.stage_left_limit(), GameParams.stage_right_limit())
+	if not is_equal_approx(clamped, push_x):
+		clamped = clampf(dummy_position.x - GameParams.BODY_SIZE.x * side,
+			GameParams.stage_left_limit(), GameParams.stage_right_limit())
+	player_position.x = clamped
 	if is_equal_approx(signf(player_velocity.x), -side):
 		player_velocity.x = 0.0
 
@@ -2730,6 +2825,10 @@ func _advance_move(events: Array[CombatEvent]) -> void:
 			return
 	var was_active := player_phase == PlayerPhase.ACTIVE
 	_move_frame += 1
+	if _motion_stop_end and _move_frame <= _current_move.active_to():
+		## 停止规则当帧结束余下 active（规则 3/4）：跳至恢复段起点，此后按声明
+		## 恢复帧数完整收招（总时长相应缩短，不跳过恢复）。
+		_move_frame = _current_move.active_to() + 1
 	_current_segment = _current_move.segment_index_for_frame(_move_frame)
 	match _current_move.segment_phase_code(_move_frame):
 		0:
@@ -2796,6 +2895,13 @@ func _finish_move(events: Array[CombatEvent]) -> void:
 	if _pending_link_check:
 		_clear_current_move()
 		return
+	if _ground_link_wait_eligible(_current_move):
+		## M 等待开放（规则 7）：地面招式完整恢复后保留已声明普通连接机会——
+		## 连段不在收招当帧结束，消费阶段按 _resolve_link_wait 逐帧评估；合法
+		## 当帧连接已在上面直接消费，空缓存/组合等待可稍晚输入，无固定上限。
+		_link_wait = true
+		_clear_current_move()
+		return
 	if _link_declared_but_gated(_current_move):
 		## 声明了普通连接边但消费门不满足：按 I-06 缓存消费失败，记录原因并作废。
 		events.append(CombatEvent.link_failed(_link_fail_reason(_moves.get(_buffered_move_id) as MoveData), _buffered_move_id))
@@ -2805,6 +2911,20 @@ func _finish_move(events: Array[CombatEvent]) -> void:
 	_end_combo(CombatEvent.ComboEndReason.MOVE_RECOVERED, events)
 	_clear_current_move()
 
+
+## 地面招式完整恢复后是否存在可保留的已声明普通连接机会（规则 7）：无条件
+## link_targets，或实际命中后的 hit_link_targets / 来源限定 special_entry_link。
+## 空技落地不新开稍晚等待（D73）——空中收招走 _pending_air_link 落地接缝，
+## 等待资格只对地面招式开放。
+func _ground_link_wait_eligible(finished: MoveData) -> bool:
+	if finished == null or finished.stance != MoveData.Stance.GROUND:
+		return false
+	if not combo_active:
+		return false
+	if not finished.link_targets.is_empty():
+		return true
+	return _finished_move_hit and (not finished.hit_link_targets.is_empty() \
+		or (_finished_move_via_entry and not finished.special_entry_link_targets.is_empty()))
 
 ## 普通连接候选是否可消费（收招当帧评估）：缓存目标在前招声明的 link_targets
 ## 内（或前招经特殊进入起手且实际命中时的 special_entry_link_targets 内，票据 05）、
@@ -2837,6 +2957,10 @@ func _link_declared_but_gated(finished: MoveData) -> bool:
 func _link_edge_declared(finished: MoveData) -> bool:
 	if finished.link_targets.has(_buffered_move_id):
 		return true
+	## 命中限定边（连段路线票据 03，规则 2）：本招实际 HIT 后开放，不区分进入
+	## 来源；被防/挥空不取得。
+	if _finished_move_hit and finished.hit_link_targets.has(_buffered_move_id):
+		return true
 	return _finished_move_via_entry and _finished_move_hit \
 		and finished.special_entry_link_targets.has(_buffered_move_id)
 
@@ -2864,6 +2988,8 @@ func _report_undeclared_link_gap(source: MoveData, events: Array[CombatEvent]) -
 	if buffered == null or buffered.stance != MoveData.Stance.GROUND:
 		return
 	if source != null and source.link_targets.has(_buffered_move_id):
+		return
+	if source != null and _finished_move_hit and source.hit_link_targets.has(_buffered_move_id):
 		return
 	events.append(CombatEvent.link_failed(CombatEvent.LinkFailReason.CONFIGURATION_GAP, _buffered_move_id))
 
@@ -2909,8 +3035,10 @@ func _start_move(move_id: String, move: MoveData, is_followup: bool) -> void:
 	_move_via_link = false
 	_move_via_air_link = false
 	## 新招式起手即取代前招的空技落地接缝（票据 08）：延迟连接挂起与收招
-	## 快照随接缝终结——资格（若有）由自身的消费/失效路径管理。
+	## 快照随接缝终结——资格（若有）由自身的消费/失效路径管理。其他招式开始
+	## 同时清理 M 等待资格（规则 8）；M 消费路径也经此关闭等待。
 	_pending_air_link = false
+	_link_wait = false
 	_finished_move = null
 	## 特殊进入消费（票据 05，I-05）：资格开放中且本招是其声明目标时，本招经
 	## 来源资格起手——消费资格（一次性），标记来源限定普通连接边可用。
@@ -2970,6 +3098,7 @@ func _reset_move_tracking() -> void:
 	_motion_anchor_x = 0.0
 	_motion_anchor_y = 0.0
 	_planned_step = Vector2.ZERO
+	_motion_stop_end = false
 
 
 func _close_special_entry() -> void:
@@ -3222,6 +3351,8 @@ func _end_combo(reason: CombatEvent.ComboEndReason, events: Array[CombatEvent]) 
 	_close_special_entry()
 	_close_hit_landing()
 	_pending_air_link = false
+	## M 等待资格绑定本次连段（规则 8），连段结束随之清理。
+	_link_wait = false
 	_finished_move = null
 	events.append(CombatEvent.combo_ended(reason))
 

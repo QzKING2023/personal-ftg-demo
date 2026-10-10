@@ -52,7 +52,7 @@ func _initialize() -> void:
 func _test_default_table_reports_ground_route() -> void:
 	var report := _default_analyze()
 	_check(report.safe and report.cycles.is_empty(), "default table reports no valid cycle")
-	_check(report.edges.size() == 79, "default table enumerates 79 edges (ticket 05 基线 36：15 chain + 8 special + 4 link + 1 jump + 2 air cancels + 1 landing + 2 Rekka derives + 1 ~B link + 1 special D entry + 1 source-limited 5B link；ticket 06 增 7 条（6 蓄力变体 + 5[D]→5B 来源限定）；ticket 07 增 12 条：6A jc jB/jC（2 jump）+ jA/jB→jC（2 空中取消）+ 2C→6D/2D（2 链式）+ 6D/2D→jA/jB/jC（6 空中出口）；ticket 08 净增 16 条：空中 D 系相关边 17 条（jA/jB/jC→三新招取消 9、6D/2D→三新招出口 6、j2D→214C 命中落地取消 1、j6D→5B 空技延迟连接 1），其中 jB→j5D 迁自旧 jB→jD 边；ticket 09 增 8 条：jA/jB/jC→j214D 取消 3 + 6D/2D→j214D 出口 2 + j214D→5B/6A/214C 弹地延迟连接 3)")
+	_check(report.edges.size() == 80, "default table enumerates 80 edges（ticket 05 基线 36 + ticket 06 增 7 + ticket 07 增 12 + ticket 08 净增 16 + ticket 09 增 8 = 79；连段路线票据 03 净增 1：5D/5[D] 来源限定 5B 目押改判命中限定（−2 +2，枚举序不变）、5B→6D 必杀取消 +1——钉位接地探针下 6D 无 grounded 资料按 MISS_NO_PROFILE invalid 枚举）")
 	var ab := _find_edge(report, "5A", "5B", ComboSolver.EdgeKind.CHAIN_CANCEL)
 	_check(ab != null and ab.valid, "5A -> 5B is a valid chain continuation")
 	if ab != null:
@@ -445,13 +445,15 @@ func _test_special_entry_edges_and_slide_scope() -> void:
 			"the entry edge marks slide pickup and inter-segment reachability as replay-required (pins never produce the slide)")
 		_check("airborne" in entry.reason and "grounded-stun" in entry.reason,
 			"the entry edge reports the target states observed across its valid wait range")
-	var link := _find_edge(report, "5D", "5B", ComboSolver.EdgeKind.SPECIAL_ENTRY_LINK)
-	_check(link != null and link.valid, "the source-limited 5D -> 5B link edge validates in the special-entry context (solo 236C start, D starter)")
+	var link := _find_edge(report, "5D", "5B", ComboSolver.EdgeKind.HIT_LINK)
+	_check(link != null and link.valid, "the hit-limited 5D -> 5B link edge validates in the hit context (solo 236C start, D starter)")
 	if link != null and link.valid:
-		_check("来源限定" in link.reason and "直接起手" in link.reason,
-			"the link edge names its entry context and the source limitation")
+		_check("命中限定" in link.reason and "普通连接" in link.reason,
+			"the link edge names its hit limitation and the shared link model")
 	_check(_find_edge(report, "5D", "5B", ComboSolver.EdgeKind.NORMAL_LINK) == null,
-		"no unconditional 5D -> 5B link edge exists (normal-source 5D keeps no reverse link)")
+		"no unconditional 5D -> 5B link edge exists (whiffed/blocked 5D keeps no reverse link)")
+	_check(_find_edge(report, "5D", "5B", ComboSolver.EdgeKind.SPECIAL_ENTRY_LINK) == null,
+		"the old source-limited 5D -> 5B edge is gone (replaced by the source-agnostic hit-limited edge, ticket 03)")
 	var route := _query_route(["5B", "236C", "5D"])
 	_check(route != null and route.timing_valid and route.combo_hits == 4,
 		"the 5B > 236C(both segments) > 5D route is timing-valid with all four hits predicted")
@@ -534,7 +536,7 @@ func _test_solver_claims_only_configured_connections() -> void:
 		["5A", "236C", ComboSolver.EdgeKind.SPECIAL_CANCEL], ["5B", "236C", ComboSolver.EdgeKind.SPECIAL_CANCEL],
 		["5C", "236C", ComboSolver.EdgeKind.SPECIAL_CANCEL],
 		["5A", "214C", ComboSolver.EdgeKind.SPECIAL_CANCEL], ["2A", "214C", ComboSolver.EdgeKind.SPECIAL_CANCEL],
-		["5B", "214C", ComboSolver.EdgeKind.SPECIAL_CANCEL], ["5C", "214C", ComboSolver.EdgeKind.SPECIAL_CANCEL],
+		["5B", "214C", ComboSolver.EdgeKind.SPECIAL_CANCEL], ["5B", "6D", ComboSolver.EdgeKind.SPECIAL_CANCEL], ["5C", "214C", ComboSolver.EdgeKind.SPECIAL_CANCEL],
 		["2C", "214C", ComboSolver.EdgeKind.SPECIAL_CANCEL],
 		["214C", "214C~B", ComboSolver.EdgeKind.REKKA_DERIVE], ["214C", "214C~C", ComboSolver.EdgeKind.REKKA_DERIVE],
 		["214C~B", "5B", ComboSolver.EdgeKind.NORMAL_LINK],
@@ -544,14 +546,14 @@ func _test_solver_claims_only_configured_connections() -> void:
 		["jA", "jB", ComboSolver.EdgeKind.CANCEL], ["jB", "j5D", ComboSolver.EdgeKind.CANCEL],
 		["jB", "5D", ComboSolver.EdgeKind.LANDING_CANCEL],
 		["236C", "5D", ComboSolver.EdgeKind.SPECIAL_ENTRY],
-		["5D", "5B", ComboSolver.EdgeKind.SPECIAL_ENTRY_LINK],
+		["5D", "5B", ComboSolver.EdgeKind.HIT_LINK],
 		## 票据 06：目标声明蓄力的接缝另枚举蓄力变体（to=5[D]），以及 5[D]
 		## 自身的来源限定出边。
 		["236C", "5[D]", ComboSolver.EdgeKind.SPECIAL_ENTRY],
 		["5B", "5[D]", ComboSolver.EdgeKind.CHAIN_CANCEL], ["5C", "5[D]", ComboSolver.EdgeKind.CHAIN_CANCEL],
 		["5B", "5[D]", ComboSolver.EdgeKind.NORMAL_LINK], ["5C", "5[D]", ComboSolver.EdgeKind.NORMAL_LINK],
 		["jB", "5[D]", ComboSolver.EdgeKind.LANDING_CANCEL],
-		["5[D]", "5B", ComboSolver.EdgeKind.SPECIAL_ENTRY_LINK],
+		["5[D]", "5B", ComboSolver.EdgeKind.HIT_LINK],
 		## 票据 07：6A 的 jump cancel 扩展到 jB/jC，jA/jB 接 jC，2C 链式进入
 		## 6D/2D，6D/2D 的空中出口（air_exit_targets）。
 		["6A", "jB", ComboSolver.EdgeKind.JUMP_CANCEL], ["6A", "jC", ComboSolver.EdgeKind.JUMP_CANCEL],

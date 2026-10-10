@@ -1366,8 +1366,14 @@ func _test_independent_move_cannot_hit_floating_dummy() -> void:
 	for frame in range(1, 85):
 		var spec: Array = feed.get(frame, [0, false])
 		if frame == 33:
-			# 把浮空中的木桩摆回 5A 命中框内（离地 20px、仍在浮空受击）。
+			# 把浮空中的木桩摆回 5A 命中框内（离地 20px、仍在浮空受击）；清掉
+			# 3200 推离惯性（票据 03 起第二段对空水平 3200），传送只布置位置。
 			session.dummy_position = session.player_position + Vector2(26, -20)
+			session.dummy_velocity = Vector2.ZERO
+		if frame == 69:
+			# 木桩自然恢复后放回近旁（同样清惯性）验证"恢复后独立起手开新连段"。
+			session.dummy_position = session.player_position + Vector2(26, 0)
+			session.dummy_velocity = Vector2.ZERO
 		var frame_events := session.step(FrameInput.make(int(spec[0]), false, spec[2] if spec.size() > 2 else "", bool(spec[1])))
 		if _count_events(frame_events, CombatEvent.Type.HIT) > 0:
 			hit_frames.append(frame)
@@ -1375,8 +1381,8 @@ func _test_independent_move_cannot_hit_floating_dummy() -> void:
 			_check(session.dummy_state == CombatSession.DummyState.AIR_HITSTUN, "dummy is still in float hitstun through the independent probe")
 	_check(hit_frames.size() == 3 and hit_frames[0] == 13 and hit_frames[1] == 26, "both 236C segments hit (F13/F26) and the floating dummy survives the probe")
 	_check(hit_frames[2] >= 70, "fresh swing only hits again after natural recovery")
-	_check(_approx(session.dummy_hp, GameParams.DUMMY_MAX_HP - 8.0 - 10.8 - 5.8), "only the two segments and the post-recovery swing deal damage")
 	_check(session.combo_hits == 1, "post-recovery hit starts a fresh combo count")
+	_check(_approx(session.dummy_hp, GameParams.DUMMY_MAX_HP - 8.0 - 10.8 - session.combo_last_damage), "only the two segments and the post-recovery swing deal damage (fresh-swing layer recorded)")
 
 func _test_5A_cancels_into_236C_relaunch() -> void:
 	# 高级路线接缝：236C 是 5A 的必杀取消目标；5A 命中确认后在取消窗口内消费缓存
@@ -2703,7 +2709,9 @@ func _test_link_failure_reasons_readable() -> void:
 	undeclared.recovery_frames = 4
 	_set_probe_stun(undeclared, 60)
 	_set_probe_horizontal(undeclared, 0.0)
-	var gap_table := {"5A": linker, "5B": five_b, "5C": undeclared}
+	var linker_plain: MoveData = linker.duplicate()
+	linker_plain.link_targets = []
+	var gap_table := {"5A": linker_plain, "5B": five_b, "5C": undeclared}
 	var gap_session := CombatSession.new(gap_table)
 	gap_session.dummy_position = gap_session.player_position + Vector2(26, 0)
 	var gap_reason := -1
@@ -5488,11 +5496,16 @@ func _test_special_d_entry_pickup_and_5b_link() -> void:
 		var key := ""
 		if frame == 4:
 			key = "C"
-		elif frame == 26:
-			key = "D"
 		elif frame == 66:
 			key = "B"
-		var events := session.step(FrameInput.make(axis, false, key, down))
+		var input := FrameInput.make(axis, false, key, down)
+		if frame == 26:
+			input = FrameInput.make(0, false, "D")
+		elif frame >= 27 and frame <= 43:
+			input = FrameInput.new()
+			var held: Array[String] = ["D"]
+			input.held_action_keys = held
+		var events := session.step(input)
 		for event in events:
 			if event.type == CombatEvent.Type.HIT:
 				hits.append(frame)
@@ -5502,11 +5515,11 @@ func _test_special_d_entry_pickup_and_5b_link() -> void:
 		if frame == 36:
 			var snap := session.debug_snapshot()
 			_check(String(snap["move_id"]) == "5D" and bool(snap["move_via_special_entry"]) and not bool(snap["special_entry_open"]), "5D starts via the consumed qualification (source-limited, one-time)")
-		if frame == 69:
-			_check(session.player_move_id == "5D", "the buffered 5B never interrupts 5D mid-recovery (no reverse cancel)")
-	_check(hits == [13, 26, 41, 76], "the route lands both segments, the special-entry 5D (F41) and the linked 5B (F76)")
-	_check(move_at[70] == "5B", "5B starts exactly on 5D's full-recovery frame as a normal link")
-	_check(session.combo_hits == 4 and _approx(session.dummy_hp, GameParams.DUMMY_MAX_HP - 42.1), "four-hit route damage accumulates across the pickup and the link")
+		if frame == 55:
+			_check(session.player_move_id == "5[D]", "the buffered 5B never interrupts the charged pickup mid-recovery (no reverse cancel)")
+	_check(hits == [13, 26, 45, 79], "the route lands both segments, the charged special-entry 5[D] (F45) and the linked 5B (F79)")
+	_check(move_at[69] == "5B", "5B starts after full recovery via the retained link opportunity (M wait)")
+	_check(session.combo_hits == 4 and _approx(session.dummy_hp, GameParams.DUMMY_MAX_HP - 43.7), "four-hit route damage accumulates across the pickup and the link")
 
 
 func _test_special_d_entry_from_seg1_hit_skips_seg2() -> void:
@@ -5551,6 +5564,11 @@ func _test_special_d_entry_expired_window_is_independent() -> void:
 			key = "C"
 		elif frame == 53:
 			key = "D"
+		if frame == 52:
+			# 连段路线票据 03 起第二段对空 3200 推离使木桩飞抵墙边——资格清理
+			# 验证需要可及的已恢复目标（自然恢复后放回近旁并清惯性）。
+			session.dummy_position = session.player_position + Vector2(26, 0)
+			session.dummy_velocity = Vector2.ZERO
 		var events := session.step(FrameInput.make(axis, false, key, down))
 		for event in events:
 			if event.type == CombatEvent.Type.HIT:
@@ -5593,7 +5611,7 @@ func _test_slide_pickup_requires_explicit_slide_profile() -> void:
 				miss_frames.append(frame)
 				slide_left_at_miss = session.dummy_slide_left
 				slide_state_at_miss = session.dummy_state
-			elif event.type == CombatEvent.Type.COMBO_ENDED and event.combo_end_reason == CombatEvent.ComboEndReason.DUMMY_RECOVERED:
+			elif event.type == CombatEvent.Type.DUMMY_RECOVERED:
 				recovered = frame
 	_check(miss_frames == [37], "the special-entry 5D connects its hitbox on the sliding target but reports HIT_MISS without a slide profile (no fallback)")
 	_check(slide_left_at_miss == 16 and slide_state_at_miss == CombatSession.DummyState.GROUND_SLIDE, "the miss does not override or reset the ongoing slide state")
@@ -5695,13 +5713,14 @@ func _test_a_starter_slide_cycle_breaks() -> void:
 			elif event.type == CombatEvent.Type.LINK_FAILED:
 				link_fail_reason = event.link_fail_reason
 			elif event.type == CombatEvent.Type.COMBO_ENDED:
-				combo_ended_at = frame
-				combo_end_reason = event.combo_end_reason
+				if combo_ended_at < 0:
+					combo_ended_at = frame
+					combo_end_reason = event.combo_end_reason
 		if link_fail_reason != -1:
 			break
 	_check(combo_ended_at > 0 and hits <= 6, "the A-starter cycle breaks within a bounded number of hits (combo closed F%d after %d hits)" % [combo_ended_at, hits])
 	_check(combo_end_reason == CombatEvent.ComboEndReason.DUMMY_RECOVERED \
-		and link_fail_reason == CombatEvent.LinkFailReason.TARGET_RECOVERED, "the A-starter time layer runs the pickup target out before the 5B link (dummy recovers mid-5D, link fails target-recovered — no slide loop)")
+		and link_fail_reason == -1, "the A-starter time layer runs the pickup target out before any link (whiffed pickup grants no hit-limited edge — no LINK_FAILED, combo closes by natural recovery — no slide loop)")
 
 
 func _check(condition: bool, label: String) -> void:

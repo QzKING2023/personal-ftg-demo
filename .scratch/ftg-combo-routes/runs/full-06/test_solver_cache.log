@@ -1,0 +1,136 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PASS: cache disabled/enabled reports are structurally identical
+PASS: the first enabled request records one cache miss
+PASS: cache hit returns a new SolverReport
+PASS: cache hit preserves the complete report
+PASS: mutating one report does not mutate the other
+PASS: mutating one report edge does not mutate the other
+PASS: mutating a returned report does not poison the cached snapshot
+PASS: repeated identical requests record cache hits
+PASS: ground and explicit air starts do not share a cache entry
+PASS: timing and spatial requests do not share a cache entry
+PASS: single-facing and dual-facing requests do not share a cache entry
+PASS: different injected table contents do not share a cache entry
+PASS: editing a resource invalidates the prior cache entry
+PASS: same label with a different start state must not reuse the earlier result
+PASS: wrapper calls return independent reports; caller mutation is not observable
+PASS: wrapper reports zero label reuse and reuse disabled
+PASS: the first analyze request records one cache miss
+PASS: an identical analyze request records a cache hit
+PASS: analyze cache hit preserves the complete report
+PASS: analyze cache hit returns an independent report object
+PASS: mutating a returned analyze report does not poison the cached snapshot
+PASS: different analyze table contents do not share a cache entry
+PASS: repeated edited-table analyze hits its own entry
+PASS: analyze entry counters track misses then hits exactly
+PASS: solve and analyze keep different report shapes for the same table
+PASS: solve and analyze record independent cache entries
+PASS: both solve and analyze entries hit independently
+PASS: repeated solve and analyze requests each return their own cached report
+ERROR: Cannot open file 'user://solver_cache_missing_manifest.tres'.
+   at: load (scene/resources/resource_format_text.cpp:1387)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:35)
+       [1] analyze_manifest (res://scripts/combat/combo_solver.gd:837)
+       [2] _test_refused_manifest_analysis_is_not_cached (res://tests/test_solver_cache.gd:171)
+       [3] _initialize (res://tests/test_solver_cache.gd:22)
+ERROR: Failed loading resource: user://solver_cache_missing_manifest.tres.
+   at: _load (core/io/resource_loader.cpp:343)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:35)
+       [1] analyze_manifest (res://scripts/combat/combo_solver.gd:837)
+       [2] _test_refused_manifest_analysis_is_not_cached (res://tests/test_solver_cache.gd:171)
+       [3] _initialize (res://tests/test_solver_cache.gd:22)
+ERROR: Error loading resource: 'user://solver_cache_missing_manifest.tres'.
+   at: load (core/core_bind.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:35)
+       [1] analyze_manifest (res://scripts/combat/combo_solver.gd:837)
+       [2] _test_refused_manifest_analysis_is_not_cached (res://tests/test_solver_cache.gd:171)
+       [3] _initialize (res://tests/test_solver_cache.gd:22)
+PASS: a missing manifest is refused
+PASS: a refused manifest load never consults the result cache (counted as one bypass)
+PASS: with a fresh canonical cache the first solve computes and misses
+PASS: the miss publishes a per-job cache fragment
+PASS: the fragment carries exactly a header line and one entry line
+PASS: the fragment header names the cache schema and version
+PASS: the entry line embeds the sha256 digest and the var-encoded entry
+PASS: a fresh process loads the canonical cache and hits without computing
+PASS: the reloaded entry preserves the complete report (type-faithful round trip)
+PASS: the tamper probe starts from one intact fragment entry
+PASS: a tampered descriptor never hits despite the matching digest key
+PASS: no-reuse baseline mode still solves normally
+PASS: no-reuse baseline mode writes no cache fragment
+PASS: a disabled result cache writes no fragment
+PASS: enumeration miss returns a complete refused stub (reason carries the mode tag)
+PASS: the enumeration stub carries the full scope text
+PASS: enumeration miss on the analyze entrypoint also returns a stub
+PASS: every miss appends one descriptor line (repeats preserved)
+PASS: a solve descriptor line carries the sha256 digest and the canonical text
+PASS: re-enumeration still stubs (nothing is ever computed or stored)
+PASS: the per-job descriptor sequence is byte-identical across enumeration rounds
+PASS: an enumeration-mode cache hit returns the real report, not a stub
+PASS: a cache hit records nothing — already-covered requests are not swept
+PASS: the round-trip probe uses a cacheable request
+PASS: decoding the canonical request text succeeds
+PASS: the decoded descriptor keeps its entrypoint
+PASS: the decoded table rehydrates into real MoveData objects
+PASS: rehydrated MoveData values survive the encode/decode round trip (ints, floats, typed arrays)
+PASS: re-encoding the rehydrated table reproduces the canonical text byte for byte
+PASS: the replay probe starts from one enumerated descriptor
+PASS: replaying a well-formed descriptor rebuilds the identical request
+PASS: replaying the same descriptor is idempotent (hit path)
+PASS: a truncated descriptor fails loudly instead of guessing
+PASS: an unknown entrypoint fails loudly
+ERROR: Cannot open file 'user://solver_cache_missing_manifest_for_replay.tres'.
+   at: load (scene/resources/resource_format_text.cpp:1387)
+   GDScript backtrace (most recent call first):
+       [0] _manifest_signature (res://scripts/combat/combo_solver.gd:2311)
+       [1] _build_analyze_request (res://scripts/combat/combo_solver.gd:2215)
+       [2] _manifest_descriptor_with_missing_path (res://tests/test_solver_cache.gd:426)
+       [3] _test_sweep_replay_rebuilds_and_validates (res://tests/test_solver_cache.gd:417)
+       [4] _initialize (res://tests/test_solver_cache.gd:30)
+ERROR: Failed loading resource: user://solver_cache_missing_manifest_for_replay.tres.
+   at: _load (core/io/resource_loader.cpp:343)
+   GDScript backtrace (most recent call first):
+       [0] _manifest_signature (res://scripts/combat/combo_solver.gd:2311)
+       [1] _build_analyze_request (res://scripts/combat/combo_solver.gd:2215)
+       [2] _manifest_descriptor_with_missing_path (res://tests/test_solver_cache.gd:426)
+       [3] _test_sweep_replay_rebuilds_and_validates (res://tests/test_solver_cache.gd:417)
+       [4] _initialize (res://tests/test_solver_cache.gd:30)
+ERROR: Error loading resource: 'user://solver_cache_missing_manifest_for_replay.tres'.
+   at: load (core/core_bind.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _manifest_signature (res://scripts/combat/combo_solver.gd:2311)
+       [1] _build_analyze_request (res://scripts/combat/combo_solver.gd:2215)
+       [2] _manifest_descriptor_with_missing_path (res://tests/test_solver_cache.gd:426)
+       [3] _test_sweep_replay_rebuilds_and_validates (res://tests/test_solver_cache.gd:417)
+       [4] _initialize (res://tests/test_solver_cache.gd:30)
+ERROR: Cannot open file 'user://solver_cache_missing_manifest_for_replay.tres'.
+   at: load (scene/resources/resource_format_text.cpp:1387)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:35)
+       [1] analyze_manifest (res://scripts/combat/combo_solver.gd:837)
+       [2] _sweep_replay (res://scripts/combat/combo_solver.gd:2807)
+       [3] _test_sweep_replay_rebuilds_and_validates (res://tests/test_solver_cache.gd:417)
+       [4] _initialize (res://tests/test_solver_cache.gd:30)
+ERROR: Failed loading resource: user://solver_cache_missing_manifest_for_replay.tres.
+   at: _load (core/io/resource_loader.cpp:343)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:35)
+       [1] analyze_manifest (res://scripts/combat/combo_solver.gd:837)
+       [2] _sweep_replay (res://scripts/combat/combo_solver.gd:2807)
+       [3] _test_sweep_replay_rebuilds_and_validates (res://tests/test_solver_cache.gd:417)
+       [4] _initialize (res://tests/test_solver_cache.gd:30)
+ERROR: Error loading resource: 'user://solver_cache_missing_manifest_for_replay.tres'.
+   at: load (core/core_bind.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] load_manifest (res://scripts/combat/move_table.gd:35)
+       [1] analyze_manifest (res://scripts/combat/combo_solver.gd:837)
+       [2] _sweep_replay (res://scripts/combat/combo_solver.gd:2807)
+       [3] _test_sweep_replay_rebuilds_and_validates (res://tests/test_solver_cache.gd:417)
+       [4] _initialize (res://tests/test_solver_cache.gd:30)
+PASS: a replay that never builds a cacheable request (missing manifest) fails validation
+
+ALL SOLVER CACHE TESTS PASSED

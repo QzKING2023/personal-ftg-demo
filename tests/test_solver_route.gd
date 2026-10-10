@@ -67,7 +67,7 @@ func _test_default_table_reports_config_gaps() -> void:
 
 func _test_gaps_are_never_claimed_as_legal() -> void:
 	var report := _default_solve()
-	_check(report.edges.size() == 79, "gap enumeration leaves the configured edge set untouched (79 edges: ticket 05 基线 36 + ticket 06 的 7 条 + ticket 07 的 12 条（jc 扩展、jC 链、2C→6D/2D 与 6D/2D 空中出口）+ ticket 08 的 16 条（jA/jB/jC → 空中 D 系各 3 条（jB 的旧 jD 边迁移）、6D/2D 出口扩至三新招各 3 条、j2D→214C 命中落地取消 1 条）+ ticket 09 的 8 条（jA/jB/jC→j214D 空中取消 3、6D/2D→j214D 空中出口 2（2D 侧枚举但 valid=false）、j214D→5B/6A/214C 弹地延迟连接 3）)")
+	_check(report.edges.size() == 80, "gap enumeration leaves the configured edge set untouched (80 edges：票据 05 基线 36 + 票据 06–09 共 43 = 79；连段路线票据 03 净增 1——5D/5[D] 来源限定 5B 目押改判命中限定（−2 +2）、5B→6D 必杀取消 +1)")
 	for edge in report.edges:
 		_check(not (edge.from_id == "5A" and edge.to_id == "5D"),
 			"no 5A → 5D edge is invented for the timing-valid unconfigured pair")

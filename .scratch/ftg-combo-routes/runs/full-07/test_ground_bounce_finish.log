@@ -1,0 +1,91 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+=== 尺度：12×20 身体与呈现 ===
+PASS  scale: BODY_SIZE is 12×20 (D74 shared body)
+PASS  scale: head/visor appearance follows the same quarter proportion
+PASS  scale: legal center wall limits are 30/930 (wall 24 + half body 6)
+PASS  scale: ground stand y is 480 - 10
+PASS  scale: session body/hurt rects are 12×20 for both fighters
+=== 全 D 接地矩阵：normal/counter × 接地/离地（含 slide/bounce 入口）===
+PASS  5D grounded: grounded normal HIT zeroes horizontal velocity (vx=+0.0, overrides inertia)
+PASS  5D grounded: reaction/timer state preserved (1)
+PASS  5[D] grounded (charge commit): grounded normal HIT zeroes horizontal velocity (vx=+0.0, overrides inertia)
+PASS  5[D] grounded (charge commit): reaction/timer state preserved (1)
+PASS  j2D grounded: grounded normal HIT zeroes horizontal velocity (vx=+0.0, overrides inertia)
+PASS  j2D grounded: reaction/timer state preserved (1)
+PASS  j214D grounded: bounce entry preserved (state GROUND_BOUNCE)
+PASS  j214D grounded: horizontal zeroed, upward pop velocity preserved (vx=+0.0 vy=-96.0)
+PASS  5D hit on the dummy's startup also zeroes horizontal (counter context, vx=+0.0)
+PASS  5D slide pickup on a grounded sliding target zeroes horizontal (vx=+0.0)
+PASS  j214D airborne HIT keeps its declared horizontal velocity (vx=+24.7, rule is grounded-only)
+=== 全 D 零水平例外面 ===
+PASS  6D grounded target stays MISS_NO_PROFILE (no new capability from the zero rule)
+PASS  5D into standing guard is a blocked contact (zero rule is HIT-only)
+PASS  blocked D keeps its declared pushback after the blockstop (vx=+11.7)
+PASS  after the ~C knockdown (spike lands) a D press inside the knockdown gains no hit (OTG gate unchanged)
+=== 取消 BOUNCE_END：A 起手弹地命中自然接续 ===
+PASS  BOUNCE_END is no longer a combo end reason (cap removed with the rule)
+PASS  A-starter route lands the juggle and the post-bounce 5B as hit 6 (["5A", "5B", "6A", "jC", "j214D", "5B"])
+PASS  the combo does NOT end on the bounce-target hit itself (end F125 > hit F108)
+PASS  it continues until the dummy naturally recovers (DUMMY_RECOVERED F125)
+=== 再次弹地与有限性：6A 弹地追击 > jc.jC > 第二次 j214D > 第二次弹地 ===
+PASS  rebounce route: the 6A bounce-profile hit continues naturally into jc.jC and a second j214D (["5B", "5C", "6A", "jB", "j214D", "6A", "jC", "j214D"])
+PASS  a second effective j214D produces a second real GROUND_BOUNCE (contacts at [107, 172])
+PASS  time-scale corrections only ever decrease across the two bounces (never reset/refreshed)
+PASS  the multi-bounce combo still ends naturally (finite; end F177)
+=== R4-G 参考路线 g=2 r=350 | 面向 +1 ===
+    F9   HIT 6A seg1 第1击 | 修正 时0.900 轨0.920 | 玩家x=566.72 木桩x=582.16 y=461.42 vx=+130
+    F41  HIT jC seg1 第2击 | 修正 时0.846 轨0.874 | 玩家x=567.52 木桩x=599.22 y=370.86 vx=+79
+    F52  HIT j214D seg1 第3击 | 修正 时0.795 轨0.830 | 玩家x=571.32 木桩x=601.84 y=371.46 vx=+25
+    F82  BOUNCE_CONTACT 窗12
+    F88  HIT 5B seg1 第4击 | 修正 时0.732 轨0.772 | 玩家x=577.32 木桩x=602.87 y=450.16 vx=+38
+    F105 HIT 214C seg1 第5击 | 修正 时0.688 轨0.734 | 玩家x=577.32 木桩x=604.34 y=454.46 vx=+21
+    F123 HIT 214C~C seg1 第6击 | 修正 时1.000 轨1.000 | 玩家x=577.32 木桩x=605.87 y=456.65 vx=+76
+    F123 COMBO_ENDED FINISHER
+PASS  R4-G ref +1: both fighters stay inside the legal wall limits at the knockdown endpoint
+PASS  R4-G ref +1: the dummy is in the normal knockdown state at the endpoint frame
+PASS  R4-G reference six-hit + first knockdown lands exactly (facing +1, swaps=0)
+=== R4-G 参考路线 g=2 r=350 | 面向 -1 ===
+    F9   HIT 6A seg1 第1击 | 修正 时0.900 轨0.920 | 玩家x=393.28 木桩x=377.84 y=461.42 vx=-130
+    F41  HIT jC seg1 第2击 | 修正 时0.846 轨0.874 | 玩家x=392.48 木桩x=360.78 y=370.86 vx=-79
+    F52  HIT j214D seg1 第3击 | 修正 时0.795 轨0.830 | 玩家x=388.68 木桩x=358.16 y=371.46 vx=-25
+    F82  BOUNCE_CONTACT 窗12
+    F88  HIT 5B seg1 第4击 | 修正 时0.732 轨0.772 | 玩家x=382.68 木桩x=357.13 y=450.16 vx=-38
+    F105 HIT 214C seg1 第5击 | 修正 时0.688 轨0.734 | 玩家x=382.68 木桩x=355.66 y=454.46 vx=-21
+    F123 HIT 214C~C seg1 第6击 | 修正 时1.000 轨1.000 | 玩家x=382.68 木桩x=354.13 y=456.65 vx=-76
+    F123 COMBO_ENDED FINISHER
+PASS  R4-G ref -1: both fighters stay inside the legal wall limits at the knockdown endpoint
+PASS  R4-G ref -1: the dummy is in the normal knockdown state at the endpoint frame
+PASS  R4-G reference six-hit + first knockdown lands exactly (facing -1, swaps=0)
+=== R4-G 保证域扫描：g 全整数 × r 分层 + 端点 + 非整数样点（双面向）===
+  sweep points=3612 failures=0 (integer-g full × r stride 35, edge rows r full, non-integer samples)
+PASS  domain sweep: all 3612 sampled points complete the exact six-hit route with the first knockdown
+=== R4-G 关键键连续成功区间（±4F 逐帧，其余固定，g2/r350 双面向）===
+  key jc     windows: f+1 [-4,4] | f-1 [-4,4]
+PASS  window scan for jc recorded (continuous intervals above; not a full-route tolerance claim)
+  key jC     windows: f+1 [-2,2] | f-1 [-2,2]
+PASS  window scan for jC recorded (continuous intervals above; not a full-route tolerance claim)
+  key j214D  windows: f+1 [-4,4] | f-1 [-4,4]
+PASS  window scan for j214D recorded (continuous intervals above; not a full-route tolerance claim)
+  key 5B     windows: f+1 [-1,1] | f-1 [-1,1]
+PASS  window scan for 5B recorded (continuous intervals above; not a full-route tolerance claim)
+  key 214C   windows: f+1 [-4,4] | f-1 [-4,4]
+PASS  window scan for 214C recorded (continuous intervals above; not a full-route tolerance claim)
+  key ~C     windows: f+1 [-4,4] | f-1 [-4,4]
+PASS  window scan for ~C recorded (continuous intervals above; not a full-route tolerance claim)
+=== R4-G 六键联合 ±1F 扰动（64 向量 × 双面向 = 128）===
+  joint ±1: 128/128 (denominator 64 vectors × 2 facings; breakpoints by first off-route hit: {  })
+PASS  joint perturbation recorded honestly (D72: 1F accepted, old 244/256 gate not applied)
+=== R4-G 负例 ===
+PASS  negative: blocked 6A grants no jump cancel (never leaves the ground)
+PASS  negative: out-of-range 6A whiffs; no combo hits fabricate followups
+PASS  negative: jump cancel 10F early breaks the route honestly (["jC", "j214D"])
+PASS  negative: jump cancel 25F late breaks the route honestly (["6A"])
+PASS  negative: jC pressed 14F early breaks the route honestly (["6A"])
+PASS  negative: jC pressed 12F late breaks the route honestly (["6A"])
+PASS  negative: j214D final key 7F late breaks the route honestly (["6A", "jC", "j214D"])
+PASS  negative: 5B pressed 12F early never lands in-combo (["6A", "jC", "j214D"])
+PASS  negative: 5B pressed 8F late does not complete the six-hit route (["6A", "jC", "j214D"])
+PASS  negative: a mid-route 6A on the sliding target produces no contact of any kind (legitimacy + profile gates)
+
+ALL GROUND BOUNCE FINISH TESTS PASSED

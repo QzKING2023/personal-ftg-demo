@@ -1,0 +1,1175 @@
+﻿{
+    "mode": "acceptance-sweep",
+    "total_seconds": 618.27,
+    "total_assertions": 4024,
+    "total_solver_calls": 110,
+    "total_solver_underlying_calls": 110,
+    "total_solver_reuse_hits": 0,
+    "solver_reuse_hit_rate": 0.0,
+    "tests": [
+        {
+            "test": "import",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 0,
+            "assertions": 0,
+            "seconds": 6.76,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-import"
+        },
+        {
+            "test": "test_acceptance_combo_boundary",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 10,
+            "assertions": 10,
+            "seconds": 0.78,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_acceptance_combo_boundary"
+        },
+        {
+            "test": "test_air_d_landing",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 96,
+            "assertions": 96,
+            "seconds": 1.24,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_air_d_landing"
+        },
+        {
+            "test": "test_bounce_corrections",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 78,
+            "assertions": 78,
+            "seconds": 1.34,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_bounce_corrections"
+        },
+        {
+            "test": "test_carry_long_short_routes",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 153,
+            "assertions": 153,
+            "seconds": 208.25,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_carry_long_short_routes"
+        },
+        {
+            "test": "test_charge_motion_sideswap",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 55,
+            "assertions": 55,
+            "seconds": 4.99,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_charge_motion_sideswap"
+        },
+        {
+            "test": "test_combat_session",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 852,
+            "assertions": 852,
+            "seconds": 4.86,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_combat_session"
+        },
+        {
+            "test": "test_combat_session_restore",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 102,
+            "assertions": 102,
+            "seconds": 87.23,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_combat_session_restore"
+        },
+        {
+            "test": "test_combo_solver",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 249,
+            "assertions": 249,
+            "seconds": 8.14,
+            "solver_calls": 37,
+            "solver_underlying_calls": 37,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 5566.71,
+            "combo_cache": {
+                "bypasses": 0,
+                "enabled": true,
+                "entries": 368,
+                "hits": 37,
+                "misses": 0
+            },
+            "solver_profile": {
+                "delay_leaf_ms": 0.0,
+                "delay_leaf_runs": 0,
+                "edge_probe_ms": 0.0,
+                "edge_probe_runs": 0,
+                "gap_enum_ms": 0.0,
+                "gap_enum_runs": 0,
+                "other_ms": 5648.274,
+                "other_runs": 0,
+                "requests": 37,
+                "route_walk_ms": 0.0,
+                "route_walk_runs": 0,
+                "total_ms": 5648.274
+            },
+            "report_fingerprints": [
+                "12379d480c4f67bb0901e9f1756ab4174a4fa2b4fb7815d1813320640c58bb59",
+                "1c95c4fa486fa9c25e63776aae0ce09015e36df5214ce60d6f84843e99bb745f",
+                "2ce1290def224961216676d36b7d7cfd4c1060ea84c5cd506197ef70cd941972",
+                "347d133d36c5cfa7736cc94eef932d256b216a73fadb8c2d000602f35a17816a",
+                "3ccb5ef691174e5dce72f02aacc3aa69ff6be920968b26be38f5a361dad86a20",
+                "41f117e57a40fc9bb1ef45407646de9cb022fc5a3967dcc9f3f267a342eaf481",
+                "5bf0e8740fa55e20f76c152673cb629b4d74a31f5129188d642d3e8a13619fd5",
+                "6c57344b10fd404a9d7991620ca8192c7e2ed7cbe7483fe5efb39e483c0326e3",
+                "7b252d78f9b094071ce96d8a5d6bc826751af08e2391b9f2ac01291c01d171ea",
+                "7c29044aaaef02ad27dd8f389fee66fee5c64139e835f0fe4284237e3c9d1625",
+                "7e1ac16caba6cfaa244d20e47d9412e9fda862dc57b524568cbf4f7a08204ad1",
+                "9d01b4082152354b7a21d8aa78b7e30765fdb42804d0d3bb58a23768e28a69b0",
+                "a0d1dd496d9be805c9fdd705c2d22b33d65deaf5d6e9f4c61f12427c1cdd3b9a",
+                "ad97080718ca0cf9bc75d5fcd5c3a50ca90b5dd0c83720b05b164c68b42e7d6e",
+                "bc237086c3978b460a774095057a1bbdfed0239d3fb7e0d280e9473dcc7ba784",
+                "c01a5a02293a02593b79333272a97ea4201a237b5c2295a7d8fb71a69bf609a5",
+                "d5b00e031280e5db6c3d6592ed04dee54c0ee650959d031309607ef079f8627f",
+                "f01b6f3bdc792c61e5718f286b091e94db9e0ae7082a271635e349b03e920f5b",
+                "f18a4a389e4660d695cf1fe03356680e77603143600b2a1049083c7d5b150467"
+            ],
+            "solver_report_keys": [
+                [
+                    "analyze-16"
+                ],
+                [
+                    "route-27"
+                ],
+                [
+                    "analyze-9"
+                ],
+                [
+                    "route-7",
+                    "route-14"
+                ],
+                [
+                    "analyze-18"
+                ],
+                [
+                    "analyze-29"
+                ],
+                [
+                    "analyze-15"
+                ],
+                [
+                    "analyze-13"
+                ],
+                [
+                    "analyze-12",
+                    "analyze-33"
+                ],
+                [
+                    "route-22"
+                ],
+                [
+                    "analyze-10"
+                ],
+                [
+                    "analyze-1",
+                    "analyze-2",
+                    "analyze-4",
+                    "analyze-5",
+                    "analyze-8",
+                    "analyze-19",
+                    "analyze-23",
+                    "analyze-26",
+                    "analyze-28",
+                    "analyze-30",
+                    "analyze-31",
+                    "analyze-32",
+                    "analyze-34",
+                    "analyze-36",
+                    "analyze-37"
+                ],
+                [
+                    "route-20"
+                ],
+                [
+                    "analyze-17"
+                ],
+                [
+                    "route-25"
+                ],
+                [
+                    "route-3",
+                    "route-6",
+                    "route-35"
+                ],
+                [
+                    "route-21"
+                ],
+                [
+                    "route-24"
+                ],
+                [
+                    "analyze-11"
+                ]
+            ],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_combo_solver"
+        },
+        {
+            "test": "test_crouch_stationary",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 45,
+            "assertions": 45,
+            "seconds": 0.87,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_crouch_stationary"
+        },
+        {
+            "test": "test_delay_prefix_restore",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 34,
+            "assertions": 34,
+            "seconds": 2.91,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_delay_prefix_restore"
+        },
+        {
+            "test": "test_descending_antiair_finish",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 44,
+            "assertions": 44,
+            "seconds": 16.78,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_descending_antiair_finish"
+        },
+        {
+            "test": "test_ground_bounce_finish",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 52,
+            "assertions": 52,
+            "seconds": 70.1,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_ground_bounce_finish"
+        },
+        {
+            "test": "test_hit_profiles",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 116,
+            "assertions": 116,
+            "seconds": 16.04,
+            "solver_calls": 6,
+            "solver_underlying_calls": 6,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 14392.16,
+            "combo_cache": {
+                "bypasses": 0,
+                "enabled": true,
+                "entries": 371,
+                "hits": 3,
+                "misses": 3
+            },
+            "solver_profile": {
+                "delay_leaf_ms": 4150.234,
+                "delay_leaf_runs": 2651,
+                "edge_probe_ms": 1418.073,
+                "edge_probe_runs": 476,
+                "gap_enum_ms": 2573.863,
+                "gap_enum_runs": 735,
+                "other_ms": 4303.885,
+                "other_runs": 4,
+                "requests": 6,
+                "route_walk_ms": 1957.064,
+                "route_walk_runs": 0,
+                "total_ms": 14403.119
+            },
+            "report_fingerprints": [
+                "13948455c575dc64e4549863e86a59242897e289c0dd1dfad3e0c189b7e472f1",
+                "35832375071ce11c5430296787f0b47515c7639878dcd19c53b91c338ce5be4c",
+                "73b54d8c8882b92e4c268b15338823e7002fe602e1aee63730066b96a8afe8b2",
+                "be98e1701bb93b23300b626c7a598b4e4e82369bd09650103c094b22687f6e54",
+                "c71e7080d98eb2d58f31bf8661c32283a45882a91c11bed3bf20871db25db72b"
+            ],
+            "solver_report_keys": [
+                [
+                    "solve-3"
+                ],
+                [
+                    "route-2"
+                ],
+                [
+                    "solve-6"
+                ],
+                [
+                    "solve-1"
+                ],
+                [
+                    "route-4",
+                    "route-5"
+                ]
+            ],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_hit_profiles"
+        },
+        {
+            "test": "test_input_normalization",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 22,
+            "assertions": 22,
+            "seconds": 0.97,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_input_normalization"
+        },
+        {
+            "test": "test_joint_acceptance",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 28,
+            "assertions": 28,
+            "seconds": 0.59,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_joint_acceptance"
+        },
+        {
+            "test": "test_launcher_air_exits",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 39,
+            "assertions": 39,
+            "seconds": 4.79,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_launcher_air_exits"
+        },
+        {
+            "test": "test_move_table",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 329,
+            "assertions": 329,
+            "seconds": 5.93,
+            "solver_calls": 6,
+            "solver_underlying_calls": 6,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 127.691,
+            "combo_cache": {
+                "bypasses": 1,
+                "enabled": true,
+                "entries": 370,
+                "hits": 6,
+                "misses": 2
+            },
+            "solver_profile": {
+                "delay_leaf_ms": 0.966,
+                "delay_leaf_runs": 2,
+                "edge_probe_ms": 0.016,
+                "edge_probe_runs": 0,
+                "gap_enum_ms": 26.213,
+                "gap_enum_runs": 10,
+                "other_ms": 107.414,
+                "other_runs": 0,
+                "requests": 6,
+                "route_walk_ms": 0.113,
+                "route_walk_runs": 0,
+                "total_ms": 134.722
+            },
+            "report_fingerprints": [
+                "407fcdb6485bbaf6e3a1deb2f1f8e3ff198e4db9e7f469bbd488864315057163",
+                "7c573935a0b677da0c2d9dc998d328f4425ec8f5a0313fdb70a0333d32a8dfe7",
+                "99ec2637f32f236136399d536466d2188d524746f41cc8ba77d95b9bc38d8aa1",
+                "9a901db8abf47d14c959567f8426041a2606d3914a5fb225d94f7586f6343c31",
+                "af0b62e9e91fca1ebd6a5b97d7d87faf469f0d7b0680c14284d876260940319a"
+            ],
+            "solver_report_keys": [
+                [
+                    "analyze-1"
+                ],
+                [
+                    "analyze-manifest-4",
+                    "analyze-manifest-5"
+                ],
+                [
+                    "analyze-2"
+                ],
+                [
+                    "analyze-manifest-3"
+                ],
+                [
+                    "analyze-manifest-6"
+                ]
+            ],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_move_table"
+        },
+        {
+            "test": "test_replay_acceptance",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 123,
+            "assertions": 123,
+            "seconds": 16.08,
+            "solver_calls": 2,
+            "solver_underlying_calls": 2,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 3810.413,
+            "combo_cache": {
+                "bypasses": 0,
+                "enabled": true,
+                "entries": 369,
+                "hits": 6,
+                "misses": 1
+            },
+            "solver_profile": {
+                "delay_leaf_ms": 8.252,
+                "delay_leaf_runs": 8,
+                "edge_probe_ms": 33.177,
+                "edge_probe_runs": 4,
+                "gap_enum_ms": 0.0,
+                "gap_enum_runs": 0,
+                "other_ms": 3772.059,
+                "other_runs": 0,
+                "requests": 2,
+                "route_walk_ms": 0.116,
+                "route_walk_runs": 0,
+                "total_ms": 3813.604
+            },
+            "report_fingerprints": [
+                "1d5893cd3f3f7be401035bd29b0f4b2a2a3a749378fca1a80126b21f36f875dd",
+                "51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6"
+            ],
+            "solver_report_keys": [
+                [
+                    "route-2"
+                ],
+                [
+                    "solve-1"
+                ]
+            ],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_replay_acceptance"
+        },
+        {
+            "test": "test_smoke",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 128,
+            "assertions": 128,
+            "seconds": 25.52,
+            "solver_calls": 1,
+            "solver_underlying_calls": 1,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 4080.738,
+            "combo_cache": {
+                "bypasses": 1,
+                "enabled": true,
+                "entries": 368,
+                "hits": 0,
+                "misses": 0
+            },
+            "solver_profile": {
+                "delay_leaf_ms": 0.0,
+                "delay_leaf_runs": 0,
+                "edge_probe_ms": 0.0,
+                "edge_probe_runs": 0,
+                "gap_enum_ms": 0.0,
+                "gap_enum_runs": 0,
+                "other_ms": 4080.839,
+                "other_runs": 0,
+                "requests": 1,
+                "route_walk_ms": 0.0,
+                "route_walk_runs": 0,
+                "total_ms": 4080.839
+            },
+            "report_fingerprints": [
+                "3806aeaced8dc521215a100d4f1b53ccba0b8c6b5150570b870e87be058a7c8c"
+            ],
+            "solver_report_keys": [
+                [
+                    "analyze-manifest-1"
+                ]
+            ],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_smoke"
+        },
+        {
+            "test": "test_solver_cache",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 63,
+            "assertions": 63,
+            "seconds": 5.14,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_solver_cache"
+        },
+        {
+            "test": "test_solver_checkpoint_trie",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 25,
+            "assertions": 25,
+            "seconds": 11.78,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_solver_checkpoint_trie"
+        },
+        {
+            "test": "test_solver_cycle_invariant",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 30,
+            "assertions": 30,
+            "seconds": 4.81,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_solver_cycle_invariant"
+        },
+        {
+            "test": "test_solver_cycle_restore_alias",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 1,
+            "assertions": 1,
+            "seconds": 0.97,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_solver_cycle_restore_alias"
+        },
+        {
+            "test": "test_solver_cycles",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 30,
+            "assertions": 30,
+            "seconds": 5.27,
+            "solver_calls": 10,
+            "solver_underlying_calls": 10,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 4081.816,
+            "combo_cache": {
+                "bypasses": 0,
+                "enabled": true,
+                "entries": 368,
+                "hits": 10,
+                "misses": 0
+            },
+            "solver_profile": {
+                "delay_leaf_ms": 0.0,
+                "delay_leaf_runs": 0,
+                "edge_probe_ms": 0.0,
+                "edge_probe_runs": 0,
+                "gap_enum_ms": 0.0,
+                "gap_enum_runs": 0,
+                "other_ms": 4110.644,
+                "other_runs": 0,
+                "requests": 10,
+                "route_walk_ms": 0.0,
+                "route_walk_runs": 0,
+                "total_ms": 4110.644
+            },
+            "report_fingerprints": [
+                "11a95fdf46cee5b618b8709af66467269e8e0d93457efaf347f5726b23ece141",
+                "4248a2eaa98474c31910a1a061ad8af8a676067d5a67d7419e20f7aecf4dc0a6",
+                "51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6",
+                "88c87af7de0c79c78eab9b9942ab337cb07ed75f4c938f9a9e4c2654f6919866",
+                "befaab4c67c4bc90999f3010d0d1ae4fcfb17b341b838ba33b73bf6cb643b45c",
+                "d4ac690058b27c8421d9c525b1466f1beb11a74f8f59d6b543a087f6b1ab055f",
+                "eb09158d29cfef31c73523d649cd770f0097f49a7e60bdea4221db95e6e54812"
+            ],
+            "solver_report_keys": [
+                [
+                    "solve-1",
+                    "solve-7"
+                ],
+                [
+                    "solve-2"
+                ],
+                [
+                    "solve-6",
+                    "solve-10"
+                ],
+                [
+                    "solve-3"
+                ],
+                [
+                    "solve-5"
+                ],
+                [
+                    "solve-8",
+                    "solve-9"
+                ],
+                [
+                    "solve-4"
+                ]
+            ],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_solver_cycles"
+        },
+        {
+            "test": "test_solver_delay_dp",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 45,
+            "assertions": 45,
+            "seconds": 40.23,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_solver_delay_dp"
+        },
+        {
+            "test": "test_solver_edge_cache_equivalence",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 47,
+            "assertions": 47,
+            "seconds": 10.52,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_solver_edge_cache_equivalence"
+        },
+        {
+            "test": "test_solver_entry",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 52,
+            "assertions": 52,
+            "seconds": 5.87,
+            "solver_calls": 19,
+            "solver_underlying_calls": 19,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 4452.786,
+            "combo_cache": {
+                "bypasses": 2,
+                "enabled": true,
+                "entries": 368,
+                "hits": 19,
+                "misses": 0
+            },
+            "solver_profile": {
+                "delay_leaf_ms": 0.0,
+                "delay_leaf_runs": 0,
+                "edge_probe_ms": 0.0,
+                "edge_probe_runs": 0,
+                "gap_enum_ms": 0.0,
+                "gap_enum_runs": 0,
+                "other_ms": 4497.905,
+                "other_runs": 0,
+                "requests": 19,
+                "route_walk_ms": 0.0,
+                "route_walk_runs": 0,
+                "total_ms": 4497.905
+            },
+            "report_fingerprints": [
+                "06e4890cefa3641facf054756ac3cc3408894db82148e566fa9871b1fa68db4d",
+                "3b9324738a01d3551cb4758a56d7c0c0f2b141ade40284e95fd1e0f769a7e50b",
+                "51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6",
+                "72c805b3b96052c706850df627af523442126ef043d32a7cfc7ab54986a8cd45",
+                "a2cb802787fd06cc20f3baf4b5bd3519fc4f0899926496c5f8ff90f29e847b98",
+                "be98e1701bb93b23300b626c7a598b4e4e82369bd09650103c094b22687f6e54"
+            ],
+            "solver_report_keys": [
+                [
+                    "solve-18"
+                ],
+                [
+                    "solve-7",
+                    "solve-8",
+                    "solve-9",
+                    "solve-10",
+                    "solve-16"
+                ],
+                [
+                    "solve-1",
+                    "solve-2",
+                    "solve-4",
+                    "solve-5",
+                    "solve-6",
+                    "solve-12",
+                    "solve-13",
+                    "solve-14",
+                    "solve-15",
+                    "solve-19"
+                ],
+                [
+                    "solve-17"
+                ],
+                [
+                    "solve-11"
+                ],
+                [
+                    "solve-3"
+                ]
+            ],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_solver_entry"
+        },
+        {
+            "test": "test_solver_growth",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 59,
+            "assertions": 59,
+            "seconds": 7.45,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_solver_growth"
+        },
+        {
+            "test": "test_solver_index_equiv",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 76,
+            "assertions": 76,
+            "seconds": 7.12,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_solver_index_equiv"
+        },
+        {
+            "test": "test_solver_perf_profile",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 24,
+            "assertions": 24,
+            "seconds": 6.24,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_solver_perf_profile"
+        },
+        {
+            "test": "test_solver_restore_schedule_scope",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 2,
+            "assertions": 2,
+            "seconds": 0.78,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_solver_restore_schedule_scope"
+        },
+        {
+            "test": "test_solver_route",
+            "exit": 1,
+            "script_errors": 2,
+            "pass_lines": 476,
+            "assertions": 476,
+            "seconds": 6.64,
+            "solver_calls": 15,
+            "solver_underlying_calls": 15,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 4707.018,
+            "combo_cache": {
+                "bypasses": 0,
+                "enabled": true,
+                "entries": 368,
+                "hits": 15,
+                "misses": 0
+            },
+            "solver_profile": {
+                "delay_leaf_ms": 0.0,
+                "delay_leaf_runs": 0,
+                "edge_probe_ms": 0.0,
+                "edge_probe_runs": 0,
+                "gap_enum_ms": 0.0,
+                "gap_enum_runs": 0,
+                "other_ms": 4758.426,
+                "other_runs": 0,
+                "requests": 15,
+                "route_walk_ms": 0.0,
+                "route_walk_runs": 0,
+                "total_ms": 4758.426
+            },
+            "report_fingerprints": [
+                "035ebf3f5317d9d62ee3afd6014a861d466c74a89782594d5c696f0b4cfb20ad",
+                "51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6",
+                "57251142efa021bb44b51bb03a94abdd715e1b3bd75cbd31d408216f88b7820a",
+                "8ca66f005dc204232c0b15381e43159c2af9af6921b248878065ba8733f1fc18",
+                "ab63bc62031e3c8ca292b62848c11cfb436e56719ceaa0d74cbe916f455d687b",
+                "d86c7f54dae66caddf258becf7f68ea7665f12bd3fe9c257a8bd08e1479451bd",
+                "eeb47255bdd15ab0cdf54ce5e4e7b12f5768b46f80289d30603080346e53a693",
+                "f4cf14f3c360aa60272c423bf366677561af8ef5a5b733c75c2d652a6db71242"
+            ],
+            "solver_report_keys": [
+                [
+                    "solve-12"
+                ],
+                [
+                    "solve-1",
+                    "solve-2",
+                    "solve-5",
+                    "solve-7",
+                    "solve-8",
+                    "solve-13",
+                    "solve-14",
+                    "solve-15"
+                ],
+                [
+                    "solve-11"
+                ],
+                [
+                    "solve-9"
+                ],
+                [
+                    "solve-3"
+                ],
+                [
+                    "solve-4"
+                ],
+                [
+                    "solve-6"
+                ],
+                [
+                    "solve-10"
+                ]
+            ],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_solver_route"
+        },
+        {
+            "test": "test_solver_routes_cycles_refactor",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 52,
+            "assertions": 52,
+            "seconds": 9.42,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {
+                "bypasses": 0,
+                "enabled": true,
+                "entries": 0,
+                "hits": 0,
+                "misses": 1
+            },
+            "solver_profile": {
+                "delay_leaf_ms": 0.0,
+                "delay_leaf_runs": 0,
+                "edge_probe_ms": 0.0,
+                "edge_probe_runs": 0,
+                "gap_enum_ms": 0.0,
+                "gap_enum_runs": 0,
+                "other_ms": 0.0,
+                "other_runs": 0,
+                "requests": 0,
+                "route_walk_ms": 0.0,
+                "route_walk_runs": 0,
+                "total_ms": 0.0
+            },
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_solver_routes_cycles_refactor"
+        },
+        {
+            "test": "test_solver_spatial",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 487,
+            "assertions": 487,
+            "seconds": 6.5,
+            "solver_calls": 14,
+            "solver_underlying_calls": 14,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 4559.378,
+            "combo_cache": {
+                "bypasses": 2,
+                "enabled": true,
+                "entries": 368,
+                "hits": 12,
+                "misses": 0
+            },
+            "solver_profile": {
+                "delay_leaf_ms": 0.0,
+                "delay_leaf_runs": 0,
+                "edge_probe_ms": 0.0,
+                "edge_probe_runs": 0,
+                "gap_enum_ms": 0.0,
+                "gap_enum_runs": 0,
+                "other_ms": 4591.774,
+                "other_runs": 0,
+                "requests": 14,
+                "route_walk_ms": 0.0,
+                "route_walk_runs": 0,
+                "total_ms": 4591.774
+            },
+            "report_fingerprints": [
+                "1adc2e97fbcd54732d4e1ed690628a41db01617fdafe74589ddcb150500f78d0",
+                "2279186397112ed9e19bf6b0589aaa35a60ad5559e2dbbdbd19e5a3b4f1567db",
+                "411d0d00dc932d6f83d23435a7e13eeb59a2f1b5be33d8e9fb4afde11b6ab5ce",
+                "51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6",
+                "8cf3d3983ebeac993e4e1191ef55de0b2e64cccbf0abbb375ad5e000afe9db07",
+                "b70d6a99f750281d8b5a45f869f6d53984b178a096ad1d3376c092b235c4faab",
+                "dce80503ff86707925435f71674c0078b7abfa591e6c6a2acfcddad83089fb23"
+            ],
+            "solver_report_keys": [
+                [
+                    "solve-9"
+                ],
+                [
+                    "solve-3"
+                ],
+                [
+                    "solve-2",
+                    "solve-6",
+                    "solve-11",
+                    "solve-12",
+                    "solve-13",
+                    "solve-14"
+                ],
+                [
+                    "solve-1",
+                    "solve-5",
+                    "solve-10"
+                ],
+                [
+                    "route-4"
+                ],
+                [
+                    "solve-8"
+                ],
+                [
+                    "solve-7"
+                ]
+            ],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-test_solver_spatial"
+        },
+        {
+            "test": "diagnose_inputs",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 0,
+            "assertions": 0,
+            "seconds": 2.73,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-diagnose_inputs"
+        },
+        {
+            "test": "main-smoke",
+            "exit": 0,
+            "script_errors": 0,
+            "pass_lines": 0,
+            "assertions": 0,
+            "seconds": 2.63,
+            "solver_calls": 0,
+            "solver_underlying_calls": 0,
+            "solver_reuse_hits": 0,
+            "solver_reuse_hit_rate": 0.0,
+            "solver_elapsed_ms": 0.0,
+            "combo_cache": {},
+            "solver_profile": {},
+            "report_fingerprints": [],
+            "solver_report_keys": [],
+            "appdata": "D:\\Godot\\Program\\ftgdemo\\.scratch\\ftg-combo-routes\\runs\\full-06\\runtime-main-smoke"
+        }
+    ]
+}

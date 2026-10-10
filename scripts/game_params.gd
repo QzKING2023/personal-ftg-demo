@@ -183,6 +183,10 @@ const LANDING_LINK_HIT_TRAJECTORY_SCALE := 0.95
 # 与 B/C/D 一次性资格）：再次有效命中正常产生弹地反应，能否延长由窗口、资料、
 # 累计修正与真实时空决定，不刷新修正或空中资源。
 const GROUND_BOUNCE_REBOUND_SPEED_PX_S := 330.0
+## 交界余量（连段路线票据 03，规则 4）：蓄力 D 在 HIT 许可后本帧运动到达/越过
+## 正面贴身位置时，身后贴身停点在场内但距前进方向合法墙限不足该值（px）则改在
+## 正面停止并完整恢复；停点场外沿用原墙分支。D74 选值 2px，不宣称最小安全值。
+const CHARGE_FRONT_STOP_WALL_MARGIN_PX := 2.0
 const GROUND_BOUNCE_FOLLOWUP_WINDOW_FRAMES := 16
 # 伤害层底线：累计修正不再低于 10%（只作用伤害层）。
 const COMBO_DAMAGE_FLOOR := 0.1

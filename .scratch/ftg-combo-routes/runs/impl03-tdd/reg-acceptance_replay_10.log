@@ -1,0 +1,363 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+=== J0 逐招覆盖表级断言 | 共享 manifest ===
+  PASS  J0 共享表加载通过
+  PASS  J0 旧地面 214D 与单一 jD 不在 manifest（票据 08/10 迁移；倒地职责在 214C~B/~C，空中在 j214D）
+  PASS  J0 新基线招式在位（j214D/5[D]/6D/2D）
+  PASS  J0 5A 在共享表
+  PASS  J0 2A 在共享表
+  PASS  J0 5B 在共享表
+  PASS  J0 2B 在共享表
+  PASS  J0 5C 在共享表
+  PASS  J0 2C 在共享表
+  PASS  J0 6A 在共享表
+  PASS  J0 5D 在共享表
+  PASS  J0 5[D] 在共享表
+  PASS  J0 6D 在共享表
+  PASS  J0 2D 在共享表
+  PASS  J0 214C 在共享表
+  PASS  J0 214C~B 在共享表
+  PASS  J0 214C~C 在共享表
+  PASS  J0 236C 在共享表
+  PASS  J0 jA 在共享表
+  PASS  J0 jB 在共享表
+  PASS  J0 jC 在共享表
+  PASS  J0 j5D 在共享表
+  PASS  J0 j6D 在共享表
+  PASS  J0 j2D 在共享表
+  PASS  J0 j214D 在共享表
+  PASS  J0 BC 在共享表
+  PASS  J0 5A 链式 5B/2B、必杀 214C/236C
+  PASS  J0 5C 高伤害连接（6A/5D）、不再是专用 launcher（无 jump cancel）
+  PASS  J0 2C 链式 6D/2D、必杀 214C、无 jump cancel
+  PASS  J0 6A 是唯一专用击飞入口（jump cancel jA/jB/jC）
+  FAIL  J0 5D 动作内蓄力→5[D]、来源限定 5B 目押（普通来源不取得）
+  FAIL  J0 5[D] charge_only 且与 5D 同款来源限定连接
+  PASS  J0 6D 对空限定（无 grounded 资料）且空中出口全集在位
+  PASS  J0 2D 对空限定（无 grounded 资料）且空中出口全集在位
+  PASS  J0 jA 可取消至三空中 D 系与 j214D
+  PASS  J0 jB 可取消至三空中 D 系与 j214D
+  PASS  J0 jC 可取消至三空中 D 系与 j214D
+  PASS  J0 j2D 命中落地取消仅限 214C（窗口 24）
+  PASS  J0 j6D 只走普通落地连接 5B、无落地特权
+  PASS  J0 j5D 收束（无取消、无连接、无收尾标记）
+  PASS  J0 j214D 对地/对空统一弹地资料、不声明弹地目标键、弹地延迟连接 5B/6A/214C
+  PASS  J0 5B 持有弹地追击资料
+  PASS  J0 6A 持有弹地追击资料
+  PASS  J0 214C 持有弹地追击资料
+  PASS  J0 214C 首按锁定 ~B/~C 派生
+  PASS  J0 ~B 延长后普通连接 5B、~C 收尾（is_finisher）
+  PASS  J0 出刀族：6A 与 214C~B（Rekka 分支）及 C/D 键招式按短刀呈现
+  PASS  J0 徒手族：A/B 普通技与 BC 投按徒手呈现
+
+=== J1 5A>5B>5C>5D 与 5B>5D | 面向 +1 | 间距 26 px ===
+  F6   J1a HIT 5A seg1 第1击 伤5.8 | 修正 伤0.720/时0.700/轨0.750 | 玩家x=240.0 木桩x=267.9 木桩y=470.0
+  F21  J1a HIT 5B seg1 第2击 伤7.8 | 修正 伤0.648/时0.658/轨0.712 | 玩家x=240.0 木桩x=277.9 木桩y=470.0
+  F38  J1a HIT 5C seg1 第3击 伤9.3 | 修正 伤0.583/时0.619/轨0.677 | 玩家x=240.0 木桩x=288.4 木桩y=470.0
+  F52  J1a CHARGE_COMMITTED 5D→5D（按住 0 帧）
+  F53  J1a HIT 5D seg1 第4击 伤9.4 | 修正 伤0.525/时0.581/轨0.643 | 玩家x=258.0 木桩x=294.2 木桩y=470.0
+  F64  J1a SWITCHED_SIDES 下一帧面向 -1
+  F69  J1a COMBO_ENDED 原因3
+  J1a combo move_sequence=["5A", "5B", "5C", "5D"] hits=[{ "frame": 6, "order": 0, "move": "5A", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 21, "order": 0, "move": "5B", "action": 2, "segment": 1, "combo_hits": 2 }, { "frame": 38, "order": 0, "move": "5C", "action": 3, "segment": 1, "combo_hits": 3 }, { "frame": 53, "order": 0, "move": "5D", "action": 4, "segment": 1, "combo_hits": 4 }] hits_after_end=[]
+  PASS  J1a 基础地面链四击成立 ["5A", "5B", "5C", "5D"] | 面向 +1
+  F10  J1b HIT 5B seg1 第1击 伤10.1 | 修正 伤0.840/时0.820/轨0.850 | 玩家x=240.0 木桩x=268.1 木桩y=470.0
+  F24  J1b CHARGE_COMMITTED 5D→5D（按住 0 帧）
+  F25  J1b HIT 5D seg1 第2击 伤13.6 | 修正 伤0.756/时0.771/轨0.808 | 玩家x=258.0 木桩x=278.0 木桩y=470.0
+  F35  J1b SWITCHED_SIDES 下一帧面向 -1
+  F43  J1b COMBO_ENDED 原因3
+  J1b combo move_sequence=["5B", "5D"] hits=[{ "frame": 10, "order": 0, "move": "5B", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 25, "order": 0, "move": "5D", "action": 2, "segment": 1, "combo_hits": 2 }] hits_after_end=[]
+  PASS  J1b 5B>5D 短路线成立 ["5B", "5D"] | 面向 +1
+
+=== J1 5A>5B>5C>5D 与 5B>5D | 面向 -1 | 间距 26 px ===
+  F6   J1a HIT 5A seg1 第1击 伤5.8 | 修正 伤0.720/时0.700/轨0.750 | 玩家x=240.0 木桩x=212.1 木桩y=470.0
+  F21  J1a HIT 5B seg1 第2击 伤7.8 | 修正 伤0.648/时0.658/轨0.712 | 玩家x=240.0 木桩x=202.1 木桩y=470.0
+  F38  J1a HIT 5C seg1 第3击 伤9.3 | 修正 伤0.583/时0.619/轨0.677 | 玩家x=240.0 木桩x=191.6 木桩y=470.0
+  F52  J1a CHARGE_COMMITTED 5D→5D（按住 0 帧）
+  F53  J1a HIT 5D seg1 第4击 伤9.4 | 修正 伤0.525/时0.581/轨0.643 | 玩家x=222.0 木桩x=185.8 木桩y=470.0
+  F64  J1a SWITCHED_SIDES 下一帧面向 1
+  F69  J1a COMBO_ENDED 原因3
+  J1a combo move_sequence=["5A", "5B", "5C", "5D"] hits=[{ "frame": 6, "order": 0, "move": "5A", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 21, "order": 0, "move": "5B", "action": 2, "segment": 1, "combo_hits": 2 }, { "frame": 38, "order": 0, "move": "5C", "action": 3, "segment": 1, "combo_hits": 3 }, { "frame": 53, "order": 0, "move": "5D", "action": 4, "segment": 1, "combo_hits": 4 }] hits_after_end=[]
+  PASS  J1a 基础地面链四击成立 ["5A", "5B", "5C", "5D"] | 面向 -1
+  F10  J1b HIT 5B seg1 第1击 伤10.1 | 修正 伤0.840/时0.820/轨0.850 | 玩家x=240.0 木桩x=211.9 木桩y=470.0
+  F24  J1b CHARGE_COMMITTED 5D→5D（按住 0 帧）
+  F25  J1b HIT 5D seg1 第2击 伤13.6 | 修正 伤0.756/时0.771/轨0.808 | 玩家x=222.0 木桩x=202.0 木桩y=470.0
+  F35  J1b SWITCHED_SIDES 下一帧面向 1
+  F43  J1b COMBO_ENDED 原因3
+  J1b combo move_sequence=["5B", "5D"] hits=[{ "frame": 10, "order": 0, "move": "5B", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 25, "order": 0, "move": "5D", "action": 2, "segment": 1, "combo_hits": 2 }] hits_after_end=[]
+  PASS  J1b 5B>5D 短路线成立 ["5B", "5D"] | 面向 -1
+
+=== J2 2C>214C(空中)>~B(延长)>5B(目押) | 面向 +1 | 间距 12 px ===
+  F13  J2 HIT 2C seg1 第1击 伤13.0 | 修正 伤0.930/时0.900/轨0.920 | 玩家x=240.0 木桩x=254.0 木桩y=468.2
+  F30  J2 HIT 214C seg1 第2击 伤8.4 | 修正 伤0.837/时0.846/轨0.874 | 玩家x=240.0 木桩x=265.5 木桩y=464.4
+  F46  J2 HIT 214C~B seg1 第3击 伤6.0 | 修正 伤0.753/时0.795/轨0.830 | 玩家x=240.0 木桩x=266.5 木桩y=452.8
+  F80  J2 HIT 5B seg1 第4击 伤8.1 | 修正 伤0.678/时0.748/轨0.789 | 玩家x=240.0 木桩x=268.8 木桩y=470.0
+  J2 combo move_sequence=["2C", "214C", "214C~B", "5B"] hits=[{ "frame": 13, "order": 0, "move": "2C", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 30, "order": 0, "move": "214C", "action": 2, "segment": 1, "combo_hits": 2 }, { "frame": 46, "order": 0, "move": "214C~B", "action": 3, "segment": 1, "combo_hits": 3 }, { "frame": 80, "order": 0, "move": "5B", "action": 4, "segment": 1, "combo_hits": 4 }] hits_after_end=[]
+  PASS  J2 扫倒路线四击成立（低浮空→空中延长→恢复后目押）["2C", "214C", "214C~B", "5B"] | 面向 +1
+
+=== J2 2C>214C(空中)>~B(延长)>5B(目押) | 面向 -1 | 间距 12 px ===
+  F13  J2 HIT 2C seg1 第1击 伤13.0 | 修正 伤0.930/时0.900/轨0.920 | 玩家x=240.0 木桩x=226.0 木桩y=468.2
+  F30  J2 HIT 214C seg1 第2击 伤8.4 | 修正 伤0.837/时0.846/轨0.874 | 玩家x=240.0 木桩x=214.5 木桩y=464.4
+  F46  J2 HIT 214C~B seg1 第3击 伤6.0 | 修正 伤0.753/时0.795/轨0.830 | 玩家x=240.0 木桩x=213.5 木桩y=452.8
+  F80  J2 HIT 5B seg1 第4击 伤8.1 | 修正 伤0.678/时0.748/轨0.789 | 玩家x=240.0 木桩x=211.2 木桩y=470.0
+  J2 combo move_sequence=["2C", "214C", "214C~B", "5B"] hits=[{ "frame": 13, "order": 0, "move": "2C", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 30, "order": 0, "move": "214C", "action": 2, "segment": 1, "combo_hits": 2 }, { "frame": 46, "order": 0, "move": "214C~B", "action": 3, "segment": 1, "combo_hits": 3 }, { "frame": 80, "order": 0, "move": "5B", "action": 4, "segment": 1, "combo_hits": 4 }] hits_after_end=[]
+  PASS  J2 扫倒路线四击成立（低浮空→空中延长→恢复后目押）["2C", "214C", "214C~B", "5B"] | 面向 -1
+
+=== J3a 236C(两段)>5D(特殊进入)>5B(目押) | 面向 +1 | 间距 26 px ===
+  F13  J3a HIT 236C seg1 第1击 伤8.0 | 修正 伤1.000/时0.960/轨0.960 | 玩家x=242.8 木桩x=266.8 木桩y=467.4
+  F26  J3a HIT 236C seg2 第2击 伤10.8 | 修正 伤0.900/时0.902/轨0.912 | 玩家x=242.8 木桩x=317.2 木桩y=458.7
+  F42  J3a CHARGE_COMMITTED 5D→5[D]（按住 8 帧）
+  F45  J3a HIT 5[D] seg1 第3击 伤16.2 | 修正 伤0.810/时0.848/轨0.866 | 玩家x=722.8 木桩x=795.6 木桩y=451.6
+  F54  J3a SWITCHED_SIDES 下一帧面向 -1
+  F79  J3a HIT 5B seg1 第4击 伤8.7 | 修正 伤0.729/时0.797/轨0.823 | 玩家x=810.8 木桩x=798.1 木桩y=449.6
+  F101 J3a COMBO_ENDED 原因3
+  J3a combo move_sequence=["236C", "5[D]", "5B"] hits=[{ "frame": 13, "order": 0, "move": "236C", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 26, "order": 0, "move": "236C", "action": 1, "segment": 2, "combo_hits": 2 }, { "frame": 45, "order": 0, "move": "5[D]", "action": 3, "segment": 1, "combo_hits": 3 }, { "frame": 79, "order": 0, "move": "5B", "action": 5, "segment": 1, "combo_hits": 4 }] hits_after_end=[]
+  PASS  J3a 两段命中→特殊进入蓄力 D→恢复后目押 5B 四击成立 ["236C", "236C", "5[D]", "5B"] | 面向 +1
+
+=== J3a 236C(两段)>5D(特殊进入)>5B(目押) | 面向 -1 | 间距 26 px ===
+  F13  J3a HIT 236C seg1 第1击 伤8.0 | 修正 伤1.000/时0.960/轨0.960 | 玩家x=237.2 木桩x=213.2 木桩y=467.4
+  F26  J3a HIT 236C seg2 第2击 伤10.8 | 修正 伤0.900/时0.902/轨0.912 | 玩家x=237.2 木桩x=162.8 木桩y=458.7
+  F42  J3a CHARGE_COMMITTED 5D→5[D]（按住 8 帧）
+  F43  J3a HIT 5[D] seg1 第3击 伤16.2 | 修正 伤0.810/时0.848/轨0.866 | 玩家x=77.2 木桩x=30.0 木桩y=448.9
+  F78  J3a HIT 5B seg1 第4击 伤8.7 | 修正 伤0.729/时0.797/轨0.823 | 玩家x=42.0 木桩x=30.0 木桩y=451.9
+  F100 J3a COMBO_ENDED 原因3
+  J3a combo move_sequence=["236C", "5[D]", "5B"] hits=[{ "frame": 13, "order": 0, "move": "236C", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 26, "order": 0, "move": "236C", "action": 1, "segment": 2, "combo_hits": 2 }, { "frame": 43, "order": 0, "move": "5[D]", "action": 3, "segment": 1, "combo_hits": 3 }, { "frame": 78, "order": 0, "move": "5B", "action": 5, "segment": 1, "combo_hits": 4 }] hits_after_end=[]
+  PASS  J3a 两段命中→特殊进入蓄力 D→恢复后目押 5B 四击成立 ["236C", "236C", "5[D]", "5B"] | 面向 -1
+
+=== J3b 中板 236C>5[D] 蓄力穿越 | 面向 +1 | 间距 26 px ===
+  F13  J3b HIT 236C seg1 第1击 伤8.0 | 修正 伤1.000/时0.960/轨0.960 | 玩家x=242.8 木桩x=266.8 木桩y=467.4
+  F30  J3b CHARGE_COMMITTED 5D→5[D]（按住 8 帧）
+  F31  J3b HIT 5[D] seg1 第2击 伤18.0 | 修正 伤0.900/时0.902/轨0.912 | 玩家x=282.0 木桩x=270.0 木桩y=456.4
+  F31  J3b SWITCHED_SIDES 下一帧面向 -1
+  F67  J3b COMBO_ENDED 原因3
+  F79  J3b HIT 5B seg1 第1击 伤10.1 | 修正 伤0.840/时0.820/轨0.850 | 玩家x=285.6 木桩x=271.5 木桩y=470.0
+  F98  J3b COMBO_ENDED 原因3
+  J3b combo move_sequence=["236C", "5[D]"] hits=[{ "frame": 13, "order": 0, "move": "236C", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 31, "order": 0, "move": "5[D]", "action": 3, "segment": 1, "combo_hits": 2 }] hits_after_end=[{ "frame": 79, "order": 0, "move": "5B", "action": 5, "segment": 1, "combo_hits": 1 }]
+  FAIL  J3b 目标三击须在首次 COMBO_ENDED 前完成（基线已知失败，断连后命中另列）["236C", "5[D]"]| 面向 +1
+  PASS  J3b 实际命中且穿越才换边（换边后面向 -1）| 面向 +1
+
+=== J3b 中板 236C>5[D] 蓄力穿越 | 面向 -1 | 间距 26 px ===
+  F13  J3b HIT 236C seg1 第1击 伤8.0 | 修正 伤1.000/时0.960/轨0.960 | 玩家x=237.2 木桩x=213.2 木桩y=467.4
+  F30  J3b CHARGE_COMMITTED 5D→5[D]（按住 8 帧）
+  F31  J3b HIT 5[D] seg1 第2击 伤18.0 | 修正 伤0.900/时0.902/轨0.912 | 玩家x=198.0 木桩x=210.0 木桩y=456.4
+  F31  J3b SWITCHED_SIDES 下一帧面向 1
+  F67  J3b COMBO_ENDED 原因3
+  F79  J3b HIT 5B seg1 第1击 伤10.1 | 修正 伤0.840/时0.820/轨0.850 | 玩家x=194.4 木桩x=208.5 木桩y=470.0
+  F98  J3b COMBO_ENDED 原因3
+  J3b combo move_sequence=["236C", "5[D]"] hits=[{ "frame": 13, "order": 0, "move": "236C", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 31, "order": 0, "move": "5[D]", "action": 3, "segment": 1, "combo_hits": 2 }] hits_after_end=[{ "frame": 79, "order": 0, "move": "5B", "action": 5, "segment": 1, "combo_hits": 1 }]
+  FAIL  J3b 目标三击须在首次 COMBO_ENDED 前完成（基线已知失败，断连后命中另列）["236C", "5[D]"]| 面向 -1
+  PASS  J3b 实际命中且穿越才换边（换边后面向 +1）| 面向 -1
+
+=== J3c 段1挥空>段2>slide>5[D] 蓄力捞起 | 面向 +1 | 间距 60 px（远距） ===
+  F18  J3c HIT 236C seg2 第1击 伤12.0 | 修正 伤1.000/时0.960/轨0.960 | 玩家x=242.8 木桩x=301.5 木桩y=468.1
+  F38  J3c CHARGE_COMMITTED 5D→5[D]（按住 8 帧）
+  F39  J3c HIT 5[D] seg1 第2击 伤18.4 | 修正 伤0.920/时0.922/轨0.922 | 玩家x=320.4 木桩x=308.4 木桩y=467.4
+  F39  J3c SWITCHED_SIDES 下一帧面向 -1
+  F76  J3c COMBO_ENDED 原因3
+  J3c combo move_sequence=["236C", "5[D]"] hits=[{ "frame": 18, "order": 0, "move": "236C", "action": 1, "segment": 2, "combo_hits": 1 }, { "frame": 39, "order": 0, "move": "5[D]", "action": 3, "segment": 1, "combo_hits": 2 }] hits_after_end=[]
+  PASS  J3c 段 1 挥空（触及 91px 内）> 段 2 命中（97px 边界内、远距正例）> 蓄力 5[D] 以 slide 资料捞起 ["236C", "5[D]"] | 面向 +1
+  PASS  J3c 捞起流程走完不伪造倒地（slide 是有限状态、不是 OTG）| 面向 +1
+
+=== J3c 段1挥空>段2>slide>5[D] 蓄力捞起 | 面向 -1 | 间距 60 px（远距） ===
+  F18  J3c HIT 236C seg2 第1击 伤12.0 | 修正 伤1.000/时0.960/轨0.960 | 玩家x=237.2 木桩x=178.5 木桩y=468.1
+  F38  J3c CHARGE_COMMITTED 5D→5[D]（按住 8 帧）
+  F39  J3c HIT 5[D] seg1 第2击 伤18.4 | 修正 伤0.920/时0.922/轨0.922 | 玩家x=159.6 木桩x=171.6 木桩y=467.4
+  F39  J3c SWITCHED_SIDES 下一帧面向 1
+  F76  J3c COMBO_ENDED 原因3
+  J3c combo move_sequence=["236C", "5[D]"] hits=[{ "frame": 18, "order": 0, "move": "236C", "action": 1, "segment": 2, "combo_hits": 1 }, { "frame": 39, "order": 0, "move": "5[D]", "action": 3, "segment": 1, "combo_hits": 2 }] hits_after_end=[]
+  PASS  J3c 段 1 挥空（触及 91px 内）> 段 2 命中（97px 边界内、远距正例）> 蓄力 5[D] 以 slide 资料捞起 ["236C", "5[D]"] | 面向 -1
+  PASS  J3c 捞起流程走完不伪造倒地（slide 是有限状态、不是 OTG）| 面向 -1
+
+=== J4 版边 5D 墙截断 | 面向 +1 ===
+  F7   J4 CHARGE_COMMITTED 5D→5D（按住 0 帧）
+  F8   J4 HIT 5D seg1 第1击 伤18.0 | 修正 伤1.000/时0.960/轨0.960 | 玩家x=888.0 木桩x=930.0 木桩y=470.0
+  F29  J4 COMBO_ENDED 原因3
+  PASS  J4 版边 5D 命中照常（F8）| 面向 +1
+  PASS  J4 墙截断可观察、不换边（被墙截断截在原侧）| 面向 +1
+
+=== J4 版边 5D 墙截断 | 面向 -1 ===
+  F7   J4 CHARGE_COMMITTED 5D→5D（按住 0 帧）
+  F8   J4 HIT 5D seg1 第1击 伤18.0 | 修正 伤1.000/时0.960/轨0.960 | 玩家x=72.0 木桩x=30.0 木桩y=470.0
+  F29  J4 COMBO_ENDED 原因3
+  PASS  J4 版边 5D 命中照常（F8）| 面向 -1
+  PASS  J4 墙截断可观察、不换边（被墙截断截在原侧）| 面向 -1
+
+=== J5 演示路线 5A>5B>5C>6A>jc.jB | 面向 +1 | 间距 26 px ===
+  F6   J5 HIT 5A seg1 第1击 伤5.8 | 修正 伤0.720/时0.700/轨0.750 | 玩家x=240.0 木桩x=267.9 木桩y=470.0
+  F21  J5 HIT 5B seg1 第2击 伤7.8 | 修正 伤0.648/时0.658/轨0.712 | 玩家x=240.0 木桩x=277.9 木桩y=470.0
+  F38  J5 HIT 5C seg1 第3击 伤9.3 | 修正 伤0.583/时0.619/轨0.677 | 玩家x=240.0 木桩x=288.4 木桩y=470.0
+  F54  J5 HIT 6A seg1 第4击 伤8.4 | 修正 伤0.525/时0.581/轨0.643 | 玩家x=240.0 木桩x=296.1 木桩y=464.0
+  F77  J5 HIT jB seg1 第5击 伤5.7 | 修正 伤0.472/时0.547/轨0.611 | 玩家x=240.0 木桩x=303.7 木桩y=420.8
+  F95  J5 COMBO_ENDED 原因3
+  PASS  J5 演示前缀五击成立（地面链→6A 击飞→jump cancel jB 追击）["5A", "5B", "5C", "6A", "jB"] | 面向 +1
+  PASS  J5 调校边界如实记录：A 深链时间层下 jB 后浮空硬直仅约 6 帧，jC 不可达——连段在 F95 自然受身结束，空中链尾部维持调校候选（原 D1/D2 边界前移）| 面向 +1
+
+=== J5 演示路线 5A>5B>5C>6A>jc.jB | 面向 -1 | 间距 26 px ===
+  F6   J5 HIT 5A seg1 第1击 伤5.8 | 修正 伤0.720/时0.700/轨0.750 | 玩家x=240.0 木桩x=212.1 木桩y=470.0
+  F21  J5 HIT 5B seg1 第2击 伤7.8 | 修正 伤0.648/时0.658/轨0.712 | 玩家x=240.0 木桩x=202.1 木桩y=470.0
+  F38  J5 HIT 5C seg1 第3击 伤9.3 | 修正 伤0.583/时0.619/轨0.677 | 玩家x=240.0 木桩x=191.6 木桩y=470.0
+  F54  J5 HIT 6A seg1 第4击 伤8.4 | 修正 伤0.525/时0.581/轨0.643 | 玩家x=240.0 木桩x=183.9 木桩y=464.0
+  F77  J5 HIT jB seg1 第5击 伤5.7 | 修正 伤0.472/时0.547/轨0.611 | 玩家x=240.0 木桩x=176.3 木桩y=420.8
+  F95  J5 COMBO_ENDED 原因3
+  PASS  J5 演示前缀五击成立（地面链→6A 击飞→jump cancel jB 追击）["5A", "5B", "5C", "6A", "jB"] | 面向 -1
+  PASS  J5 调校边界如实记录：A 深链时间层下 jB 后浮空硬直仅约 6 帧，jC 不可达——连段在 F95 自然受身结束，空中链尾部维持调校候选（原 D1/D2 边界前移）| 面向 -1
+
+=== J6 独立跳 j214D 对地统一弹地 | 面向 +1 | 间距 26 px ===
+  F16  J6 HIT j214D seg1 第1击 伤20.0 | 修正 伤1.000/时0.960/轨0.960 | 玩家x=246.0 木桩x=266.0 木桩y=468.4
+  F33  J6 BOUNCE_CONTACT 反弹vy=-317 追击窗15
+  F47  J6 COMBO_ENDED 原因2
+  J6 combo move_sequence=["j214D"] hits=[{ "frame": 16, "order": 0, "move": "j214D", "action": 1, "segment": 1, "combo_hits": 1 }] hits_after_end=[]
+  PASS  J6 独立输入 j214D 命中地面目标 | 面向 +1
+  PASS  J6 弹地流程不转普通倒地 | 面向 +1
+
+=== J6 独立跳 j214D 对地统一弹地 | 面向 -1 | 间距 26 px ===
+  F16  J6 HIT j214D seg1 第1击 伤20.0 | 修正 伤1.000/时0.960/轨0.960 | 玩家x=234.0 木桩x=214.0 木桩y=468.4
+  F33  J6 BOUNCE_CONTACT 反弹vy=-317 追击窗15
+  F47  J6 COMBO_ENDED 原因2
+  J6 combo move_sequence=["j214D"] hits=[{ "frame": 16, "order": 0, "move": "j214D", "action": 1, "segment": 1, "combo_hits": 1 }] hits_after_end=[]
+  PASS  J6 独立输入 j214D 命中地面目标 | 面向 -1
+  PASS  J6 弹地流程不转普通倒地 | 面向 -1
+
+=== J6b 5A>5B>5C>6A>jc.jB>jC>j214D（对空目标）| 面向 +1 | 间距 26 px ===
+  F6   J6b HIT 5A seg1 第1击 伤5.8 | 修正 伤0.720/时0.700/轨0.750 | 玩家x=240.0 木桩x=267.9 木桩y=470.0
+  F21  J6b HIT 5B seg1 第2击 伤7.8 | 修正 伤0.648/时0.658/轨0.712 | 玩家x=240.0 木桩x=277.9 木桩y=470.0
+  F38  J6b HIT 5C seg1 第3击 伤9.3 | 修正 伤0.583/时0.619/轨0.677 | 玩家x=240.0 木桩x=288.4 木桩y=470.0
+  F54  J6b HIT 6A seg1 第4击 伤8.4 | 修正 伤0.525/时0.581/轨0.643 | 玩家x=240.0 木桩x=296.1 木桩y=464.0
+  F75  J6b HIT jB seg1 第5击 伤5.7 | 修正 伤0.472/时0.547/轨0.611 | 玩家x=240.0 木桩x=303.7 木桩y=422.3
+  F89  J6b HIT jC seg1 第6击 伤6.0 | 修正 伤0.425/时0.514/轨0.580 | 玩家x=241.6 木桩x=305.9 木桩y=427.9
+  F100 J6b HIT j214D seg1 第7击 伤7.7 | 修正 伤0.383/时0.483/轨0.551 | 玩家x=245.4 木桩x=307.4 木桩y=429.1
+  F122 J6b BOUNCE_CONTACT 反弹vy=-182 追击窗7
+  F124 J6b COMBO_ENDED 原因2
+  J6b combo move_sequence=["5A", "5B", "5C", "6A", "jB", "jC", "j214D"] hits=[{ "frame": 6, "order": 0, "move": "5A", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 21, "order": 0, "move": "5B", "action": 2, "segment": 1, "combo_hits": 2 }, { "frame": 38, "order": 0, "move": "5C", "action": 3, "segment": 1, "combo_hits": 3 }, { "frame": 54, "order": 0, "move": "6A", "action": 4, "segment": 1, "combo_hits": 4 }, { "frame": 75, "order": 0, "move": "jB", "action": 6, "segment": 1, "combo_hits": 5 }, { "frame": 89, "order": 0, "move": "jC", "action": 7, "segment": 1, "combo_hits": 6 }, { "frame": 100, "order": 0, "move": "j214D", "action": 8, "segment": 1, "combo_hits": 7 }] hits_after_end=[]
+  PASS  J6b jC 命中空中目标后取消进 j214D、统一弹地成立（七击）["5A", "5B", "5C", "6A", "jB", "jC", "j214D"] | 面向 +1
+  PASS  J6b 无追击输入：弹地流程独立走完、连段按收招未接续结束（A 起手追击资格=0——5A 首击锁定；N5 为其命中即收尾对照）| 面向 +1
+
+=== J6b 5A>5B>5C>6A>jc.jB>jC>j214D（对空目标）| 面向 -1 | 间距 26 px ===
+  F6   J6b HIT 5A seg1 第1击 伤5.8 | 修正 伤0.720/时0.700/轨0.750 | 玩家x=240.0 木桩x=212.1 木桩y=470.0
+  F21  J6b HIT 5B seg1 第2击 伤7.8 | 修正 伤0.648/时0.658/轨0.712 | 玩家x=240.0 木桩x=202.1 木桩y=470.0
+  F38  J6b HIT 5C seg1 第3击 伤9.3 | 修正 伤0.583/时0.619/轨0.677 | 玩家x=240.0 木桩x=191.6 木桩y=470.0
+  F54  J6b HIT 6A seg1 第4击 伤8.4 | 修正 伤0.525/时0.581/轨0.643 | 玩家x=240.0 木桩x=183.9 木桩y=464.0
+  F75  J6b HIT jB seg1 第5击 伤5.7 | 修正 伤0.472/时0.547/轨0.611 | 玩家x=240.0 木桩x=176.3 木桩y=422.3
+  F89  J6b HIT jC seg1 第6击 伤6.0 | 修正 伤0.425/时0.514/轨0.580 | 玩家x=238.4 木桩x=174.1 木桩y=427.9
+  F100 J6b HIT j214D seg1 第7击 伤7.7 | 修正 伤0.383/时0.483/轨0.551 | 玩家x=234.6 木桩x=172.6 木桩y=429.1
+  F122 J6b BOUNCE_CONTACT 反弹vy=-182 追击窗7
+  F124 J6b COMBO_ENDED 原因2
+  J6b combo move_sequence=["5A", "5B", "5C", "6A", "jB", "jC", "j214D"] hits=[{ "frame": 6, "order": 0, "move": "5A", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 21, "order": 0, "move": "5B", "action": 2, "segment": 1, "combo_hits": 2 }, { "frame": 38, "order": 0, "move": "5C", "action": 3, "segment": 1, "combo_hits": 3 }, { "frame": 54, "order": 0, "move": "6A", "action": 4, "segment": 1, "combo_hits": 4 }, { "frame": 75, "order": 0, "move": "jB", "action": 6, "segment": 1, "combo_hits": 5 }, { "frame": 89, "order": 0, "move": "jC", "action": 7, "segment": 1, "combo_hits": 6 }, { "frame": 100, "order": 0, "move": "j214D", "action": 8, "segment": 1, "combo_hits": 7 }] hits_after_end=[]
+  PASS  J6b jC 命中空中目标后取消进 j214D、统一弹地成立（七击）["5A", "5B", "5C", "6A", "jB", "jC", "j214D"] | 面向 -1
+  PASS  J6b 无追击输入：弹地流程独立走完、连段按收招未接续结束（A 起手追击资格=0——5A 首击锁定；N5 为其命中即收尾对照）| 面向 -1
+
+=== J7 弹地 A/B 起手自然接续 | 面向 +1 ===
+  F10  J7B HIT 5B seg1 第1击 伤10.1 | 修正 伤0.840/时0.820/轨0.850 | 玩家x=240.0 木桩x=268.1 木桩y=470.0
+  F27  J7B HIT 5C seg1 第2击 伤12.1 | 修正 伤0.756/时0.771/轨0.808 | 玩家x=240.0 木桩x=281.9 木桩y=470.0
+  F44  J7B HIT 6A seg1 第3击 伤10.9 | 修正 伤0.680/时0.725/轨0.767 | 玩家x=240.0 木桩x=292.6 木桩y=462.8
+  F69  J7B HIT jB seg1 第4击 伤7.3 | 修正 伤0.612/时0.681/轨0.729 | 玩家x=240.0 木桩x=304.0 木桩y=401.0
+  F81  J7B HIT j214D seg1 第5击 伤11.0 | 修正 伤0.551/时0.640/轨0.692 | 玩家x=243.0 木桩x=305.9 木桩y=403.4
+  F107 J7B BOUNCE_CONTACT 反弹vy=-228 追击窗10
+  F115 J7B HIT 6A seg1 第6击 伤7.8 | 修正 伤0.485/时0.589/轨0.644 | 玩家x=249.7 木桩x=307.7 木桩y=447.0
+  F140 J7B HIT jA seg1 第7击 伤3.5 | 修正 伤0.436/时0.554/轨0.612 | 玩家x=249.7 木桩x=315.9 木桩y=427.2
+  F154 J7B COMBO_ENDED 原因3
+  J7B combo move_sequence=["5B", "5C", "6A", "jB", "j214D", "6A", "jA"] hits=[{ "frame": 10, "order": 0, "move": "5B", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 27, "order": 0, "move": "5C", "action": 2, "segment": 1, "combo_hits": 2 }, { "frame": 44, "order": 0, "move": "6A", "action": 3, "segment": 1, "combo_hits": 3 }, { "frame": 69, "order": 0, "move": "jB", "action": 5, "segment": 1, "combo_hits": 4 }, { "frame": 81, "order": 0, "move": "j214D", "action": 6, "segment": 1, "combo_hits": 5 }, { "frame": 115, "order": 0, "move": "6A", "action": 8, "segment": 1, "combo_hits": 6 }, { "frame": 140, "order": 0, "move": "jA", "action": 10, "segment": 1, "combo_hits": 7 }] hits_after_end=[]
+  PASS  J7B B 起手弹地后 6A 追击并 jump cancel 延长 ["5B", "5C", "6A", "jB", "j214D", "6A", "jA"]
+  F6   J7A HIT 5A seg1 第1击 伤5.8 | 修正 伤0.720/时0.700/轨0.750 | 玩家x=240.0 木桩x=267.9 木桩y=470.0
+  F21  J7A HIT 5B seg1 第2击 伤7.8 | 修正 伤0.648/时0.658/轨0.712 | 玩家x=240.0 木桩x=277.9 木桩y=470.0
+  F38  J7A HIT 6A seg1 第3击 伤9.3 | 修正 伤0.583/时0.619/轨0.677 | 玩家x=240.0 木桩x=288.5 木桩y=463.7
+  F65  J7A HIT jC seg1 第4击 伤7.3 | 修正 伤0.525/时0.581/轨0.643 | 玩家x=240.8 木桩x=297.5 木桩y=416.2
+  F76  J7A HIT j214D seg1 第5击 伤9.4 | 修正 伤0.472/时0.547/轨0.611 | 玩家x=244.6 木桩x=299.2 木桩y=417.3
+  F100 J7A BOUNCE_CONTACT 反弹vy=-202 追击窗8
+  F108 J7A HIT 5B seg1 第6击 伤5.0 | 修正 伤0.416/时0.503/轨0.568 | 玩家x=250.6 木桩x=299.7 木桩y=454.0
+  F125 J7A COMBO_ENDED 原因3
+  J7A combo move_sequence=["5A", "5B", "6A", "jC", "j214D", "5B"] hits=[{ "frame": 6, "order": 0, "move": "5A", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 21, "order": 0, "move": "5B", "action": 2, "segment": 1, "combo_hits": 2 }, { "frame": 38, "order": 0, "move": "6A", "action": 3, "segment": 1, "combo_hits": 3 }, { "frame": 65, "order": 0, "move": "jC", "action": 5, "segment": 1, "combo_hits": 4 }, { "frame": 76, "order": 0, "move": "j214D", "action": 6, "segment": 1, "combo_hits": 5 }, { "frame": 108, "order": 0, "move": "5B", "action": 8, "segment": 1, "combo_hits": 6 }] hits_after_end=[]
+  PASS  J7A A 起手弹地后 5B 按弹地资料命中并自然接续（不再强制收尾）["5A", "5B", "6A", "jC", "j214D", "5B"]
+  PASS  J7A 弹地目标命中不再当帧结束连段（首末 F125 > 命中 F108，自然接续至恢复）
+
+=== J8 j2D 落地例外与 j6D 普通落地连接 | 面向 +1 | 间距 26 px ===
+  F13  J8a HIT 2C seg1 第1击 伤13.0 | 修正 伤0.930/时0.900/轨0.920 | 玩家x=240.0 木桩x=268.0 木桩y=468.2
+  F31  J8a HIT 6D seg1 第2击 伤15.1 | 修正 伤0.837/时0.846/轨0.874 | 玩家x=262.0 木桩x=281.2 木桩y=467.5
+  F40  J8a SWITCHED_SIDES 下一帧面向 -1
+  F48  J8a HIT j2D seg1 第3击 伤13.6 | 修正 伤0.753/时0.795/轨0.830 | 玩家x=298.7 木桩x=286.3 木桩y=468.2
+  F65  J8a HIT 214C seg1 第4击 伤6.8 | 修正 伤0.678/时0.748/轨0.789 | 玩家x=298.7 木桩x=283.9 木桩y=470.0
+  F82  J8a COMBO_ENDED 原因1
+  J8a combo move_sequence=["2C", "6D", "j2D", "214C"] hits=[{ "frame": 13, "order": 0, "move": "2C", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 31, "order": 0, "move": "6D", "action": 2, "segment": 1, "combo_hits": 2 }, { "frame": 48, "order": 0, "move": "j2D", "action": 3, "segment": 1, "combo_hits": 3 }, { "frame": 65, "order": 0, "move": "214C", "action": 5, "segment": 1, "combo_hits": 4 }] hits_after_end=[]
+  PASS  J8a 2C>6D>j2D>214C 四击成立（专用落地取消）["2C", "6D", "j2D", "214C"] | 面向 +1
+  F13  J8b HIT 2C seg1 第1击 伤13.0 | 修正 伤0.930/时0.900/轨0.920 | 玩家x=240.0 木桩x=268.0 木桩y=468.2
+  F31  J8b HIT 6D seg1 第2击 伤15.1 | 修正 伤0.837/时0.846/轨0.874 | 玩家x=262.0 木桩x=281.2 木桩y=467.5
+  F40  J8b SWITCHED_SIDES 下一帧面向 -1
+  F47  J8b HIT j6D seg1 第3击 伤12.8 | 修正 伤0.753/时0.795/轨0.830 | 玩家x=298.5 木桩x=285.8 木桩y=465.6
+  F56  J8b SWITCHED_SIDES 下一帧面向 1
+  F66  J8b HIT 5B seg1 第4击 伤8.5 | 修正 伤0.708/时0.755/轨0.789 | 玩家x=264.5 木桩x=286.3 木桩y=470.0
+  F84  J8b COMBO_ENDED 原因3
+  J8b combo move_sequence=["2C", "6D", "j6D", "5B"] hits=[{ "frame": 13, "order": 0, "move": "2C", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 31, "order": 0, "move": "6D", "action": 2, "segment": 1, "combo_hits": 2 }, { "frame": 47, "order": 0, "move": "j6D", "action": 3, "segment": 1, "combo_hits": 3 }, { "frame": 66, "order": 0, "move": "5B", "action": 5, "segment": 1, "combo_hits": 4 }] hits_after_end=[]
+  PASS  J8b 2C>6D>j6D>5B 四击成立（无落地特权、普通连接）["2C", "6D", "j6D", "5B"] | 面向 +1
+
+=== J8 j2D 落地例外与 j6D 普通落地连接 | 面向 -1 | 间距 26 px ===
+  F13  J8a HIT 2C seg1 第1击 伤13.0 | 修正 伤0.930/时0.900/轨0.920 | 玩家x=240.0 木桩x=212.0 木桩y=468.2
+  F31  J8a HIT 6D seg1 第2击 伤15.1 | 修正 伤0.837/时0.846/轨0.874 | 玩家x=218.0 木桩x=198.8 木桩y=467.5
+  F40  J8a SWITCHED_SIDES 下一帧面向 1
+  F48  J8a HIT j2D seg1 第3击 伤13.6 | 修正 伤0.753/时0.795/轨0.830 | 玩家x=181.3 木桩x=193.8 木桩y=468.2
+  F65  J8a HIT 214C seg1 第4击 伤6.8 | 修正 伤0.678/时0.748/轨0.789 | 玩家x=181.3 木桩x=196.1 木桩y=470.0
+  F82  J8a COMBO_ENDED 原因1
+  J8a combo move_sequence=["2C", "6D", "j2D", "214C"] hits=[{ "frame": 13, "order": 0, "move": "2C", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 31, "order": 0, "move": "6D", "action": 2, "segment": 1, "combo_hits": 2 }, { "frame": 48, "order": 0, "move": "j2D", "action": 3, "segment": 1, "combo_hits": 3 }, { "frame": 65, "order": 0, "move": "214C", "action": 5, "segment": 1, "combo_hits": 4 }] hits_after_end=[]
+  PASS  J8a 2C>6D>j2D>214C 四击成立（专用落地取消）["2C", "6D", "j2D", "214C"] | 面向 -1
+  F13  J8b HIT 2C seg1 第1击 伤13.0 | 修正 伤0.930/时0.900/轨0.920 | 玩家x=240.0 木桩x=212.0 木桩y=468.2
+  F31  J8b HIT 6D seg1 第2击 伤15.1 | 修正 伤0.837/时0.846/轨0.874 | 玩家x=218.0 木桩x=198.8 木桩y=467.5
+  F40  J8b SWITCHED_SIDES 下一帧面向 1
+  F47  J8b HIT j6D seg1 第3击 伤12.8 | 修正 伤0.753/时0.795/轨0.830 | 玩家x=181.5 木桩x=194.2 木桩y=465.6
+  F56  J8b SWITCHED_SIDES 下一帧面向 -1
+  F66  J8b HIT 5B seg1 第4击 伤8.5 | 修正 伤0.708/时0.755/轨0.789 | 玩家x=215.5 木桩x=193.7 木桩y=470.0
+  F84  J8b COMBO_ENDED 原因3
+  J8b combo move_sequence=["2C", "6D", "j6D", "5B"] hits=[{ "frame": 13, "order": 0, "move": "2C", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 31, "order": 0, "move": "6D", "action": 2, "segment": 1, "combo_hits": 2 }, { "frame": 47, "order": 0, "move": "j6D", "action": 3, "segment": 1, "combo_hits": 3 }, { "frame": 66, "order": 0, "move": "5B", "action": 5, "segment": 1, "combo_hits": 4 }] hits_after_end=[]
+  PASS  J8b 2C>6D>j6D>5B 四击成立（无落地特权、普通连接）["2C", "6D", "j6D", "5B"] | 面向 -1
+
+=== N1a 被防 6A 无 jump cancel | 面向 +1 | 站防木桩 ===
+  F9   N1a ATTACK_BLOCKED 6A（被防：独立接触结果）
+  PASS  N1a 6A 被站防挡下（独立被防接触）
+  PASS  N1a 被防不授予 jump cancel：Space 不起跳（player_on_ground=true）
+
+=== N1b 段 1 被防终止 + 无特殊进入 | 面向 +1 | 站防木桩 ===
+  F13  N1b ATTACK_BLOCKED （被防：独立接触结果）
+  F36  N1b CHARGE_COMMITTED 5D→5D（按住 0 帧）
+  F37  N1b ATTACK_BLOCKED 5D（被防：独立接触结果）
+  PASS  N1b 段 1 被防：整招立即结束（无段 2 接触、无任何命中；被防 236C 段数=1）
+  PASS  N1b 被防不授予特殊进入：窗口内按 D 起手的是恢复后独立普通 5D（F30，非经资格），照常被防
+
+=== N2 挥空无取消 | 面向 +1 | 木桩 240 px（射程外） ===
+  F19  N2 LINK_FAILED 5B 原因1
+  PASS  N2 射程外全程零命中（挥空）
+  PASS  N2 挥空不产生取消资格：恢复中按 B 的链式请求被可观察拒绝（LINK_FAILED），不冒充接续
+  PASS  N2 完全收招后的新按下才作为独立招式起手（F27）
+
+=== N3 普通 5D>5B 无反向出口 | 面向 +1 | 间距 26 px ===
+  F6   N3 HIT 5A seg1 第1击 伤5.8 | 修正 伤0.720/时0.700/轨0.750 | 玩家x=240.0 木桩x=267.9 木桩y=470.0
+  F21  N3 HIT 5B seg1 第2击 伤7.8 | 修正 伤0.648/时0.658/轨0.712 | 玩家x=240.0 木桩x=277.9 木桩y=470.0
+  F35  N3 CHARGE_COMMITTED 5D→5D（按住 0 帧）
+  F36  N3 HIT 5D seg1 第3击 伤10.5 | 修正 伤0.583/时0.619/轨0.677 | 玩家x=258.0 木桩x=285.5 木桩y=470.0
+  F47  N3 SWITCHED_SIDES 下一帧面向 -1
+  F52  N3 COMBO_ENDED 原因3
+  N3 combo move_sequence=["5A", "5B", "5D"] hits=[{ "frame": 6, "order": 0, "move": "5A", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 21, "order": 0, "move": "5B", "action": 2, "segment": 1, "combo_hits": 2 }, { "frame": 36, "order": 0, "move": "5D", "action": 3, "segment": 1, "combo_hits": 3 }] hits_after_end=[]
+  PASS  N3 普通来源 5D 后目押 5B 不成立（不取得来源限定连接；本例按木桩自然受身结束——未声明边的 CONFIGURATION_GAP 断言在 test_combat_session 注入探针覆盖）["5A", "5B", "5D"]
+
+=== N4 2C>2D 高度失配挥空 | 面向 +1 | 间距 26 px ===
+  F13  N4 HIT 2C seg1 第1击 伤13.0 | 修正 伤0.930/时0.900/轨0.920 | 玩家x=240.0 木桩x=268.0 木桩y=468.2
+  F31  N4 COMBO_ENDED 原因4
+  N4 combo move_sequence=["2C"] hits=[{ "frame": 13, "order": 0, "move": "2C", "action": 1, "segment": 1, "combo_hits": 1 }] hits_after_end=[]
+  PASS  N4 2C 命中后 2D 因判定高度不匹配挥空（低浮空峰值够不到高位框）["2C"]
+  PASS  N4 挥空后连段按取消窗关闭结束（允许取消 ≠ 来得及命中）
+
+=== N5 A 起手弹地接续边界（票据 01：自然接续取代强制终点）| 面向 +1 ===
+  F6   N5 HIT 5A seg1 第1击 伤5.8 | 修正 伤0.720/时0.700/轨0.750 | 玩家x=240.0 木桩x=267.9 木桩y=470.0
+  F21  N5 HIT 5B seg1 第2击 伤7.8 | 修正 伤0.648/时0.658/轨0.712 | 玩家x=240.0 木桩x=277.9 木桩y=470.0
+  F38  N5 HIT 6A seg1 第3击 伤9.3 | 修正 伤0.583/时0.619/轨0.677 | 玩家x=240.0 木桩x=288.5 木桩y=463.7
+  F65  N5 HIT jC seg1 第4击 伤7.3 | 修正 伤0.525/时0.581/轨0.643 | 玩家x=240.8 木桩x=297.5 木桩y=416.2
+  F76  N5 HIT j214D seg1 第5击 伤9.4 | 修正 伤0.472/时0.547/轨0.611 | 玩家x=244.6 木桩x=299.2 木桩y=417.3
+  F100 N5 BOUNCE_CONTACT 反弹vy=-202 追击窗8
+  F108 N5 HIT 5B seg1 第6击 伤5.0 | 修正 伤0.416/时0.503/轨0.568 | 玩家x=250.6 木桩x=299.7 木桩y=454.0
+  F125 N5 COMBO_ENDED 原因3
+  N5 combo move_sequence=["5A", "5B", "6A", "jC", "j214D", "5B"] hits=[{ "frame": 6, "order": 0, "move": "5A", "action": 1, "segment": 1, "combo_hits": 1 }, { "frame": 21, "order": 0, "move": "5B", "action": 2, "segment": 1, "combo_hits": 2 }, { "frame": 38, "order": 0, "move": "6A", "action": 3, "segment": 1, "combo_hits": 3 }, { "frame": 65, "order": 0, "move": "jC", "action": 5, "segment": 1, "combo_hits": 4 }, { "frame": 76, "order": 0, "move": "j214D", "action": 6, "segment": 1, "combo_hits": 5 }, { "frame": 108, "order": 0, "move": "5B", "action": 8, "segment": 1, "combo_hits": 6 }] hits_after_end=[]
+  PASS  N5 A 起手弹地 5B 命中后连段延续到自然受身（无弹地强制终点；["5A", "5B", "6A", "jC", "j214D", "5B"]）
+
+=== N6 挥空 j2D 无落地取消 | 面向 +1 | 木桩 240px（射程外） ===
+  PASS  N6 射程外全程零命中（j2D 挥空）
+  PASS  N6 挥空 j2D 不授予命中落地取消资格（资格仅实际 HIT 授予）
+  PASS  N6 挥空路径的 214C 只能等完整落地恢复（3+1+2+缓存）后的独立起手（落地 F28、起手 F36）——无例外消费
+
+
+4 REPLAY 10 CHECK(S) FAILED

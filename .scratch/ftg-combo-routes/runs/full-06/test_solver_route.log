@@ -1,0 +1,483 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+PASS  5A → 5D is reported as a cancel config gap (timing holds, cancel_targets lacks it)
+PASS  the cancel gap names the missing configuration field
+PASS  the gap carries the verified timing (earliest hit age 8 <= dummy recover age 9 at the A-starter time layer)
+PASS  5A → jA is reported as a jump-cancel config gap
+PASS  the jump-cancel gap names the missing configuration field
+PASS  illegal landing back edge is not reported as a configuration gap
+PASS  configured chain pairs never appear as chain gaps
+PASS  configured link pairs never appear as link gaps
+PASS  configured jump-cancel pairs never appear as gaps
+PASS  configured landing pairs never appear as gaps
+FAIL  gap enumeration leaves the configured edge set untouched (79 edges: ticket 05 基线 36 + ticket 06 的 7 条 + ticket 07 的 12 条（jc 扩展、jC 链、2C→6D/2D 与 6D/2D 空中出口）+ ticket 08 的 16 条（jA/jB/jC → 空中 D 系各 3 条（jB 的旧 jD 边迁移）、6D/2D 出口扩至三新招各 3 条、j2D→214C 命中落地取消 1 条）+ ticket 09 的 8 条（jA/jB/jC→j214D 空中取消 3、6D/2D→j214D 空中出口 2（2D 侧枚举但 valid=false）、j214D→5B/6A/214C 弹地延迟连接 3）)
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no 5A → 5D edge is invented for the timing-valid unconfigured pair
+PASS  no route walks through an unconfigured pair (gaps never become routes)
+PASS  gaps never create cycles
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  a gap entry is never flagged as a valid edge
+PASS  the report has a config-gap section
+PASS  gap lines state the missing configuration
+PASS  the summary counts the config gaps
+PASS  a pair whose hit lands after dummy recovery is not a gap
+PASS  the 4-frame stun admits no cancel-gap followup either
+PASS  a finisher source (214C~C stays a finisher) is never a gap (configuring it would not open the cancel)
+PASS  stance-mismatched cancel pairs are not gaps
+PASS  configuring the gap turns 5A → 5D into a valid edge
+PASS  the configured pair no longer appears as a gap
+PASS  gap probes never mutate the caller's move table
+PASS  landing recovery is a rule restriction, not a missing configuration
+PASS  adding a direct-entry landing target still cannot bypass recovery
+PASS  a B-target landing seam whose pairing wait eats the landing frame is not a gap
+PASS  the report has a binding/variant section
+PASS  plain binding moves are listed without a direction command
+PASS  the 236C variant is enumerated with its strict notation, step count and window, and verified
+PASS  the 214C variant is enumerated and verified (票据 10：旧地面 214D 移除后，214 记法的地面主体是 214C；空中 j214D 不在地面起始绑定枚举内，由空侧起手与回放覆盖)
+PASS  the lenient 623 variant is labeled lenient and verified
+PASS  the six-step super notation verifies with its 60-frame window
+PASS  each declared alternative string verifies as its own variant with the step-count window
+PASS  an alternative whose direction steps cannot be expressed is reported as inexpressible
+PASS  the whiffed target edge is excluded
+PASS  the exclusion reason names the whiff (started but never connected)
+PASS  whiffed moves never appear inside any route
+PASS  whiffed moves never appear inside any route
+PASS  whiffed moves never appear inside any route
+PASS  whiffed moves never appear inside any route
+PASS  whiffed moves never appear inside any route
+PASS  whiffed moves never appear inside any route
+PASS  whiffed moves never appear inside any route
+PASS  whiffed moves never appear inside any route
+PASS  whiffed moves never appear inside any route
+PASS  whiffed moves never appear inside any route
+PASS  whiffed moves never appear inside any route
+PASS  whiffed moves never appear inside any route
+PASS  whiffed moves never appear inside any route
+PASS  whiffed moves never appear inside any route
+PASS  whiffed moves never appear inside any route
+PASS  whiffed moves never appear inside any route
+PASS  the slow-target edge is excluded
+PASS  the wait-timeout exclusion names dummy recovery and the natural tech, not a whiff
+PASS  gaps are stably sorted by from → to → kind
+PASS  gap enumeration stays mirror-consistent across both facings
+PASS  solving twice yields identical reports, gaps included
+PASS  running solve() with gap enumeration leaves a live session untouched
+PASS  the live session is still inside its 5A hit-confirmed combo
+
+ACCEPTANCE_SOLVER_METRICS_JSON={"calls":15,"combo_cache":{"bypasses":0,"enabled":true,"entries":368,"hits":15,"misses":0},"elapsed_ms":4707.018,"profile_totals":{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"gap_enum_ms":0.0,"gap_enum_runs":0,"other_ms":4758.426,"other_runs":0,"requests":15,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":4758.426},"profiles":[{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-1","other_ms":4059.593,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":4059.593},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-2","other_ms":56.698,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":56.698},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"ab63bc62031e3c8ca292b62848c11cfb436e56719ceaa0d74cbe916f455d687b","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-3","other_ms":46.405,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":46.405},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"d86c7f54dae66caddf258becf7f68ea7665f12bd3fe9c257a8bd08e1479451bd","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-4","other_ms":41.048,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":41.048},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-5","other_ms":56.793,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":56.793},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"eeb47255bdd15ab0cdf54ce5e4e7b12f5768b46f80289d30603080346e53a693","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-6","other_ms":41.734,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":41.734},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-7","other_ms":60.55,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":60.55},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-8","other_ms":56.551,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":56.551},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"8ca66f005dc204232c0b15381e43159c2af9af6921b248878065ba8733f1fc18","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-9","other_ms":44.399,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":44.399},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"f4cf14f3c360aa60272c423bf366677561af8ef5a5b733c75c2d652a6db71242","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-10","other_ms":43.281,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":43.281},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"57251142efa021bb44b51bb03a94abdd715e1b3bd75cbd31d408216f88b7820a","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-11","other_ms":43.229,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":43.229},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"035ebf3f5317d9d62ee3afd6014a861d466c74a89782594d5c696f0b4cfb20ad","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-12","other_ms":42.744,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":42.744},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-13","other_ms":58.429,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":58.429},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-14","other_ms":50.601,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":50.601},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-15","other_ms":56.371,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":56.371}],"reports":[{"calls":1,"fingerprint":"035ebf3f5317d9d62ee3afd6014a861d466c74a89782594d5c696f0b4cfb20ad","keys":["solve-12"]},{"calls":8,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","keys":["solve-1","solve-2","solve-5","solve-7","solve-8","solve-13","solve-14","solve-15"]},{"calls":1,"fingerprint":"57251142efa021bb44b51bb03a94abdd715e1b3bd75cbd31d408216f88b7820a","keys":["solve-11"]},{"calls":1,"fingerprint":"8ca66f005dc204232c0b15381e43159c2af9af6921b248878065ba8733f1fc18","keys":["solve-9"]},{"calls":1,"fingerprint":"ab63bc62031e3c8ca292b62848c11cfb436e56719ceaa0d74cbe916f455d687b","keys":["solve-3"]},{"calls":1,"fingerprint":"d86c7f54dae66caddf258becf7f68ea7665f12bd3fe9c257a8bd08e1479451bd","keys":["solve-4"]},{"calls":1,"fingerprint":"eeb47255bdd15ab0cdf54ce5e4e7b12f5768b46f80289d30603080346e53a693","keys":["solve-6"]},{"calls":1,"fingerprint":"f4cf14f3c360aa60272c423bf366677561af8ef5a5b733c75c2d652a6db71242","keys":["solve-10"]}],"reuse_enabled":false,"reuse_hit_rate":0.0,"reuse_hits":0,"test":"test_solver_route","underlying_calls":15,"unique_reports":8}
+1 TEST(S) FAILED

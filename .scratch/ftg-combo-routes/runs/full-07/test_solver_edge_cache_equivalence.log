@@ -1,0 +1,53 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+PASS  key builds and is non-empty
+PASS  key is stable across repeated calls
+PASS  facing is a key dimension (mirror probe never cross-served)
+PASS  pin_dx is a key dimension (spatial distances never cross-served)
+PASS  edge_kind is a key dimension
+PASS  solver mode is a key dimension (gap probe never serves the configured edge)
+PASS  context signature is a key dimension
+PASS  to_id is a key dimension
+PASS  explicit start state is a key dimension
+PASS  table semantic digest is a key dimension (content change invalidates)
+PASS  bounce/landing config digest is stable and carried inside the key text
+PASS  cold run: no probe cache hits (all misses populate)
+PASS  cold run: probes populated the cache (108 edge / 10 timing misses)
+PASS  hot run: edge probes served from cache (108 hits / 0 residual misses)
+PASS  hot run: edge probes all served from cache, timing layer fully subsumed (no queries)
+PASS  cold and hot runs produce identical full semantic fingerprints
+PASS  hot run replays strictly fewer session steps (306 < 6510)
+PASS  edge/gap sequences identical in report order across cold/hot
+PASS  E=1: fingerprints identical across legacy/index x cold/reuse/hot
+PASS  E=1: index path safely reuses legacy-computed entries (cross-path namespace)
+PASS  E=1: edge/gap sequences identical legacy vs hot-cache
+PASS  E=1: injected table byte-identical before/after (explicit injection, zero _table writes)
+PASS  E=2: fingerprints identical across legacy/index x cold/reuse/hot
+PASS  E=2: index path safely reuses legacy-computed entries (cross-path namespace)
+PASS  E=2: edge/gap sequences identical legacy vs hot-cache
+PASS  E=2: injected table byte-identical before/after (explicit injection, zero _table writes)
+PASS  E=4: fingerprints identical across legacy/index x cold/reuse/hot
+PASS  E=4: index path safely reuses legacy-computed entries (cross-path namespace)
+PASS  E=4: edge/gap sequences identical legacy vs hot-cache
+PASS  E=4: injected table byte-identical before/after (explicit injection, zero _table writes)
+PASS  E=8: fingerprints identical across legacy/index x cold/reuse/hot
+PASS  E=8: index path safely reuses legacy-computed entries (cross-path namespace)
+PASS  E=8: edge/gap sequences identical legacy vs hot-cache
+PASS  E=8: injected table byte-identical before/after (explicit injection, zero _table writes)
+PASS  cycle table: fingerprints identical across paths and cache states
+PASS  facing -1 run consumes no facing +1 entries (hits unchanged)
+PASS  facing -1 run repopulates its own namespace (54 new misses)
+PASS  facing -1 report identical to the uncached path
+PASS  mutating a thawed edge does not leak into the cache snapshot
+PASS  fingerprint stable across a pollution attempt
+PASS  timing namespace: first query is a cold miss that populates
+PASS  timing namespace: second query hits with identical values
+PASS  mutating a thawed timing dict does not leak into the cache snapshot
+PASS  analyze after solve produces the identical fingerprint (entrypoint ordering face)
+PASS  analyze reuses solve's probe entries (18 edge hits; timing 0 — subsumed while edges hit)
+PASS  candidate construction leaves every cached context signature unchanged (no shared-link via_text writes)
+PASS  canonical START links keep pristine via_text (was: )
+
+SOLVER_EDGE_CACHE_EQUIV_JSON={"cold_hot":{"cold":{"edge_built":8,"gap_built":100,"session_steps":6510,"stats":{"edge_hits":0,"edge_misses":108,"timing_hits":0,"timing_misses":10}},"fingerprint_equal":true,"hot":{"edge_built":8,"gap_built":100,"session_steps":306,"stats":{"edge_hits":108,"edge_misses":0,"timing_hits":0,"timing_misses":0}},"session_steps":{"cold":6510,"hot":306}},"cross_entry":{"edge_hits":18,"session_steps_cached":38,"session_steps_uncached":1466,"timing_hits":0},"facing":{"left_hits_delta":0,"left_misses_delta":54,"right_hits":0},"tier_E1":{"fingerprint_equal":true,"index_cold":{"edge_built":2,"gap_built":14,"session_steps":1230,"stats":{"edge_hits":0,"edge_misses":16,"timing_hits":0,"timing_misses":4}},"index_hot":{"edge_built":2,"gap_built":14,"session_steps":52,"stats":{"edge_hits":16,"edge_misses":0,"timing_hits":0,"timing_misses":0}},"index_reuse":{"edge_built":2,"gap_built":14,"session_steps":52,"stats":{"edge_hits":16,"edge_misses":0,"timing_hits":0,"timing_misses":0}},"legacy_cold":{"edge_built":2,"gap_built":16,"session_steps":1230,"stats":{"edge_hits":0,"edge_misses":18,"timing_hits":0,"timing_misses":4}}},"tier_E2":{"fingerprint_equal":true,"index_cold":{"edge_built":4,"gap_built":32,"session_steps":2932,"stats":{"edge_hits":0,"edge_misses":36,"timing_hits":0,"timing_misses":6}},"index_hot":{"edge_built":4,"gap_built":32,"session_steps":76,"stats":{"edge_hits":36,"edge_misses":0,"timing_hits":0,"timing_misses":0}},"index_reuse":{"edge_built":4,"gap_built":32,"session_steps":76,"stats":{"edge_hits":36,"edge_misses":0,"timing_hits":0,"timing_misses":0}},"legacy_cold":{"edge_built":4,"gap_built":36,"session_steps":2932,"stats":{"edge_hits":0,"edge_misses":40,"timing_hits":0,"timing_misses":6}}},"tier_E4":{"fingerprint_equal":true,"index_cold":{"edge_built":8,"gap_built":100,"session_steps":6510,"stats":{"edge_hits":0,"edge_misses":108,"timing_hits":0,"timing_misses":10}},"index_hot":{"edge_built":8,"gap_built":100,"session_steps":306,"stats":{"edge_hits":108,"edge_misses":0,"timing_hits":0,"timing_misses":0}},"index_reuse":{"edge_built":8,"gap_built":100,"session_steps":306,"stats":{"edge_hits":108,"edge_misses":0,"timing_hits":0,"timing_misses":0}},"legacy_cold":{"edge_built":8,"gap_built":112,"session_steps":6510,"stats":{"edge_hits":0,"edge_misses":120,"timing_hits":0,"timing_misses":10}}},"tier_E8":{"fingerprint_equal":true,"index_cold":{"edge_built":16,"gap_built":428,"session_steps":21826,"stats":{"edge_hits":0,"edge_misses":444,"timing_hits":0,"timing_misses":18}},"index_hot":{"edge_built":16,"gap_built":428,"session_steps":958,"stats":{"edge_hits":444,"edge_misses":0,"timing_hits":0,"timing_misses":0}},"index_reuse":{"edge_built":16,"gap_built":428,"session_steps":958,"stats":{"edge_hits":444,"edge_misses":0,"timing_hits":0,"timing_misses":0}},"legacy_cold":{"edge_built":16,"gap_built":456,"session_steps":21826,"stats":{"edge_hits":0,"edge_misses":472,"timing_hits":0,"timing_misses":18}}}}
+ALL SOLVER EDGE CACHE EQUIV TESTS PASSED

@@ -631,6 +631,11 @@ func _fwd(facing: int) -> FrameInput:
 	return input
 
 
+func _hold_d() -> FrameInput:
+	var input := FrameInput.new()
+	input.held_action_keys = ["D"]
+	return input
+
 func _fwd_c(facing: int) -> FrameInput:
 	var input := _fwd(facing)
 	input.pressed_action_keys = ["C"]
@@ -643,31 +648,32 @@ func _fwd_c(facing: int) -> FrameInput:
 func _test_236c_5d_loop_breaks_for_a_starter() -> void:
 	## A 起手 5A>236C>5D(特殊进入)>5B：目押在 A 起手时间层下不可达，
 	## 路线断链（票据 05 结论在本票复验——不形成被禁止的 slide loop）。
+	# 连段路线票据 03 起第二段对空推离 3200px/s：点按 5D 追不上浮空木桩——
+	# 按住至蓄力提交（640px）保证 pickup 命中，再验证 A 起手时间层在 5B 目押
+	# 处断链（循环负例的本意不变）。
 	var plan := {
 		1: _press("A"),
 		3: _down(), 4: _down_fwd(1), 5: _fwd(1), 6: _fwd_c(1),
-		34: _press("D"),
 		68: _press("B"),
 	}
+	for f in range(34, 52):
+		plan[f] = _press("D") if f == 34 else _hold_d()
 	var run := _run_plan(plan, 1, 150, 38.0)
 	var moves := _hit_moves(run)
 	var combo_hits_seen := []
 	for hit in run["hits"]:
 		combo_hits_seen.append(int(hit["hits"]))
-	_check(moves.slice(0, 4) == ["5A", "236C", "236C", "5D"] and combo_hits_seen.slice(0, 4) == [1, 2, 3, 4],
-		"the A-starter loop candidate reaches 5A>236C(2 hits)>5D inside one combo (%s / %s)" % [str(moves), str(combo_hits_seen)])
+	_check(moves.slice(0, 4) == ["5A", "236C", "236C", "5[D]"] and combo_hits_seen.slice(0, 4) == [1, 2, 3, 4],
+		"the A-starter loop candidate reaches 5A>236C(2 hits)>charged 5[D] inside one combo (%s / %s)" % [str(moves), str(combo_hits_seen)])
+	# 票据 03 起行为变化（已批准规则）：蓄力 380 击飞延长滞空 + M 稍晚等待使
+	# A 起手的 5B 目押可落地为第 5 击；循环负例的本意不变——路线有界收口、
+	# 236C/5[D] 不重复进入（无 236C>5D 循环）。
 	var combo_broken := false
-	var b_hit_index := -1
-	for hit in run["hits"]:
-		if hit["move"] == "5B":
-			b_hit_index = int(hit["hits"])
 	for end in run["ends"]:
 		if end.get("reason", -1) == CombatEvent.ComboEndReason.DUMMY_RECOVERED:
 			combo_broken = true
-		if end.has("link_fail") and end.get("link_move", "") == "5B":
-			combo_broken = true
-	_check(combo_broken and (b_hit_index == -1 or b_hit_index == 1),
-		"the dummy recovers before any 5B can land in-combo: the route breaks under the A-starter time layer (no 236C>5D loop)")
+	_check(combo_broken and moves.count("236C") == 2 and moves.count("5[D]") == 1 and moves.size() <= 5,
+		"the route closes bounded under the A-starter time layer (no 236C>5D loop; %s)" % str(moves))
 
 
 # --- Solver 状态键承载弹地字段 ---

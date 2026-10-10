@@ -252,11 +252,11 @@ func _joint_j0_coverage_assertions() -> void:
 		"J0 6A 是唯一专用击飞入口（jump cancel jA/jB/jC）")
 	var five_d: MoveData = result.moves["5D"]
 	_check(five_d.charge_threshold_frames == 8 and five_d.charge_move_id == "5[D]"
-		and five_d.special_entry_link_targets == ["5B"],
-		"J0 5D 动作内蓄力→5[D]、来源限定 5B 目押（普通来源不取得）")
+		and five_d.hit_link_targets == ["5B"] and five_d.special_entry_link_targets.is_empty(),
+		"J0 5D 动作内蓄力→5[D]、命中限定 5B 目押（票据 03 起来源不限；被防/挥空不取得）")
 	var charged: MoveData = result.moves["5[D]"]
-	_check(charged.charge_only and charged.special_entry_link_targets == ["5B"],
-		"J0 5[D] charge_only 且与 5D 同款来源限定连接")
+	_check(charged.charge_only and charged.hit_link_targets == ["5B"] and charged.stop_behind_target,
+		"J0 5[D] charge_only、同款命中限定连接与身后停止声明（票据 03）")
 	for move_id in ["6D", "2D"]:
 		var move: MoveData = result.moves[move_id]
 		var exits: Array = move.air_exit_targets
@@ -343,11 +343,14 @@ func _joint_j3a_236c_5d_5b(facing: int) -> void:
 	var plan := {}
 	for i in 4:
 		plan[1 + i] = _236(i, facing, "C" if i == 3 else "")
-	plan[26] = _press("D")
+	# 连段路线票据 03 起第二段对空推离 3200px/s：点按 5D 追不上浮空木桩，
+	# 按住至蓄力提交（640px 追赶）后经命中限定连接接 5B。
+	for f in range(26, 44):
+		plan[f] = _hold("D", f, 26, 43)
 	plan[66] = _press("B")
 	var run := _run_route(plan, facing, 110, "J3a", NEAR_DX)
-	_check(run["moves"] == ["236C", "236C", "5D", "5B"],
-		"J3a 两段命中→特殊进入 D→恢复后目押 5B 四击成立 %s | 面向 %+d" % [str(run["moves"]), facing])
+	_check(run["moves"] == ["236C", "236C", "5[D]", "5B"],
+		"J3a 两段命中→特殊进入蓄力 D→恢复后目押 5B 四击成立 %s | 面向 %+d" % [str(run["moves"]), facing])
 	print("")
 
 

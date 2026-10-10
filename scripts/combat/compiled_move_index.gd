@@ -12,7 +12,7 @@ extends RefCounted
 ##     搜索顺序由此冻结在索引里。LANDING_CANCEL 缺口候选结构性死亡：
 ##     _build_edge 在任何 CombatSession 之前无条件拒绝（落地恢复首帧不可取消），
 ##     探针必然返回 null、不产生任何报告输出——索引期剔除，不付探针成本。
-## kind 用裸 int 承载（ComboSolver.EdgeKind 序：CANCEL=0 … HIT_LANDING_CANCEL=10）；
+## kind 用裸 int 承载（ComboSolver.EdgeKind 序：CANCEL=0 … HIT_LANDING_CANCEL=10、HIT_LINK=11——序数是缓存快照契约，新 kind 只追加尾部）；
 ## 该序已被结果缓存快照冻结，KIND_ORDER/GAP_FIELD_BY_KIND 与
 ## ComboSolver._GAP_CONFIG_FIELDS 的一致性由 test_solver_index_equiv.gd 断言。
 ## 不可变约定：build 之后不再写入；缺口探针的接种只发生在 staged 副本上
@@ -45,6 +45,7 @@ const GAP_FIELD_BY_KIND := {
 	8: "special_entry_link_targets",
 	9: "air_exit_targets",
 	10: "hit_landing_cancel_targets",
+	11: "hit_link_targets",
 }
 ## 链式/必杀/命中落地缺口的窗口垫值（镜像 _gap_injected_move 的初值注入）。
 const GAP_WINDOW_PADS := {
@@ -169,6 +170,7 @@ func _build_configured_edges(table: Dictionary) -> void:
 			[8, from_move.special_entry_link_targets],
 			[9, from_move.air_exit_targets],
 			[10, from_move.hit_landing_cancel_targets],
+			[11, from_move.hit_link_targets],
 		]
 		for pair in kinds_and_targets:
 			var kind: int = pair[0]

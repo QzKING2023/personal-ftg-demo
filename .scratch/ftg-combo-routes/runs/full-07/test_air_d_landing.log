@@ -1,0 +1,100 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PASS  shared manifest loads with the air D series present
+PASS  j5D exists in the shared table
+PASS  j5D is an air D move with starter grade D
+PASS  j5D frame data matches the tuning table (6/4/16, dmg 16)
+PASS  j5D declares planned motion
+PASS  j5D declares blockable result fields
+PASS  j6D exists in the shared table
+PASS  j6D is an air D move with starter grade D
+PASS  j6D frame data matches the tuning table (7/4/18, dmg 17)
+PASS  j6D declares planned motion
+PASS  j6D declares blockable result fields
+PASS  j2D exists in the shared table
+PASS  j2D is an air D move with starter grade D
+PASS  j2D frame data matches the tuning table (8/4/20, dmg 18)
+PASS  j2D declares planned motion
+PASS  j2D declares blockable result fields
+PASS  legacy jD is removed from the shared table
+PASS  j5D sweeps horizontally (motion 74/0)
+PASS  j6D dives diagonally down (motion 68/26)
+PASS  j2D drops vertically (motion 0/70)
+PASS  j2D alone declares the 214C hit-landing cancel with a window
+PASS  j5D/j6D declare no hit-landing cancel
+PASS  j6D declares the post-recovery normal link to 5B
+PASS  j5D/j2D declare no normal links
+PASS  jA cancels into j5D on hit confirm
+PASS  jA cancels into j6D on hit confirm
+PASS  jA cancels into j2D on hit confirm
+PASS  jA no longer references legacy jD
+PASS  jB cancels into j5D on hit confirm
+PASS  jB cancels into j6D on hit confirm
+PASS  jB cancels into j2D on hit confirm
+PASS  jB no longer references legacy jD
+PASS  jC cancels into j5D on hit confirm
+PASS  jC cancels into j6D on hit confirm
+PASS  jC cancels into j2D on hit confirm
+PASS  jC no longer references legacy jD
+PASS  6D air exit opens into j5D
+PASS  6D air exit opens into j6D
+PASS  6D air exit opens into j2D
+PASS  2D air exit opens into j5D
+PASS  2D air exit opens into j6D
+PASS  2D air exit opens into j2D
+PASS  j2D hit-landing cancel route reads 2C > 6D > j2D > 214C (facing 1): ["2C", "6D", "j2D", "214C"]
+PASS  214C starts and the attacker lands (facing 1, land F48, 214C F57)
+PASS  landing first frame stays locked: no move starts on the landing frame (facing 1)
+PASS  214C starts on the first actionable frame after the landing lock, skipping the rest of the air landing recovery (facing 1: land F48, consume F57, expected F57)
+PASS  the exception fires while the normal air-move landing recovery is still running (facing 1: recovery left 5 at the 214C start)
+PASS  the cancel keeps one unbroken combo of four hits (facing 1)
+PASS  no combo end fires between the j2D hit and the 214C start (facing 1)
+PASS  the one-shot qualification is cleared after consumption (facing 1)
+PASS  j2D hit-landing cancel route reads 2C > 6D > j2D > 214C (facing -1): ["2C", "6D", "j2D", "214C"]
+PASS  214C starts and the attacker lands (facing -1, land F48, 214C F57)
+PASS  landing first frame stays locked: no move starts on the landing frame (facing -1)
+PASS  214C starts on the first actionable frame after the landing lock, skipping the rest of the air landing recovery (facing -1: land F48, consume F57, expected F57)
+PASS  the exception fires while the normal air-move landing recovery is still running (facing -1: recovery left 5 at the 214C start)
+PASS  the cancel keeps one unbroken combo of four hits (facing -1)
+PASS  no combo end fires between the j2D hit and the 214C start (facing -1)
+PASS  the one-shot qualification is cleared after consumption (facing -1)
+PASS  j2D registers a real hit on its last air frame (hit F48)
+PASS  the hit and the landing share the frame: hit detection settles before motion lands (hit F48, land F48)
+PASS  the truncated active window yields exactly one j2D contact
+PASS  j2D is cleared on landing: remaining active does not extend past the landing frame
+PASS  whiffed j2D never lands-cancel into 214C before the normal recovery end (214C F-1, land F48, earliest legal F54)
+PASS  the attacker still lands after the whiff (F48)
+PASS  the whiffed route ends on the landing frame as move-recovered (ends [{ "frame": 48, "reason": 2 }], land F48)
+PASS  no qualification is granted on a whiff
+PASS  j2D still hits after the pre-hit input (hits ["2C", "6D", "j2D"])
+PASS  a 214C pressed before the j2D hit never auto-fires through the exception
+PASS  the route ends unrecovered-without-consumption instead of inheriting the exception (ends [{ "frame": 57, "reason": 2 }])
+PASS  the air j2D is started and gets blocked by the standing guard (started ["j2D"])
+PASS  blocked j2D grants no landing cancel to 214C
+PASS  no combo or hit-confirm opens from the blocked contact
+PASS  the attacker lands normally after the block (F36)
+PASS  the dummy recovers before the landing cancel could fire (F57)
+PASS  the qualification dies with the combo: no 214C consumption while the combo is alive (214C F62, dummy recovered F57)
+PASS  j6D route reads 2C > 6D > j6D, then 5B after the normal landing recovery (facing 1): ["2C", "6D", "j6D", "5B"]
+PASS  5B is consumed exactly at the first actionable frame after the full normal recovery (facing 1: land F56, 5B F60, expected F60)
+PASS  the link continues the same combo (facing 1)
+PASS  no combo end before the deferred link resolves (facing 1, ends [{ "frame": 84, "reason": 3 }])
+PASS  j6D route reads 2C > 6D > j6D, then 5B after the normal landing recovery (facing -1): ["2C", "6D", "j6D", "5B"]
+PASS  5B is consumed exactly at the first actionable frame after the full normal recovery (facing -1: land F56, 5B F60, expected F60)
+PASS  the link continues the same combo (facing -1)
+PASS  no combo end before the deferred link resolves (facing -1, ends [{ "frame": 84, "reason": 3 }])
+PASS  j6D never picks up the j2D landing exception (started ["2C", "6D", "j6D"])
+PASS  j6D attacker lands (F56)
+PASS  j5D closes the route: 2C > 6D > j5D with no follow-up (hits ["2C", "6D", "j5D"])
+PASS  j5D grants no cancel, link, or landing privilege (started ["2C", "6D", "j5D"])
+PASS  the combo ends with three hits (ends [{ "frame": 60, "reason": 2 }])
+PASS  whiffed j5D still lands into the air-move landing recovery (land F52, recovery 4)
+PASS  the in-combo whiff ends the combo on the landing frame (ends [52], land F52)
+PASS  jB cancels on hit-confirm into the air D series (j6D): ["5A", "5B", "5C", "6A", "jB", "j6D"]
+PASS  the jc route with the air D follow-up stays one combo
+PASS  j5D hits a standing grounded dummy with its grounded profile (hits ["j5D"])
+PASS  j5D grounded hit applies ground hitstun (state 1)
+PASS  j6D hits a standing grounded dummy with its grounded profile (hits ["j6D"])
+PASS  j6D grounded hit applies ground hitstun (state 1)
+
+ALL AIR D LANDING TESTS PASSED

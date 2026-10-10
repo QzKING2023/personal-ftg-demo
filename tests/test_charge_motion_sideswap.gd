@@ -173,13 +173,20 @@ func _test_whiff_displacement_and_trajectory_continues() -> void:
 			startup_drift = run.player_position.x - start_x
 	_check(_approx(startup_drift, 0.0), "startup frames do not move the player (%.1f)" % startup_drift)
 	_check(_approx(run.player_position.x - start_x, -72.0, 0.01), "the whiffed 5D completes its full declared displacement (%.1f)" % (run.player_position.x - start_x))
-	# 5[D] 挥空全程 120px。
+	# 5[D] 挥空全程 640px（连段路线票据 03）。木桩移到高空避免接触（640px 突进
+	# 必然穿过默认布置的接地木桩）——本布置被左墙截断：位移至少覆盖旧的 120px
+	# 且被墙钳制在合法墙限（原墙分支，无身后早停）。
 	var charged := CombatSession.new()
-	charged.dummy_position = Vector2(60.0, GameParams.ground_stand_y())
+	charged.dummy_position = Vector2(60.0, GameParams.ground_stand_y() - 240.0)
 	start_x = charged.player_position.x
+	var whiffed_charged := true
 	for frame in range(1, 60):
-		charged.step(_d_input(frame, 1, 20))
-	_check(_approx(charged.player_position.x - start_x, -120.0, 0.01), "the whiffed 5[D] completes 120 px (%.1f)" % (charged.player_position.x - start_x))
+		for event in charged.step(_d_input(frame, 1, 20)):
+			if event.type == CombatEvent.Type.HIT:
+				whiffed_charged = false
+	_check(whiffed_charged and start_x - charged.player_position.x >= 120.0 - 0.01
+			and _approx(charged.player_position.x, GameParams.stage_left_limit(), 0.01),
+		"the whiffed 5[D] runs its declared 640 px until the wall clamp (%.1f -> %.1f)" % [start_x, charged.player_position.x])
 
 
 func _test_hit_displacement_clamps_to_origin_side_body() -> void:

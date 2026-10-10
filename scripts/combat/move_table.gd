@@ -174,6 +174,7 @@ static func _validate_move(move: MoveData, errors: Array[String]) -> void:
 				["link_targets", move.link_targets],
 				["special_entry_targets", move.special_entry_targets],
 				["special_entry_link_targets", move.special_entry_link_targets],
+				["hit_link_targets", move.hit_link_targets],
 				["air_exit_targets", move.air_exit_targets]]:
 			var field: String = pair[0]
 			var targets: Array[String] = pair[1]
@@ -221,6 +222,30 @@ static func _validate_move(move: MoveData, errors: Array[String]) -> void:
 			errors.append("[%s] %s: %s — 矛盾：没有特殊进入目标却声明了窗口（当前 %d，空列表须保持未声明 -1）" % [
 				source, id_label, window_field, window,
 			])
+	# 命中限定普通连接（连段路线票据 03，规则 2）：三类普通连接边语义不同
+	#（无条件 / 命中限定 / 来源限定），同一目标重复声明属于矛盾，整表拒绝。
+	var _link_edge_sets := [
+		["link_targets", move.link_targets],
+		["hit_link_targets", move.hit_link_targets],
+		["special_entry_link_targets", move.special_entry_link_targets],
+	]
+	for _seen_pair in range(_link_edge_sets.size()):
+		var _seen_field: String = _link_edge_sets[_seen_pair][0]
+		var _seen_targets: Array[String] = _link_edge_sets[_seen_pair][1]
+		for _target in _seen_targets:
+			for _other_pair in range(_seen_pair + 1, _link_edge_sets.size()):
+				var _other_field: String = _link_edge_sets[_other_pair][0]
+				var _other_targets: Array[String] = _link_edge_sets[_other_pair][1]
+				if _other_targets.has(_target):
+					errors.append("[%s] %s: hit_link_targets — 矛盾：普通连接目标 \"%s\" 在 %s 与 %s 中重复声明" % [
+						source, id_label, _target, _seen_field, _other_field,
+					])
+	# 身后停止声明（连段路线票据 03，规则 3/4）：只属于声明计划位移的
+	# charge_only 打击招式。
+	if move.stop_behind_target and not (move.charge_only and move.is_strike() and move.has_motion()):
+		errors.append("[%s] %s: stop_behind_target — 矛盾：身后停止只属于声明计划位移的 charge_only 打击招式" % [
+			source, id_label,
+		])
 	# 命中落地取消（票据 08，L-01）：目标与窗口成对声明；只属于空中打击招式。
 	if not move.hit_landing_cancel_targets.is_empty() and move.hit_landing_cancel_window_frames < 0:
 		errors.append("[%s] %s: hit_landing_cancel_window_frames — 矛盾：声明 %d 个命中落地取消目标却未声明窗口（当前 %d）" % [
@@ -724,6 +749,7 @@ static func _validate_cross_move(move_list: Array, errors: Array[String]) -> voi
 				["link_targets", typed.link_targets],
 				["special_entry_targets", typed.special_entry_targets],
 				["special_entry_link_targets", typed.special_entry_link_targets],
+				["hit_link_targets", typed.hit_link_targets],
 				["air_exit_targets", typed.air_exit_targets],
 				["hit_landing_cancel_targets", typed.hit_landing_cancel_targets]]:
 			var field: String = pair[0]

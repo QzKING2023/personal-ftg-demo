@@ -1,0 +1,48 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PASS  hitstop/jump-cancel depth1: final search projection identical (old DFS vs DP, 216 leaves old / 216 dp)
+PASS  hitstop/jump-cancel depth1: DP deterministic across repeats
+PASS  hitstop/jump-cancel depth1: DP search shape not larger (nodes 258<=258, leaves 216<=216)
+PASS  hitstop/jump-cancel depth2: final search projection identical (old DFS vs DP, 864 leaves old / 864 dp)
+PASS  hitstop/jump-cancel depth2: DP deterministic across repeats
+PASS  hitstop/jump-cancel depth2: DP search shape not larger (nodes 1122<=1122, leaves 864<=864)
+PASS  hitstop/jump-cancel depth3: final search projection identical (old DFS vs DP, 3591 leaves old / 3591 dp)
+PASS  hitstop/jump-cancel depth3: DP deterministic across repeats
+PASS  hitstop/jump-cancel depth3: DP search shape not larger (nodes 4713<=4713, leaves 3591<=3591)
+PASS  landing/cancel-seam: final search projection identical (old DFS vs DP, 41 leaves old / 41 dp)
+PASS  landing/cancel-seam: DP deterministic across repeats
+PASS  landing/cancel-seam: DP search shape not larger (nodes 42<=42, leaves 41<=41)
+PASS  air-exit/seam: final search projection identical (old DFS vs DP, 9 leaves old / 9 dp)
+PASS  air-exit/seam: DP deterministic across repeats
+PASS  air-exit/seam: DP search shape not larger (nodes 10<=10, leaves 9<=9)
+PASS  bounce/j214D followup: final search projection identical (old DFS vs DP, 243 leaves old / 243 dp)
+PASS  bounce/j214D followup: DP deterministic across repeats
+PASS  bounce/j214D followup: DP search shape not larger (nodes 285<=285, leaves 243<=243)
+PASS  charge/hold-after-air: final search projection identical (old DFS vs DP, 41 leaves old / 41 dp)
+PASS  charge/hold-after-air: DP deterministic across repeats
+PASS  charge/hold-after-air: DP search shape not larger (nodes 42<=42, leaves 41<=41)
+PASS  side-swap/facing-1 jump-cancel: final search projection identical (old DFS vs DP, 864 leaves old / 864 dp)
+PASS  side-swap/facing-1 jump-cancel: DP deterministic across repeats
+PASS  side-swap/facing-1 jump-cancel: DP search shape not larger (nodes 1122<=1122, leaves 864<=864)
+PASS  multisegment/jB-landing-into-236C: final search projection identical (old DFS vs DP, 41 leaves old / 41 dp)
+PASS  multisegment/jB-landing-into-236C: DP deterministic across repeats
+PASS  multisegment/jB-landing-into-236C: DP search shape not larger (nodes 42<=42, leaves 41<=41)
+PASS  air-start/cancels prologue-skip: final search projection identical (old DFS vs DP, 9 leaves old / 9 dp)
+PASS  air-start/cancels prologue-skip: DP deterministic across repeats
+PASS  air-start/cancels prologue-skip: DP search shape not larger (nodes 10<=10, leaves 9<=9)
+PASS  failure/frozen prefix break: final search projection identical (old DFS vs DP, 0 leaves old / 0 dp)
+PASS  failure/frozen prefix break: DP deterministic across repeats
+PASS  failure/frozen prefix break: DP search shape not larger (nodes 1<=1, leaves 0<=0)
+PASS  failure/over-extended depth4: final search projection identical (old DFS vs DP, 3591 leaves old / 3591 dp)
+PASS  failure/over-extended depth4: DP deterministic across repeats
+PASS  failure/over-extended depth4: DP search shape not larger (nodes 4713<=4713, leaves 3591<=3591)
+PASS  failure/proof horizon: final search projection identical (old DFS vs DP, 252 leaves old / 252 dp)
+PASS  failure/proof horizon: DP deterministic across repeats
+PASS  failure/proof horizon: DP search shape not larger (nodes 501<=501, leaves 252<=252)
+PASS  route-untouched: route-mode search projection identical with DP switch off/on
+PASS  route-untouched: route-mode leaf log identical with DP switch (1 leaves)
+PASS  route-untouched: budget-truncated leaf log identical (3 vectors executed)
+PASS  dp-accounting: proof searches keyed DP nodes (searches=24 nodes=2782 stores=2782 hits=0)
+PASS  dp-accounting: reset clears totals
+PASS  dp-accounting: single proof search books one DP context
+TOTAL failures=0

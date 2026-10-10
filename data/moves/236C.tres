@@ -38,7 +38,7 @@ target_state = 2
 hit_context = 1
 reaction = 2
 air_untech_frames = 30
-horizontal_speed_px_s = 40.0
+horizontal_speed_px_s = 3200.0
 upward_speed_px_s = 180.0
 
 [sub_resource type="Resource" id="MoveSegment_236c_seg2"]

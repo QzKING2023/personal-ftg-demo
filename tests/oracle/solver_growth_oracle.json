@@ -7,10 +7,10 @@
   ],
   "entrypoint": "solve/injected-growth-fixture/default-facings/old-path",
   "fingerprints": {
-    "1": "4093d171ed5ba8fd231f992fa271a8d7fbe18ef8b49fdc1824c6f292ccc2dfda",
-    "2": "42e5fb9fdb6e63135daa56e4ae22d626e2d1f576d8627c453b80cb45cda25cce",
-    "4": "fbe684c0379856afb307406424226d613f44816355f325bb8c93713a770ca4bb",
-    "8": "8cde53073df5203cd93905dbaf31890019f2df28c7da0cf3594e37c9c5234a4d"
+    "1": "3062df1c57e3f5ad63426ab5d6f2ec06d2da1ed7d2dd1540023cfc1e2c99305b",
+    "2": "43f7d4df6c9dae3fcdd64b0fc1a87aa211d706af2c04ecba7fc96b3f2857ff82",
+    "4": "7b7fb997b8db40c3fc1ef45a014e883565c6c4586c4153a5a6bb9caea1866d43",
+    "8": "133ae5ad899a080f4a8ab68a86d4e0f0a36ebc35fd10910a7ba7e0b2c98a95b8"
   },
   "schema": "solver-growth-oracle-v1"
 }

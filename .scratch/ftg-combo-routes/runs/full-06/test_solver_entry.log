@@ -1,0 +1,58 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+
+PASS  solve() without arguments analyzes the shared manifest
+PASS  start lines document the default ground-neutral start with empty buffer and direction history
+PASS  start lines document the neutral dummy and the fixed probe contact position
+PASS  the default run verifies right then left facing
+PASS  both facings yield mirrored results on the default table
+PASS  a note records the successful facing-mirror verification
+PASS  start lines list both verified facings
+PASS  the facings option restricts verification to the requested facing
+PASS  a single-facing run makes no mirror claim
+PASS  a single-facing run lists only its own facing
+PASS  first-move candidates enumerate the executable ground moves (standing and crouch) in stable id order (ticket 04 adds 214C; ticket 07 adds 2D and the 6D derivation; ticket 10 removes the deprecated ground 214D)
+PASS  derivative candidates spell out the direction notation and the real key
+PASS  air moves and the B+C throw never enumerate as first moves from the ground start
+PASS  air moves and the B+C throw never enumerate as first moves from the ground start
+PASS  air moves and the B+C throw never enumerate as first moves from the ground start
+PASS  air moves and the B+C throw never enumerate as first moves from the ground start
+PASS  air moves and the B+C throw never enumerate as first moves from the ground start
+PASS  air moves and the B+C throw never enumerate as first moves from the ground start
+PASS  air moves and the B+C throw never enumerate as first moves from the ground start
+PASS  every reported route starts from an executable ground move — air moves only enter via configured jump cancel
+PASS  the guide covers both facings
+PASS  each facing header maps forward/back onto the real direction keys
+PASS  the 5A → 5B → 5D route has an operation guide
+PASS  guide presses use the real action keys U/I/J at the scheduled frames
+PASS  the guide states the wait frames between presses
+PASS  a valid 236C-entry route has an operation guide with the quarter-circle fold
+PASS  the right-facing guide folds 236 into the real keys S, S+D, D
+PASS  the left-facing guide mirrors the physical direction keys for the same relative input
+PASS  an explicitly provided air start enumerates only the currently executable air moves in lexicographic order (air D series with ticket 08: j2D/j5D/j6D on J-key D notations, jC delivered with ticket 07; j214D unified bounce with ticket 09 sorts before j2D)
+PASS  start lines describe the explicitly provided air state and its probe prologue
+PASS  the jA → jB → j5D chain is not claimed from the explicit air start (ticket 08: j5D startup 6 lands its 3rd hit past the dummy's natural recovery that the old jD frame-14 hit barely beat)
+PASS  the dive chain jA → j6D is no longer claimed from the vertical-jump air start under the 12×20 scale (dive whiffs at every cancel age; recorded honestly, not a solver gap)
+PASS  the explicit air start still reports the verified jA air route hitting on frame 5
+PASS  the air-start route counts its hit and carries frame-by-frame replay inputs
+PASS  the air-start guide documents the Space prologue its route frames are measured from
+PASS  the landing seam is not claimed as valid from an explicit air start
+PASS  the exclusion reason names the recovery lock regardless of starting stance
+PASS  an air start at or beyond the airtime is refused with a locatable reason
+PASS  the refused start state produces no candidates, routes or edges
+PASS  edges are stably sorted by from → to → kind
+PASS  routes are stably sorted by their labels
+PASS  solving the same table twice yields identical reports, guide included
+PASS  running solve() leaves every observable field of a live session untouched
+PASS  the live session is still inside its 5A hit-confirmed combo, unbothered by probes
+PASS  solve() refuses the invalid manifest instead of analyzing it
+PASS  the refusal reason is exactly the shared loader's reason (the training ground shows the same)
+PASS  a refused report claims no candidates, routes or cycles
+PASS  the edited table still yields the 5A → 5B edge
+PASS  editing the shared move's startup moves the timing report (earliest hit age 7 → 5)
+PASS  the edge reason quotes the edited startup value
+PASS  the default manifest still reports the untouched baseline
+PASS  the guide's action-key map matches the training ground layout
+
+ACCEPTANCE_SOLVER_METRICS_JSON={"calls":19,"combo_cache":{"bypasses":2,"enabled":true,"entries":368,"hits":19,"misses":0},"elapsed_ms":4452.786,"profile_totals":{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"gap_enum_ms":0.0,"gap_enum_runs":0,"other_ms":4497.905,"other_runs":0,"requests":19,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":4497.905},"profiles":[{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-1","other_ms":3592.854,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":3592.854},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-2","other_ms":60.554,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":60.554},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"be98e1701bb93b23300b626c7a598b4e4e82369bd09650103c094b22687f6e54","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-3","other_ms":53.95,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":53.95},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-4","other_ms":56.323,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":56.323},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-5","other_ms":64.547,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":64.547},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-6","other_ms":55.787,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":55.787},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"3b9324738a01d3551cb4758a56d7c0c0f2b141ade40284e95fd1e0f769a7e50b","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-7","other_ms":54.807,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":54.807},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"3b9324738a01d3551cb4758a56d7c0c0f2b141ade40284e95fd1e0f769a7e50b","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-8","other_ms":55.924,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":55.924},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"3b9324738a01d3551cb4758a56d7c0c0f2b141ade40284e95fd1e0f769a7e50b","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-9","other_ms":50.365,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":50.365},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"3b9324738a01d3551cb4758a56d7c0c0f2b141ade40284e95fd1e0f769a7e50b","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-10","other_ms":53.84,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":53.84},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"a2cb802787fd06cc20f3baf4b5bd3519fc4f0899926496c5f8ff90f29e847b98","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-11","other_ms":0.163,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":0.163},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-12","other_ms":61.014,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":61.014},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-13","other_ms":64.732,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":64.732},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-14","other_ms":59.411,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":59.411},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-15","other_ms":59.759,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":59.759},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"3b9324738a01d3551cb4758a56d7c0c0f2b141ade40284e95fd1e0f769a7e50b","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-16","other_ms":54.015,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":54.015},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"72c805b3b96052c706850df627af523442126ef043d32a7cfc7ab54986a8cd45","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-17","other_ms":1.294,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":1.294},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"06e4890cefa3641facf054756ac3cc3408894db82148e566fa9871b1fa68db4d","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-18","other_ms":40.977,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":40.977},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-19","other_ms":57.589,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":57.589}],"reports":[{"calls":1,"fingerprint":"06e4890cefa3641facf054756ac3cc3408894db82148e566fa9871b1fa68db4d","keys":["solve-18"]},{"calls":5,"fingerprint":"3b9324738a01d3551cb4758a56d7c0c0f2b141ade40284e95fd1e0f769a7e50b","keys":["solve-7","solve-8","solve-9","solve-10","solve-16"]},{"calls":10,"fingerprint":"51be0a5eb427aa53cddb030d4f23a8c2d54ff9bc5633334e6f740c7eec4cc4a6","keys":["solve-1","solve-2","solve-4","solve-5","solve-6","solve-12","solve-13","solve-14","solve-15","solve-19"]},{"calls":1,"fingerprint":"72c805b3b96052c706850df627af523442126ef043d32a7cfc7ab54986a8cd45","keys":["solve-17"]},{"calls":1,"fingerprint":"a2cb802787fd06cc20f3baf4b5bd3519fc4f0899926496c5f8ff90f29e847b98","keys":["solve-11"]},{"calls":1,"fingerprint":"be98e1701bb93b23300b626c7a598b4e4e82369bd09650103c094b22687f6e54","keys":["solve-3"]}],"reuse_enabled":false,"reuse_hit_rate":0.0,"reuse_hits":0,"test":"test_solver_entry","underlying_calls":19,"unique_reports":6}
+ALL SOLVER ENTRY TESTS PASSED

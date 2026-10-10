@@ -134,6 +134,11 @@ enum StarterGrade {
 ## 开放的普通连接目标（如 236C 特殊进入的 5D → 5B）；普通来源起手的本招不取得
 ## 这些边，不构成全局反向取消。
 @export var special_entry_link_targets: Array[String] = []
+## 命中限定普通连接边（连段路线票据 03，规则 2）：本招实际 HIT 且完整恢复后
+## 开放的普通连接目标（如 5D/5[D] → 5B），不区分进入来源；被防、挥空、缺失
+## profile 不取得。与 link_targets/special_entry_link_targets 的同一目标重复
+## 声明整表拒绝；消费与失效口径与普通连接一致（地面完整恢复后的 M 等待适用）。
+@export var hit_link_targets: Array[String] = []
 ## Rekka 首段：接触（命中或被防）起第 0–N 帧派生窗口；-1 = 非 Rekka 首段。
 @export var rekka_window_frames := -1
 ## Rekka 派生目标：窗口内第一个 B / C 新按下锁定的派生招式 id（须为 rekka_only）。
@@ -160,6 +165,13 @@ enum StarterGrade {
 ## 仅由蓄力提交起手的招式：不参与单键/指令输入选择，也不得出现在任何取消、
 ## 连接或派生目标列表中（蓄力提交是唯一入口，票据 06）。
 @export var charge_only := false
+## 身后停止声明（连段路线票据 03，规则 3/4）：仅 charge_only 且声明计划位移的
+## 打击招式可声明。实际 HIT 授予穿越许可后，本招 active 位移在首次到达目标
+## 当时身后、身体横向边缘刚好分离处停止（不追随/不重启/不挪目标），当帧结束
+## 余下 active 并进入完整恢复；前进方向检查时点（到达正面贴身）身后停点在场内
+## 但距前进墙不足 CHARGE_FRONT_STOP_WALL_MARGIN_PX 时改在正面停止；停点场外
+## 沿用原墙分支。被防/挥空不套用身后早停。
+@export var stop_behind_target := false
 ## 被防结果（票据 03，D-02/D-03）：被防是独立于命中资料的接触结果，三项逐招显式
 ## 声明；未声明（哨兵）= 本招不可被防——默认禁止，不回退全局参数。投技不得声明。
 @export var block_freeze_frames := -1   ## 被防停顿：双方动作/运动冻结的物理帧数（允许 0）。
