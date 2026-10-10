@@ -65,7 +65,7 @@ func _test_crouch_hit_knockback(facing: int) -> void:
 	var session := CombatSession.new()
 	session.player_position.x = 480
 	session.player_facing = facing
-	session.dummy_position = session.player_position + Vector2(70 * facing, 0)
+	session.dummy_position = session.player_position + Vector2(30 * facing, 0)
 	var hit := false
 	var displaced_in_stun := false
 	for frame in 30:

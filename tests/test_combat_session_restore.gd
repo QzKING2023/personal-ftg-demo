@@ -39,54 +39,64 @@ func _initialize() -> void:
 
 func _test_all_sequences() -> void:
 	_check_sequence("fixed mixed (jump/guard/dummy)", _fixed_inputs(), func() -> CombatSession:
-		return _setup(70.0, 1))
+		return _setup(26.0, 1))
 	_check_sequence("236C two-segment > special-entry 5D > link 5B (facing 1)",
-		_seq_236c_entry(1), func() -> CombatSession: return _setup(70.0, 1))
+		_seq_236c_entry(1), func() -> CombatSession: return _setup(26.0, 1))
 	_check_sequence("236C two-segment > special-entry 5D > link 5B (facing -1)",
-		_seq_236c_entry(-1), func() -> CombatSession: return _setup(70.0, -1))
+		_seq_236c_entry(-1), func() -> CombatSession: return _setup(26.0, -1))
 	_check_sequence("2C > 214C > ~B extended float > 5B link",
-		_seq_rekka("B", 95), func() -> CombatSession: return _setup(48.0, 1))
+		_seq_rekka("B", 95), func() -> CombatSession: return _setup(12.0, 1))
 	_check_sequence("2C > 214C > ~C spike fall",
-		_seq_rekka("C", 75), func() -> CombatSession: return _setup(48.0, 1))
+		_seq_rekka("C", 75), func() -> CombatSession: return _setup(12.0, 1))
 	_check_sequence("214C ground > ~B knockdown (facing -1)",
-		_seq_214c_ground_b(), func() -> CombatSession: return _setup(60.0, -1))
+		_seq_214c_ground_b(), func() -> CombatSession: return _setup(26.0, -1))
 	_check_sequence("throw B+C lands", _seq_throw_in_range(false), func() -> CombatSession:
-		return _setup(48.0, 1))
+		return _setup(12.0, 1))
 	_check_sequence("throw B+C teched", _seq_throw_in_range(true), func() -> CombatSession:
-		return _setup(48.0, 1))
+		return _setup(12.0, 1))
 	_check_sequence("236C seg1 whiff > seg2 grounded > GROUND_SLIDE > slide 5D",
-		_seq_236c_slide(), func() -> CombatSession: return _setup(93.0, 1))
+		_seq_236c_slide(), func() -> CombatSession: return _setup(60.0, 1))
 	_check_sequence("5D into slide with no slide profile (HIT_MISS, injected table)",
 		_seq_236c_slide(), _setup_injected_slide_gap)
 	_check_sequence("5A > 5B chain > 5D normal source > 5B link gap (LINK_FAILED)",
-		_seq_link_fail(), func() -> CombatSession: return _setup(70.0, 1))
+		_seq_link_fail(), func() -> CombatSession: return _setup(26.0, 1))
 	_check_sequence("crouch 2C low-float sweep", _seq_low_float(), func() -> CombatSession:
-		return _setup(50.0, 1))
+		return _setup(14.0, 1))
 	_check_sequence("6A launcher > dummy air recovers", _seq_air_recover(), func() -> CombatSession:
-		return _setup(60.0, 1))
+		return _setup(26.0, 1))
 	_check_sequence("player standing guard blocks dummy 5A (+ guard rejects)",
-		_seq_block_dummy(), func() -> CombatSession: return _setup(55.0, 1))
+		_seq_block_dummy(), func() -> CombatSession: return _setup(26.0, 1))
 	_check_sequence("dummy 5A hits neutral player", _seq_player_hit(), func() -> CombatSession:
-		return _setup(55.0, 1))
+		return _setup(26.0, 1))
 	_check_sequence("player 5A/5B blocked by dummy guard (+ link gap)",
-		_seq_attack_blocked(), func() -> CombatSession: return _setup(55.0, 1))
+		_seq_attack_blocked(), func() -> CombatSession: return _setup(26.0, 1))
 	_check_sequence("throw B+C out of range", _seq_throw_far(), func() -> CombatSession:
 		return _setup(130.0, 1))
 	_check_sequence("throw delayed B..C combination wait", _seq_throw_delayed(),
-		func() -> CombatSession: return _setup(48.0, 1))
+		func() -> CombatSession: return _setup(12.0, 1))
 	_check_sequence("jump > jC > land > jump > j2D > 214C", _seq_air_route(),
-		func() -> CombatSession: return _setup(70.0, 1))
+		func() -> CombatSession: return _setup(26.0, 1))
 	_check_sequence("dash 66/44 + crouch 2B", _seq_dash_crouch(), func() -> CombatSession:
-		return _setup(70.0, 1))
+		return _setup(26.0, 1))
+	## 连段路线票据 01：R4-G 六击弹地倒地路线、再弹地链与 D 接地零水平——
+	## 弹地窗口/触地/消费与恢复边界的快照续跑等价（每帧切点差分）。
+	_check_sequence("R4-G 6A>jc.jC>j214D>5B>214C~C (facing 1)", _seq_r4g(1),
+		func() -> CombatSession: return _setup(14.0, 1))
+	_check_sequence("R4-G 6A>jc.jC>j214D>5B>214C~C (facing -1)", _seq_r4g(-1),
+		func() -> CombatSession: return _setup(14.0, -1))
+	_check_sequence("rebounce 5B>5C>6A>jc.jB>j214D>6A>jc.jC>j214D", _seq_rebounce(),
+		func() -> CombatSession: return _setup(26.0, 1))
+	_check_sequence("grounded D zero-horizontal 5D + j214D dive", _seq_d_zero(),
+		func() -> CombatSession: return _setup(40.0, 1))
 	_check_sequence("dummy attacks vs player guard + dummy guard block branch",
-		_seq_guard_mixup(), func() -> CombatSession: return _setup(70.0, 1))
+		_seq_guard_mixup(), func() -> CombatSession: return _setup(26.0, 1))
 
 
 func _test_random_seeds() -> void:
 	for seed_value in [0x5EED_2026, 7, 1234, 0xBEEF]:
 		var label := "random seed 0x%X" % seed_value
 		var inputs := _random_inputs(seed_value)
-		_check_sequence(label, inputs, func() -> CombatSession: return _setup(70.0, 1))
+		_check_sequence(label, inputs, func() -> CombatSession: return _setup(26.0, 1))
 
 
 ## 每个切分帧（0..N 含两端）× 三种恢复目标；长序列的 dirty/self 按步幅采样。
@@ -209,7 +219,7 @@ func _event_signature(event: CombatEvent) -> Dictionary:
 # ---------------------------------------------------------------------------
 
 func _test_format_contract() -> void:
-	var session := _setup(70.0, 1)
+	var session := _setup(26.0, 1)
 	session.step(FrameInput.make(0, false, "A"))
 	var snapshot := session.clone_state()
 	_check(snapshot.get("format", "") == "CombatSessionState/v1", "format: versioned clone format")
@@ -221,7 +231,7 @@ func _test_format_contract() -> void:
 
 
 func _test_rejects_bad_state() -> void:
-	var session := _setup(70.0, 1)
+	var session := _setup(26.0, 1)
 	session.step(FrameInput.make(0, false, "A"))
 	var snapshot := session.clone_state()
 
@@ -236,13 +246,13 @@ func _test_rejects_bad_state() -> void:
 	_check(not session.restore_state(bad_move), "reject: unknown move id returns false")
 
 	## 拒绝路径不得留下半恢复状态：会话仍按原历史继续。
-	var untouched := _setup(70.0, 1)
+	var untouched := _setup(26.0, 1)
 	untouched.step(FrameInput.make(0, false, "A"))
 	var bad_table := snapshot.duplicate(true)
 	var config: Dictionary = bad_table["config"]
 	config["direction_retention"] = 999
 	untouched.restore_state(bad_table)
-	var clean := _setup(70.0, 1)
+	var clean := _setup(26.0, 1)
 	clean.step(FrameInput.make(0, false, "A"))
 	untouched.step(FrameInput.new())
 	clean.step(FrameInput.new())
@@ -274,7 +284,8 @@ func _setup_injected_slide_gap() -> CombatSession:
 	five_d.hit_profiles = kept
 	table["5D"] = five_d
 	var session := CombatSession.new(table)
-	session.dummy_position = session.player_position + Vector2(93.0, 0.0)
+	## 12×20 尺度：滑行入口间距 60（段1触及外/段2触及内）。
+	session.dummy_position = session.player_position + Vector2(60.0, 0.0)
 	return session
 
 
@@ -612,26 +623,26 @@ func _random_inputs(seed_value: int) -> Array[FrameInput]:
 
 func _test_coverage_gate() -> void:
 	var cases := [
-		["fixed", _fixed_inputs(), func() -> CombatSession: return _setup(70.0, 1)],
-		["236c-entry", _seq_236c_entry(1), func() -> CombatSession: return _setup(70.0, 1)],
-		["236c-slide", _seq_236c_slide(), func() -> CombatSession: return _setup(93.0, 1)],
+		["fixed", _fixed_inputs(), func() -> CombatSession: return _setup(26.0, 1)],
+		["236c-entry", _seq_236c_entry(1), func() -> CombatSession: return _setup(26.0, 1)],
+		["236c-slide", _seq_236c_slide(), func() -> CombatSession: return _setup(60.0, 1)],
 		["slide-gap", _seq_236c_slide(), _setup_injected_slide_gap],
-		["rekka-b", _seq_rekka("B", 95), func() -> CombatSession: return _setup(48.0, 1)],
-		["rekka-c", _seq_rekka("C", 75), func() -> CombatSession: return _setup(48.0, 1)],
-		["214c-ground", _seq_214c_ground_b(), func() -> CombatSession: return _setup(60.0, -1)],
-		["throw", _seq_throw_in_range(false), func() -> CombatSession: return _setup(48.0, 1)],
-		["throw-tech", _seq_throw_in_range(true), func() -> CombatSession: return _setup(48.0, 1)],
+		["rekka-b", _seq_rekka("B", 95), func() -> CombatSession: return _setup(12.0, 1)],
+		["rekka-c", _seq_rekka("C", 75), func() -> CombatSession: return _setup(12.0, 1)],
+		["214c-ground", _seq_214c_ground_b(), func() -> CombatSession: return _setup(26.0, -1)],
+		["throw", _seq_throw_in_range(false), func() -> CombatSession: return _setup(12.0, 1)],
+		["throw-tech", _seq_throw_in_range(true), func() -> CombatSession: return _setup(12.0, 1)],
 		["throw-far", _seq_throw_far(), func() -> CombatSession: return _setup(130.0, 1)],
-		["throw-delayed", _seq_throw_delayed(), func() -> CombatSession: return _setup(48.0, 1)],
-		["air-route", _seq_air_route(), func() -> CombatSession: return _setup(70.0, 1)],
-		["dash-crouch", _seq_dash_crouch(), func() -> CombatSession: return _setup(70.0, 1)],
-		["guard-mixup", _seq_guard_mixup(), func() -> CombatSession: return _setup(70.0, 1)],
-		["link-fail", _seq_link_fail(), func() -> CombatSession: return _setup(70.0, 1)],
-		["low-float", _seq_low_float(), func() -> CombatSession: return _setup(50.0, 1)],
-		["air-recover", _seq_air_recover(), func() -> CombatSession: return _setup(60.0, 1)],
-		["block-dummy", _seq_block_dummy(), func() -> CombatSession: return _setup(55.0, 1)],
-		["player-hit", _seq_player_hit(), func() -> CombatSession: return _setup(55.0, 1)],
-		["attack-blocked", _seq_attack_blocked(), func() -> CombatSession: return _setup(55.0, 1)],
+		["throw-delayed", _seq_throw_delayed(), func() -> CombatSession: return _setup(12.0, 1)],
+		["air-route", _seq_air_route(), func() -> CombatSession: return _setup(26.0, 1)],
+		["dash-crouch", _seq_dash_crouch(), func() -> CombatSession: return _setup(26.0, 1)],
+		["guard-mixup", _seq_guard_mixup(), func() -> CombatSession: return _setup(26.0, 1)],
+		["link-fail", _seq_link_fail(), func() -> CombatSession: return _setup(26.0, 1)],
+		["low-float", _seq_low_float(), func() -> CombatSession: return _setup(14.0, 1)],
+		["air-recover", _seq_air_recover(), func() -> CombatSession: return _setup(26.0, 1)],
+		["block-dummy", _seq_block_dummy(), func() -> CombatSession: return _setup(26.0, 1)],
+		["player-hit", _seq_player_hit(), func() -> CombatSession: return _setup(26.0, 1)],
+		["attack-blocked", _seq_attack_blocked(), func() -> CombatSession: return _setup(26.0, 1)],
 	]
 	var seen := _empty_coverage()
 	for case in cases:
@@ -742,3 +753,74 @@ func _check(condition: bool, label: String) -> void:
 	else:
 		_failures += 1
 		print("FAIL  " + label)
+
+
+## 连段路线票据 01：R4-G 固定参考（与 test_ground_bounce_finish 同一 G 节奏）。
+func _r4g_key(key: String, axis := 0, down := false) -> FrameInput:
+	var input := FrameInput.new()
+	input.pressed_action_keys = [key]
+	input.held_action_keys = [key]
+	input.move_axis = axis
+	input.down_held = down
+	return input
+
+
+func _seq_r4g(facing: int) -> Array[FrameInput]:
+	var back := -facing
+	var steps := {
+		1: _r4g_key("A", facing),
+		2: FrameInput.make(facing),
+		11: FrameInput.make(0, true),
+		34: _r4g_key("C"),
+		44: FrameInput.make(0, false, "", true),
+		45: FrameInput.make(back, false, "", true),
+		46: FrameInput.make(back),
+		47: _r4g_key("D", back),
+		78: _r4g_key("B"),
+		87: FrameInput.make(0, false, "", true),
+		88: FrameInput.make(back, false, "", true),
+		89: FrameInput.make(back),
+		90: _r4g_key("C", back),
+		114: _r4g_key("C"),
+	}
+	var inputs: Array[FrameInput] = []
+	for frame in range(1, 150):
+		inputs.append(steps[frame] if steps.has(frame) else FrameInput.new())
+	return inputs
+
+
+## 再弹地链（6A 弹地追击 > jc.jC > 第二次 j214D）。
+func _seq_rebounce() -> Array[FrameInput]:
+	var steps := {
+		1: _r4g_key("B"), 16: _r4g_key("C"),
+		30: _r4g_key("A", 1), 31: FrameInput.make(1),
+		48: FrameInput.make(0, true),
+		62: _r4g_key("B"),
+		76: FrameInput.make(0, false, "", true), 77: FrameInput.make(-1, false, "", true),
+		78: FrameInput.make(-1), 79: _r4g_key("D", -1),
+		105: _r4g_key("A", 1),
+		126: FrameInput.make(0, true),
+		131: _r4g_key("C"),
+		145: FrameInput.make(0, false, "", true), 146: FrameInput.make(-1, false, "", true),
+		147: FrameInput.make(-1), 148: _r4g_key("D", -1),
+	}
+	var inputs: Array[FrameInput] = []
+	for frame in range(1, 200):
+		inputs.append(steps[frame] if steps.has(frame) else FrameInput.new())
+	return inputs
+
+
+## D 接地零水平：地面 5D 与独立跳 j214D 的对地命中（零水平 + 弹地入口）。
+func _seq_d_zero() -> Array[FrameInput]:
+	var steps := {
+		1: _r4g_key("D"),
+		2: FrameInput.make(0, true),
+		13: FrameInput.make(0, false, "", true),
+		14: FrameInput.make(-1, false, "", true),
+		15: FrameInput.make(-1),
+		16: _r4g_key("D", -1),
+	}
+	var inputs: Array[FrameInput] = []
+	for frame in range(1, 130):
+		inputs.append(steps[frame] if steps.has(frame) else FrameInput.new())
+	return inputs

@@ -122,7 +122,7 @@ func _test_crouch_and_guard_presentation(main: Node2D, player: Player, session: 
 	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
 	session.player_velocity = Vector2.ZERO
 	session.player_facing = 1
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	await physics_frame
 	var debug: Label = main.get_node("DebugLine")
 	Input.action_press("move_down")
@@ -169,7 +169,7 @@ func _test_weapon_presentation(player: Player, session: CombatSession) -> void:
 	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
 	session.player_velocity = Vector2.ZERO
 	session.player_facing = 1
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	session.dummy_velocity = Vector2.ZERO
 	await physics_frame
 	# 5C（K 键，投组合成员：配对窗口末帧起手）——出刀型。
@@ -248,7 +248,7 @@ func _test_throw_keyboard(main: Node2D, session: CombatSession) -> void:
 	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
 	session.player_velocity = Vector2.ZERO
 	session.player_facing = 1
-	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	session.dummy_velocity = Vector2.ZERO
 	await physics_frame
 	Input.action_press("attack_b")
@@ -384,7 +384,7 @@ func _test_attack_hit_and_feedback(main: Node2D, player: Player, dummy: Dummy, s
 	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
 	session.player_velocity = Vector2.ZERO
 	session.player_facing = 1
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	await physics_frame
 	var dummy_x_before := dummy.position.x
 	_check(absf(dummy.position.x - session.dummy_position.x) < 0.01, "dummy view follows the session position")
@@ -429,7 +429,7 @@ func _test_ground_combo_display(main: Node2D, session: CombatSession) -> void:
 	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
 	session.player_velocity = Vector2.ZERO
 	session.player_facing = 1
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	await physics_frame
 	var hp_before := session.dummy_hp
 	var hp_after_first := 0.0
@@ -470,7 +470,7 @@ func _test_direction_derivative_and_float(main: Node2D, session: CombatSession) 
 	session.player_velocity = Vector2.ZERO
 	session.player_facing = 1
 	## 82 px：段 1 触及 91 px 内、段 2（97 px）覆盖段 1 击退后的位置。
-	session.dummy_position = session.player_position + Vector2(82, 0)
+	session.dummy_position = session.player_position + Vector2(34, 0)
 	session.dummy_velocity = Vector2.ZERO
 	var hp_before := session.dummy_hp
 	await physics_frame
@@ -526,7 +526,7 @@ func _test_jump_cancel_air_pursuit(main: Node2D, session: CombatSession) -> void
 	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
 	session.player_velocity = Vector2.ZERO
 	session.player_facing = 1
-	session.dummy_position = session.player_position + Vector2(72, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	session.dummy_velocity = Vector2.ZERO
 	var hp_before := session.dummy_hp
 	await physics_frame
@@ -603,7 +603,7 @@ func _test_full_air_route_keyboard(main: Node2D, session: CombatSession) -> void
 	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
 	session.player_velocity = Vector2.ZERO
 	session.player_facing = 1
-	session.dummy_position = session.player_position + Vector2(52, 0)
+	session.dummy_position = session.player_position + Vector2(14, 0)
 	session.dummy_velocity = Vector2.ZERO
 	# 前面各测试已累积扣血：重置木桩血量，避免本路线中途触底钳制 0 血。
 	session.dummy_hp = GameParams.DUMMY_MAX_HP
@@ -659,20 +659,30 @@ func _test_full_air_route_keyboard(main: Node2D, session: CombatSession) -> void
 			airborne = true
 			break
 	_check(airborne and session.combo_active, "space jump-cancels the confirmed launcher into the air after pre-jump")
-	# jA → jB → jD 空中路线；状态栏显示空中姿态与逐击累计的连段计数。
+	# jA → jB → j2D 空中路线；状态栏显示空中姿态与逐击累计的连段计数。
+	# 连段路线票据 01（12×20 尺度）：j5D 水平判框（±12）在薄身下不再与
+	# 键盘节奏的下落木桩稳定重叠——收尾改为 j2D 垂直带（判定高 46＋下落扫掠，
+	# 票据 08 空中 D 系同族），路线结构不变。
 	var saw_air_posture := false
 	var route_hits := 0
 	for key in ["a", "b", "d"]:
+		if key == "d":
+			Input.action_press("move_down")
+			await physics_frame
 		Input.action_press("attack_" + key)
 		await physics_frame
 		Input.action_release("attack_" + key)
 		got_hit = false
-		for i in 15:
+		## 连段路线票据 01（12×20 尺度）：j2D 判定落在顶点后的下落段——轮询窗口
+		## 放宽到 25 帧（jA/jB 仍在前几帧命中，行为不变）。
+		for i in 25:
 			await physics_frame
 			saw_air_posture = saw_air_posture or status.text.contains("玩家 空中")
 			if session.combo_hits == 3 + route_hits + 1:
 				got_hit = true
 				break
+		if key == "d":
+			Input.action_release("move_down")
 		route_hits += 1
 		_check(got_hit, "air route key %s lands as combo hit %d" % [key.to_upper(), 3 + route_hits])
 	## 票据 08：空中收尾是 j5D（无 FINISHER 标记）——连段在取消窗关闭时结束。
@@ -682,10 +692,10 @@ func _test_full_air_route_keyboard(main: Node2D, session: CombatSession) -> void
 		if session.combo_hits == 6 and not session.combo_active:
 			combo_closed = true
 			break
-	_check(route_hits == 3 and combo_closed, "j5D closes the air route at six hits (the combo ends via the cancel-window close after the closer)")
+	_check(route_hits == 3 and combo_closed, "j2D closes the air route at six hits (the combo ends via the cancel-window close after the closer)")
 	_check(saw_air_posture, "status display shows the airborne posture during the route")
 	_check(status.text.contains("连段 6"), "status display shows the six-hit combo")
-	_check(_approx_hp(session.dummy_hp, GameParams.DUMMY_MAX_HP - 39.6), "route damage totals 39.6 through the three-layer corrections (j5D base 16, ticket 08)")
+	_check(_approx_hp(session.dummy_hp, GameParams.DUMMY_MAX_HP - 40.5), "route damage totals 40.5 through the three-layer corrections (j2D base 20, per-hit rounding observed)")
 	var settled := false
 	for i in 90:
 		await physics_frame
@@ -721,7 +731,7 @@ func _test_backward_qcb_keyboard(main: Node2D, session: CombatSession) -> void:
 	session.player_position = Vector2(GameParams.PLAYER_SPAWN_X, GameParams.ground_stand_y())
 	session.player_velocity = Vector2.ZERO
 	session.player_facing = 1
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	session.dummy_velocity = Vector2.ZERO
 	var hp_before := session.dummy_hp
 	await physics_frame

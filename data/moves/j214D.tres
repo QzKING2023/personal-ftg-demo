@@ -26,7 +26,7 @@ script = ExtResource("2_hitprofile")
 target_state = 2
 hit_context = 1
 reaction = 7
-air_untech_frames = 24
+air_untech_frames = 32
 horizontal_speed_px_s = 40.0
 upward_speed_px_s = 0.0
 
@@ -35,7 +35,7 @@ script = ExtResource("2_hitprofile")
 target_state = 2
 hit_context = 2
 reaction = 7
-air_untech_frames = 30
+air_untech_frames = 32
 horizontal_speed_px_s = 40.0
 upward_speed_px_s = 0.0
 
@@ -45,7 +45,7 @@ move_id = "j214D"
 move_kind = 1
 stance = 2
 action_key = "D"
-startup_frames = 9
+startup_frames = 1
 active_frames = 4
 recovery_frames = 22
 base_damage = 20

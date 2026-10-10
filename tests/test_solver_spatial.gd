@@ -2,7 +2,7 @@ extends SceneTree
 ## Combo Solver 时序与空间证明分层（ftg-combat-foundation issue 22）：
 ## 无空间数据的路线只标记 timing-valid——固定探针接触位是几何假设，不构成
 ## 空间证明；调用方提供空间数据（SolverOptions.spatial）后，空间探针在地面、
-## 左右镜像的 48/64/80 px 三组身体中心水平距离上逐条复验 timing-valid 路线并
+## 左右镜像的 12/24/44 px 三组身体中心水平距离上逐条复验（连段路线票据 01 起 12×20 尺度） timing-valid 路线并
 ## 附 spatial-valid；报告明确不搜索走位、中立、墙角、推挤、跨身或屏幕边界；
 ## 空间失败点名具体站位与碰撞条件，配置缺口与时序失败不作空间失败上报。
 ## 运行：godot --headless --path . -s res://tests/test_solver_spatial.gd
@@ -67,14 +67,14 @@ func _test_without_spatial_data_routes_are_timing_valid_only() -> void:
 		"the spatial section states that no spatial data was provided and the fixed contact is not a spatial proof")
 
 
-# --- 分层二：提供空间数据 → 48/64/80 px × 左右镜像复验 ---
+# --- 分层二：提供空间数据 → 12/24/44 px × 左右镜像复验 ---
 
 
 func _test_spatial_data_verifies_distance_grid_both_facings() -> void:
 	var report := _spatial_solve()
 	## 新基线调校命中框更短：5A（30×24、gap 2）的远缘恰为 56 px、票据 02 的 2A
-	## （30×20、gap 1）远缘 55 px——80 px 站位与身体矩形相邻（Godot 相邻矩形不算
-	## 相交），5A/2A 起手的路线在 80 px 空间失败、其余站位与其余起手（2B/2C/5B/5C/
+	## （30×20、gap 1）远缘 37 px——44 px 站位与身体矩形相邻（Godot 相邻矩形不算
+	## 相交），5A/2A 起手的路线在 44 px 空间失败、其余站位与其余起手（2B/2C/5B/5C/
 	## 5D/6A/236C…）路线空间成立。失败被诚实上报，不隐藏也不升级为时序结论。
 	for route in report.routes:
 		if not route.timing_valid:
@@ -83,13 +83,13 @@ func _test_spatial_data_verifies_distance_grid_both_facings() -> void:
 			continue
 		if route.move_ids[0] == "5A" or route.move_ids[0] == "2A":
 			_check(route.spatial_state == ComboSolver.SolverRoute.SpatialState.INVALID,
-				"with spatial data a 5A/2A-started route honestly fails the 80 px standing (tuning hitbox reach 55–56 px, boundary touch does not intersect)")
+				"with spatial data a 5A/2A-started route honestly fails the 44 px standing (tuning hitbox reach 37–38 px, boundary touch does not intersect)")
 			var joined := "；".join(route.spatial_failures)
-			_check("80 px" in joined and not ("48 px" in joined) and not ("64 px" in joined),
-				"the short-reach boundary failure names only the 80 px standing")
+			_check("44 px" in joined and not ("12 px" in joined) and not ("24 px" in joined),
+				"the short-reach boundary failure names only the 44 px standing")
 		else:
 			_check(route.spatial_state == ComboSolver.SolverRoute.SpatialState.VALID,
-				"with spatial data every other verified default route still connects at 48/64/80 px")
+				"with spatial data every other verified default route still connects at 12/24/44 px")
 	var route_lines := _route_lines(report)
 	for line in route_lines:
 		if line.begins_with("5A ") or line.begins_with("2A "):
@@ -101,7 +101,8 @@ func _test_spatial_data_verifies_distance_grid_both_facings() -> void:
 			_check("spatial-valid" in line or "timing 未成立" in line,
 				"each verified route line carries the spatial-valid mark (truncated walks keep the honest timing-failure mark)")
 	var section := "\n".join(report.spatial_lines)
-	for token in ["48", "64", "80", "+1", "-1", "spatial-valid"]:
+	## 连段路线票据 01：空间网格随 12×20 尺度改档（12/24/44 px）。
+	for token in ["12", "24", "44", "+1", "-1", "spatial-valid"]:
 		_check(token in section, "the spatial section documents the grid item %s" % token)
 	_check(report.mirror_consistent, "spatial verification stays mirror-consistent across both facings")
 
@@ -111,8 +112,8 @@ func _test_spatial_data_verifies_distance_grid_both_facings() -> void:
 
 func _test_spatial_failure_names_standing_and_collision() -> void:
 	# 5R 的命中框够到 72 px（48 + gap 4 + 宽 20）：timing 探针 70 px 能命中
-	# （timing-valid 保持），空间网格 48/64 px 成立、80 px 失败——空间失败
-	# 点名 80 px 与「命中框 × 身体矩形」碰撞条件，不改判 timing 结论。
+	# （timing-valid 保持），空间网格 12/24 px 成立、44 px 失败——空间失败
+	# 点名 44 px 与「命中框 × 身体矩形」碰撞条件，不改判 timing 结论。
 	var table := MoveData.default_table()
 	var short_reach := _injected_move("5R", "R")
 	short_reach.hitbox_size = Vector2(20, 60)
@@ -125,11 +126,11 @@ func _test_spatial_failure_names_standing_and_collision() -> void:
 	if route != null:
 		_check(route.timing_valid, "the route stays timing-valid at the fixed 70 px contact")
 		_check(route.spatial_state == ComboSolver.SolverRoute.SpatialState.INVALID,
-			"the route fails the spatial grid at 80 px while 48/64 px hold")
+			"the route fails the spatial grid at 44 px while 12/24 px hold")
 		var joined := "；".join(route.spatial_failures)
-		_check("80 px" in joined and "命中框" in joined and "身体矩形" in joined,
-			"the spatial failure names the standing (80 px) and the collision condition (hitbox vs body rect)")
-		_check(not ("48 px" in joined) and not ("64 px" in joined),
+		_check("44 px" in joined and "命中框" in joined and "身体矩形" in joined,
+			"the spatial failure names the standing (44 px) and the collision condition (hitbox vs body rect)")
+		_check(not ("12 px" in joined) and not ("24 px" in joined),
 			"the nearer standings are not reported as failures")
 		for line in _route_lines(report):
 			if line.begins_with("5A → 5R："):

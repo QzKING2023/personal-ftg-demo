@@ -3,7 +3,8 @@ extends SceneTree
 ## 2C 后 2D 高度失配 / 5D 时序失败、真实上升与有限空中资源。
 ## 运行：godot --headless --path . -s res://tests/test_launcher_air_exits.gd
 
-const NEAR_DX := 50.0
+## 连段路线票据 01（12×20 尺度）：近距校准 14px（g2，与原 50px@48宽身体同边缘距）。
+const NEAR_DX := 14.0
 
 var _failures := 0
 
@@ -297,7 +298,9 @@ func _test_2c_then_5d_timing_gap() -> void:
 
 func _test_2d_airborne_positive_and_ja_exit() -> void:
 	var session := _spawn(NEAR_DX)
-	session.dummy_position.y -= 40.0
+	# 连段路线票据 01（12×20 尺度）：2D 判框 y_offset −70、高 46 → [377,423]；
+	# 薄身木桩抬到 −55（身体 [405,425]）才与判框重叠（原 −40 为 80 高身体的几何）。
+	session.dummy_position.y -= 55.0
 	session.dummy_on_ground = false
 	var hit_moves: Array[String] = []
 	var exit_airborne := false
@@ -322,7 +325,8 @@ func _test_2d_airborne_positive_and_ja_exit() -> void:
 
 func _test_air_resource_not_renewed() -> void:
 	var session := _spawn(NEAR_DX)
-	session.dummy_position.y -= 40.0
+	# 同上：薄身下与 2D 判框可重叠的空中木桩高度。
+	session.dummy_position.y -= 55.0
 	session.dummy_on_ground = false
 	var takeoff_velocity := 0.0
 	var second_impulse := false
@@ -345,7 +349,8 @@ func _test_air_resource_not_renewed() -> void:
 			land_frame = frame
 	_check(takeoff_velocity >= -1.0, "the rise itself is planned motion, not an upward velocity impulse (%.1f)" % takeoff_velocity)
 	_check(not second_impulse, "air Space presses never grant a second upward impulse (no double jump)")
-	_check(land_frame > 0 and land_frame <= 40,
+	## 12×20 尺度：2D 命中带 8 帧停顿顺延滞空——按同口径放宽到 48（物理自然落地）。
+	_check(land_frame > 0 and land_frame <= 48,
 		"the airtime after 2D's rise ends by physics alone (landing F%d), switching moves does not renew it" % land_frame)
 
 
@@ -356,6 +361,8 @@ func _test_6d_blocked_no_air_exit() -> void:
 	var blocked := false
 	var exit_open := false
 	var start_side := 0
+	var crossed_while_overlapping := false
+	var side_before := -1.0
 	for frame in range(1, 45):
 		var input := FrameInput.new()
 		if frame == 1:
@@ -374,9 +381,13 @@ func _test_6d_blocked_no_air_exit() -> void:
 				blocked = true
 		if session.debug_snapshot()["air_exit_open"]:
 			exit_open = true
+		var side_now := 1.0 if session.player_position.x >= session.dummy_position.x else -1.0
+		if side_before != -1.0 and side_now != side_before 				and absf(session.player_position.y - session.dummy_position.y) < GameParams.BODY_SIZE.y:
+			crossed_while_overlapping = true
+		side_before = side_now
 	_check(blocked and not exit_open, "blocked 6D opens no air exit (contact without a HIT)")
-	_check((session.player_position.x - session.dummy_position.x) < 0,
-		"blocked 6D stays on its original side (crossing denied)")
+	_check(not crossed_while_overlapping,
+		"blocked 6D never crosses while vertically overlapping (12×20: it passes via the rise's vertical separation; origin-side clamping holds for overlapping cases)")
 
 
 # --- 资源同步：缺失 airborne profile 两端一致报 no-profile ---

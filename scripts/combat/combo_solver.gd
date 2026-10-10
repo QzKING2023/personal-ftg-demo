@@ -19,17 +19,21 @@ extends RefCounted
 ## 碰撞连接；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围。
 ## 空间分层（issue 22）：无空间数据时全部路线仅 timing-valid；调用方经
 ## SolverOptions.spatial 提供站位与碰撞几何后，空间探针才在地面、左右镜像的
-## 48/64/80 px 三组身体中心水平距离上逐条复验 timing-valid 路线并附
+## 12/24/44 px 三组身体中心水平距离上逐条复验 timing-valid 路线并附
 ## spatial-valid——相交判定复用真实结算，不搜索走位、中立、墙角、推挤、跨身
 ## 或屏幕边界；配置缺口与时序失败不作空间失败上报。
 
 ## 探针站位：玩家中心与木桩中心的横向间距（命中框中段，面向侧，几何接触假设）。
-const PIN_DX := 70.0
+## 连段路线票据 01（12×20 尺度）：固定接触位与空间网格按新身体重定——
+## 原 70/48-64-80 为 48 宽身体校准（贴身 48）；新贴身 12，最短地面触及
+## （2A/5A）远缘 37/38px。timing 探针 26px（g14）；空间网格 12/24/36px
+## （贴身/中距/近上限，全档在所有地面招式触及内）。
+const PIN_DX := 26.0
 ## 空间探针的固定站位网格（issue 22，规格冻结）：地面、左右镜像的三组身体
 ## 中心水平距离。48 = 身体贴身（BODY_SIZE.x）、64 = 首版投距上限、80 = 更远
 ## 一档；不搜索其余站位——走位、中立、墙角、推挤、跨身、屏幕边界都不在
 ## 证明范围。
-const SPATIAL_PROBE_DISTANCES := [48.0, 64.0, 80.0]
+const SPATIAL_PROBE_DISTANCES := [12.0, 24.0, 44.0]
 ## 动作键 → 物理键（操作说明用）：与训练场 main.gd 的 ACTION_PHYSICAL_KEYS 及
 ## project.godot 输入映射保持一致（tests/test_solver_entry.gd 断言两处不漂移）。
 const ACTION_PHYSICAL_KEYS := {"A": "U", "B": "I", "C": "K", "D": "J"}
@@ -104,7 +108,7 @@ const _PROFILE_VALUE_FIELDS := [
 	"downward_speed_px_s", "slide_frames",
 ]
 
-const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性接续——命中确认取消、链式/必杀取消（接触开放，命中或被防）、jump cancel、显式落地接缝、恢复后的普通连接（目押）与 Rekka 派生（票据 04：首段命中或被防接触起的派生窗口内首个 B/C 新按下立即锁分支 branch-locked，同帧 B+C 固定 ~C 优先、不进入普通投组合等待；派生招式 rekka_only、不参与单键/指令输入选择；派生地空命中资料按 (target_state, hit_context) 精确选择，~C 空中向下击落触地转普通倒地）：前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生与落地接缝都在真实 CombatSession 结算中检验；命中资料与运行时共享同一 (target_state, hit_context) 精确选择：探针木桩不自攻，命中的上下文恒为 normal，缺失目标状态资料的连接按 MISS_NO_PROFILE 断链上报（不回退 grounded/normal 资料），普通倒地期间不可追击；cancel_targets、chain/special_cancel_targets、link_targets、jump_cancel_targets、rekka_b/c_target 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；普通连接边与取消边以不同类型分别报告，连接成立与否由前招完全恢复当帧的缓存消费、目标剩余硬直与 active 重叠重新判定；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（空中无二段跳；木桩浮空只由真实命中按所选 profile 的受身计时与速度重建，空中追击的每次命中都应用其 airborne profile），无命中的时间不会自动续期；OTG、墙反弹与招式无敌不在本轮支持范围，表达这些能力的字段或标签由 MoveTable 整表拒绝；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、起手等级与三层累计修正、Rekka 分支锁定、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。可读路线按不超过 8 招的简单路径枚举，最多输出 16 条叶路线；达到报告上限时如实标记路线集合未完成，已输出路线仍逐帧验证；路线延迟搜索至多验证 64 个延迟向量，全部失败的路线按走得最远的失败如实上报（观测上限而非连段语义，循环证明不受此限）。空间分层：无空间数据时全部路线仅 timing-valid，固定接触位不构成空间证明；提供空间数据（SolverOptions.spatial）后另附 spatial-valid，且只在地面、左右镜像的 48/64/80 px 三组身体中心水平距离上复验，不搜索走位、中立、墙角、推挤、跨身或屏幕边界，配置缺口与时序失败不作空间失败上报。被防分层（票据 03）：链式/必杀边附「被防路径」标注——同一配置边在来源招式被木桩站防/蹲防挡下的探针中验证取消时序；被防是独立接触结果（BLOCKED 不产生命中、不入路线/循环图、不借命中确认或 jump cancel），探针中预期命中帧收到被防结果一律按 blocked 断链上报；Rekka 派生边同样附被防路径标注（首段被防也开放派生窗口），派生自身的被防结果如实入注；被防安全性（指定反击、时机、距离、版边、面向）不在静态证明范围，一律 replay-required；派生首按锁定输入手感与 ~B 交回回合的安全性也属 replay-required，静态报告不下结论。票据 05 扩展：236C 为两段判定（段 1 被防终止整招、挥空续段 2，多段命中按段逐一预测与复验），段 2 命中 grounded 目标进入击飞触地 GROUND_SLIDE（滑行状态、slide 目标资料门、slide 命中分层倍率与状态键均由真实结算承载）；实际 HIT 授予一次性特殊进入资格（SPECIAL_ENTRY 边：仅命中开放、被防不开放，资格在授予招式窗口内消费），经资格起手且实际命中的 D 取得来源限定普通连接（SPECIAL_ENTRY_LINK 边：普通来源同招不取得）；固定钉位网格（48/64/80 px）上段 1 总是先命中，不产生 slide——slide 捞起距离、段间真实可达性（段 1 挥空需 >91px）与 D 后 5B 的真实空间可行性一律 replay-required，静态报告不冒充。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。票据 06 扩展：D 系计划位移由资源声明（motion_x/y_px），active 帧按累计比例推进、命中框沿本帧轨迹做确定性扫掠覆盖（轴对齐包络，无细分采样误差），正式位置经版边与身体约束后在运动阶段提交；动作内蓄力（charge_threshold_frames）在目标声明蓄力的接缝上另验证蓄力变体边（CHARGED：按下后按住至阈值自动提交 charge_only 目标，与普通提交共用同一起手时序与换边规则）；实际 HIT 才开放本次位移对身体的目标穿越（被防/挥空/墙截断截在原侧），只有实际终点合法越过另一侧才换边，命中当帧按锁定动作方向结算攻击与击退，下一物理帧起面向按真实横向关系更新，已开始的 214/236 方向候选锁定首次相对面向不被重解释；循环状态键自票据 06 起纳入双方横向位置、动作方向、蓄力年龄与穿越许可（位移使横向几何成为真实结算量）；固定钉位网格上的蓄力边结论仍是 timing/spatial 假设下的验证——真实穿越、墙边截断、版边与双面向换边及换边后镜像继续输入一律 replay-required，静态报告不冒充空间证明。票据 07 扩展：6A 是唯一专用地面击飞入口，jump cancel 开放 jA/jB/jC（命中确认窗口内 Space 起跳、真实 pre-jump 与滞空，落地未接续即作废）；6D/2D 为对空限定地面招式——无 grounded 资料（对地一律 MISS_NO_PROFILE，不回退），计划位移使攻击者 active 帧真实离地（姿态转换非瞬移），实际 HIT 后经 AIR_EXIT 边在命中确认窗口内按空中姿态起手 jA/jB/jC（被防/挥空不开放；空中出口按键在停顿中按已离地姿态采样）；hitbox_y_offset_px 表达真实垂直判定范围（2D 高位拦截框对低浮空目标垂直不重叠即挥空）；对空限定前招的命中依赖浮空目标——AIR_EXIT 边的钉位探针经使前招实际命中的接续上下文验证（如 2C 链式进入 6D 打低浮空），固定站位 spatial-valid 不等于真实空中距离证明；出口后的滞空仍按物理回落（无二段跳、切招不续期），6D 穿越与 2D 垂直判定的真实空间结论一律 replay-required。票据 08 扩展：空中 D 系（j5D 水平收束、j6D 斜下速降、j2D 垂直带落地）入表并接通 jA/jB/jC 取消与 6D/2D 空中出口；空技声明的 link_targets 经 NORMAL_LINK 边按「落地恢复完成后首个合法帧消费」的延迟模型验证（起手帧由真实落地结算锚定，探针以尾部发现运行放行预期外命中并记录帧号——与地面普通连接同为目押语义，不借用落地首帧例外）；j2D 实际 HIT 授予的一次性 J2D_LANDING_214C 资格由 HIT_LANDING_CANCEL 边单独表达（区别于普通连接）：目标输入可在 Hitstop 中缓存（专用槽、正常帧计龄、资源声明窗口），落地首帧统一锁保持，落地事件后的首个可行动帧消费并清除资格——例外仅对声明目标开放、跳过其余空技恢复，挥空/被防/缺失 profile/命中前预存输入一律不适用（负例在运行时按规则拒绝）；j2D 落地节拍与地空目标差异、j6D 连接的真实距离与三招的视觉/碰撞对齐属 replay-required，静态钉位结论不冒充空间证明。票据 09 扩展：j214D 统一 GROUND_BOUNCE——grounded/airborne 命中都进入同一弹地状态（profile 分别声明进入运动与触地前窗口，反弹速度与追击窗口是统一流程参数、按时间/轨迹层换算），首次触地记 bounce_contact 并反弹一次、开放统一追击窗口（触地前不可追击），窗口倒数至零自然回中立、不转普通倒地也不接受 OTG；弹地目标键（GROUND_BOUNCE target_state）只有显式声明该资料的招式可命中（首轮仅 5B/6A/214C 的 LAUNCH 追击资料），j214D 自身不声明该键——第二次 j214D 对弹地目标按 MISS_NO_PROFILE 断链，不产生第二次反弹；starter grade 在首次有效 HIT 锁定并跨浮空/slide/Rekka/弹地/落地保持，三层修正按命中目标状态分层累计（弹地追击与落地普通连接各有独立每击倍率），GROUND_BOUNCE 进入时按起手等级派生一次性 bounce_followup（A=0：弹地后新命中立即作为路线终点 BOUNCE_END；B/C/D=1：成功追击消费、不随命中刷新），连段结束清除；空技延迟普通连接在弹地等待中推迟到 bounce_contact 后评估（触地后按剩余硬直目押），等待期间缓存不被独立起手窃取；循环状态键自票据 09 起纳入 bounce_contact、弹地窗口剩余与 bounce_followup（与起手等级、三层修正共同构成弹地循环的逐圈去重依据）——修正衰减使逐圈状态键必然漂移，回边以断链/截断如实上报，不设全局命中数或时长上限；弹地速度、触地节拍、A/B/C/D 起手手感与弹地追击的真实空间距离一律 replay-required，静态钉位结论不冒充。"
+const SCOPE_TEXT := "证明范围：仅覆盖招式表配置的确定性接续——命中确认取消、链式/必杀取消（接触开放，命中或被防）、jump cancel、显式落地接缝、恢复后的普通连接（目押）与 Rekka 派生（票据 04：首段命中或被防接触起的派生窗口内首个 B/C 新按下立即锁分支 branch-locked，同帧 B+C 固定 ~C 优先、不进入普通投组合等待；派生招式 rekka_only、不参与单键/指令输入选择；派生地空命中资料按 (target_state, hit_context) 精确选择，~C 空中向下击落触地转普通倒地）：前摇、等待时间、取消窗口、木桩硬直、地面/空中姿态、方向派生与落地接缝都在真实 CombatSession 结算中检验；命中资料与运行时共享同一 (target_state, hit_context) 精确选择：探针木桩不自攻，命中的上下文恒为 normal，缺失目标状态资料的连接按 MISS_NO_PROFILE 断链上报（不回退 grounded/normal 资料），普通倒地期间不可追击；cancel_targets、chain/special_cancel_targets、link_targets、jump_cancel_targets、rekka_b/c_target 与落地接续目标是运行时硬约束：时序成立但缺少配置的候选只报告为配置缺口，不宣布为合法连段；普通连接边与取消边以不同类型分别报告，连接成立与否由前招完全恢复当帧的缓存消费、目标剩余硬直与 active 重叠重新判定；不证明任意空间、中立或碰撞连接（探针把木桩钉在玩家面前，几何接触是假设）；空中段只能经配置的 jump cancel 进入，普通跳跃/中立空中起手不在证明范围；玩家滞空与木桩浮空是有限资源（空中无二段跳；木桩浮空只由真实命中按所选 profile 的受身计时与速度重建，空中追击的每次命中都应用其 airborne profile），无命中的时间不会自动续期；OTG、墙反弹与招式无敌不在本轮支持范围，表达这些能力的字段或标签由 MoveTable 整表拒绝；循环判定不设全局命中数或总时长上限，以逐圈模拟加影响未来结算的会话状态快照重现证明（快照键含双方姿态/阶段、招式帧、面向、速度、受击、连段资格、起手等级与三层累计修正、Rekka 分支锁定、缓存、方向历史、落地与 jump 标记，纯调试帧号与纯报告计数不入键）；安全上限：8 圈、每循环 2400 帧、240 帧恢复观测与 40 帧空中延迟——达到上限的观测以截断/未完成观测上报，不宣称完整证明。可读路线按不超过 8 招的简单路径枚举，最多输出 16 条叶路线；达到报告上限时如实标记路线集合未完成，已输出路线仍逐帧验证；路线延迟搜索至多验证 64 个延迟向量，全部失败的路线按走得最远的失败如实上报（观测上限而非连段语义，循环证明不受此限）。空间分层：无空间数据时全部路线仅 timing-valid，固定接触位不构成空间证明；提供空间数据（SolverOptions.spatial）后另附 spatial-valid，且只在地面、左右镜像的 12/24/44 px 三组身体中心水平距离上复验（连段路线票据 01 起 12×20 尺度），不搜索走位、中立、墙角、推挤、跨身或屏幕边界，配置缺口与时序失败不作空间失败上报。被防分层（票据 03）：链式/必杀边附「被防路径」标注——同一配置边在来源招式被木桩站防/蹲防挡下的探针中验证取消时序；被防是独立接触结果（BLOCKED 不产生命中、不入路线/循环图、不借命中确认或 jump cancel），探针中预期命中帧收到被防结果一律按 blocked 断链上报；Rekka 派生边同样附被防路径标注（首段被防也开放派生窗口），派生自身的被防结果如实入注；被防安全性（指定反击、时机、距离、版边、面向）不在静态证明范围，一律 replay-required；派生首按锁定输入手感与 ~B 交回回合的安全性也属 replay-required，静态报告不下结论。票据 05 扩展：236C 为两段判定（段 1 被防终止整招、挥空续段 2，多段命中按段逐一预测与复验），段 2 命中 grounded 目标进入击飞触地 GROUND_SLIDE（滑行状态、slide 目标资料门、slide 命中分层倍率与状态键均由真实结算承载）；实际 HIT 授予一次性特殊进入资格（SPECIAL_ENTRY 边：仅命中开放、被防不开放，资格在授予招式窗口内消费），经资格起手且实际命中的 D 取得来源限定普通连接（SPECIAL_ENTRY_LINK 边：普通来源同招不取得）；固定钉位网格（12/24/44 px）上段 1 总是先命中，不产生 slide——slide 捞起距离、段间真实可达性（段 1 挥空需 >91px）与 D 后 5B 的真实空间可行性一律 replay-required，静态报告不冒充。报告帧号与年龄按正常战斗帧计：命中后的 Hitstop 冻结物理帧不消耗窗口，回放时以空输入跳过（issue 14）。票据 06 扩展：D 系计划位移由资源声明（motion_x/y_px），active 帧按累计比例推进、命中框沿本帧轨迹做确定性扫掠覆盖（轴对齐包络，无细分采样误差），正式位置经版边与身体约束后在运动阶段提交；动作内蓄力（charge_threshold_frames）在目标声明蓄力的接缝上另验证蓄力变体边（CHARGED：按下后按住至阈值自动提交 charge_only 目标，与普通提交共用同一起手时序与换边规则）；实际 HIT 才开放本次位移对身体的目标穿越（被防/挥空/墙截断截在原侧），只有实际终点合法越过另一侧才换边，命中当帧按锁定动作方向结算攻击与击退，下一物理帧起面向按真实横向关系更新，已开始的 214/236 方向候选锁定首次相对面向不被重解释；循环状态键自票据 06 起纳入双方横向位置、动作方向、蓄力年龄与穿越许可（位移使横向几何成为真实结算量）；固定钉位网格上的蓄力边结论仍是 timing/spatial 假设下的验证——真实穿越、墙边截断、版边与双面向换边及换边后镜像继续输入一律 replay-required，静态报告不冒充空间证明。票据 07 扩展：6A 是唯一专用地面击飞入口，jump cancel 开放 jA/jB/jC（命中确认窗口内 Space 起跳、真实 pre-jump 与滞空，落地未接续即作废）；6D/2D 为对空限定地面招式——无 grounded 资料（对地一律 MISS_NO_PROFILE，不回退），计划位移使攻击者 active 帧真实离地（姿态转换非瞬移），实际 HIT 后经 AIR_EXIT 边在命中确认窗口内按空中姿态起手 jA/jB/jC（被防/挥空不开放；空中出口按键在停顿中按已离地姿态采样）；hitbox_y_offset_px 表达真实垂直判定范围（2D 高位拦截框对低浮空目标垂直不重叠即挥空）；对空限定前招的命中依赖浮空目标——AIR_EXIT 边的钉位探针经使前招实际命中的接续上下文验证（如 2C 链式进入 6D 打低浮空），固定站位 spatial-valid 不等于真实空中距离证明；出口后的滞空仍按物理回落（无二段跳、切招不续期），6D 穿越与 2D 垂直判定的真实空间结论一律 replay-required。票据 08 扩展：空中 D 系（j5D 水平收束、j6D 斜下速降、j2D 垂直带落地）入表并接通 jA/jB/jC 取消与 6D/2D 空中出口；空技声明的 link_targets 经 NORMAL_LINK 边按「落地恢复完成后首个合法帧消费」的延迟模型验证（起手帧由真实落地结算锚定，探针以尾部发现运行放行预期外命中并记录帧号——与地面普通连接同为目押语义，不借用落地首帧例外）；j2D 实际 HIT 授予的一次性 J2D_LANDING_214C 资格由 HIT_LANDING_CANCEL 边单独表达（区别于普通连接）：目标输入可在 Hitstop 中缓存（专用槽、正常帧计龄、资源声明窗口），落地首帧统一锁保持，落地事件后的首个可行动帧消费并清除资格——例外仅对声明目标开放、跳过其余空技恢复，挥空/被防/缺失 profile/命中前预存输入一律不适用（负例在运行时按规则拒绝）；j2D 落地节拍与地空目标差异、j6D 连接的真实距离与三招的视觉/碰撞对齐属 replay-required，静态钉位结论不冒充空间证明。票据 09 扩展：j214D 统一 GROUND_BOUNCE——grounded/airborne 命中都进入同一弹地状态（profile 分别声明进入运动与触地前窗口，反弹速度与追击窗口是统一流程参数、按时间/轨迹层换算），首次触地记 bounce_contact 并反弹一次、开放统一追击窗口（触地前不可追击），窗口倒数至零自然回中立、不转普通倒地也不接受 OTG；弹地目标键（GROUND_BOUNCE target_state）只有显式声明该资料的招式可命中（首轮仅 5B/6A/214C 的 LAUNCH 追击资料），j214D 自身不声明该键——第二次 j214D 对弹地目标按 MISS_NO_PROFILE 断链，不产生第二次反弹；starter grade 在首次有效 HIT 锁定并跨浮空/slide/Rekka/弹地/落地保持，三层修正按命中目标状态分层累计（弹地追击与落地普通连接各有独立每击倍率），弹地接续不再有按起手等级的一次性资格或强制终点（连段路线票据 01 撤销票据 09 B-03 的 bounce_followup/BOUNCE_END）——弹地目标上的命中按所选资料正常结算并开放后续取消/连接，再次有效命中可再次弹地，能否延长由窗口、资料、累计修正与真实时空决定；空技延迟普通连接在弹地等待中推迟到 bounce_contact 后评估（触地后按剩余硬直目押），等待期间缓存不被独立起手窃取；循环状态键自票据 09 起纳入 bounce_contact 与弹地窗口剩余（连段路线票据 01 起随资格字段撤销而不再携带 bounce_followup；与起手等级、三层修正共同构成弹地循环的逐圈去重依据）——修正衰减使逐圈状态键必然漂移，回边以断链/截断如实上报，不设全局命中数或时长上限；弹地速度、触地节拍、A/B/C/D 起手手感与弹地追击的真实空间距离一律 replay-required，静态钉位结论不冒充。"
 
 ## 接续边类型：命中确认取消 / 链式取消 / 必杀取消 / jump cancel / 显式落地接续 /
 ## 普通连接（目押）。链式与必杀按接触开放（命中或被防），命中确认、jump cancel
@@ -434,7 +438,7 @@ class SolverEdge extends RefCounted:
 class SolverRoute extends RefCounted:
 	## 空间分层三态（issue 22）：UNVERIFIED＝未提供空间数据，或时序未成立
 	## （时序失败不作空间复验，不标空间失败）；VALID＝全部验证面向 ×
-	## 48/64/80 px 站位复验成立；INVALID＝至少一组站位复验失败。
+	## 12/24/44 px 站位复验成立；INVALID＝至少一组站位复验失败。
 	enum SpatialState { UNVERIFIED, VALID, INVALID }
 
 	var move_ids: Array[String] = []
@@ -445,7 +449,7 @@ class SolverRoute extends RefCounted:
 	## timing 层结论：接续链在固定探针接触位的真实结算中逐帧成立。
 	var timing_valid := false
 	var spatial_state: SpatialState = SpatialState.UNVERIFIED
-	## INVALID 时的具体失败（每组失败站位一条，如「80 px：……」）；面向镜像
+	## INVALID 时的具体失败（每组失败站位一条，如「44 px：……」）；面向镜像
 	## 由 solve() 的签名对拍保证，失败按站位去重合并，不按面向重复罗列。
 	var spatial_failures: Array[String] = []
 	## 本路线的逐帧输入表（含方向喂入、Space 与落地帧按键），回放到全新
@@ -609,7 +613,7 @@ class SolverStartState extends RefCounted:
 
 
 ## 空间验证数据（issue 22）：调用方显式提供站位与碰撞几何后，空间探针才在
-## 固定站位网格（地面站位 × 验证面向左右镜像 × 48/64/80 px 身体中心水平距离）
+## 固定站位网格（地面站位 × 验证面向左右镜像 × 12/24/44 px 身体中心水平距离）
 ## 上逐条复验 timing-valid 路线。命中框取共享招式表的 hitbox 声明（调用方
 ## 已提供的表即命中框来源），验证面向取 SolverOptions.facings（默认左右镜像
 ## [1, -1]）；垂直轨迹首版固定为地面站位（双方站地），空中段的玩家弧线与
@@ -796,7 +800,7 @@ var _table_digest := ""
 ## 本次分析运行的验证面向（+1 右 / -1 左；探针钉位与方向喂入按它镜像）。
 var _facing := 1
 ## 本次运行的探针钉位间距：timing 探针用固定接触位 PIN_DX；空间复验逐档
-## 换入 48/64/80 px（issue 22）——钉位是探针的几何假设，空间层对它做显式复验。
+## 换入 12/24/44 px（issue 22；票据 01 起 12×20 尺度）——钉位是探针的几何假设，空间层对它做显式复验。
 var _pin_dx := PIN_DX
 ## 显式起始战斗状态（null = 默认地面中立；issue 19）。
 var _start: SolverStartState = null
@@ -1051,7 +1055,6 @@ static func _bounce_landing_values() -> Dictionary:
 			"hit_damage_scale": GameParams.BOUNCE_HIT_DAMAGE_SCALE,
 			"hit_time_scale": GameParams.BOUNCE_HIT_TIME_SCALE,
 			"hit_trajectory_scale": GameParams.BOUNCE_HIT_TRAJECTORY_SCALE,
-			"starter_followup": GameParams.STARTER_BOUNCE_FOLLOWUP,
 		},
 		"landing": {
 			"recovery_base_frames": GameParams.PLAYER_LANDING_RECOVERY_BASE_FRAMES,
@@ -1684,7 +1687,7 @@ static func solve(options: SolverOptions = null, resource_mode: Dictionary = {})
 		if opts.start != null and opts.start.stance == MoveData.Stance.AIR:
 			_count_cache_bypass()
 			return _refused_spatial(
-				"首版空间探针只验证地面站位（双方站地）的 48/64/80 px 距离网格，与显式空中起始不匹配",
+				"首版空间探针只验证地面站位（双方站地）的 12/24/44 px 距离网格，与显式空中起始不匹配",
 				"使用地面起始做空间验证（空中站位的网格不在首版范围）。")
 	var injected := not opts.move_table.is_empty()
 	var table := opts.move_table
@@ -1947,7 +1950,7 @@ static func _merge_facing_run(primary: SolverReport, run: SolverReport, facing: 
 ## 验证成立的接缝，含蓄力变体派生，与 _register_edge 的记录规则一致）与
 ## _simulate_route 逐字节复用，不引入第二套搜索。
 ## 返回只携带该路线的报告（无其他边/缺口/循环/路线）；多面向走 solve() 同一套
-## 镜像对拍与合并；提供空间数据时对该路线做 48/64/80 px 复验。语义维度
+## 镜像对拍与合并；提供空间数据时对该路线做 12/24/44 px 复验。语义维度
 ## （表、起始、面向、空间、路线 id 序）全部进请求键，走 solve() 同一结果缓存与
 ## 清扫枚举管路；单条路线模规模有界，看门狗/complete 不适用（字段被忽略）。
 static func route_report(move_ids: Array[String], options: SolverOptions = null) -> SolverReport:
@@ -1972,7 +1975,7 @@ static func route_report(move_ids: Array[String], options: SolverOptions = null)
 		if opts.start != null and opts.start.stance == MoveData.Stance.AIR:
 			_count_cache_bypass()
 			return _refused_spatial(
-				"首版空间探针只验证地面站位（双方站地）的 48/64/80 px 距离网格，与显式空中起始不匹配",
+				"首版空间探针只验证地面站位（双方站地）的 12/24/44 px 距离网格，与显式空中起始不匹配",
 				"使用地面起始做空间验证（空中站位的网格不在首版范围）。")
 	var injected := not opts.move_table.is_empty()
 	var table := opts.move_table
@@ -3201,7 +3204,7 @@ static func _route_by_label(report: SolverReport, label: String) -> SolverRoute:
 static func _no_spatial_lines() -> Array[String]:
 	return [
 		"未提供空间数据（solve() 的 SolverOptions.spatial）：全部路线仅 timing-valid——固定探针接触位 %d px 是几何假设，不构成空间证明。" % PIN_DX,
-		"提供空间数据后，空间探针在地面、左右镜像的 48/64/80 px 三组身体中心水平距离上逐条复验 timing-valid 路线并附上空间证明标记。",
+		"提供空间数据后，空间探针在地面、左右镜像的 12/24/44 px 三组身体中心水平距离上逐条复验 timing-valid 路线并附上空间证明标记。",
 	]
 
 
@@ -3215,7 +3218,7 @@ static func _spatial_report_lines(report: SolverReport, facings: Array[int], pro
 	var facing_texts: Array[String] = []
 	for facing in facings:
 		facing_texts.append("%+d" % facing)
-	lines.append("已提供空间数据：空间探针在地面站位（双方站地）、验证面向 %s（左右镜像）的身体中心水平距离 48、64、80 px 三组站位上逐条复验 timing-valid 路线——命中框与身体矩形的相交在真实 CombatSession 结算中判定（身体矩形 %s、命中框取共享招式表声明；垂直轨迹按真实结算，不作空间假设）。复验与 timing 层共用同一套空中延迟搜索：存在一组延迟使整条链接通即算该站位成立，不要求与操作说明的样本帧表逐帧相同。" % [
+	lines.append("已提供空间数据：空间探针在地面站位（双方站地）、验证面向 %s（左右镜像）的身体中心水平距离 12、24、44 px 三组站位上逐条复验 timing-valid 路线——命中框与身体矩形的相交在真实 CombatSession 结算中判定（身体矩形 %s、命中框取共享招式表声明；垂直轨迹按真实结算，不作空间假设）。复验与 timing 层共用同一套空中延迟搜索：存在一组延迟使整条链接通即算该站位成立，不要求与操作说明的样本帧表逐帧相同。" % [
 		"、".join(facing_texts), GameParams.BODY_SIZE,
 	])
 	var valid_count := 0
@@ -3237,7 +3240,7 @@ static func _spatial_report_lines(report: SolverReport, facings: Array[int], pro
 			lines.append("%s：%s" % [route.label(), "；".join(route.spatial_failures)])
 	if not report.cycles.is_empty():
 		lines.append("循环证明保持 timing-valid：循环性证明在固定接触位 %d px 上完成，空间分层只覆盖可读路线的站位网格。" % PIN_DX)
-	lines.append("操作说明的帧表按固定接触位 %d px 编排；空间分层只在 48/64/80 px 三组站位复验，不外推到其余站位。" % PIN_DX)
+	lines.append("操作说明的帧表按固定接触位 %d px 编排；空间分层只在 12/24/44 px 三组站位复验，不外推到其余站位。" % PIN_DX)
 	lines.append("此处 spatial-valid 仅指每帧钉回指定间距的静态探针；不包含真实击退累积。训练场完整命中需另行不钉位回放，不能从该标签推断。")
 	return lines
 
@@ -3289,7 +3292,7 @@ static func _refused_base(reason: String) -> SolverReport:
 
 ## 单面向一次完整分析：facing 决定探针钉位与方向喂入的镜像方向；start 为显式
 ## 起始状态（null = 默认地面中立）；sort_outputs 按稳定键排序边与路线（solve 用，
-## 旧入口 analyze 保留表序枚举）；spatial 非空时在路线产出后做 48/64/80 px
+## 旧入口 analyze 保留表序枚举）；spatial 非空时在路线产出后做 12/24/44 px
 ## 站位复验（issue 22，旧入口 analyze 不做空间分层）。
 ## 看门狗到期检查（P5）：只在安全点调用（一个路线源/一个结构循环/一条空间
 ## 复验完成之后），当前单位的工作总是完整做完——暂停点永远落在可持久化的
@@ -3372,7 +3375,7 @@ func _analyze(facing := 1, start: SolverStartState = null, sort_outputs := false
 		report.table_lines = _table_summary_lines()
 		report.start_lines = _start_state_lines()
 		if spatial != null:
-			report.start_lines.append("空间验证：已提供空间数据——地面站位 × 48/64/80 px 身体中心水平距离网格（验证面向与结果见空间分层节）")
+			report.start_lines.append("空间验证：已提供空间数据——地面站位 × 12/24/44 px 身体中心水平距离网格（验证面向与结果见空间分层节）")
 		report.first_candidates = _first_candidates()
 		report.binding_lines = _binding_variant_lines()
 		if _table_has_throw:
@@ -4548,7 +4551,7 @@ func _fill_cancel_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache
 
 
 ## 特殊进入边（票据 05，I-05）：复用取消边的逐帧验证（wait=0 试探），成功后
-## 逐等待档扫描 D 命中时的目标状态，报告有效等待范围；固定钉位网格（48/64/80 px）
+## 逐等待档扫描 D 命中时的目标状态，报告有效等待范围；固定钉位网格（12/24/44 px）
 ## 上段 1 总是先命中，不产生 GROUND_SLIDE——slide 捞起与段间真实可达性（段 1
 ## 挥空窗口 >91px）一律 replay-required，静态报告不冒充。
 func _fill_special_entry_edge(edge: SolverEdge, context: Array[ChainLink], timing_cache: Dictionary, gap_mode := false) -> void:
@@ -6423,7 +6426,7 @@ func _simulate_route(route_ids: Array[String], contexts: Dictionary, edge_kinds:
 # --- 空间分层（issue 22：timing-valid 之上的可选空间证明）---
 
 
-## 逐条复验 timing-valid 路线：换入 48/64/80 px 钉位（本面向）重跑同一套逐帧
+## 逐条复验 timing-valid 路线：换入 12/24/44 px 钉位（本面向）重跑同一套逐帧
 ## 结算——命中框与身体矩形的相交由真实 CombatSession 判定。时序未成立的路线
 ## 不作空间复验（时序失败不标作空间失败）；失败按站位记录，面向镜像由
 ## solve() 的签名对拍保证，不按面向重复罗列。
@@ -6433,7 +6436,7 @@ func _verify_routes_spatial(report: SolverReport, contexts: Dictionary, edge_kin
 
 
 ## 单条路线的空间复验（P5 抽出，_verify_routes_spatial/_analyze 空间阶段共用）：
-## 换入 48/64/80 px 钉位重跑同一套逐帧结算——相交判定由真实 CombatSession 承担
+## 换入 12/24/44 px 钉位重跑同一套逐帧结算——相交判定由真实 CombatSession 承担
 ##（不做纯几何近似）；P5 起路线叶执行的 trie 登记（scope 含 facing/pin_dx）使
 ## 同档兄弟路线只重放输入分歧后的 suffix。时序未成立的路线不作空间复验。
 func _verify_route_spatial(route: SolverRoute, contexts: Dictionary, edge_kinds: Dictionary) -> void:

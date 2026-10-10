@@ -1,0 +1,6 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+["jA"] | moves=["jA"] hits=[5] valid=true hits_count=1 inputs=1 fail= dmg=5.8
+["jA", "j6D"] | moves=["jA"] hits=[] valid=false hits_count=0 inputs=0 fail=路线在第 2 招后断开（jA → j6D 在本表无已验证接续边；补配后的候选缺口见完整报告的配置缺口节），路线在此截断 dmg=0.0
+["jA", "jB", "j5D"] | moves=["jA"] hits=[] valid=false hits_count=0 inputs=0 fail=路线在第 2 招后断开（jA → jB 在本表无已验证接续边；补配后的候选缺口见完整报告的配置缺口节），路线在此截断 dmg=0.0
+EXIT=0 

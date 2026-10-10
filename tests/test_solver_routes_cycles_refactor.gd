@@ -7,7 +7,7 @@ extends SceneTree
 ##   2) 路线叶 trie 登记（prefix/suffix memo）：开关两跑全语义指纹全等、
 ##      session_steps 不增；memo scope 含编译调度语义（compiled-scope），
 ##      兄弟路线的跨调度共享被安全阻断（本夹具 prefix_restores==0）；
-##      空间多钉位（48/64/80）复验同档只重放输入分歧后的 suffix，
+##      空间多钉位（12/24/44）复验同档只重放输入分歧后的 suffix，
 ##      spatial_failures 逐条相等。
 ##   3) complete 模式：MAX_ROUTE_REPORTS 不作语义剪枝——分支夹具上默认截断 16
 ##      条 + 注记，完整模式枚举全部叶路线（== 邻接图暴力计数）且无截断注记。

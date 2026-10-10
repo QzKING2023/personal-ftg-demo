@@ -268,10 +268,21 @@ func _test_deep_pivot_mutation() -> void:
 	if links.size() < 3:
 		_check(false, "mutation: 3-deep chain unavailable")
 		return
-	## 只腐蚀 frame > 30 的捕获（深层 pivot；浅根捕获 frame 较小不受影响）——
-	## 深层 checkpoint 计数器被腐蚀必须被叶子差分当场抓到。
+	## 只腐蚀深层 pivot 的捕获（根捕获帧最小、不受影响）——深层 checkpoint 计数器
+	## 被腐蚀必须被叶子差分当场抓到。阈值先干跑记录实际捕获帧再取根帧（12×20
+	## 尺度 + jC 4 后深 pivot 落在 18–28，旧 48×80 时代的 frame>30 不再命中）。
+	var probe_frames := []
 	ComboSolver._test_prefix_mutator = func(prefix: Dictionary) -> void:
-		if int(prefix["frame"]) > 30:
+		probe_frames.append(int(prefix["frame"]))
+	_leaf_log(links, {}, true)
+	ComboSolver._test_prefix_mutator = Callable()
+	probe_frames.sort()
+	if probe_frames.size() < 2 or probe_frames[0] == probe_frames[probe_frames.size() - 1]:
+		_check(false, "mutation: deep/shallow capture frames not distinguishable on this table")
+		return
+	var deep_threshold: int = probe_frames[0]
+	ComboSolver._test_prefix_mutator = func(prefix: Dictionary) -> void:
+		if int(prefix["frame"]) > deep_threshold:
 			prefix["verified"] = int(prefix["verified"]) + 1
 	var old_log := _leaf_log(links, {}, false)
 	var new_log := _leaf_log(links, {}, true)
@@ -282,7 +293,7 @@ func _test_deep_pivot_mutation() -> void:
 			if old_log[i] != new_log[i]:
 				caught = true
 				break
-	_check(caught, "mutation: corrupted deep pivot checkpoint (verified at frame>30) detected by per-leaf diff")
+	_check(caught, "mutation: corrupted deep pivot checkpoint (frame > root capture %d) detected by per-leaf diff" % deep_threshold)
 
 
 # ---------------------------------------------------------------------------

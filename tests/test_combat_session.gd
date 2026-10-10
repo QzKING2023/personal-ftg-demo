@@ -200,7 +200,7 @@ func _test_attack_phase_windows() -> void:
 
 func _test_hit_lands_on_first_active_frame() -> void:
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var hit_frames: Array[int] = []
 	var recovered_frames: Array[int] = []
 	for frame in range(1, 41):
@@ -219,7 +219,7 @@ func _test_hit_lands_on_first_active_frame() -> void:
 
 func _test_one_hit_per_swing() -> void:
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events := _swing(session)
 	_check(_count_events(events, CombatEvent.Type.HIT) == 1, "whole active window produces a single hit")
 	_check(_approx(session.dummy_hp, GameParams.DUMMY_MAX_HP - 5.8), "damage applied exactly once per swing")
@@ -242,7 +242,7 @@ func _test_configurable_move_data() -> void:
 	move.base_damage = 7
 	_set_probe_stun(move, 5)
 	var session := CombatSession.new({"5A": move})
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var hit_frames: Array[int] = []
 	var recovered_frames: Array[int] = []
 	var phase_after := {}
@@ -264,7 +264,7 @@ func _test_configurable_move_data() -> void:
 
 func _test_hitstun_recovery() -> void:
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	_swing_start(session)
 	for i in range(5):
 		session.step(FrameInput.new())
@@ -290,7 +290,7 @@ func _test_hitstun_recovery() -> void:
 
 func _test_knockback_applied_before_motion() -> void:
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	_swing_start(session)
 	for i in range(4):
 		session.step(FrameInput.new())
@@ -356,10 +356,10 @@ func _test_turn_keeps_direction_history() -> void:
 	# 1) 地面版：面向 +1 输入 2、3 后木桩换到左侧；候选进行中参考面向锁定 +1，
 	#    再下一帧世界右按锁定面向记 6——历史保持 236 并识别 236C。
 	var turn := CombatSession.new()
-	turn.dummy_position = turn.player_position + Vector2(70, 0)
+	turn.dummy_position = turn.player_position + Vector2(26, 0)
 	turn.step(FrameInput.make(0, false, "", true))
 	turn.step(FrameInput.make(1, false, "", true))
-	turn.dummy_position = Vector2(turn.player_position.x - 70.0, GameParams.ground_stand_y())
+	turn.dummy_position = Vector2(turn.player_position.x - 26.0, GameParams.ground_stand_y())
 	turn.step(FrameInput.new())
 	_check(turn.player_facing == -1, "facing turned toward the moved dummy before the command ends")
 	turn.step(FrameInput.make(1, false, "C"))
@@ -373,10 +373,10 @@ func _test_turn_keeps_direction_history() -> void:
 	# 1b) 负例：换边后按新面向前向（世界左）不构成候选段——折为 4，236 断链，
 	#     不以新面向重解释已开始的候选。
 	var wrong := CombatSession.new()
-	wrong.dummy_position = wrong.player_position + Vector2(70, 0)
+	wrong.dummy_position = wrong.player_position + Vector2(26, 0)
 	wrong.step(FrameInput.make(0, false, "", true))
 	wrong.step(FrameInput.make(1, false, "", true))
-	wrong.dummy_position = Vector2(wrong.player_position.x - 70.0, GameParams.ground_stand_y())
+	wrong.dummy_position = Vector2(wrong.player_position.x - 26.0, GameParams.ground_stand_y())
 	wrong.step(FrameInput.new())
 	wrong.step(FrameInput.make(-1, false, "C"))
 	_run_neutral(wrong, 4)
@@ -412,7 +412,7 @@ func _test_qcf_qcb_work_in_both_facings() -> void:
 	# （表内含 BC 投）：单键在配对窗口末帧（+3f）起手，脚本补 3 帧（票据 10：
 	# 旧地面 214D 移除后，214 后撤指令的识别主体迁移至 214C）。
 	var right_qcb := CombatSession.new()
-	right_qcb.dummy_position = right_qcb.player_position + Vector2(70, 0)
+	right_qcb.dummy_position = right_qcb.player_position + Vector2(26, 0)
 	var right_qcb_hits := _play_script(right_qcb, [
 		[0, true, ""], [-1, true, ""], [-1, false, "C"],
 		[0, false, ""], [0, false, ""], [0, false, ""],
@@ -423,7 +423,7 @@ func _test_qcf_qcb_work_in_both_facings() -> void:
 	# 左面向 236C：木桩在左，先走向木桩使面向 -1，S → S+A → A+K（世界左 = 前）。
 	# C 是投组合成员键（表内含 BC 投）：单键在配对窗口末帧（+3f）起手，脚本补 3 帧。
 	var left_qcf := CombatSession.new()
-	left_qcf.dummy_position = left_qcf.player_position - Vector2(70, 0)
+	left_qcf.dummy_position = left_qcf.player_position - Vector2(26, 0)
 	var left_qcf_hits := _play_script(left_qcf, [
 		[-1, false, ""], [-1, false, ""],
 		[0, true, ""], [-1, true, ""], [-1, false, "C"],
@@ -434,7 +434,7 @@ func _test_qcf_qcb_work_in_both_facings() -> void:
 	_check(left_qcf_hits == 2, "the mirror quarter circle connects with both 236C segments while facing left")
 	# 左面向 214C：木桩在左，S → S+D → D+K（世界右 = 后）。
 	var left_qcb := CombatSession.new()
-	left_qcb.dummy_position = left_qcb.player_position - Vector2(70, 0)
+	left_qcb.dummy_position = left_qcb.player_position - Vector2(26, 0)
 	var left_qcb_hits := _play_script(left_qcb, [
 		[-1, false, ""], [-1, false, ""],
 		[0, true, ""], [1, true, ""], [1, false, "C"],
@@ -450,7 +450,7 @@ func _test_qcf_after_walkback_both_facings() -> void:
 	# 搓 236 应被识别——序列内同一物理键不再被两种面向解释。
 	# 右面向：按 A 后退（世界左、远离木桩），再 S → S+D → D+K。
 	var right := CombatSession.new()
-	right.dummy_position = right.player_position + Vector2(70, 0)
+	right.dummy_position = right.player_position + Vector2(26, 0)
 	var right_hits := _play_script(right, [
 		[-1, false, ""], [-1, false, ""], [-1, false, ""], [-1, false, ""],
 		[0, false, ""],
@@ -462,7 +462,7 @@ func _test_qcf_after_walkback_both_facings() -> void:
 	_check(right_hits == 2, "the after-walkback 236C connects with both segments")
 	# 左面向镜像：按 D 后退（世界右、远离木桩），再 S → S+A → A+K。
 	var left := CombatSession.new()
-	left.dummy_position = left.player_position - Vector2(70, 0)
+	left.dummy_position = left.player_position - Vector2(26, 0)
 	var left_hits := _play_script(left, [
 		[1, false, ""], [1, false, ""], [1, false, ""], [1, false, ""],
 		[0, false, ""],
@@ -699,7 +699,7 @@ func _test_air_action_without_air_move_ignored() -> void:
 
 func _test_repeat_attack_after_recovery() -> void:
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events := _swing(session)
 	# 等待硬直恢复与击退滑动停止，再走位贴近木桩进行第二次攻击。
 	for i in range(60):
@@ -714,7 +714,7 @@ func _test_repeat_attack_after_recovery() -> void:
 func _test_hp_clamps_at_zero() -> void:
 	var session := CombatSession.new()
 	session.dummy_hp = 5.0
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	_swing(session)
 	_check(session.dummy_hp == 0.0, "hp clamps at zero instead of going negative")
 
@@ -724,7 +724,7 @@ func _test_mash_does_not_cancel_mid_move() -> void:
 	# 不能中途取消。收招当帧（含停顿延长的收招）缓存中的 A 立刻起手下一记独立 5A。
 	# 站位 60px：A 起手轨迹修正后的击退（120px/s）不至于把木桩推出第二记 5A 的射程。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var hits_by_end_of_first_move := 0
 	for frame in range(1, 32):
 		var events := session.step(FrameInput.make(0, false, "A"))
@@ -742,7 +742,7 @@ func _test_mash_does_not_cancel_mid_move() -> void:
 func _test_buffer_age_five_consumes_on_hit() -> void:
 	# 5A 前摇 8 帧：F1 出招、F9 命中；B 在 F4 输入，命中帧年龄恰为 5，是最后的有效年龄。
 	var session := CombatSession.new(_slow_ground_table())
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	for frame in range(1, 10):
 		session.step(FrameInput.make(0, false, _script_key({1: "A", 4: "B"}, frame)))
 	_check(session.combo_hits == 1, "5A confirms its hit on frame 9")
@@ -757,7 +757,7 @@ func _test_buffer_age_five_consumes_on_hit() -> void:
 func _test_buffer_age_six_expires_before_hit() -> void:
 	# 只把 B 提前一帧（F3 输入）：F9 时年龄已达 6，缓存先过期，命中后不能取消。
 	var session := CombatSession.new(_slow_ground_table())
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var move_ids: Array[String] = []
 	for frame in range(1, 26):
 		session.step(FrameInput.make(0, false, _script_key({1: "A", 3: "B"}, frame)))
@@ -772,7 +772,7 @@ func _test_buffer_latest_input_overwrites() -> void:
 	# 等待在停顿内到期（F4+3=F7），5A 命中（F6）后停顿 F7–F14，恢复首帧 F15
 	# 以取消消费 5B。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var move_ids: Array[String] = []
 	for frame in range(1, 17):
 		session.step(FrameInput.make(0, false, _script_key({1: "A", 3: "D", 4: "B"}, frame)))
@@ -800,7 +800,7 @@ func _test_ground_route() -> void:
 	# 5B；5B 于 F21 命中，同帧 D 链式取消起手 5D（D 不参与组合、不等待），F37 命中。
 	# 5D 不再是收尾：连段由木桩自然受身结束（F53）。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
 	var move_after_frame := {}
 	var combo_end_frames: Array[int] = []
@@ -837,7 +837,7 @@ func _test_cancel_window_last_frame() -> void:
 	# 5B 前摇穿过停顿后在 F19 命中。年龄 8 的最后有效输入帧由
 	# _test_cancel_age_counts_normal_frames 单独覆盖。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	for frame in range(1, 16):
 		session.step(FrameInput.make(0, false, _script_key({1: "A", 11: "B"}, frame)))
 	_check(session.combo_hits == 1, "5A hits on frame 6")
@@ -852,7 +852,7 @@ func _test_cancel_window_close_ends_combo() -> void:
 	# 作为普通连接候选在 5A 完全恢复当帧（F27）评估：木桩已于 F23 自然受身
 	# （连段随之结束），目标已恢复 → LINK_FAILED(TARGET_RECOVERED)。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var end_frames: Array[int] = []
 	var link_events: Array[CombatEvent] = []
 	for frame in range(1, 32):
@@ -876,7 +876,7 @@ func _test_independent_move_cannot_hit_stunned_dummy() -> void:
 	# 停顿顺延：命中 F3、停顿 F4–F11、硬直自 F12 起消耗（F41 自然受身），
 	# 停顿中按下的 A 在恢复帧 F12 缓存、F15 收招后起手第二记独立 5A。
 	var session := CombatSession.new(_fast_single_move_table())
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
 	for frame in range(1, 16):
 		events.append_array(session.step(FrameInput.make(0, false, _script_key({1: "A", 8: "A"}, frame))))
@@ -895,7 +895,7 @@ func _test_damage_floor_and_no_hit_cap() -> void:
 	# base × 0.9^(n-1)，独立舍入；命中招式序列由回放记录，期望值按同序列推导。
 	var table := _loop_table()
 	var session := CombatSession.new(table)
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
 	var hit_move_ids: Array[String] = []
 	for frame in range(1, 210):
@@ -1249,7 +1249,7 @@ func _test_launcher_puts_dummy_in_float_hitstun() -> void:
 	# 伤害 ×0.93、时间 ×0.90、轨迹 ×0.92（untech floor(36×0.90)=32、
 	# 起跳 round(560×0.92)=515 px/s → 滞空 44 帧）。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
 	var hit_frame := -1
 	## 6A：F1 持前方向、F2 按 A（优先级高于 5A）→ F2 起手，首个判定帧 F10 命中。
@@ -1291,7 +1291,7 @@ func _test_air_tech_ends_combo_before_landing() -> void:
 	# 空中已受身的木桩即使被摆回命中框内也不可追击。
 	# 停顿顺延：探针 5C 于 F3 命中、F4–F11 停顿、F22 受身（3 + 8 + floor(12×0.96)=11）。
 	var session := CombatSession.new(_float_probe_table())
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var tech_end_frames: Array[int] = []
 	var tech_recovered_events := 0
 	for frame in range(1, 24):
@@ -1307,7 +1307,7 @@ func _test_air_tech_ends_combo_before_landing() -> void:
 	_check(not session.combo_active and session.combo_hits == 1, "combo stops counting at the tech")
 	_check(tech_recovered_events == 0, "no recovery event at the tech itself")
 	# 受身后把木桩摆回玩家命中框内并挥出独立 5A：空中已受身期间不可追击。
-	session.dummy_position = session.player_position + Vector2(70, -40)
+	session.dummy_position = session.player_position + Vector2(26, -40)
 	var probe_events: Array[CombatEvent] = []
 	for frame in range(24, 32):
 		probe_events.append_array(session.step(FrameInput.make(0, false, "A" if frame == 24 else "")))
@@ -1332,7 +1332,7 @@ func _test_float_landing_keeps_remaining_hitstun() -> void:
 	var float_hitstun := 57
 	var hit_frame := 3
 	var session := CombatSession.new(_long_float_table(60))
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var convert_frame := -1
 	var convert_hitstun := -1
 	var last_air_frame := -1
@@ -1360,14 +1360,14 @@ func _test_independent_move_cannot_hit_floating_dummy() -> void:
 	# 236C（2/3/6 于 F1–F3、C@F4、F7 起手）两段命中：段 1 F13、段 2 F26（独立
 	# 起手的多段招式在段 1 实际命中后按本招延续继续命中，票据 05）。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var hit_frames: Array[int] = []
 	var feed := {1: [0, true], 2: [1, true], 3: [1, false], 4: [0, false, "C"], 33: [0, false, "A"], 70: [0, false, "A"]}
 	for frame in range(1, 85):
 		var spec: Array = feed.get(frame, [0, false])
 		if frame == 33:
 			# 把浮空中的木桩摆回 5A 命中框内（离地 20px、仍在浮空受击）。
-			session.dummy_position = session.player_position + Vector2(70, -20)
+			session.dummy_position = session.player_position + Vector2(26, -20)
 		var frame_events := session.step(FrameInput.make(int(spec[0]), false, spec[2] if spec.size() > 2 else "", bool(spec[1])))
 		if _count_events(frame_events, CombatEvent.Type.HIT) > 0:
 			hit_frames.append(frame)
@@ -1384,7 +1384,7 @@ func _test_5A_cancels_into_236C_relaunch() -> void:
 	# 段 2 按独立空中资料延长浮空（A 起手累计层：段 1 时间 0.72×0.94=0.677 →
 	# floor(32×0.677)=21）。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(72, 0)
+	session.dummy_position = session.player_position + Vector2(36, 0)
 	var hit_frames: Array[int] = []
 	var hit_segments: Array[int] = []
 	for frame in range(1, 40):
@@ -1421,7 +1421,7 @@ func _test_5B_late_214c_starts_independently() -> void:
 	# 自然受身，命中按新连段首击结算（首段 GROUND_HITSTUN 14，D 起手
 	# floor(14×0.96)=13 帧）。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var hit_frames: Array[int] = []
 	var combo_end_frames: Array[int] = []
 	var recovered_events := 0
@@ -1471,7 +1471,7 @@ func _test_jump_cancel_requires_hit_config_and_window() -> void:
 	_check(not whiff.player_on_ground, "space works again as a normal jump after the whiffed move recovers")
 
 	var plain := CombatSession.new()
-	plain.dummy_position = plain.player_position + Vector2(70, 0)
+	plain.dummy_position = plain.player_position + Vector2(26, 0)
 	var unconfigured_state_ok := false
 	for frame in range(1, 10):
 		plain.step(FrameInput.make(0, frame == 7 or frame == 8, "A" if frame == 1 else ""))
@@ -1481,7 +1481,7 @@ func _test_jump_cancel_requires_hit_config_and_window() -> void:
 	_check(plain.combo_hits == 1 and plain.combo_active, "space on an unconfigured move leaves the combo state untouched")
 
 	var late := CombatSession.new()
-	late.dummy_position = late.player_position + Vector2(72, 0)
+	late.dummy_position = late.player_position + Vector2(36, 0)
 	var end_frames: Array[int] = []
 	## 6A（F1 前方向、F2 A）于 F10 命中、停顿 F11–F18；正常年龄 9（物理 F27）关窗，
 	## F28 的 Space 已在窗外。
@@ -1501,7 +1501,7 @@ func _test_jump_cancel_6A_into_jA_pursuit() -> void:
 	# 木桩滞空，木桩仍在原始浮空抛物线上落地。C 起手：6A round0.1(16×0.93)=14.9、
 	# jA 第二击 0.93×0.90=0.837 → 6.7。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(72, 0)
+	session.dummy_position = session.player_position + Vector2(36, 0)
 	var hit_frames: Array[int] = []
 	var land_frame := -1
 	var airborne_seen := false
@@ -1544,7 +1544,7 @@ func _test_jump_cancel_5C_into_jA_pursuit() -> void:
 	# Space 不产生 jump cancel、不进入准备，jA 追击不成立；连段保持到 5C 完全
 	# 收招（普通地面命中不因取消窗口关闭提前结束，5C 声明了普通连接边）。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var hit_frames: Array[int] = []
 	var end_frames: Array[int] = []
 	var end_reasons: Array[int] = []
@@ -1573,7 +1573,7 @@ func _test_space_does_not_touch_action_buffer() -> void:
 	# 也不覆盖动作键（停顿内 jump 独立缓存属跳跃 issue）；B 在停顿中照常进缓存，
 	# 恢复首帧（F15）消费取消进 5B。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	for frame in range(1, 31):
 		var key := ""
 		if frame == 1:
@@ -1594,7 +1594,7 @@ func _test_no_double_jump_after_jump_cancel() -> void:
 	# 6A（F1 前方向、F2 A）于 F10 命中后的停顿（F11–F18）后 F19（正常年龄 1，
 	# 窗口内）请求被接受：F19–F22 准备、F23 离地、F61 落地。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(72, 0)
+	session.dummy_position = session.player_position + Vector2(36, 0)
 	var jump_cancel_frame := -1
 	var airborne_seen := false
 	var land_frame := -1
@@ -1840,7 +1840,7 @@ func _test_hitstop_jump_slot_lifetime_seam() -> void:
 	# 消费产生 jump cancel：F31–F34 起跳准备、F35 离地。对照（状态限制）：收招把
 	# 消费推迟到 F34 时年龄 5 仍可消费；推迟到 F35 时年龄 6 在消费前先过期。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var slot_ages: Array[int] = []
 	var takeoff_frame := -1
 	for frame in range(1, 43):
@@ -1861,7 +1861,7 @@ func _test_hitstop_jump_slot_lifetime_seam() -> void:
 	## S 的收招被自身命中停顿顺延 8 个物理帧：总 12 帧于 F34 收招（年龄 5），
 	## 总 13 帧于 F35 收招（此时冻结槽已到年龄 6）。
 	var five := CombatSession.new(_age_boundary_table(12))
-	five.dummy_position = five.player_position + Vector2(70, 0)
+	five.dummy_position = five.player_position + Vector2(26, 0)
 	var five_takeoff := -1
 	for frame in range(1, 45):
 		var input := FrameInput.make(0, frame == 23)
@@ -1873,7 +1873,7 @@ func _test_hitstop_jump_slot_lifetime_seam() -> void:
 	_check(five_takeoff == 38, "age 5 is still consumable: the blocked slot fires when the move ends (prep F34-F37, takeoff F38)")
 
 	var six := CombatSession.new(_age_boundary_table(13))
-	six.dummy_position = six.player_position + Vector2(70, 0)
+	six.dummy_position = six.player_position + Vector2(26, 0)
 	var six_takeoff := -1
 	for frame in range(1, 50):
 		var input := FrameInput.make(0, frame == 23 or frame == 42)
@@ -1918,7 +1918,7 @@ func _test_jump_and_action_same_frame_competition() -> void:
 	# 同帧按下 → 只启动 5A。每组后续均重查新状态，每帧最多启动一个。
 	# 1) jump@F23、A@F24：较新的攻击优先，跳跃槽幸存。
 	var first := CombatSession.new(_competition_table())
-	first.dummy_position = first.player_position + Vector2(70, 0)
+	first.dummy_position = first.player_position + Vector2(26, 0)
 	var first_takeoff := -1
 	for frame in range(1, 42):
 		var input := FrameInput.make(0, frame == 23, "A" if frame == 24 else "")
@@ -1934,7 +1934,7 @@ func _test_jump_and_action_same_frame_competition() -> void:
 
 	# 2) A@F23、jump@F24：较新的 jump 优先，A 槽保留但不可取消准备。
 	var second := CombatSession.new(_competition_table())
-	second.dummy_position = second.player_position + Vector2(70, 0)
+	second.dummy_position = second.player_position + Vector2(26, 0)
 	var f_ever_started := false
 	var second_takeoff := -1
 	for frame in range(1, 42):
@@ -1954,7 +1954,7 @@ func _test_jump_and_action_same_frame_competition() -> void:
 
 	# 3) jump 与 A 同帧 F24：攻击优先。
 	var third := CombatSession.new(_competition_table())
-	third.dummy_position = third.player_position + Vector2(70, 0)
+	third.dummy_position = third.player_position + Vector2(26, 0)
 	var third_takeoff := -1
 	for frame in range(1, 42):
 		var input := FrameInput.make(0, frame == 24, "A" if frame == 24 else "")
@@ -1975,7 +1975,7 @@ func _test_cached_jump_direction_seam() -> void:
 	# 面向变化都不改写）。对照：原始 8 请求在 pre-jump 内仍可按当前输入改成斜跳，
 	# 且不重置准备计时。左面向镜像：世界左+Space 为前跳 9，恢复后按世界右仍向左起跳。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var slot_dir_at_f26 := -1
 	var takeoff_vx := 0.0
 	for frame in range(1, 40):
@@ -1998,7 +1998,7 @@ func _test_cached_jump_direction_seam() -> void:
 	_check(takeoff_vx > 150.0, "holding reverse after the freeze never rewrites the request: the takeoff still moves rightward")
 
 	var vertical := CombatSession.new()
-	vertical.dummy_position = vertical.player_position + Vector2(70, 0)
+	vertical.dummy_position = vertical.player_position + Vector2(26, 0)
 	var vertical_vx := 0.0
 	for frame in range(1, 40):
 		var axis := 1 if frame == 13 or frame >= 31 else 0
@@ -2009,7 +2009,7 @@ func _test_cached_jump_direction_seam() -> void:
 	_check(vertical_vx > 150.0, "an original vertical request can still turn diagonal inside pre-jump (takeoff stays on frame 35, prep timer untouched)")
 
 	var mirror := CombatSession.new()
-	mirror.dummy_position = mirror.player_position + Vector2(-70, 0)
+	mirror.dummy_position = mirror.player_position + Vector2(-26, 0)
 	var mirror_vx := 0.0
 	for frame in range(1, 40):
 		var axis := -1 if frame == 23 else (-1 if frame == 13 else (1 if frame >= 31 else 0))
@@ -2031,7 +2031,7 @@ func _test_jump_cancel_landing_without_pursuit_ends_combo() -> void:
 	var table := MoveData.default_table()
 	MoveData.profile_for(table["6A"], HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL).air_untech_frames = 67
 	var session := CombatSession.new(table)
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var end_frames: Array[int] = []
 	var end_reasons: Array[int] = []
 	var dummy_state_at_end := CombatSession.DummyState.NEUTRAL
@@ -2054,7 +2054,7 @@ func _test_neutral_jump_jA_cannot_pursue() -> void:
 	# 命中框也打不中。6A（F1 前方向、F2 A）于 F10 命中（C 起手受身 floor(36×0.90)=32，
 	# F50 受身）、6A 于 F43 收招、F45 Space 进入准备（F49 离地）、jA F51 起手。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var hit_frames: Array[int] = []
 	for frame in range(1, 62):
 		var key := ""
@@ -2064,7 +2064,7 @@ func _test_neutral_jump_jA_cannot_pursue() -> void:
 			key = "A"
 		if frame == 50:
 			# 木桩在受身边界附近：摆进 jA 命中框并停住，验证资格而非几何挡住追击。
-			session.dummy_position = session.player_position + Vector2(70, -15)
+			session.dummy_position = session.player_position + Vector2(26, -15)
 			session.dummy_velocity = Vector2.ZERO
 		var events := session.step(FrameInput.make(1 if frame == 1 else 0, frame == 45, key))
 		if _count_events(events, CombatEvent.Type.HIT) > 0:
@@ -2087,7 +2087,7 @@ func _test_full_air_route_5A_5B_6A_jA_jB_j5D() -> void:
 	# 浮空受身前刷新）；B@F70（停顿内）→ F78 消费 → jB F82 命中；D@F83 → F91
 	# 消费 → j5D F97 命中收束。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(64, 0)
+	session.dummy_position = session.player_position + Vector2(28, 0)
 	var hit_frames: Array[int] = []
 	var move_ids: Array[String] = []
 	var end_frames: Array[int] = []
@@ -2118,7 +2118,7 @@ func _test_full_air_route_5A_5B_6A_jA_jB_j5D() -> void:
 
 func _test_same_frame_hit_landing_and_landing_followup() -> void:
 	var session := CombatSession.new(_seam_table())
-	session.dummy_position = session.player_position + Vector2(52, 0)
+	session.dummy_position = session.player_position + Vector2(16, 0)
 	var hit_frames: Array[int] = []
 	var move_ids: Array[String] = []
 	var end_frames: Array[int] = []
@@ -2147,7 +2147,7 @@ func _test_same_frame_hit_landing_and_landing_followup() -> void:
 			key = "D"
 		var events := session.step(FrameInput.make(axis, frame == 32, key, down))
 		# 木桩横向钉位（与 Solver 探针同一几何假设）：路线帧编排不依赖击退漂移。
-		session.dummy_position.x = session.player_position.x + 64.0 * session.player_facing
+		session.dummy_position.x = session.player_position.x + 26.0 * session.player_facing
 		move_ids.append(session.player_move_id)
 		if _count_events(events, CombatEvent.Type.HIT) > 0:
 			hit_frames.append(frame)
@@ -2185,7 +2185,7 @@ func _test_landing_seam_only_opens_on_the_landing_frame() -> void:
 	# 5D 判定窗口对上的是空中目标（5D 无 airborne 资料），精确匹配不回退，
 	# 连段命中数不再增长。
 	var session := CombatSession.new(_seam_table())
-	session.dummy_position = session.player_position + Vector2(52, 0)
+	session.dummy_position = session.player_position + Vector2(16, 0)
 	var hit_frames: Array[int] = []
 	var move_ids: Array[String] = []
 	var end_frames: Array[int] = []
@@ -2211,7 +2211,7 @@ func _test_landing_seam_only_opens_on_the_landing_frame() -> void:
 			key = "D"
 		var events := session.step(FrameInput.make(axis, frame == 32, key, down))
 		# 木桩横向钉位（与 Solver 探针同一几何假设）：路线帧编排不依赖击退漂移。
-		session.dummy_position.x = session.player_position.x + 64.0 * session.player_facing
+		session.dummy_position.x = session.player_position.x + 26.0 * session.player_facing
 		move_ids.append(session.player_move_id)
 		if _count_events(events, CombatEvent.Type.HIT) > 0:
 			hit_frames.append(frame)
@@ -2241,12 +2241,15 @@ func _test_landing_does_not_grant_normal_cancels() -> void:
 	var table := MoveData.default_table()
 	# 票据 08 起 jA 配置了到空中 D 系的取消边；本测试的命题是「未配置接续的
 	# 空技落地不授予取消」——隔离注入表清空 jA 的取消目标，保持原前提。
+	# 连段路线票据 01（12×20 尺度）：jA 判框加高，薄身下仍与浮空边界木桩重叠
+	#（命题是受身时序边界，不是几何）。
 	(table["jA"] as MoveData).cancel_targets = [] as Array[String]
+	(table["jA"] as MoveData).hitbox_size = Vector2((table["jA"] as MoveData).hitbox_size.x, 120.0)
 	var profile := MoveData.profile_for(table["6A"], HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)
 	profile.air_untech_frames = 40
 	profile.upward_speed_px_s = 622.0
 	var session := CombatSession.new(table)
-	session.dummy_position = session.player_position + Vector2(64, 0)
+	session.dummy_position = session.player_position + Vector2(28, 0)
 	var hit_frames: Array[int] = []
 	var move_ids: Array[String] = []
 	var end_frames: Array[int] = []
@@ -2312,7 +2315,7 @@ func _test_air_tech_breaks_combo_before_late_pursuit() -> void:
 	launcher.hit_profiles = [profile]
 	launcher.jump_cancel_targets = ["jA"] as Array[String]
 	var session := CombatSession.new(base)
-	session.dummy_position = session.player_position + Vector2(64, 0)
+	session.dummy_position = session.player_position + Vector2(28, 0)
 	var hit_frames: Array[int] = []
 	var end_frames: Array[int] = []
 	var end_reasons: Array[int] = []
@@ -2333,7 +2336,7 @@ func _test_air_tech_breaks_combo_before_late_pursuit() -> void:
 			key = "A"
 		var events := session.step(FrameInput.make(axis, frame == 32, key, down))
 		# 木桩横向钉位（与 Solver 探针同一几何假设）：路线帧编排不依赖击退漂移。
-		session.dummy_position.x = session.player_position.x + 64.0 * session.player_facing
+		session.dummy_position.x = session.player_position.x + 26.0 * session.player_facing
 		if _count_events(events, CombatEvent.Type.HIT) > 0:
 			hit_frames.append(frame)
 		for event in events:
@@ -2363,7 +2366,7 @@ func _test_hitstop_freezes_eight_physics_frames_after_hit() -> void:
 	# 自然受身计时全部暂停，物理帧号照常递增；CombatEvent 标出停顿边界（命中帧开始、
 	# 恢复首个正常帧结束），恢复帧起正常结算继续推进。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var hit_frame := -1
 	var stop_started_frames: Array[int] = []
 	var stop_ended_frames: Array[int] = []
@@ -2393,7 +2396,7 @@ func _test_hitstop_freezes_eight_physics_frames_after_hit() -> void:
 	_check(stop_lefts == [8, 7, 6, 5, 4, 3, 2, 1, 0, 0], "hitstop countdown is observable frame by frame (8 frozen frames after the hit; 0 again on the recovery frame)")
 	# 冻结帧（7–14）双方完全冻结：用独立重放比较木桩的位置/速度/硬直/离地状态。
 	var replay := CombatSession.new()
-	replay.dummy_position = replay.player_position + Vector2(70, 0)
+	replay.dummy_position = replay.player_position + Vector2(26, 0)
 	var replay_states: Array[Dictionary] = []
 	var player_states: Array[Dictionary] = []
 	for frame in range(1, 15):
@@ -2430,7 +2433,7 @@ func _test_hitstop_records_input_and_pauses_ages() -> void:
 	# 5A 于 F6 命中，F7–F14 停顿：停顿中 B 覆盖旧 D 缓存、年龄保持 0，
 	# F15（恢复首个正常帧）消费 5B；方向窗口不被 8 个停顿帧消耗（C@F39 识别 214C）。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var ages_during_stop: Array[int] = []
 	var buffered_during_stop: Array[String] = []
 	var frozen_move_stable := true
@@ -2461,7 +2464,7 @@ func _test_hitstop_records_input_and_pauses_ages() -> void:
 	# 拥有恢复后完整的 0–5 六个正常帧——F20（年龄 5）仍在缓存，F21（年龄 6）过期。
 	# D 不是 5A 的取消目标，5A 又未收招，缓存的 5D 始终只记录不消费。
 	var held := CombatSession.new()
-	held.dummy_position = held.player_position + Vector2(70, 0)
+	held.dummy_position = held.player_position + Vector2(26, 0)
 	for frame in range(1, 22):
 		held.step(FrameInput.make(0, false, "A" if frame == 1 else ("D" if frame == 8 else "")))
 		if frame == 20:
@@ -2478,7 +2481,7 @@ func _test_hitstop_does_not_consume_direction_window() -> void:
 	# 按下当帧、配对等待只推迟起手——F39 按下时首段正常年龄 29 仍识别 214C
 	# （F42 起手）；F40 按则（年龄 30）过期回落 5C。
 	var late := CombatSession.new()
-	late.dummy_position = late.player_position + Vector2(70, 0)
+	late.dummy_position = late.player_position + Vector2(26, 0)
 	for frame in range(1, 40):
 		var key := "A" if frame == 1 else ("C" if frame == 39 else "")
 		var down := frame == 2 or frame == 3
@@ -2487,7 +2490,7 @@ func _test_hitstop_does_not_consume_direction_window() -> void:
 	_pairing_wait(late)
 	_check(late.player_move_id == "214C", "C pressed at normal age 29 (physics 39 with 8 frozen frames inside) still recognizes 214C")
 	var expired := CombatSession.new()
-	expired.dummy_position = expired.player_position + Vector2(70, 0)
+	expired.dummy_position = expired.player_position + Vector2(26, 0)
 	for frame in range(1, 41):
 		var key := "A" if frame == 1 else ("C" if frame == 40 else "")
 		var down := frame == 2 or frame == 3
@@ -2503,13 +2506,13 @@ func _test_cancel_age_counts_normal_frames() -> void:
 	# 停顿 F10–F17，物理帧 25（年龄 8，含两端）是最后的有效取消帧，
 	# 物理帧 26（年龄 9）窗口关闭：输入不能取消且连段在当帧结束。
 	var last := CombatSession.new(_slow_ground_table())
-	last.dummy_position = last.player_position + Vector2(70, 0)
+	last.dummy_position = last.player_position + Vector2(26, 0)
 	# B 是投组合成员键：F22 按下、配对窗口末帧 F25 消费——恰为取消年龄 8 的最后有效帧。
 	for frame in range(1, 26):
 		last.step(FrameInput.make(0, false, "A" if frame == 1 else ("B" if frame == 22 else "")))
 	_check(last.player_move_id == "5B", "input at cancel age 8 (physics 25 = hit 9 + 8 frozen + 8 normal) still cancels")
 	var closed := CombatSession.new(_slow_ground_table())
-	closed.dummy_position = closed.player_position + Vector2(70, 0)
+	closed.dummy_position = closed.player_position + Vector2(26, 0)
 	var end_frames: Array[int] = []
 	var started_5b := false
 	for frame in range(1, 30):
@@ -2527,7 +2530,7 @@ func _test_cancel_diagnostics_and_consumption_record() -> void:
 	# 消费结果（招式与物理帧）。探针表：5A 命中确认取消 5B（窗口 8）、前摇 8、
 	# 命中 F9、停顿 F10–F17、F18 恢复。
 	var session := CombatSession.new(_slow_ground_table())
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var age_at_frame := {}
 	var open_at_frame := {}
 	# B 于 F22 按下：探针表无 BC 投，B 不进入组合等待，当帧（年龄 4 ≤ 8）即消费。
@@ -2576,7 +2579,7 @@ func _test_starter_grade_locks_on_first_hit_only() -> void:
 	_check(whiff.combo_damage_scale == 1.0 and whiff.combo_time_scale == 1.0 and whiff.combo_trajectory_scale == 1.0,
 		"a whiffed move never accumulates any correction layer")
 	var hit := CombatSession.new()
-	hit.dummy_position = hit.player_position + Vector2(60, 0)
+	hit.dummy_position = hit.player_position + Vector2(26, 0)
 	var grade_at_hit := -1
 	var scales_at_hit := {}
 	hit.step(FrameInput.make(0, false, "A"))
@@ -2598,7 +2601,7 @@ func _test_three_layer_corrections_accumulate() -> void:
 	# 连续普通命中中三层独立累计：伤害 round0.1(base×层值)、时间 floor(声明×层值)
 	# 夹最小 1、轨迹 round(速度×层值)；互不反推。5A > 5B 链式二连（A 起手）。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var damages: Array[float] = []
 	var stuns: Array[int] = []
 	var snapshots: Array[Dictionary] = []
@@ -2627,7 +2630,7 @@ func _test_normal_5D_has_no_reverse_5B() -> void:
 	# 5B 的取消或普通连接边；木桩仍在受击中时，5B 只能作为独立招式起手，
 	# 连段资格已消失，不能命中，连段命中数停在 3。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(56, 0)
+	session.dummy_position = session.player_position + Vector2(20, 0)
 	var hit_frames: Array[int] = []
 	for frame in range(1, 70):
 		var events := session.step(FrameInput.make(0, false, _script_key({1: "A", 5: "B", 21: "D", 38: "B"}, frame)))
@@ -2663,7 +2666,7 @@ func _test_link_failure_reasons_readable() -> void:
 	# 1) 距离不足：5A 命中（站位 60）后 B 在恢复后段缓存；5B 判定框远离木桩，
 	#    连接招起手但判定窗口结束无接触。
 	var far := CombatSession.new(table)
-	far.dummy_position = far.player_position + Vector2(60, 0)
+	far.dummy_position = far.player_position + Vector2(26, 0)
 	var distance_reason := -1
 	for frame in range(1, 40):
 		var events := far.step(FrameInput.make(0, false, _script_key({1: "A", 8: "B"}, frame)))
@@ -2683,7 +2686,7 @@ func _test_link_failure_reasons_readable() -> void:
 	quick.link_targets = ["5B"]
 	var quick_table := {"5A": quick, "5B": five_b}
 	var recovered := CombatSession.new(quick_table)
-	recovered.dummy_position = recovered.player_position + Vector2(60, 0)
+	recovered.dummy_position = recovered.player_position + Vector2(26, 0)
 	var recovered_reason := -1
 	for frame in range(1, 40):
 		var events := recovered.step(FrameInput.make(0, false, _script_key({1: "A", 17: "B"}, frame)))
@@ -2702,7 +2705,7 @@ func _test_link_failure_reasons_readable() -> void:
 	_set_probe_horizontal(undeclared, 0.0)
 	var gap_table := {"5A": linker, "5B": five_b, "5C": undeclared}
 	var gap_session := CombatSession.new(gap_table)
-	gap_session.dummy_position = gap_session.player_position + Vector2(60, 0)
+	gap_session.dummy_position = gap_session.player_position + Vector2(26, 0)
 	var gap_reason := -1
 	var gap_move := ""
 	for frame in range(1, 40):
@@ -2782,7 +2785,7 @@ func _test_crouch_chain_route_2A_2B() -> void:
 	# 按住下按 B（组合等待在停顿中到期），恢复首帧 F15 以链式取消（2A 链含 2B）
 	# 起手 2B，F22 命中；地面硬直 floor(14×0.658)=9 帧后自然受身（F39）。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
 	var move_after_frame := {}
 	var hits := 0
@@ -2812,7 +2815,7 @@ func _test_stand_chains_into_crouch_5A_2B_5B_2C() -> void:
 	# F6 按住下按 B → F15 起手 2B、F22 命中）；5B > 2C（F1 B 起手 F4（组合等待）、
 	# 命中 F10、F10 按住下按 C → F19 起手 2C、F28 命中进入低浮空）。
 	var route_a := CombatSession.new()
-	route_a.dummy_position = route_a.player_position + Vector2(70, 0)
+	route_a.dummy_position = route_a.player_position + Vector2(26, 0)
 	var hits_a := 0
 	var moves_a: Array[String] = []
 	for frame in range(1, 30):
@@ -2829,7 +2832,7 @@ func _test_stand_chains_into_crouch_5A_2B_5B_2C() -> void:
 	_check(hits_a == 2 and moves_a[14] == "2B",
 		"5A chains into the crouch 2B when the B press carries the down state (declared edge 5A -> 2B)")
 	var route_b := CombatSession.new()
-	route_b.dummy_position = route_b.player_position + Vector2(70, 0)
+	route_b.dummy_position = route_b.player_position + Vector2(26, 0)
 	var hits_b := 0
 	var moves_b: Array[String] = []
 	for frame in range(1, 40):
@@ -2854,7 +2857,7 @@ func _test_2C_low_float_sweep_lifecycle() -> void:
 	# 倒地计时 floor(30×0.90)=27。F14–F21 停顿（计时冻结）后浮空 F22–F30、
 	# F31 触地转 GROUND_KNOCKDOWN，F58 自然恢复。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
 	var state_after_frame := {}
 	var timer_after_frame := {}
@@ -2887,7 +2890,7 @@ func _test_2C_low_float_corrections_and_combo_end() -> void:
 	# 触地转倒地（F45，与取消窗口关闭同帧时运动阶段先行）清除修正与起手等级；
 	# 触地当帧 COMBO_ENDED(KNOCKDOWN)，F68 自然恢复。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
 	var combo_state_after_frame := {}
 	for frame in range(1, 72):
@@ -2950,7 +2953,7 @@ func _test_2C_airborne_target_miss_no_profile() -> void:
 	var two_c := table["2C"] as MoveData
 	two_c.hitbox_size = Vector2(52, 180)
 	var session := CombatSession.new(table)
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
 	var state_after_frame := {}
 	for frame in range(1, 40):
@@ -2978,7 +2981,7 @@ func _test_2C_then_5D_fails_and_no_otg() -> void:
 	# D 以独立招式起手（F42），判定窗口 F49–F52 全部落在普通倒地上——不命中、
 	# 不刷新倒地计时（F58 恢复不受影响）。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
 	var recovered_frame := -1
 	var move_after_frame := {}
@@ -3053,7 +3056,7 @@ func _test_dummy_guard_rejections_observable() -> void:
 	# 地面木桩收到 AIR：请求不成立（STATE），不静默回退为任何地面防御；
 	# 空中木桩收到 STAND 同为 STATE；空中受击中收到 AIR 是 BUSY——原因可区分。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
 	var guard_after := {}
 	for frame in range(1, 6):
@@ -3104,7 +3107,7 @@ func _test_player_attack_blocked_independent_result() -> void:
 	# 5A 被站防：ATTACK_BLOCKED 记录方向与姿态；被防停顿/硬直/推退独立结算，
 	# 不读 HitProfile、不掉血、不起连段、不锁 starter、不累计三层修正。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
 	var blockstun_after := {}
 	var guard_after := {}
@@ -3161,7 +3164,7 @@ func _test_dummy_guard_attribute_leak_matrix() -> void:
 			["CROUCH_2A", CombatSession.GuardPosture.CROUCH, true],
 			["STAND_5A", CombatSession.GuardPosture.STANDING, false]]:
 		var session := CombatSession.new()
-		session.dummy_position = session.player_position + Vector2(60, 0)
+		session.dummy_position = session.player_position + Vector2(26, 0)
 		var events: Array[CombatEvent] = []
 		for frame in range(1, 12):
 			var key := "A" if frame == 1 else ""
@@ -3182,7 +3185,7 @@ func _test_blocked_contact_opens_chain_and_special_cancels() -> void:
 	# 被防接触开放配置的链式/必杀取消：5A 被防后同窗口内 5B（链）与 236C（必杀）
 	# 都能起手并再次被防——被防不当命中、不断连段。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
 	var move_after := {}
 	for frame in range(1, 30):
@@ -3202,7 +3205,7 @@ func _test_blocked_contact_opens_chain_and_special_cancels() -> void:
 		"the cancel starts before the first 5A finished recovering (a cancel, not a wait for recovery)")
 	# 必杀取消：停顿中喂 236 方向并在停顿内按 C——恢复首个正常帧后 236C 起手并被防。
 	var session2 := CombatSession.new()
-	session2.dummy_position = session2.player_position + Vector2(60, 0)
+	session2.dummy_position = session2.player_position + Vector2(26, 0)
 	var events2: Array[CombatEvent] = []
 	var move_after2 := {}
 	for frame in range(1, 34):
@@ -3246,7 +3249,7 @@ func _test_blocked_denies_hit_confirm_and_jump_cancel() -> void:
 	_set_probe_block(table["5X"] as MoveData, 2, 4, 0.0)
 	_set_probe_block(table["5B"] as MoveData, 2, 4, 0.0)
 	var session := CombatSession.new(table)
-	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
 	var move_ids: Array = []
 	var prejump_values: Array = []
@@ -3315,7 +3318,7 @@ func _test_blockstun_locks_dummy_actions_and_holds_guard() -> void:
 	# 被防硬直期间木桩不能按请求出招（反击时点观察口）；硬直结束后的首个输入帧
 	# 请求生效。连防：被防硬直内姿态冻结，后续攻击再次被防。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var dummy_move_ids: Array = []
 	for frame in range(1, 26):
 		var input := _guard_input("A" if frame == 1 else "", CombatSession.GuardPosture.STANDING)
@@ -3328,7 +3331,7 @@ func _test_blockstun_locks_dummy_actions_and_holds_guard() -> void:
 	_check(dummy_move_ids[23] == "5A",
 		"the requested counter starts on the first input frame after the blockstun")
 	var session2 := CombatSession.new()
-	session2.dummy_position = session2.player_position + Vector2(60, 0)
+	session2.dummy_position = session2.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
 	var guard_always_held := true
 	## 被防停顿顺延恢复：第一记 5A 到 F28 才收招，第二记 F32 起手、F37 接触。
@@ -3348,7 +3351,7 @@ func _test_blocked_then_guard_release_hits_fresh() -> void:
 	# 站防请求在被防硬直内停止：姿态冻结到硬直结束才落地 NONE；随后同一招正常
 	# 命中——命中/被防两分支在同一站位可切换复现。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
 	var guard_after := {}
 	for frame in range(1, 42):
@@ -3370,7 +3373,7 @@ func _test_blocked_then_guard_release_hits_fresh() -> void:
 func _test_undeclared_block_fields_default_deny() -> void:
 	# 未声明被防结果的招式不可被防（默认禁止）：木桩保持站防姿态，攻击照常命中。
 	var session := CombatSession.new({"5A": _probe_move("5A", "A")})
-	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
 	for frame in range(1, 12):
 		var key := "A" if frame == 1 else ""
@@ -3389,7 +3392,7 @@ func _test_blocked_freeze_uses_declared_frames() -> void:
 	var table := {"5A": _probe_move("5A", "A")}
 	_set_probe_block(table["5A"] as MoveData, 3, 5, 300.0)
 	var session := CombatSession.new(table)
-	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
 	var blockstun_after := {}
 	var hitstop_after := {}
@@ -3536,7 +3539,7 @@ func _test_dummy_attack_lifecycle_observable() -> void:
 	var slow := _dummy_strike("D_S", MoveData.AttackAttribute.HIGH, false)
 	slow.startup_frames = 8
 	var interrupt := CombatSession.new({"D_S": slow, "5A": _probe_move("5A", "A")})
-	interrupt.dummy_position = interrupt.player_position + Vector2(70, 0)
+	interrupt.dummy_position = interrupt.player_position + Vector2(26, 0)
 	var player_hits := 0
 	var player_got_hit := 0
 	for frame in range(1, 16):
@@ -3553,14 +3556,14 @@ func _test_dummy_attack_lifecycle_observable() -> void:
 ## 连接）；返回 "blocked"/"hit"/"none"。
 func _matrix_outcome(move_id: String, digit: int) -> String:
 	var session := CombatSession.new(_dummy_attribute_table())
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	return _run_matrix_case(session, move_id, digit, 1)
 
 
 ## 空中矩阵单格：F1 起跳（面向右、按住 4），F7 附带木桩攻击请求；返回结果同上。
 func _air_matrix_outcome(move_id: String) -> String:
 	var session := CombatSession.new(_dummy_attribute_table())
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	return _run_matrix_case(session, move_id, 4, 7, true)
 
 
@@ -3611,7 +3614,7 @@ func _test_block_guard_stun_hitstop_repeatable() -> void:
 		strike.active_frames = 1
 		strike.recovery_frames = 1
 		var session := CombatSession.new({"D_H": strike})
-		session.dummy_position = session.player_position + Vector2(70, 0)
+		session.dummy_position = session.player_position + Vector2(26, 0)
 		var block_frames: Array[int] = []
 		var stun_counts: Array[int] = []
 		var dummy_move_alive: Array[bool] = []
@@ -3652,7 +3655,7 @@ func _test_player_hit_reaction_locks() -> void:
 	# 击退 + Hitstop；受击硬直中不蹲下、不出招、不进入防御；硬直结束后恢复自由
 	# 行动（可蹲、可出招）。
 	var session := CombatSession.new({"D_H": _dummy_strike("D_H", MoveData.AttackAttribute.HIGH, false), "5A": _probe_move("5A", "A")})
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var hit_frame := -1
 	var velocity_after_hit := 0.0
 	var hitstun_counts: Array[int] = []
@@ -3795,7 +3798,7 @@ func _test_guard_stun_holds_posture_block_string() -> void:
 	second.active_frames = 1
 	second.recovery_frames = 1
 	var session := CombatSession.new({"D1": strike, "D2": second})
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var block_frames: Array[int] = []
 	var guard_at_f8 := 0
 	var crouched_at_f8 := false
@@ -3827,7 +3830,7 @@ func _test_guard_break_hits_through_hitstun() -> void:
 	high.active_frames = 1
 	high.recovery_frames = 1
 	var session := CombatSession.new({"D_L": low, "D_H": high})
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var player_hit_frames: Array[int] = []
 	var blocked_total := 0
 	var guard_at_f19 := 0
@@ -3896,7 +3899,7 @@ func _test_throw_combination_recognition_and_start() -> void:
 	# 配对窗口末帧按单键处理（5B 起手），不属于“投失败回退”。同帧 B+C+D 由组合
 	# 覆盖 D；投距外失败不回退任何单键。
 	var close := CombatSession.new(_throw_table())
-	close.dummy_position = close.player_position + Vector2(60, 0)
+	close.dummy_position = close.player_position + Vector2(26, 0)
 	var move_ids: Array[String] = []
 	var held_at_completion: Array = []
 	for frame in range(1, 15):
@@ -3921,7 +3924,7 @@ func _test_throw_combination_recognition_and_start() -> void:
 
 	# 对照：C@F14 超出容差——B 已在 F13 按单键处理（5B 起手），无投、无失败事件。
 	var late := CombatSession.new(_throw_table())
-	late.dummy_position = late.player_position + Vector2(60, 0)
+	late.dummy_position = late.player_position + Vector2(26, 0)
 	var late_moves: Array[String] = []
 	var late_events: Array[CombatEvent] = []
 	for frame in range(1, 19):
@@ -3944,11 +3947,11 @@ func _test_throw_combination_recognition_and_start() -> void:
 
 	# 同帧 B+C+D：组合覆盖 D（起投）；投距外同帧配齐则失败且不回退任何单键。
 	var same_frame := CombatSession.new(_throw_table())
-	same_frame.dummy_position = same_frame.player_position + Vector2(60, 0)
+	same_frame.dummy_position = same_frame.player_position + Vector2(26, 0)
 	same_frame.step(_keys_frame(["B", "C", "D"], ["B", "C", "D"]))
 	_check(same_frame.player_move_id == "BC", "same-frame B+C+D is covered by the explicit combination (throw starts)")
 	var far := CombatSession.new(_throw_table())
-	far.dummy_position = far.player_position + Vector2(100, 0)
+	far.dummy_position = far.player_position + Vector2(108, 0)
 	var far_moves: Array[String] = []
 	var far_events: Array[CombatEvent] = []
 	for frame in range(1, 15):
@@ -3971,7 +3974,7 @@ func _test_throw_single_key_wait_anchor() -> void:
 	qcf.command_tier = MoveData.CommandTier.SPECIAL
 	table["236C"] = qcf
 	var session := CombatSession.new(table)
-	session.dummy_position = session.player_position + Vector2(80, 0)
+	session.dummy_position = session.player_position + Vector2(36, 0)
 	var move_ids: Array[String] = []
 	var buffered_during_wait := ""
 	for frame in range(1, 36):
@@ -4006,7 +4009,7 @@ func _test_throw_combination_extra_key_and_state() -> void:
 	# 正常处理；随后配齐的 B+C 因招式阶段失败——无投启动、无撤销 5D、旧 B 不能
 	# 在等待结束后覆盖 D，失败原因可观察。
 	var session := CombatSession.new(_throw_table())
-	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var move_ids: Array[String] = []
 	var fail_frames: Array[int] = []
 	for frame in range(1, 16):
@@ -4037,7 +4040,7 @@ func _test_throw_hold_overlap_rules() -> void:
 	# 配齐帧仍按住——首键提前松开后按第二键不组成组合；仅有长期按住状态不能
 	# 补齐组合。两种情况都回落为单键路径（按组合等待规则处理）。
 	var released := CombatSession.new(_throw_table())
-	released.dummy_position = released.player_position + Vector2(60, 0)
+	released.dummy_position = released.player_position + Vector2(26, 0)
 	var released_moves: Array[String] = []
 	var released_events: Array[CombatEvent] = []
 	for frame in range(1, 16):
@@ -4059,7 +4062,7 @@ func _test_throw_hold_overlap_rules() -> void:
 		"no throw attempt happens without the held overlap")
 
 	var long_hold := CombatSession.new(_throw_table())
-	long_hold.dummy_position = long_hold.player_position + Vector2(60, 0)
+	long_hold.dummy_position = long_hold.player_position + Vector2(26, 0)
 	var long_moves: Array[String] = []
 	for frame in range(1, 16):
 		var pressed: Array = []
@@ -4077,7 +4080,7 @@ func _test_throw_hold_overlap_rules() -> void:
 		"a long-held B press outside the tolerance cannot complete the combination (5B starts at its own window end)")
 
 	var same_frame := CombatSession.new(_throw_table())
-	same_frame.dummy_position = same_frame.player_position + Vector2(60, 0)
+	same_frame.dummy_position = same_frame.player_position + Vector2(26, 0)
 	same_frame.step(_keys_frame(["B", "C"], ["B", "C"]))
 	_check(same_frame.player_move_id == "BC", "both member keys newly pressed on the same frame complete the combination immediately")
 
@@ -4148,7 +4151,7 @@ func _test_throw_tech_window_boundaries() -> void:
 	# 任何投结果影响。
 	var run := func(tech_frame: int) -> Dictionary:
 		var session := CombatSession.new(_throw_table())
-		session.dummy_position = session.player_position + Vector2(60, 0)
+		session.dummy_position = session.player_position + Vector2(26, 0)
 		var tech_seen := -1
 		var hit_frame := -1
 		var move_after_tech := ""
@@ -4193,7 +4196,7 @@ func _test_throw_disabled_states() -> void:
 	# 单键；空跳落地恢复第 2、3 帧的攻击例外不适用于投。
 	var run := func(mode: String) -> Dictionary:
 		var session := CombatSession.new(_throw_table())
-		session.dummy_position = session.player_position + Vector2(60, 0)
+		session.dummy_position = session.player_position + Vector2(26, 0)
 		var c_frame := 13
 		var b_frame := 10
 		var fail_frames: Array[int] = []
@@ -4319,7 +4322,7 @@ func _test_throw_hitstop_intent_attempts_once() -> void:
 	# 即使两次都在停顿内也不组成投；恢复前的新动作输入覆盖待处理投请求。
 	var base := func(c_frame: int, extra_key_frame := 0) -> Dictionary:
 		var session := CombatSession.new(_throw_table())
-		session.dummy_position = session.player_position + Vector2(70, 0)
+		session.dummy_position = session.player_position + Vector2(26, 0)
 		var fail_frames: Array[int] = []
 		var hit_frames: Array[int] = []
 		var move_ids: Array[String] = []
@@ -4515,7 +4518,7 @@ func _test_dash_restricted_states() -> void:
 	# 恢复自由 F29）：停顿/硬直内的双击（F7/F11 两段）不触发；F29 的第一个
 	# 自由帧上，新的 6 段与硬直中记录的旧 6 段组成 66 → 当帧冲刺。
 	var hitstun := CombatSession.new()
-	hitstun.dummy_position = hitstun.player_position + Vector2(70, 0)
+	hitstun.dummy_position = hitstun.player_position + Vector2(26, 0)
 	var hit_frame := -1
 	var hitstun_start_frames: Array[int] = []
 	for frame in range(1, 33):
@@ -4582,7 +4585,9 @@ func _test_dash_action_locks_and_hit_interrupt() -> void:
 	# 组合被状态拒绝（STATE 原因可观察，停顿后恢复首帧尝试一次）；木桩打击命中
 	# 冲刺中的玩家当帧打断冲刺——进入受击硬直、冲刺计数清零、速度被击退改写。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(100, 0)
+	# 12×20 尺度：木桩 5A 触及缩短 18px——90px 使冲刺第 6 帧的身体前缘恰入
+	# 木桩判框（F8 命中中断冲刺的原编排语义不变）。
+	session.dummy_position = session.player_position + Vector2(90, 0)
 	var prejump_seen := false
 	var throw_fail_frames: Array[int] = []
 	var dash_start_frames: Array[int] = []
@@ -4616,10 +4621,12 @@ func _test_dash_action_locks_and_hit_interrupt() -> void:
 			velocity_after_hit = session.player_velocity.x
 	_check(dash_start_frames == [3], "the dash itself starts on F3 and never re-triggers")
 	_check(not prejump_seen, "Space pressed mid-dash never enters pre-jump preparation")
-	_check(throw_fail_frames == [17],
-		"the B+C combination completed inside the dash's hitstop is state-rejected once on the resume frame (F17)")
-	_check(hit_frame == 8 and dash_left_at_hit == 0 and hitstun_at_hit > 0 and velocity_after_hit < 0.0,
-		"the dummy strike landing mid-dash (F8) interrupts it on the same frame: dash cleared, hitstun applied, knockback away from the dummy")
+	## 12×20 尺度：木桩 5A 触及缩短使命中帧 8→9；B+C 配对恰在命中帧当帧完成，
+	## 冲刺状态拒绝照常可观察（一次）。
+	_check(throw_fail_frames == [9],
+		"the B+C combination completed during the dash is state-rejected exactly once (F9)")
+	_check(hit_frame == 9 and dash_left_at_hit == 0 and hitstun_at_hit > 0 and velocity_after_hit < 0.0,
+		"the dummy strike landing mid-dash (F9) interrupts it on the same frame: dash cleared, hitstun applied, knockback away from the dummy")
 
 
 ## 从出招到回中立完整走一遍（第 1 帧按下动作键 A）。
@@ -4942,6 +4949,11 @@ func _seam_table() -> Dictionary:
 	launcher.special_entry_window_frames = -1
 	launcher.hit_profiles = [profile]
 	launcher.jump_cancel_targets = ["jA"] as Array[String]
+	## 连段路线票据 01（12×20 尺度）：落地帧同帧序探针不考几何——空中追击的
+	## 判框纵向加高，保证薄身下 jA/jB 仍与下落木桩重叠（与 5B 加高先例同口径）。
+	for air_id in ["jA", "jB"]:
+		var air_move := table[air_id] as MoveData
+		air_move.hitbox_size = Vector2(air_move.hitbox_size.x, 120.0)
 	return table
 
 
@@ -5032,7 +5044,7 @@ func _run_214c_opener(session: CombatSession, guard := 0) -> Array[CombatEvent]:
 func _test_rekka_window_requires_contact_hit_block_whiff() -> void:
 	# 命中：首段命中开放派生窗口——停顿中按 B 立即锁 ~B，恢复首个正常帧起手派生。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events := _run_214c_opener(session)
 	var move_after := {}
 	for frame in range(5, 45):
@@ -5048,7 +5060,7 @@ func _test_rekka_window_requires_contact_hit_block_whiff() -> void:
 		"both the opener and the derived 214C~B land as real hits")
 	# 被防：首段被站防同样开放派生窗口——分支锁定不依赖命中。
 	var session2 := CombatSession.new()
-	session2.dummy_position = session2.player_position + Vector2(60, 0)
+	session2.dummy_position = session2.player_position + Vector2(26, 0)
 	var events2 := _run_214c_opener(session2, CombatSession.GuardPosture.STANDING)
 	var move_after2 := {}
 	var starter_at_25: int = -1
@@ -5085,7 +5097,7 @@ func _test_rekka_window_requires_contact_hit_block_whiff() -> void:
 func _test_rekka_first_press_locks_branch() -> void:
 	# 同帧 B+C：固定 C > B 优先级直接锁 ~C，不产生普通投等待或投意图。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events := _run_214c_opener(session)
 	var move_after := {}
 	var branch_at_16 := ""
@@ -5107,7 +5119,7 @@ func _test_rekka_first_press_locks_branch() -> void:
 		"the locked ~C branch starts after the freeze")
 	# 先 B 后 C：首按锁 ~B，之后另一键不改写分支。
 	var session2 := CombatSession.new()
-	session2.dummy_position = session2.player_position + Vector2(60, 0)
+	session2.dummy_position = session2.player_position + Vector2(26, 0)
 	var events2 := _run_214c_opener(session2)
 	var move_after2 := {}
 	for frame in range(5, 45):
@@ -5127,7 +5139,7 @@ func _test_rekka_first_press_locks_branch() -> void:
 		"the later C press does not pair into a throw with the consumed B press")
 	# 同帧 D+B：~B 照常锁定；D 不被派生仲裁吞掉，照常写入单键缓存。
 	var session3 := CombatSession.new()
-	session3.dummy_position = session3.player_position + Vector2(60, 0)
+	session3.dummy_position = session3.player_position + Vector2(26, 0)
 	var events3 := _run_214c_opener(session3)
 	var buffered_at_16 := ""
 	for frame in range(5, 45):
@@ -5146,7 +5158,7 @@ func _test_rekka_window_expiry_keeps_throw_rules_outside() -> void:
 	# 窗口长度 12：接触年龄 13 起关闭——窗口外 B+C 走既有组合规则（配对成功、
 	# 招式中被状态门拒绝），窗口关闭后释放的新组合在恢复后可正常投。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events := _run_214c_opener(session, CombatSession.GuardPosture.STANDING)
 	var move_after := {}
 	for frame in range(5, 70):
@@ -5168,7 +5180,7 @@ func _test_rekka_window_expiry_keeps_throw_rules_outside() -> void:
 func _test_rekka_b_ground_knockdown_airborne_extension_and_link() -> void:
 	# 地面：首段命中地面目标后 ~B 命中 grounded → GROUND_KNOCKDOWN，连段与修正清除。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events := _run_214c_opener(session)
 	for frame in range(5, 50):
 		var key := "B" if frame == 16 else ""
@@ -5184,7 +5196,7 @@ func _test_rekka_b_ground_knockdown_airborne_extension_and_link() -> void:
 	# 214C F1=F21、接触 F28（空中）、停顿 F29–F36；F30 按 B、~B F1=F37、接触 F43、
 	# 停顿 F44–F51；~B 收招 F72、F68 缓存 B、5B 起手 F72、命中 F78。
 	var session2 := CombatSession.new()
-	session2.dummy_position = session2.player_position + Vector2(48, 0)
+	session2.dummy_position = session2.player_position + Vector2(12, 0)
 	var events2: Array[CombatEvent] = []
 	var states := {}
 	for frame in range(1, 95):
@@ -5223,7 +5235,7 @@ func _test_rekka_b_ground_knockdown_airborne_extension_and_link() -> void:
 func _test_rekka_c_ground_knockdown_and_airborne_spike() -> void:
 	# 地面：~C 命中 grounded 直接普通倒地收尾。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events := _run_214c_opener(session)
 	for frame in range(5, 50):
 		var key := "C" if frame == 16 else ""
@@ -5238,7 +5250,7 @@ func _test_rekka_c_ground_knockdown_and_airborne_spike() -> void:
 	# 时间轴：同上正例路线，F30 按 C、~C F1=F37、接触 F45（空中）、停顿 F46–F53、
 	# 触地转倒地约 F55。
 	var session2 := CombatSession.new()
-	session2.dummy_position = session2.player_position + Vector2(48, 0)
+	session2.dummy_position = session2.player_position + Vector2(12, 0)
 	var events2: Array[CombatEvent] = []
 	var spike_states := []
 	for frame in range(1, 75):
@@ -5273,7 +5285,7 @@ func _test_rekka_starter_and_corrections_across_rekka() -> void:
 	# 2C(C 起手) > 214C > 214C~B：起手等级锁定 C，三层修正跨 Rekka 每击累计保留。
 	# 接触帧：2C F12、214C F28、~B F43；停顿冻结期字段稳定，采样点取接触后。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(48, 0)
+	session.dummy_position = session.player_position + Vector2(12, 0)
 	var events: Array[CombatEvent] = []
 	var scales := {}
 	for frame in range(1, 55):
@@ -5307,7 +5319,7 @@ func _test_rekka_blocked_derivation_only_block_result() -> void:
 	# 蹲防全程：首段 mid 被防开放窗口，~B low 同样被防——派生只产生对应 BLOCKED
 	# 结果，不产生命中、不锁起手、不累计修正。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(60, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events := _run_214c_opener(session, CombatSession.GuardPosture.CROUCH)
 	for frame in range(5, 50):
 		var key := "B" if frame == 16 else ""
@@ -5354,7 +5366,7 @@ func _test_236c_two_segments_windows_events_and_states() -> void:
 	# 前摇（Counter 窗口）；每段对同一目标至多命中一次；两段实际命中各自产生
 	# HIT 事件与伤害（8/12 × 各层修正）。@70px 两段都够得着。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var phases: Array[int] = []
 	var segments: Array[int] = []
 	var hits: Array[int] = []
@@ -5393,7 +5405,7 @@ func _test_236c_seg1_blocked_terminates_whole_move() -> void:
 	# 段 2 不执行、无第二次段接触；停顿后玩家直接回中立。被防不授予特殊进入
 	# 资格——停顿中按 D 只在恢复后作为独立 5D 起手，且因木桩连防再次被防。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var blocked_frames: Array[int] = []
 	var blocked_segments: Array[int] = []
 	var entry_seen := false
@@ -5423,7 +5435,7 @@ func _test_236c_seg1_whiff_seg2_ground_slide_lifecycle() -> void:
 	# 起跳 round(120×0.96)=115 px/s）→ F36 触地转 GROUND_SLIDE（slide 17 帧，
 	# 自下一正常帧倒数）→ F53 自然回中立并结束连段；不经过普通倒地、无 OTG。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(93, 0)
+	session.dummy_position = session.player_position + Vector2(60, 0)
 	var hits: Array[int] = []
 	var slide_start := -1
 	var recovered := -1
@@ -5467,7 +5479,7 @@ func _test_special_d_entry_pickup_and_5b_link() -> void:
 	# 覆盖浮空状态；5B 只在 5D 完全恢复后作为普通连接起手（F70），5D 恢复期间
 	# 不被打断；连段最终以木桩自然恢复结束。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var hits: Array[int] = []
 	var move_at := {}
 	for frame in range(1, 110):
@@ -5501,7 +5513,7 @@ func _test_special_d_entry_from_seg1_hit_skips_seg2() -> void:
 	# 段 1 命中当下也可特殊取消 D（S-02 允许例）：取消成立则原 236C 立即结束、
 	# 段 2 不执行——全程只有一次 236C 命中，5D 以第二击身份命中浮空目标。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var hits: Array[int] = []
 	var hit_sources: Array[String] = []
 	for frame in range(1, 60):
@@ -5527,7 +5539,7 @@ func _test_special_d_entry_expired_window_is_independent() -> void:
 	# 窗口关闭后不能补发特殊 D（I-05 拒绝例）：资格随连段结束清除；迟到的 D
 	# 只作为独立招式起手，不能命中仍在硬直中的木桩（无命中确认延续）。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var hits := 0
 	var via_entry_seen := false
 	var last_hit_combo := 0
@@ -5562,7 +5574,7 @@ func _test_slide_pickup_requires_explicit_slide_profile() -> void:
 			kept.append(profile)
 	five_d.hit_profiles = kept
 	var session := CombatSession.new(table)
-	session.dummy_position = session.player_position + Vector2(93, 0)
+	session.dummy_position = session.player_position + Vector2(60, 0)
 	var miss_frames: Array[int] = []
 	var slide_left_at_miss := -1
 	var slide_state_at_miss := CombatSession.DummyState.NEUTRAL
@@ -5600,7 +5612,7 @@ func _test_slide_survives_whiffed_pickup() -> void:
 		var grounded := seg2.profile_for(HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)
 		grounded.horizontal_speed_px_s = 600.0
 		var run := CombatSession.new(table)
-		run.dummy_position = run.player_position + Vector2(93, 0)
+		run.dummy_position = run.player_position + Vector2(60, 0)
 		var recover_frame := -1
 		for frame in range(1, 80):
 			var down := frame == 1 or frame == 2
@@ -5625,7 +5637,7 @@ func _test_slide_corrections_and_starter_lock() -> void:
 	# 命中（时间 0.96）→ 5D 捞起滑行目标乘 slide 倍率（0.92/0.96/0.96），与普通
 	# 命中倍率（0.90/0.94/0.95）可区分；自然恢复清除全部修正。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(93, 0)
+	session.dummy_position = session.player_position + Vector2(60, 0)
 	for frame in range(1, 90):
 		var down := frame == 1 or frame == 2
 		var axis := 1 if (frame == 2 or frame == 3) else 0
@@ -5650,7 +5662,7 @@ func _test_a_starter_slide_cycle_breaks() -> void:
 	# 循环在有限击数内断链（第一圈 5B 目押即因目标恢复失败），没有任何全局
 	# 命中数/时长上限参与。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var pending := {}
 	var combo_ended_at := -1
 	var combo_end_reason := -1

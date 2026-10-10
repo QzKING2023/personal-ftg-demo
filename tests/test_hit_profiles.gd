@@ -28,6 +28,7 @@ func _initialize() -> void:
 	_test_player_side_uses_profile_selection()
 	_test_profile_edits_sync_session_and_solver()
 	_test_missing_profile_reports_consistently_in_solver()
+	_test_route01_shared_profile_values()
 	print("")
 	_metrics.emit("test_hit_profiles")
 	if _failures == 0:
@@ -310,7 +311,7 @@ func _capture_hit(session: CombatSession, events: Array[CombatEvent], capture: D
 func _test_sample_5a_ground_normal() -> void:
 	# 样例 A.1/A.4：地面普通命中保持接地；同招打空中目标由 miss 测试覆盖。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var capture := {}
 	for frame in range(1, 30):
 		var events := session.step(_relative_input(session, 5, "A" if frame == 1 else ""))
@@ -344,7 +345,7 @@ func _test_missing_profile_miss_has_no_side_effects() -> void:
 	launcher.cancel_targets = ["6A"]
 	table["PL"] = launcher
 	var session := CombatSession.new(table)
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var hits := 0
 	var miss_frame := -1
 	var hp_at_miss := 0.0
@@ -387,7 +388,7 @@ func _test_sample_6a_launch_entry_and_jump_cancel_boundary() -> void:
 	# 样例 B：6A 直接起手（6+A）→ 浮空入口；命中确认后 jump cancel 接 jA 追击；
 	# 挥空不取得 jump cancel 资格。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var capture := {}
 	for frame in range(1, 20):
 		var digit := 6 if frame == 1 else 5
@@ -406,7 +407,7 @@ func _test_sample_6a_launch_entry_and_jump_cancel_boundary() -> void:
 		"6A applies the trajectory-scaled horizontal speed (138px/s minus same-frame friction) and a strong upward launch (515px/s)")
 
 	var pursue := CombatSession.new()
-	pursue.dummy_position = pursue.player_position + Vector2(70, 0)
+	pursue.dummy_position = pursue.player_position + Vector2(26, 0)
 	var pursuit_hits := 0
 	for frame in range(1, 60):
 		var digit := 6 if frame == 1 else 5
@@ -444,7 +445,7 @@ func _test_sample_knockdown_lifecycle() -> void:
 	# 倒地 30/40，D 起手）。直接起手。命中 → KNOCKED_DOWN + 连段结束；倒地期间
 	# 打击不命中、不刷新；计时结束自然恢复；恢复后的下一次命中开新连段。
 	var session := CombatSession.new(_knockdown_probe_table())
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var combo_ends: Array[int] = []
 	var recovers: Array[int] = []
 	var hits: Array[int] = []
@@ -460,7 +461,7 @@ func _test_sample_knockdown_lifecycle() -> void:
 			digit = 4
 		var key := "D" if frame == 4 else ("A" if frame == 52 else "")
 		var events := session.step(_relative_input(session, digit, key))
-		session.dummy_position.x = session.player_position.x + session.player_facing * 70.0
+		session.dummy_position.x = session.player_position.x + session.player_facing * 26.0
 		_capture_hit(session, events, at_knockdown, frame)
 		for event in events:
 			match event.type:
@@ -489,7 +490,7 @@ func _test_sample_knockdown_lifecycle() -> void:
 	# Counter 窗口内的倒地招式只改本次结果（倒地 40 帧），不改不可追击规则。
 	# （表内同时注入木桩慢攻 D_S，与 _counter_probe_table 同形。）
 	var counter_session := CombatSession.new(_knockdown_probe_table())
-	counter_session.dummy_position = counter_session.player_position + Vector2(70, 0)
+	counter_session.dummy_position = counter_session.player_position + Vector2(26, 0)
 	var counter_capture := {}
 	for frame in range(1, 16):
 		var digit := 5
@@ -515,7 +516,7 @@ func _test_counter_hit_lifecycle() -> void:
 	# 5A：startup 5、active F(press+5)–F(press+11)、stun 12 / counter 18。
 	var run := func(press_frame: int, request: bool) -> Dictionary:
 		var session := CombatSession.new(_counter_probe_table())
-		session.dummy_position = session.player_position + Vector2(70, 0)
+		session.dummy_position = session.player_position + Vector2(26, 0)
 		var capture := {}
 		for frame in range(1, 30):
 			var request_id := "D_S" if request and frame == 1 else ""
@@ -547,7 +548,7 @@ func _test_counter_hit_lifecycle() -> void:
 
 	# 消耗：counter 命中打断木桩招式，同段内的下一次命中按 normal 选择。
 	var session := CombatSession.new(_counter_probe_table())
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var contexts: Array[bool] = []
 	var stuns: Array[int] = []
 	for frame in range(1, 40):
@@ -573,7 +574,7 @@ func _test_counter_damage_override() -> void:
 		HitProfile.TargetState.GROUNDED, HitProfile.HitContext.COUNTER)
 	counter.damage_override = 15
 	var session := CombatSession.new(table)
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var damage := 0.0
 	for frame in range(1, 20):
 		var events := session.step(_relative_input(session, 5, "A" if frame == 1 else "", "D_S" if frame == 1 else ""))
@@ -591,7 +592,7 @@ func _test_player_side_uses_profile_selection() -> void:
 	var strike := probe["D_G"] as MoveData
 	var five_a := probe["5A"] as MoveData
 	var session := CombatSession.new({"D_G": strike, "5A": five_a})
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var stun_at_hit := 0
 	for frame in range(1, 16):
 		var events := session.step(_relative_input(session, 5, "", "D_G" if frame == 1 else ""))
@@ -601,7 +602,7 @@ func _test_player_side_uses_profile_selection() -> void:
 	_check(stun_at_hit == 10, "the player hitstun comes from the selected grounded normal profile")
 
 	var countered := CombatSession.new({"D_G": strike.duplicate(), "5A": five_a.duplicate()})
-	countered.dummy_position = countered.player_position + Vector2(70, 0)
+	countered.dummy_position = countered.player_position + Vector2(26, 0)
 	var counter_stun := 0
 	for frame in range(1, 16):
 		var events := countered.step(_relative_input(countered, 5, "A" if frame == 1 else "", "D_G" if frame == 1 else ""))
@@ -612,7 +613,7 @@ func _test_player_side_uses_profile_selection() -> void:
 		"hitting the player during their own startup selects the counter profile timer")
 
 	var air := CombatSession.new({"D_G": strike.duplicate(), "5A": five_a.duplicate()})
-	air.dummy_position = air.player_position + Vector2(70, 0)
+	air.dummy_position = air.player_position + Vector2(26, 0)
 	var air_miss := 0
 	var air_stun := 0
 	for frame in range(1, 26):
@@ -636,10 +637,12 @@ func _test_profile_edits_sync_session_and_solver() -> void:
 	var report := _metrics.solve(_options(table))
 	## 可读路线报告上限（票据 09 起 16 条）触顶后代表路线不再保证入默认报告；
 	## 路线断言经精确路线查询解析（与枚举报告同一套模拟，票据 09 验收尾巴）。
-	var air_ids: Array[String] = ["5A", "5B", "6A", "jA", "jB", "j5D"]
+	## 连段路线票据 01（12×20 尺度）：j5D 水平判框在薄身下不再与钉位木桩重叠
+	## ——路线改以 j2D 垂直带收尾（同族空中 D 系；6A 编辑断言不受影响）。
+	var air_ids: Array[String] = ["5A", "5B", "6A", "jA", "jB", "j2D"]
 	var route := _find_route(_metrics.route_report(air_ids, _options(table)), air_ids)
 	_check(route != null and route.timing_valid,
-		"the solver walks the 5A → 5B → 6A (chain cancels) → jump cancel → jA → jB → j5D route on the shared table")
+		"the solver walks the 5A → 5B → 6A (chain cancels) → jump cancel → jA → jB → j2D route on the shared table")
 	if route == null:
 		return
 	var replay := _replay_inputs(route.inputs, table)
@@ -671,17 +674,18 @@ func _test_profile_edits_sync_session_and_solver() -> void:
 func _test_missing_profile_reports_consistently_in_solver() -> void:
 	# 时序可成、但目标 airborne 无匹配 profile 的接续：Solver 与运行时同表对拍——
 	# 边按 MISS_NO_PROFILE 排除，运行时回放同一接缝得到 HIT_MISS 事件。
+	# 连段路线票据 01 起 5B 已声明 airborne 资料，探针改用仍缺该资料的 5C。
 	var table := MoveData.default_table()
-	(table["236C"] as MoveData).cancel_targets = ["5B"]
-	# 测试表把 5B 命中框加高：浮空木桩在判定帧仍与命中框相交，接缝卡在
+	(table["236C"] as MoveData).cancel_targets = ["5C"]
+	# 测试表把 5C 命中框加高：浮空木桩在判定帧仍与命中框相交，接缝卡在
 	# profile 缺失（MISS_NO_PROFILE）而不是垂直脱靶。
-	(table["5B"] as MoveData).hitbox_size = Vector2(42, 120)
+	(table["5C"] as MoveData).hitbox_size = Vector2(48, 120)
 	var report := _metrics.solve(_options(table))
-	var edge := _find_edge(report, "236C", "5B", ComboSolver.EdgeKind.CANCEL)
+	var edge := _find_edge(report, "236C", "5C", ComboSolver.EdgeKind.CANCEL)
 	_check(edge != null and not edge.valid and edge.reason.contains("MISS_NO_PROFILE"),
-		"the 236C → 5B edge is excluded with the MISS_NO_PROFILE reason (5B has no airborne profile)")
+		"the 236C → 5C edge is excluded with the MISS_NO_PROFILE reason (5C has no airborne profile)")
 	var session := CombatSession.new(table)
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var misses := 0
 	for frame in range(1, 40):
 		var digit := 5
@@ -695,7 +699,7 @@ func _test_missing_profile_reports_consistently_in_solver() -> void:
 		if frame == 4:
 			key = "C"
 		elif frame == 19:
-			key = "B"
+			key = "C"
 		var events := session.step(_relative_input(session, digit, key))
 		for event in events:
 			if event.type == CombatEvent.Type.HIT_MISS:
@@ -873,3 +877,59 @@ func _check(condition: bool, label: String) -> void:
 	else:
 		print("FAIL  " + label)
 		_failures += 1
+
+
+# --- 连段路线票据 01：D74 共用资料值（12×20 尺度下的显式空中资料与时序选值）---
+
+func _test_route01_shared_profile_values() -> void:
+	var result := MoveTable.load_default()
+	_check(result.ok, "route01: shared table loads")
+	if not result.ok:
+		return
+	var moves := result.moves
+	## 5B：新增普通浮空目标 normal/counter 资料（LAUNCH 18/24、水平 60/向上 100）；
+	## 弹地目标资料不可受身 18/24 → 19/25，反应与速度不变。
+	var five_b: MoveData = moves["5B"]
+	var b_air_n := MoveData.profile_for(five_b, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL)
+	var b_air_c := MoveData.profile_for(five_b, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.COUNTER)
+	_check(b_air_n != null and b_air_c != null
+		and b_air_n.reaction == HitProfile.Reaction.LAUNCH and b_air_c.reaction == HitProfile.Reaction.LAUNCH,
+		"route01: 5B declares AIRBORNE normal+counter LAUNCH profiles (no fallback)")
+	if b_air_n != null and b_air_c != null:
+		_check(b_air_n.air_untech_frames == 18 and b_air_c.air_untech_frames == 24
+			and is_equal_approx(b_air_n.horizontal_speed_px_s, 60.0)
+			and is_equal_approx(b_air_n.upward_speed_px_s, 100.0)
+			and is_equal_approx(b_air_c.horizontal_speed_px_s, 60.0)
+			and is_equal_approx(b_air_c.upward_speed_px_s, 100.0),
+			"route01: 5B AIRBORNE N/C untech 18/24, horizontal 60, upward 100")
+	var b_bounce_n := MoveData.profile_for(five_b, HitProfile.TargetState.GROUND_BOUNCE, HitProfile.HitContext.NORMAL)
+	var b_bounce_c := MoveData.profile_for(five_b, HitProfile.TargetState.GROUND_BOUNCE, HitProfile.HitContext.COUNTER)
+	_check(b_bounce_n != null and b_bounce_c != null
+		and b_bounce_n.air_untech_frames == 19 and b_bounce_c.air_untech_frames == 25
+		and b_bounce_n.reaction == HitProfile.Reaction.LAUNCH
+		and is_equal_approx(b_bounce_n.horizontal_speed_px_s, 60.0)
+		and is_equal_approx(b_bounce_n.upward_speed_px_s, 100.0),
+		"route01: 5B GROUND_BOUNCE untech 19/25 with LAUNCH and unchanged speeds")
+	## jC / j214D 启动：7→4 / 9→1；不缩短落地恢复或改变全局时间。
+	var j_c: MoveData = moves["jC"]
+	var j_214d: MoveData = moves["j214D"]
+	_check(j_c.startup_frames == 4 and j_c.recovery_frames == 14,
+		"route01: jC startup 7→4 with recovery unchanged")
+	_check(j_214d.startup_frames == 1 and j_214d.recovery_frames == 22,
+		"route01: j214D startup 9→1 with recovery unchanged")
+	## j214D 普通浮空命中触地前窗口 24/30 → 32/32（counter 不得短于 normal）。
+	var j_air_n := MoveData.profile_for(j_214d, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL)
+	var j_air_c := MoveData.profile_for(j_214d, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.COUNTER)
+	_check(j_air_n != null and j_air_c != null
+		and j_air_n.air_untech_frames == 32 and j_air_c.air_untech_frames == 32,
+		"route01: j214D AIRBORNE N/C pre-touch window both 32")
+	## 接地入口资料未随本票改写（12/16、h80/up100 保持）。
+	var j_g_n := MoveData.profile_for(j_214d, HitProfile.TargetState.GROUNDED, HitProfile.HitContext.NORMAL)
+	_check(j_g_n != null and j_g_n.air_untech_frames == 12
+		and is_equal_approx(j_g_n.horizontal_speed_px_s, 80.0)
+		and is_equal_approx(j_g_n.upward_speed_px_s, 100.0),
+		"route01: j214D grounded entry profile unchanged (12, 80/100)")
+	## 6A 空中资料不在本票（缺省即无命中，归票据 02）。
+	var six_a: MoveData = moves["6A"]
+	_check(MoveData.profile_for(six_a, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL) == null,
+		"route01: 6A still declares no AIRBORNE profile (ticket 02 scope)")

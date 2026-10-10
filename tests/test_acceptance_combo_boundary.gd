@@ -7,14 +7,12 @@ func _check(condition: bool, label: String) -> void:
 		_failures += 1
 
 func _initialize() -> void:
-	var plan := {}
-	for i in 4:
-		plan[1 + i] = _236(i, 1, "C" if i == 3 else "")
-	for frame in range(16, 31):
-		plan[frame] = _hold("D", frame, 16, 30)
-	plan[70] = _press("B")
+	## 连段路线票据 01（12×20 尺度）：5[D] 的 120px 位移在薄身下合法穿越并把
+	## 玩家带离 5B 触及——边界回归改用同构的简单场景（首段结束后的 5B 新连段
+	## 命中单列），事件边界语义不变。
+	var plan := {1: _press("A"), 25: _press("B")}
 	var run := _run_route(plan, 1, 110, "boundary")
-	_check(run.moves == ["236C", "5[D]"], "first combo excludes the fresh 5B after COMBO_ENDED")
+	_check(run.moves == ["5A"], "first combo excludes the fresh 5B after COMBO_ENDED")
 	_check(run.hits_after_end.size() == 1 and run.hits_after_end[0].combo_hits == 1,
 		"post-end hit retained separately as a new combo")
 	_ordered_events()

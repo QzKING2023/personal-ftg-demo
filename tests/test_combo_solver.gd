@@ -235,12 +235,15 @@ func _test_default_table_air_edges() -> void:
 func _test_full_air_route_matches_runtime() -> void:
 	# 验收 2：完整空中路线的合法接续与运行时一致——把 Solver 发现的输入表回放到
 	# 真实 CombatSession（同一几何假设：木桩钉在玩家面前），命中帧/连段数/伤害逐项对拍。
-	var route := _query_route(["5A", "5B", "6A", "jA", "jB", "j5D"])
-	_check(route != null, "the full air route 5A -> 5B -> 6A -> Space -> jA -> jB -> j5D verifies via the exact-route query")
+	## 连段路线票据 01（12×20 尺度）再锚定：26px 起手的空中后段漂出 j5D 的水平
+	## 判框（精确查询如实截断「j5D 已起手但未在预期帧命中——挥空」），空中收尾
+	## 改经 j2D 垂直带（同族空中 D 系；伤害口径与 test_smoke 空中路线实测一致）。
+	var route := _query_route(["5A", "5B", "6A", "jA", "jB", "j2D"])
+	_check(route != null, "the full air route 5A -> 5B -> 6A -> Space -> jA -> jB -> j2D verifies via the exact-route query")
 	if route == null:
 		return
-	_check(route.hit_frames == [6, 13, 21, 30, 35, 41], "air route hits on frames 6/13/21/30/35/41 (w=0 cancels with the B pairing wait, earliest air press after pre-jump, j5D startup 6)")
-	_check(route.combo_hits == 6 and _approx(route.total_damage, 39.6), "air route counts 6 hits for 39.6 total (three-layer corrections, j5D base 16), matching the runtime air-route test")
+	_check(route.hit_frames == [6, 13, 21, 30, 35, 43], "air route hits on frames 6/13/21/30/35/43 (w=0 cancels with the B pairing wait, earliest air press after pre-jump, j2D startup 8)")
+	_check(route.combo_hits == 6 and _approx(route.total_damage, 40.5), "air route counts 6 hits for 40.5 total (three-layer corrections, j2D base 18), matching the runtime air-route test")
 	var replay := _replay_inputs(route.inputs, route.hit_frames[route.hit_frames.size() - 1])
 	_check(replay.hit_frames == route.hit_frames, "replaying the solver schedule on a fresh CombatSession reproduces every hit frame")
 	_check(replay.combo_hits == 6 and _approx(replay.total_damage, route.total_damage), "replay matches combo count and decayed damage")
@@ -330,8 +333,8 @@ func _test_injected_landing_back_edge_reports_cycle() -> void:
 	_check(edge != null and not edge.valid, "landing back edge is excluded")
 	var route_opts := ComboSolver.SolverOptions.new()
 	route_opts.move_table = table
-	var finite := _query_route(["5A", "5B", "6A", "jA", "jB", "j5D"], route_opts)
-	_check(finite != null and finite.combo_hits == 6, "finite air route remains available (six hits after the 6A launcher migration)")
+	var finite := _query_route(["5A", "5B", "6A", "jA", "jB", "j2D"], route_opts)
+	_check(finite != null and finite.combo_hits == 6, "finite air route remains available (six hits after the 6A launcher migration; j2D closer per ticket 01 re-anchor)")
 
 
 # --- 票据 02：蹲姿招式输入表达与低浮空状态 ---

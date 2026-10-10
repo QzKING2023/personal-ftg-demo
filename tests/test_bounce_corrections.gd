@@ -1,12 +1,16 @@
 extends SceneTree
-## 票据 09 单元测试：j214D 统一 GROUND_BOUNCE（grounded/airborne 双入口）、
-## 触地 bounce_contact 与一次性反弹、starter grade + 三层修正跨弹地/落地保持、
-## A 起手弹地后命中即收尾（BOUNCE_END）、B 起手一次性 bounce_followup 消费与
-## 条件延长、独立输入、第二次 j214D 资料缺失负例、弹地不是 OTG、被防/挥空不
-## 锁定起手、落地普通连接分层倍率与 236C>5D 循环负例。
+## 票据 09 单元测试（连段路线票据 01 修订）：j214D 统一 GROUND_BOUNCE
+## （grounded/airborne 双入口）、触地 bounce_contact 与单次反弹、starter grade
+## 与三层修正跨弹地/落地保持。票据 01 撤销按起手等级的一次性弹地资格与
+## A 起手强制终点（BOUNCE_END/bounce_followup）：弹地目标上的命中自然接续，
+## 再次有效命中可再次弹地（多弹地与修正不重置的证据在
+## test_ground_bounce_finish.gd）；本套件保留双入口、修正、OTG 门、被防/挥空
+## 不锁起手、落地连接分层与 236C>5D 循环负例，并按 12×20 尺度与 jC 4/j214D 1
+## 选值重新校准帧表。
 ## 运行：godot --headless --path . -s res://tests/test_bounce_corrections.gd
 
-const NEAR_DX := 50.0
+## 12×20 尺度下的近距校准间距（g=14；原 48×80 时代的 50px 对应 g=2）。
+const NEAR_DX := 26.0
 
 var _failures := 0
 
@@ -16,13 +20,12 @@ func _initialize() -> void:
 	_test_bounce_profile_validation()
 	_test_solo_input_grounded_entry()
 	_test_b_route_airborne_entry_and_followup()
-	_test_a_starter_bounce_ender(1)
-	_test_a_starter_bounce_ender(-1)
-	_test_a_starter_no_continuation()
+	_test_a_starter_natural_continuation(1)
+	_test_a_starter_natural_continuation(-1)
+	_test_a_starter_new_combo_after_recovery()
 	_test_a_starter_expired_input_boundary()
 	_test_b_starter_full_extension(1)
 	_test_b_starter_full_extension(-1)
-	_test_b_starter_followup_not_refreshed()
 	_test_bounce_is_not_otg()
 	_test_blocked_and_miss_do_not_lock_starter()
 	_test_landing_link_tier()
@@ -115,7 +118,6 @@ func _run_plan(plan: Dictionary, facing: int, horizon: int, dx := NEAR_DX) -> Di
 						"damage_scale": session.combo_damage_scale,
 						"time_scale": session.combo_time_scale,
 						"trajectory_scale": session.combo_trajectory_scale,
-						"bounce_followup": session.combo_bounce_followup,
 					})
 				CombatEvent.Type.HIT_MISS:
 					hits.append({"frame": frame, "move": move_at_start, "miss": true})
@@ -157,9 +159,9 @@ func _test_table_entries_and_wiring() -> void:
 	_check(j214d.stance == MoveData.Stance.AIR and j214d.action_key == "D"
 		and j214d.direction_derivation == "214D" and j214d.command_tier == MoveData.CommandTier.SPECIAL,
 		"j214D is the air 214+D special (SPECIAL tier)")
-	_check(j214d.startup_frames == 9 and j214d.active_frames == 4 and j214d.recovery_frames == 22
+	_check(j214d.startup_frames == 1 and j214d.active_frames == 4 and j214d.recovery_frames == 22
 		and j214d.base_damage == 20 and j214d.starter_grade == MoveData.StarterGrade.D,
-		"j214D frame data matches the tuning table (9/4/22, dmg 20, starter D)")
+		"j214D frame data matches the D74 tuning table (1/4/22, dmg 20, starter D)")
 	_check(j214d.hitbox_size == Vector2(52, 36) and is_equal_approx(j214d.hitbox_gap, 4.0)
 		and is_equal_approx(j214d.motion_x_px, 12.0) and is_equal_approx(j214d.motion_y_px, 64.0),
 		"j214D declares its hitbox and planned dive motion (52×36 gap 4, motion 12/64)")
@@ -278,8 +280,19 @@ func _test_solo_input_grounded_entry() -> void:
 	_check(hits.size() == 1 and hits[0]["move"] == "j214D" and hits[0]["hits"] == 1,
 		"solo jump-in j214D hits the grounded dummy as combo hit 1 (independent input)")
 	var first := hits[0]
-	_check(bool(first.get("starter", 0) == MoveData.StarterGrade.D) and int(first.get("bounce_followup", -1)) == 1,
-		"D starter derives bounce_followup = 1 at GROUND_BOUNCE entry")
+	_check(bool(first.get("starter", 0) == MoveData.StarterGrade.D),
+		"D starter locks at the solo GROUND_BOUNCE entry (no per-grade followup derivation anymore)")
+	var solo_vx_at_hit := 0.0
+	var solo_hit_seen := false
+	var solo := _spawn(NEAR_DX, 1)
+	for frame in range(1, 60):
+		var input: FrameInput = plan[frame] if plan.has(frame) else FrameInput.new()
+		for event in solo.step(input):
+			if event.type == CombatEvent.Type.HIT:
+				solo_hit_seen = true
+				solo_vx_at_hit = solo.dummy_velocity.x
+	_check(solo_hit_seen and is_equal_approx(solo_vx_at_hit, 0.0),
+		"j214D grounded entry also zeroes the horizontal hit velocity (ticket-01 D rule, vx=%+.1f)" % solo_vx_at_hit)
 	var contacts: Array[int] = run["bounce_contacts"]
 	_check(contacts.size() == 1, "exactly one bounce_contact fires in the whole solo flow (%s)" % str(contacts))
 	_check(session.dummy_state != CombatSession.DummyState.KNOCKED_DOWN,
@@ -316,36 +329,31 @@ func _b_route_plan(facing := 1) -> Dictionary:
 		1: _press("B"), 16: _press("C"),
 		30: _press("A", false, facing), 31: _axis(facing),
 		48: _jump(),
-		60: _press("B"),
-		70: _air214(0, facing), 71: _air214(1, facing), 72: _air214(2, facing), 73: _air214(3, facing),
-		103: _press("B"),
+		62: _press("B"),
+		76: _air214(0, facing), 77: _air214(1, facing), 78: _air214(2, facing), 79: _air214(3, facing),
+		105: _press("B"),
 	}
 
 
 func _test_b_route_airborne_entry_and_followup() -> void:
-	var run := _run_plan(_b_route_plan(1), 1, 160)
+	## 空中入口弹地 + 自然追击：本编排下 5B 追击是几何上的 1F 刃（弹起木桩仅
+	## 一帧落入 5B 判框，前摇差一帧够不到——如实记录），追击以 6A 延长承担
+	## （_test_b_starter_full_extension 复验 jc.jA 全链）。
+	var plan := _b_route_plan(1)
+	plan.erase(105)
+	plan[105] = _press("A", false, 1)
+	var run := _run_plan(plan, 1, 170)
 	var session: CombatSession = run["session"]
 	var moves := _hit_moves(run)
-	_check(moves == ["5B", "5C", "6A", "jB", "j214D", "5B"],
-		"B-starter route lands 5B>5C>6A>jc.jB>jC>j214D>5B (bounce followup hit) %s" % str(moves))
-	var j214d_hit: Dictionary = {}
-	var followup_hit: Dictionary = {}
-	for hit in run["hits"]:
-		if hit["move"] == "j214D":
-			j214d_hit = hit
-		elif hit["move"] == "5B" and hit["hits"] == 6:
-			followup_hit = hit
-	_check(not j214d_hit.is_empty() and j214d_hit["bounce_followup"] == 1,
-		"B starter derives bounce_followup = 1 at the airborne bounce entry")
-	_check(int(session.dummy_bounce_left) >= 0 and not followup_hit.is_empty() and followup_hit["bounce_followup"] == 0,
-		"the successful bounce followup consumes the one-shot qualification (1 → 0)")
+	_check(moves == ["5B", "5C", "6A", "jB", "j214D", "6A"],
+		"B-starter route lands 5B>5C>6A>jc.jB>j214D and the 6A bounce followup %s" % str(moves))
 	_check(run["bounce_contacts"].size() == 1, "one bounce contact in the B route")
 	## 弹地窗口按时间层预先换算：B 第 5 击后 time = 0.82×0.94⁴ ≈ 0.639 → floor(16×0.639)=10。
 	var window_seen := -1
 	var calib := _spawn(NEAR_DX, 1)
-	var plan := _b_route_plan(1)
+	var window_plan := _b_route_plan(1)
 	for frame in range(1, 100):
-		var input: FrameInput = plan[frame] if plan.has(frame) else FrameInput.new()
+		var input: FrameInput = window_plan[frame] if window_plan.has(frame) else FrameInput.new()
 		for _event in calib.step(input):
 			if calib.dummy_state == CombatSession.DummyState.GROUND_BOUNCE and not calib.dummy_bounce_contacted:
 				window_seen = calib.dummy_bounce_left
@@ -357,71 +365,68 @@ func _test_b_route_airborne_entry_and_followup() -> void:
 
 func _a_route_plan(b_press_frame: int, facing := 1) -> Dictionary:
 	var plan := {
-		1: _press("A"), 9: _press("B"), 24: _press("C"),
-		38: _press("A", false, facing), 39: _axis(facing),
-		56: _jump(),
-		68: _press("B"),
-		78: _air214(0, facing), 79: _air214(1, facing), 80: _air214(2, facing), 81: _air214(3, facing),
+		1: _press("A"), 9: _press("B"),
+		24: _press("A", false, facing), 25: _axis(facing),
+		48: _jump(),
+		58: _press("C"),
+		71: _air214(0, facing), 72: _air214(1, facing), 73: _air214(2, facing), 74: _air214(3, facing),
 	}
 	if b_press_frame > 0:
 		plan[b_press_frame] = _press("B")
 	return plan
 
 
-func _test_a_starter_bounce_ender(facing: int) -> void:
-	var run := _run_plan(_a_route_plan(110, facing), facing, 160)
+func _test_a_starter_natural_continuation(facing: int) -> void:
+	## 票据 01：A 起手弹地目标上的命中不再强制结束——5B 落地后按弹地资料命中
+	## 并自然接续到木桩自然受身（帧表按 12×20 + jC 4/j214D 1 校准；5B 的弹地
+	## 目押窗为 1F，D72 允许）。
+	var run := _run_plan(_a_route_plan(99, facing), facing, 200)
 	var moves := _hit_moves(run)
-	_check(moves == ["5A", "5B", "5C", "6A", "jB", "j214D", "5B"],
-		"A-starter route lands the juggle into j214D and the post-bounce 5B as hit 7 (%s) | facing %+d" % [str(moves), facing])
-	var j214d_followup := -1
-	var last_followup := -1
+	_check(moves == ["5A", "5B", "6A", "jC", "j214D", "5B"],
+		"A-starter route lands the juggle and the post-bounce 5B as hit 6 (%s) | facing %+d" % [str(moves), facing])
+	var hit6_frame := -1
+	var first_end_after_hit6 := -1
+	var recovered := false
 	for hit in run["hits"]:
-		if hit["move"] == "j214D":
-			j214d_followup = int(hit["bounce_followup"])
-		if hit["hits"] == 7:
-			last_followup = int(hit["bounce_followup"])
-	_check(j214d_followup == 0 and last_followup == 0,
-		"A starter derives bounce_followup = 0 and the post-bounce hit lands with no qualification | facing %+d" % facing)
-	var bounce_end := false
+		if int(hit["hits"]) == 6:
+			hit6_frame = int(hit["frame"])
 	for end in run["ends"]:
-		if end.get("reason", -1) == CombatEvent.ComboEndReason.BOUNCE_END:
-			bounce_end = true
-	_check(bounce_end, "the A-starter post-bounce hit ends the route immediately (BOUNCE_END) | facing %+d" % facing)
-	var session: CombatSession = run["session"]
-	_check(not session.combo_active and session.combo_starter_grade == MoveData.StarterGrade.UNSET,
-		"combo state is cleared after the bounce end (starter UNSET) | facing %+d" % facing)
+		if hit6_frame > 0 and int(end.get("frame", -1)) > hit6_frame:
+			if first_end_after_hit6 < 0:
+				first_end_after_hit6 = int(end["frame"])
+			if end.get("reason", -1) == CombatEvent.ComboEndReason.DUMMY_RECOVERED:
+				recovered = true
+	_check(hit6_frame > 0 and first_end_after_hit6 > hit6_frame,
+		"the bounce-target hit does NOT end the combo itself (first end F%d > hit F%d) | facing %+d" % [first_end_after_hit6, hit6_frame, facing])
+	_check(recovered, "the combo continues to the dummy's natural recovery (DUMMY_RECOVERED) | facing %+d" % facing)
 
 
-func _test_a_starter_no_continuation() -> void:
-	## BOUNCE_END 之后的新输入按独立招式处理：不能延续旧连段（不存在第 8 击）。
-	var plan := _a_route_plan(110, 1)
-	plan[156] = _press("C")
+func _test_a_starter_new_combo_after_recovery() -> void:
+	## 自然恢复结束后的新输入按独立招式处理：不能延续旧连段（不存在第 7 击）。
+	var plan := _a_route_plan(99, 1)
+	plan[150] = _press("C")
 	var run := _run_plan(plan, 1, 190)
 	var moves := _hit_moves(run)
-	var eighth := moves.size() >= 8 and moves[7] == "5C"
-	var ninth_hit_index := -1
+	var new_combo_hit1 := -1
 	for hit in run["hits"]:
 		if not bool(hit.get("miss", false)) and hit["move"] == "5C":
-			ninth_hit_index = int(hit["hits"])
-	_check(moves.size() == 8 and eighth and ninth_hit_index == 1,
-		"after BOUNCE_END the next 5C hit registers as hit 1 of a new combo, never a continuation (%s)" % str(moves))
+			new_combo_hit1 = int(hit["hits"])
+	_check(moves.size() == 7 and moves[6] == "5C" and new_combo_hit1 == 1,
+		"after the natural recovery the next 5C registers as hit 1 of a new combo, never a continuation (%s)" % str(moves))
 
 
 func _test_a_starter_expired_input_boundary() -> void:
-	## 「允许取消但来不及命中」前置边界：过早按下在触地开窗前过期，目押失败可观察。
-	var run := _run_plan(_a_route_plan(99, 1), 1, 160)
+	## 「允许取消但来不及命中」前置边界：过早按下在弹地等待中过期/错过配对
+	## 窗口，目押失败可观察（连段按收招未接续结束，不伪造追击）。
+	var run := _run_plan(_a_route_plan(92, 1), 1, 160)
 	var moves := _hit_moves(run)
-	var link_fail_seen := false
-	for end in run["ends"]:
-		if end.has("link_fail"):
-			link_fail_seen = true
-	_check(moves == ["5A", "5B", "5C", "6A", "jB", "j214D"] and not link_fail_seen,
-		"an input pressed too early expires before the bounce window opens: no followup starts and no hit is fabricated (%s)" % str(moves))
-	var ended_by_recovery := false
+	_check(moves == ["5A", "5B", "6A", "jC", "j214D"],
+		"an input pressed too early never lands the bounce followup: no hit is fabricated (%s)" % str(moves))
+	var move_recovered := false
 	for end in run["ends"]:
 		if end.get("reason", -1) == CombatEvent.ComboEndReason.MOVE_RECOVERED:
-			ended_by_recovery = true
-	_check(ended_by_recovery and run["bounce_contacts"].size() == 1,
+			move_recovered = true
+	_check(move_recovered and run["bounce_contacts"].size() == 1,
 		"the route ends by move-recovered while the single bounce still runs its course")
 
 
@@ -432,11 +437,11 @@ func _b6_route_plan(facing: int) -> Dictionary:
 		1: _press("B"), 16: _press("C"),
 		30: _press("A", false, facing), 31: _axis(facing),
 		48: _jump(),
-		60: _press("B"), 68: _press("C"),
-		70: _air214(0, facing), 71: _air214(1, facing), 72: _air214(2, facing), 73: _air214(3, facing),
-		103: _press("A", false, facing),
-		124: _jump(),
-		132: _press("A"),
+		62: _press("B"),
+		76: _air214(0, facing), 77: _air214(1, facing), 78: _air214(2, facing), 79: _air214(3, facing),
+		105: _press("A", false, facing),
+		126: _jump(),
+		136: _press("A"),
 	}
 
 
@@ -462,29 +467,13 @@ func _test_b_starter_full_extension(facing: int) -> void:
 	_check(run["bounce_contacts"].size() == 1, "one bounce contact across the extended route | facing %+d" % facing)
 
 
-func _test_b_starter_followup_not_refreshed() -> void:
-	## 反例：资格不随命中刷新——B6 延长后任何后续命中都不再产生追击资格。
-	var run := _run_plan(_b6_route_plan(1), 1, 190)
-	var session: CombatSession = run["session"]
-	var after_followup := false
-	var refreshed := false
-	for hit in run["hits"]:
-		if hit["move"] == "6A" and hit["hits"] == 6:
-			after_followup = true
-		if after_followup and int(hit["bounce_followup"]) > 0:
-			refreshed = true
-	_check(after_followup and not refreshed, "subsequent hits never refresh the consumed bounce_followup")
-	_check(session.combo_bounce_followup == 0 or not session.combo_active,
-		"no live combo carries a bounce_followup after consumption")
-
-
 # --- 弹地不是 OTG ---
 
 func _test_bounce_is_not_otg() -> void:
 	## 弹地窗口内独立起手的 5A 不能命中弹地目标（无资料门 + 连段资格门）。
 	var plan := _b_route_plan(1)
-	plan.erase(103)
-	plan[110] = _press("A")
+	plan.erase(105)
+	plan[98] = _press("A")
 	var run := _run_plan(plan, 1, 170)
 	var session: CombatSession = run["session"]
 	var knockdown := false
@@ -495,7 +484,7 @@ func _test_bounce_is_not_otg() -> void:
 		for _event in calib.step(input):
 			if calib.dummy_state == CombatSession.DummyState.KNOCKED_DOWN:
 				knockdown = true
-		if frame == 110:
+		if frame == 98:
 			hp_before_5a = calib.dummy_hp
 	var hp_unchanged := is_equal_approx(calib.dummy_hp, hp_before_5a)
 	_check(hp_unchanged and not knockdown,
@@ -565,7 +554,7 @@ func _test_landing_link_tier() -> void:
 func _test_slide_and_rekka_preserve_starter() -> void:
 	## slide 跨越（票据 05 R2 编排 @93px）：236C 段1挥空>段2 slide>5D 捞起，
 	## D 起手等级与三层在 slide 命中前后不重置。
-	var slide := _spawn(93.0, 1)
+	var slide := _spawn(60.0, 1)
 	var slide_plan := {
 		1: _down(), 2: _down_fwd(1), 3: _fwd(1), 4: _fwd_c(1),
 		40: _press("D"),
@@ -579,12 +568,12 @@ func _test_slide_and_rekka_preserve_starter() -> void:
 			if event.type == CombatEvent.Type.HIT:
 				slide_hit_moves.append(move_at_start)
 				starter_values.append(slide.combo_starter_grade)
-	_check(slide_hit_moves == ["236C", "236C", "5D"],
-		"slide route replays 236C(whiff seg1)>seg2>5D pickup (%s)" % str(slide_hit_moves))
+	_check(slide_hit_moves == ["236C", "5D"],
+		"slide route replays 236C(whiff seg1)>seg2 slide>5D pickup (%s)" % str(slide_hit_moves))
 	_check(starter_values.all(func(g): return g == MoveData.StarterGrade.D),
 		"starter D stays locked across the slide state transition")
 	## Rekka 跨越（票据 04 编排）：2C>214C>~B(airborne 延长)>5B 目押，B 起手保持。
-	var rekka := _spawn(44.0, 1)
+	var rekka := _spawn(20.0, 1)
 	var rekka_plan := {
 		1: _press("C", true),
 		9: _cmd214(0, 1), 10: _cmd214(1, 1), 11: _cmd214(2, 1), 12: _cmd214(3, 1),
@@ -660,7 +649,7 @@ func _test_236c_5d_loop_breaks_for_a_starter() -> void:
 		34: _press("D"),
 		68: _press("B"),
 	}
-	var run := _run_plan(plan, 1, 150, 70.0)
+	var run := _run_plan(plan, 1, 150, 38.0)
 	var moves := _hit_moves(run)
 	var combo_hits_seen := []
 	for hit in run["hits"]:
@@ -685,6 +674,7 @@ func _test_236c_5d_loop_breaks_for_a_starter() -> void:
 
 func _test_settlement_keys_carry_bounce_state() -> void:
 	var plan := _b_route_plan(1)
+	plan[105] = _press("A", false, 1)
 	var session := _spawn(NEAR_DX, 1)
 	var keys_at_entry := {}
 	var keys_at_contact := {}
@@ -696,18 +686,17 @@ func _test_settlement_keys_carry_bounce_state() -> void:
 		var state := session.settlement_state()
 		if session.dummy_state == CombatSession.DummyState.GROUND_BOUNCE and not session.dummy_bounce_contacted:
 			keys_at_entry = state
-		if session.dummy_bounce_contacted and session.combo_bounce_followup == 1:
+		if session.dummy_bounce_contacted and session.combo_hits == 5:
 			keys_at_contact = state
-		if session.combo_bounce_followup == 0 and session.combo_active:
+		if session.combo_hits == 6 and session.combo_active:
 			keys_after_followup = state
 	_check(not keys_at_entry.is_empty() and keys_at_entry.has("dummy_bounce_contacted")
-		and keys_at_entry.has("dummy_bounce_left") and keys_at_entry.has("bounce_followup")
+		and keys_at_entry.has("dummy_bounce_left")
 		and keys_at_entry.has("starter_grade") and keys_at_entry.has("damage_scale"),
-		"settlement_state carries the bounce/contact/followup/starter/correction keys for solver dedup")
+		"settlement_state carries the bounce/contact/starter/correction keys for solver dedup")
 	_check(not keys_at_contact.is_empty() and not keys_after_followup.is_empty()
-		and keys_at_contact.get("bounce_followup") == 1
-		and keys_after_followup.get("bounce_followup") == 0,
-		"the followup consumption changes the settlement key (states before/after dedup apart)")
+		and float(keys_at_contact.get("damage_scale", 0.0)) > float(keys_after_followup.get("damage_scale", 1.0)),
+		"the bounce-followup hit changes the settlement key via the correction layers (states before/after dedup apart)")
 	_check(keys_at_entry.get("dummy_bounce_contacted") == false
 		and keys_at_contact.get("dummy_bounce_contacted") == true,
 		"the contact event flips a settlement key (pre-touch and post-touch are distinct states)")

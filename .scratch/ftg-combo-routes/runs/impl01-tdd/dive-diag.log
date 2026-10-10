@@ -1,0 +1,41 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+N=00 | HIT jA F5 started6D F5 y=431 yAtPressA=463 landed=false
+N=01 | HIT jA F5 started6D F5 y=426 yAtPressA=456 landed=false
+N=02 | (no events) yAtPressA=449 landed=true
+N=03 | (no events) yAtPressA=443 landed=true
+N=04 | (no events) yAtPressA=437 landed=true
+N=05 | (no events) yAtPressA=431 landed=true
+N=06 | (no events) yAtPressA=426 landed=true
+N=07 | (no events) yAtPressA=422 landed=true
+N=08 | (no events) yAtPressA=418 landed=true
+N=09 | (no events) yAtPressA=414 landed=true
+N=10 | (no events) yAtPressA=410 landed=true
+N=11 | (no events) yAtPressA=407 landed=true
+N=12 | (no events) yAtPressA=404 landed=true
+N=13 | (no events) yAtPressA=402 landed=true
+N=14 | (no events) yAtPressA=400 landed=true
+N=15 | (no events) yAtPressA=398 landed=true
+N=16 | (no events) yAtPressA=397 landed=true
+N=17 | (no events) yAtPressA=397 landed=true
+N=18 | (no events) yAtPressA=396 landed=true
+N=19 | (no events) yAtPressA=396 landed=true
+N=20 | (no events) yAtPressA=397 landed=true
+N=21 | (no events) yAtPressA=397 landed=true
+N=22 | (no events) yAtPressA=398 landed=true
+N=23 | HIT jA F10 yAtPressA=400 landed=true
+N=24 | HIT jA F9 started6D F9 y=437 yAtPressA=402 landed=true
+N=25 | HIT jA F8 started6D F8 y=437 yAtPressA=404 landed=true
+N=26 | HIT jA F7 started6D F7 y=437 yAtPressA=407 landed=true
+N=27 | HIT jA F6 started6D F6 y=437 yAtPressA=410 landed=true
+N=28 | HIT jA F5 started6D F5 y=437 yAtPressA=414 landed=true
+N=29 | HIT jA F5 started6D F5 y=443 yAtPressA=418 landed=true
+N=30 | HIT jA F5 started6D F5 y=449 yAtPressA=422 landed=true
+N=31 | HIT jA F5 started6D F5 y=456 yAtPressA=426 landed=true
+N=32 | HIT jA F5 started6D F5 y=463 yAtPressA=431 landed=true
+N=33 | HIT jA F5 yAtPressA=437 landed=true
+N=34 | (no events) yAtPressA=443 landed=true
+N=35 | MISS 6D F16 yAtPressA=449 landed=true
+N=36 | MISS 6D F15 yAtPressA=456 landed=true
+N=37 | MISS 6D F13 yAtPressA=463 landed=true
+EXIT=0 

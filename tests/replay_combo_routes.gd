@@ -44,7 +44,7 @@ func _observe(session: CombatSession) -> Dictionary:
 		"landing_recovery_left", "buffered_move_id", "buffer_age", "buffer_consumed_frame",
 		"pending_combination", "direction_sequence", "direction_locks", "cancel_targets",
 		"cancel_age", "cancel_open", "starter_grade", "time_scale", "trajectory_scale",
-		"bounce_followup", "dummy_bounce_left", "dummy_bounce_contacted", "special_entry_open",
+		"dummy_bounce_left", "dummy_bounce_contacted", "special_entry_open",
 		"move_via_special_entry", "dummy_slide_left", "charge_age", "move_direction",
 		"cross_ok", "motion_wall_clamped", "dummy_air_height_px", "air_link_pending"]:
 		snap[key] = debug[key]

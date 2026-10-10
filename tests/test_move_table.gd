@@ -67,13 +67,14 @@ func _test_default_manifest_loads_shared_table() -> void:
 
 
 func _test_default_table_entries_match_manifest() -> void:
-	# 新基线调校初值（frame-data.md v0.2 TUNING_INITIAL）：startup/active/recovery 与基础伤害。
+	# 新基线调校初值（frame-data.md v0.2 TUNING_INITIAL；连段路线票据 01 起
+	# jC 7→4、j214D 9→1，D74 选值）：startup/active/recovery 与基础伤害。
 	var result := MoveTable.load_default()
 	var expected := {
 		"5A": [5, 4, 10, 8], "2A": [5, 4, 10, 8], "5B": [6, 5, 12, 12], "2B": [7, 5, 12, 11],
 		"5C": [8, 5, 16, 16], "2C": [9, 3, 18, 14], "236C": [6, 2, 22, 8],
 		"5D": [7, 4, 18, 18],
-		"jA": [4, 6, 10, 8], "jB": [4, 6, 12, 12], "jC": [7, 5, 14, 14],
+		"jA": [4, 6, 10, 8], "jB": [4, 6, 12, 12], "jC": [4, 5, 14, 14],
 		"j5D": [6, 4, 16, 16], "j6D": [7, 4, 18, 17], "j2D": [8, 4, 20, 18],
 		"6D": [9, 4, 20, 18], "2D": [8, 4, 18, 17],
 		"BC": [5, 11, 10, -1],
@@ -377,7 +378,7 @@ func _test_same_binding_different_priority_allowed() -> void:
 		for move in moves:
 			table[(move as MoveData).move_id] = move
 		var session := CombatSession.new(table)
-		session.dummy_position = session.player_position + Vector2(70, 0)
+		session.dummy_position = session.player_position + Vector2(26, 0)
 		session.step(FrameInput.make(0, false, "A"))
 		_check(session.player_move_id == "5H", "runtime resolves the same binding by declared priority")
 
@@ -862,7 +863,7 @@ func _test_startup_edit_syncs_session_and_solver() -> void:
 	var moves := MoveTable.load_default().moves
 	(moves["5A"] as MoveData).startup_frames += 3
 	var session := CombatSession.new(moves)
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var session_hit := -1
 	for frame in range(1, 30):
 		var events := session.step(FrameInput.make(0, false, "A" if frame == 1 else ""))
@@ -884,7 +885,7 @@ func _test_damage_edit_syncs_session_and_solver() -> void:
 	var moves := MoveTable.load_default().moves
 	(moves["5A"] as MoveData).base_damage = 25
 	var session := CombatSession.new(moves)
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	for frame in range(1, 12):
 		session.step(FrameInput.make(0, false, "A" if frame == 1 else ""))
 	## A 起手首击：round0.1(25 × 0.72) = 18.0。
@@ -900,7 +901,7 @@ func _test_attribute_edit_syncs_session_and_solver() -> void:
 	var moves := MoveTable.load_default().moves
 	(moves["5A"] as MoveData).attack_attribute = MoveData.AttackAttribute.LOW
 	var session := CombatSession.new(moves)
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	session.step(FrameInput.make(0, false, "A"))
 	var snap := session.debug_snapshot()
 	_check(String(snap["move_attribute"]) == "low",
@@ -919,7 +920,7 @@ func _test_cancel_edit_syncs_session_and_solver() -> void:
 	_check(_find_edge(report, "5A", "5B") == null, "removing the configured chain cancel and link drops the solver edges")
 	_check(_find_edge(report, "5A", "236C") != null, "the remaining configured special cancel is still analyzed")
 	var session := CombatSession.new(moves)
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var saw_cancel := false
 	for frame in range(1, 12):
 		var key := "A" if frame == 1 else ("B" if frame == 7 else "")

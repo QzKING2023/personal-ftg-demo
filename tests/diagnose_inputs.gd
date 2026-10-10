@@ -9,7 +9,8 @@ extends SceneTree
 ## 退出码非 0 = 仍有未修复的用户症状。面向规则（地面自由行动每帧面向木桩、
 ## 后退不翻面、空中按锁定面向折算）已随 issue 12 落地，本回路应为全绿基线。
 
-const NEAR_OFFSET := 70.0   ## 木桩放在命中范围内的身前偏移
+## 连段路线票据 01（12×20 尺度）：近距偏移 26px（g14；原 70px 为 48 宽身体的 g22）。
+const NEAR_OFFSET := 26.0
 const FAR_OFFSET := 400.0   ## 木桩放在射程外
 
 var _failures := 0

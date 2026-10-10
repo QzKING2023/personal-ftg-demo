@@ -29,15 +29,14 @@ enum Type {
 }
 
 ## 连段结束原因：收尾、取消窗口关闭、招式收招未接续、木桩自然受身/恢复、
-## 普通倒地反应（进入倒地即结束当前连段）、弹地后收尾（A 起手或资格已消费时
-## 弹地目标上的新命中立即作为路线终点，票据 09，B-03）。
+## 普通倒地反应（进入倒地即结束当前连段）。弹地目标上的命中不再有独立强制
+## 终点（连段路线票据 01 撤销票据 09 B-03 的一次性资格/BOUNCE_END）。
 enum ComboEndReason {
 	FINISHER,
 	CANCEL_WINDOW_CLOSED,
 	MOVE_RECOVERED,
 	DUMMY_RECOVERED,
 	KNOCKDOWN,
-	BOUNCE_END,
 }
 
 ## 普通投尝试被拒绝的原因：状态禁用（蹲下/pre-jump/空中/招式阶段/受击硬直/

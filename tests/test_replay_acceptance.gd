@@ -2,14 +2,14 @@ extends SceneTree
 ## 最终路线回放与联合验收（ftg-combat-foundation issue 23）：
 ## 按 Combo Solver 输出，在全新 CombatSession 与训练场真实键盘中回放代表性
 ## 地面、方向派生、jump cancel 空中与落地路线——
-## - 钉位回放（探针钉位 70 px，双面向）逐帧重现报告的命中帧/连段数/总伤害，
+## - 钉位回放（探针钉位 26 px，双面向；连段路线票据 01 起 12×20 尺度）逐帧重现报告的命中帧/连段数/总伤害，
 ##   并核对 Hitstop 边界、落地与自然受身事件（checkbox 1、2）；
 ## - 同一输入经训练场真实键盘、方向和 Space 适配后，与同站位的会话探针结果
 ##   逐 tick 一致（checkbox 3）。键盘注入走物理帧回调内的高优先级驱动节点：
 ##   持续键（方向/下）当 tick 生效，边沿键（动作/Space）下一 tick 生效——
 ##   回放计划因此从第 2 tick 排首个输入，探针对照带同一前导空帧对齐时间轴；
 ## - 回放区分 timing-valid 与 spatial-valid：无空间数据只宣称 timing，提供数据
-##   后 48/64/80 px 钉位复验成立；短 reach 注入路线在 80 px 的空间失败由回放
+##   后 12/24/44 px 钉位复验成立；短 reach 注入路线在 44 px 的空间失败由回放
 ##   证实为挥空，不宣称未经验证的站位（checkbox 4）；
 ## - 回归层（checkbox 5 联合层）：命中后停顿内按下、取消窗口末档消费的
 ##   「缓存 + 取消」边界（末档/末档+1）、空技着地恢复期间的出招锁定在回放
@@ -20,14 +20,14 @@ extends SceneTree
 
 const GROUND_ROUTE := ["5A", "5B", "5D"]
 ## 旧派生代表 5B→214D 已废弃；新基线派生代表为 5B 必杀取消 236C 的空中路线。
-const DERIVATIVE_ROUTE := ["5B", "6A", "jA", "jB", "j5D"]
-const AIR_ROUTE := ["5A", "5B", "6A", "jA", "jB", "j5D"]
+const DERIVATIVE_ROUTE := ["5B", "6A", "jA", "jB", "j2D"]
+const AIR_ROUTE := ["5A", "5B", "6A", "jA", "jB", "j2D"]
 const LANDING_ROUTE := ["5A", "5B", "6A", "jA", "jB", "5D"]
-## 训练场键盘回放的站位（真实击退物理）：地面/派生用固定接触位 70 px；
-## 空中/落地用空间网格的 48 px 贴身档——真实击退下 70 px 起手的空中后段会
+## 训练场键盘回放的站位（真实击退物理；12×20 尺度）：地面/派生用固定接触位
+## 26 px；空中/落地用空间网格的 12 px 贴身档——真实击退下的漂移差异照旧
 ## 漂出命中距离，回放记录如实区分钉位层与真实击退层的结论。
 const KEYBOARD_STANDINGS := {
-	"ground": 70.0, "derivative": 70.0, "air": 48.0, "landing": 48.0,
+	"ground": 26.0, "derivative": 26.0, "air": 12.0, "landing": 12.0,
 }
 ## 单次回放的物理帧观测上限（自然受身 + 落地 + 余量）。
 const OBSERVE_HORIZON := 420
@@ -117,13 +117,14 @@ func _test_pinned_replay_reproduces_solver_results(report: ComboSolver.SolverRep
 				and first["landing_ticks"] == second["landing_ticks"],
 			"the same inputs produce identical event payloads, per-hit settlement states and landing timelines in two fresh sessions")
 		for facing in [1, -1]:
-			## 轨迹层修正缩小击退后，70 px 真实击退回放完整接通全部五击——
-			## 与钉位层结论一致；记录层注明这是单一站位的真实物理结论。
-			var free := _replay_route(air, facing, 70.0, _shared_table(), false)
+			## 轨迹层修正缩小击退后，贴身档（12 px）真实击退回放完整接通全部
+			## 六击——与钉位层结论一致；12×20 尺度下击退漂移相对触及更大，26 px
+			## 起手会在空中后段漂出触及（如实记录，不外推其它站位）。
+			var free := _replay_route(air, facing, 12.0, _shared_table(), false)
 			_check(int(free["combo_hits"]) == air.combo_hits,
-				"70 px real-knockback air replay reproduces the full route (trajectory corrections keep the dummy reachable)")
-			_records.append(_record_line(air, facing, "站位：真实击退 70 px", free,
-				"命中帧", "timing-valid（70 px 真实击退下完整接通；单一站位结论）"))
+				"12 px real-knockback air replay reproduces the full route (trajectory corrections keep the dummy reachable)")
+			_records.append(_record_line(air, facing, "站位：真实击退 12 px", free,
+				"命中帧", "timing-valid（12 px 真实击退下完整接通；单一站位结论）"))
 
 
 ## 保留旧 Solver 的真实帧表作负例，不能把它混回当前合法路线。
@@ -153,11 +154,11 @@ func _test_rejected_landing_replay(report: ComboSolver.SolverReport) -> void:
 	_check(forbidden == null or not forbidden.timing_valid, "latest Solver excludes the forbidden landing route")
 	var route := _legacy_landing_fixture()
 	for facing in [1, -1]:
-		var run := _replay_route(route, facing, 70.0, _shared_table(), true)
+		var run := _replay_route(route, facing, 26.0, _shared_table(), true)
 		_check(run["hit_frames"] == [6, 13, 18] and int(run["combo_hits"]) == 3,
 			"legacy landing replay on the two-segment baseline lands 5A plus both 236C segments and stops there (no jump cancel exists; the old air schedule never connects)")
 		_check(not (run["landing_move_ids"] as Array).has("5D"), "legacy schedule cannot start 5D on landing")
-		_records.append(_record_line(route, facing, "站位：旧样本钉位 70 px", run,
+		_records.append(_record_line(route, facing, "站位：旧样本钉位 26 px", run,
 			"命中帧", "timing-invalid（恢复锁拒绝旧样本第5击；不作空间证明）"))
 
 
@@ -175,12 +176,12 @@ func _test_replay_boundary_variants(report: ComboSolver.SolverReport) -> void:
 	# 击成立（取消窗口关闭或目标命中晚于木桩恢复）。
 	var hit_5b: int = 1 + GameParams.THROW_COMBINATION_TOLERANCE + (table["5B"] as MoveData).startup_frames
 	var startup_5d: int = (table["5D"] as MoveData).startup_frames
-	var on_time := _replay_key_schedule(table, {1: "B", hit_5b + edge.wait_to: "D"}, 1, 70.0)
+	var on_time := _replay_key_schedule(table, {1: "B", hit_5b + edge.wait_to: "D"}, 1, 26.0)
 	_check((on_time["hit_frames"] as Array).size() == 2 and int(on_time["combo_hits"]) == 2
 			and on_time["hit_frames"] == [hit_5b, hit_5b + edge.wait_to + startup_5d],
 		"pressing D at the cancel window's last valid age (%d) still lands combo hit 2 (hit frame %d)" % [
 			edge.wait_to, hit_5b + edge.wait_to + startup_5d])
-	var late := _replay_key_schedule(table, {1: "B", hit_5b + edge.wait_to + 1: "D"}, 1, 70.0)
+	var late := _replay_key_schedule(table, {1: "B", hit_5b + edge.wait_to + 1: "D"}, 1, 26.0)
 	var late_hits: Array = late["hits"]
 	var late_ok := bool(late["recovered"]) and bool(late["ended"])
 	if late_hits.size() == 2:
@@ -227,39 +228,39 @@ func _test_timing_spatial_layering_and_whiff_replay(plain: ComboSolver.SolverRep
 	_check(("%d px" % ComboSolver.PIN_DX) in guide_text,
 		"the guide states its frame tables are laid out at the fixed %d px contact" % ComboSolver.PIN_DX)
 
-	# 提供空间数据：默认表路线 spatial-valid，48/64/80 px 钉位复验逐档重现。
-	## 空间档代表路线经精确查询解析并按 48/64/80 px 网格复验（票据 09 验收尾巴）。
+	# 提供空间数据：默认表路线 spatial-valid，12/24/44 px 钉位复验逐档重现。
+	## 空间档代表路线经精确查询解析并按 12/24/44 px 网格复验（票据 09 验收尾巴）。
 	var air := _route_of(AIR_ROUTE, true)
 	if air == null:
 		_check(false, "the spatial run reports the air route")
 		return
-	## 新基线 5A 命中框远缘 56 px 与 80 px 站位相邻不相交：5A 起手的空中路线在
-	## 80 px 钉位回放如实断在第 1 击（空间层的 80 px 失败由回放证实），48/64 复现。
+	## 新基线 5A 命中框远缘 38 px 与 44 px 站位相邻不相交：5A 起手的空中路线在
+	## 44 px 钉位回放如实断在第 1 击（空间层的 44 px 失败由回放证实），12/24 复现。
 	for dx in ComboSolver.SPATIAL_PROBE_DISTANCES:
 		var run := _replay_route(air, 1, dx, table, true)
-		if dx < 80.0:
+		if dx < 44.0:
 			_check(run["hit_frames"] == air.hit_frames and _approx(float(run["total_damage"]), air.total_damage),
 				"spatial re-verification: the %d px pinned replay reproduces the air route (hits %s)" % [dx, str(air.hit_frames)])
 		else:
-			## 票据 05 起空中路线为 5A > 5B > 6A > …：80 px 上 5A 边界相邻不相交
+			## 票据 05 起空中路线为 5A > 5B > 6A > …：44 px 上 5A 边界相邻不相交
 			##（真实挥空），后续独立链部分接通——该站位不作路线空间声明。
 			_check(int(run["combo_hits"]) < air.combo_hits and not (run["hit_frames"] as Array).has(air.hit_frames[0]),
 				"the %d px pinned replay confirms the 5A boundary whiff (touching rects do not intersect; the partial chain is not claimed as the route at this standing)" % dx)
 	var record_run := _replay_route(air, 1, 64.0, table, true)
-	_records.append(_record_line(air, 1, "站位：探针钉位 64 px（空间网格档）", record_run,
-		"命中帧", "timing-valid；spatial-valid（48/64/80 px 钉位复验）"))
+	_records.append(_record_line(air, 1, "站位：探针钉位 24 px（空间网格档）", record_run,
+		"命中帧", "timing-valid；spatial-valid（12/24/44 px 钉位复验）"))
 
-	# 短 reach 注入：80 px 空间失败由回放证实为挥空（已起手、无命中），不伪装结论。
+	# 短 reach 注入：44 px 空间失败由回放证实为挥空（已起手、无命中），不伪装结论。
 	var short_table := MoveData.default_table()
 	var short_reach := _injected_move("5R", "R")
 	short_reach.hitbox_size = Vector2(20, 60)
 	short_reach.hitbox_gap = 4.0
 	short_table["5R"] = short_reach
-	## 5A 在 80 px 自身脱靶（边界相邻）：以 5B（远缘 69 px）为来源，80 px 上
-	## 来源命中、5R（远缘 48 px）挥空——短 reach 空间失败由回放证实。
+	## 5A 在 44 px 自身脱靶（边界相邻）：以 5B（远缘 51 px）为来源，44 px 上
+	## 来源命中、5R（远缘 12 px）挥空——短 reach 空间失败由回放证实。
 	(short_table["5B"] as MoveData).cancel_targets.append("5R")
 	## 注入表路线经精确路线查询解析（可读路线报告上限触顶，票据 09 验收尾巴）：
-	## 5B（远缘 69 px）→ 5R（远缘 48 px）在同一空间档下时序可成、空间失败。
+	## 5B（远缘 51 px）→ 5R（远缘 12 px）在同一空间档下时序可成、空间失败。
 	var short_ids: Array[String] = ["5B", "5R"]
 	var short_report := _metrics.route_report(short_ids, _spatial_options(short_table))
 	var short_route := _find_route(short_report, short_ids)
@@ -268,15 +269,15 @@ func _test_timing_spatial_layering_and_whiff_replay(plain: ComboSolver.SolverRep
 		return
 	_check(short_route.timing_valid and short_route.spatial_state == ComboSolver.SolverRoute.SpatialState.INVALID,
 		"the short-reach route stays timing-valid but spatially invalid")
-	_check("；".join(short_route.spatial_failures).contains("80 px"),
-		"the spatial failure names the 80 px standing")
-	for dx in [48.0, 80.0]:
+	_check("；".join(short_route.spatial_failures).contains("44 px"),
+		"the spatial failure names the 44 px standing")
+	for dx in [12.0, 44.0]:
 		var run := _replay_route(short_route, 1, dx, short_table, true)
-		if dx < 80.0:
-			_check(int(run["combo_hits"]) == 2, "the 48 px pinned replay lands both hits (reachability replay-confirmed)")
+		if dx < 44.0:
+			_check(int(run["combo_hits"]) == 2, "the 12 px pinned replay lands both hits (reachability replay-confirmed)")
 		else:
 			_check(int(run["combo_hits"]) == 1 and (run["started_without_hit"] as Array).has("5R"),
-				"the 80 px pinned replay confirms the whiff: 5R started but its hitbox never connected (that standing is not claimed)")
+				"the 44 px pinned replay confirms the whiff: 5R started but its hitbox never connected (that standing is not claimed)")
 
 
 # --- Part 4: training-ground real-keyboard replay (checkbox 3) ---
@@ -437,7 +438,7 @@ func _settle(session: CombatSession) -> void:
 
 func _test_replay_records_complete() -> void:
 	_check(_records.size() >= 10, "the replay records cover the representative routes (pinned both facings + keyboard + spatial)")
-	_check(_records.any(func(line: String) -> bool: return line.contains("5B → 6A → jA → jB → j5D｜面向 -1") and line.contains("6[A]")),
+	_check(_records.any(func(line: String) -> bool: return line.contains("5B → 6A → jA → jB → j2D｜面向 -1") and line.contains("6[A]")),
 		"left-facing replay records mirror physical keys while retaining the relative forward fold")
 	for line in _records:
 		var complete := true

@@ -36,7 +36,7 @@ func _initialize() -> void:
 func _test_charge_commit_threshold_and_normal_tap() -> void:
 	# 点按 D：仅按下一帧按住，阈值前走普通 5D——正常出手时序、无蓄力版提交。
 	var tap := CombatSession.new()
-	tap.dummy_position = tap.player_position + Vector2(70, 0)
+	tap.dummy_position = tap.player_position + Vector2(26, 0)
 	var charged_commit := false
 	var hit_frame := -1
 	var hit_damage := 0.0
@@ -54,7 +54,7 @@ func _test_charge_commit_threshold_and_normal_tap() -> void:
 	_check(not charged_commit, "tap D never commits the charged version")
 	# 按住 D 至阈值：active 边界延长 startup，达阈值自动提交 5[D]（不等待松键）。
 	var hold := CombatSession.new()
-	hold.dummy_position = hold.player_position + Vector2(70, 0)
+	hold.dummy_position = hold.player_position + Vector2(26, 0)
 	var commit_frame := -1
 	var committed_age := -1
 	var move_id_at_commit := ""
@@ -85,7 +85,7 @@ func _test_charge_release_during_pause_commits_normal() -> void:
 	# 阈值前松开：延长中的 startup 以普通版提交——出手比正常晚（延长计入），
 	# 但身份/伤害仍是 5D。
 	var run := CombatSession.new()
-	run.dummy_position = run.player_position + Vector2(70, 0)
+	run.dummy_position = run.player_position + Vector2(26, 0)
 	var commit_frame := -1
 	var committed_charged := true
 	var hit_damage := 0.0
@@ -109,7 +109,7 @@ func _test_pre_start_hold_does_not_accumulate() -> void:
 	# 启动前按住不积攒（I-01 拒绝例）：无新按下的长期按住不产生任何 D 起手；
 	# 之后的真按下从动作启动重新计龄。
 	var run := CombatSession.new()
-	run.dummy_position = run.player_position + Vector2(70, 0)
+	run.dummy_position = run.player_position + Vector2(26, 0)
 	var move_started := false
 	for frame in range(1, 31):
 		var input := FrameInput.new()
@@ -137,7 +137,7 @@ func _test_pre_start_hold_does_not_accumulate() -> void:
 func _test_charge_window_has_no_cancels() -> void:
 	# 蓄力提交不改变取消资格（I-02）：延长 startup 期间无接触、无取消目标开放。
 	var session := CombatSession.new()
-	session.dummy_position = session.player_position + Vector2(70, 0)
+	session.dummy_position = session.player_position + Vector2(26, 0)
 	var saw_cancel_targets := false
 	for frame in range(1, 30):
 		session.step(_d_input(frame, 1, 20))
@@ -157,7 +157,7 @@ func _test_active_sweep_hits_mid_step_target() -> void:
 		for event in run.step(FrameInput.make(0, false, "D" if frame == 1 else "")):
 			if event.type == CombatEvent.Type.HIT:
 				hit_frame = frame
-	_check(hit_frame == 8, "the swept active frame connects a mid-step target the start pose misses (%d)" % hit_frame)
+	_check(hit_frame == 10, "the swept active frame connects a mid-step target the start pose misses (%d)" % hit_frame)
 
 
 func _test_whiff_displacement_and_trajectory_continues() -> void:
@@ -185,7 +185,7 @@ func _test_whiff_displacement_and_trajectory_continues() -> void:
 func _test_hit_displacement_clamps_to_origin_side_body() -> void:
 	# 命中但轨迹不足以到达另一侧合法位置（普通 5D 72px 捞起前置浮空）：
 	# 终点与木桩重叠时截在原侧身体边界（M-02：不补足距离、不瞬移），无换边。
-	var session := _float_pickup_session(70, 1)
+	var session := _float_pickup_session(60, 1)
 	var swap_events := 0
 	for frame in range(1, 60):
 		for event in session.step(_entry_script_input(frame, 16, false)):
@@ -201,7 +201,7 @@ func _test_blocked_keeps_original_side() -> void:
 	# 被防：位移不得越过目标到另一侧（M-02 拒绝例）——截在原侧身体边界，
 	# 无 SWITCHED_SIDES。
 	var run := CombatSession.new()
-	run.dummy_position = run.player_position + Vector2(70, 0)
+	run.dummy_position = run.player_position + Vector2(26, 0)
 	var blocked := false
 	var swapped := false
 	for frame in range(1, 40):
@@ -337,7 +337,7 @@ func _test_charged_5b_link_after_recovery() -> void:
 	var airborne := charged_move.profile_for(charged_move, HitProfile.TargetState.AIRBORNE, HitProfile.HitContext.NORMAL)
 	airborne.air_untech_frames = 44
 	var injected := CombatSession.new(table)
-	injected.dummy_position = injected.player_position + Vector2(50, 0)
+	injected.dummy_position = injected.player_position + Vector2(60, 0)
 	var combo_hits_at_5b := 0
 	for frame in range(1, 130):
 		var input := _entry_script_input(frame, 16, true)

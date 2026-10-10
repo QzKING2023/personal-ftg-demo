@@ -117,10 +117,6 @@ var combo_starter_grade: MoveData.StarterGrade = MoveData.StarterGrade.UNSET
 var combo_damage_scale := 1.0
 var combo_time_scale := 1.0
 var combo_trajectory_scale := 1.0
-## 一次性弹地追击资格（票据 09，B-03）：GROUND_BOUNCE 进入时按 starter grade 派生
-## （A=0：弹地后的新命中只能作为收尾；B/C/D=1：成功追击后消费，不随命中刷新）。
-## 资格绑定本次连段与当前目标；连段结束清除，状态转换不重置、不提升。
-var combo_bounce_followup := 0
 
 var _moves: Dictionary = {}
 var _current_move: MoveData = null
@@ -394,7 +390,6 @@ func reset_to_initial_state() -> void:
 	combo_damage_scale = 1.0
 	combo_time_scale = 1.0
 	combo_trajectory_scale = 1.0
-	combo_bounce_followup = 0
 	_current_move = null
 	_move_frame = 0
 	_hit_once_this_move = false
@@ -529,7 +524,6 @@ func clone_state() -> Dictionary:
 			"damage_scale": combo_damage_scale,
 			"time_scale": combo_time_scale,
 			"trajectory_scale": combo_trajectory_scale,
-			"bounce_followup": combo_bounce_followup,
 		},
 		"player_move": {
 			"move_id": _move_id(_current_move),
@@ -710,7 +704,6 @@ func restore_state(state: Dictionary) -> bool:
 	combo_damage_scale = float(combo.get("damage_scale", 1.0))
 	combo_time_scale = float(combo.get("time_scale", 1.0))
 	combo_trajectory_scale = float(combo.get("trajectory_scale", 1.0))
-	combo_bounce_followup = int(combo.get("bounce_followup", 0))
 
 	_current_move = _move_from_id(String(move_state.get("move_id", "")))
 	_move_frame = int(move_state.get("frame", 0))
@@ -981,7 +974,6 @@ func debug_snapshot() -> Dictionary:
 		"damage_scale": combo_damage_scale,
 		"time_scale": combo_time_scale,
 		"trajectory_scale": combo_trajectory_scale,
-		"bounce_followup": combo_bounce_followup,
 		"dummy_bounce_left": dummy_bounce_left,
 		"dummy_bounce_contacted": dummy_bounce_contacted,
 		"rekka_branch": _rekka_branch,
@@ -1113,14 +1105,12 @@ func settlement_state() -> Dictionary:
 		"direction_history": direction_history,
 		"last_direction_digit": _last_direction_digit,
 		# 连段资源（结算资格门；伤害等纯报告量见上文口径）。起手等级与三层累计
-		# 修正影响后续命中的伤害/计时/轨迹，是真实结算量，入快照；弹地追击资格
-		# 影响弹地目标上命中的连段延续（票据 09，B-03），入快照。
+		# 修正影响后续命中的伤害/计时/轨迹，是真实结算量，入快照。
 		"combo_active": combo_active,
 		"starter_grade": combo_starter_grade,
 		"damage_scale": combo_damage_scale,
 		"time_scale": combo_time_scale,
 		"trajectory_scale": combo_trajectory_scale,
-		"bounce_followup": combo_bounce_followup,
 		# Rekka 派生（票据 04）：分支锁定与窗口开闭影响后续起手资格，是真实结算量。
 		"rekka_branch": _rekka_branch,
 		"rekka_window_open": _rekka_window_open,
@@ -1730,24 +1720,32 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 			dummy_slide_left = _scaled_timer_frames(profile.slide_frames)
 			dummy_knockdown_left = 0
 		HitProfile.Reaction.GROUND_BOUNCE:
-			## 统一弹地（票据 09，B-01/B-02）：grounded/airborne 命中都进入同一
-			## GROUND_BOUNCE——profile 只声明进入运动（初速度）与触地前窗口；
-			## 追击窗口按统一流程参数在命中当帧按时间层预先换算（触地事件起倒数）。
-			## 进入时按 starter grade 派生一次性 bounce_followup（A=0，B/C/D=1）；
-			## 弹地不重置 starter grade 与三层修正，不刷新空中资源。
+			## 统一弹地（票据 09，B-01/B-02；连段路线票据 01 修订）：grounded/
+			## airborne 命中都进入同一 GROUND_BOUNCE——profile 只声明进入运动（初
+			## 速度）与触地前窗口；追击窗口按统一流程参数在命中当帧按时间层预先
+			## 换算（触地事件起倒数）。弹地不重置 starter grade 与三层修正，不刷新
+			## 空中资源；再次有效命中正常再次产生弹地反应（无按起手等级的一次性
+			## 次数上限），能否延长由窗口、资料、累计修正与真实时空决定。
 			dummy_state = DummyState.GROUND_BOUNCE
 			dummy_hitstun_left = _scaled_timer_frames(profile.air_untech_frames)
 			dummy_bounce_left = _scaled_timer_frames(GameParams.GROUND_BOUNCE_FOLLOWUP_WINDOW_FRAMES)
 			dummy_bounce_contacted = false
 			dummy_knockdown_left = 0
 			dummy_slide_left = 0
-			combo_bounce_followup = int(GameParams.STARTER_BOUNCE_FOLLOWUP[combo_starter_grade])
 	_dummy_fresh_reaction = true
 	## 实际命中覆盖被防硬直：连防姿态让位给受击状态，残留被防计时随之作废。
 	dummy_blockstun_left = 0
 	## 木桩受击打断其进行中的攻击（本帧已捕获的连接仍按互换命中结算）。
 	_clear_dummy_move()
-	dummy_velocity.x = _attack_direction() * roundf(profile.horizontal_speed_px_s * combo_trajectory_scale)
+	## 实际接地 D 零水平（连段路线票据 01，规则 6）：全部动作键 D 招式（含蓄力与
+	## 空中指令技）在命中资料与资格已验证、本次反应施加之前按目标实际接地（空间
+	## 上与地面接触，滑地/接地弹地按实际接地判定，离地弹地不算）把合法 normal/
+	## counter HIT 的水平受击速度置 0 并覆盖原水平惯性；反应类型、垂直值、计时与
+	## 资格保持。被防、挥空、缺失资料不进入本分支，普通倒地不因此新增命中能力。
+	if move.action_key == "D" and dummy_on_ground:
+		dummy_velocity.x = 0.0
+	else:
+		dummy_velocity.x = _attack_direction() * roundf(profile.horizontal_speed_px_s * combo_trajectory_scale)
 	if profile.reaction == HitProfile.Reaction.LAUNCH or profile.reaction == HitProfile.Reaction.LOW_FLOAT_SWEEP \
 			or profile.reaction == HitProfile.Reaction.LOW_FLOAT_TO_SLIDE \
 			or profile.reaction == HitProfile.Reaction.GROUND_BOUNCE:
@@ -1791,14 +1789,9 @@ func _apply_player_hit(events: Array[CombatEvent]) -> void:
 	## 位置、速度、受击、落地与受身计时暂停；物理帧号照常递增，输入仍被采样记录）。
 	_hitstop_left = GameParams.HITSTOP_FRAMES
 	events.append(CombatEvent.hitstop_started())
-	if target_state_before == HitProfile.TargetState.GROUND_BOUNCE:
-		## 弹地追击资格（票据 09，B-03）：命中弹地目标的有效追击消费一次性资格；
-		## 资格为 0（A 起手或已消费）时该命中立即作为路线终点——伤害与受击反馈已
-		## 完整结算，但不开放后续取消，连段就此结束（不形成被禁止的弹地后循环）。
-		if combo_bounce_followup > 0:
-			combo_bounce_followup = 0
-		else:
-			_end_combo(CombatEvent.ComboEndReason.BOUNCE_END, events)
+	## 命中弹地目标不再有一次性资格/强制终点（连段路线票据 01）：该命中按所选
+	## profile 正常结算并开放后续取消/连接，连段是否延续由自然恢复、窗口、资料
+	## 与累计修正决定。
 	if profile.reaction == HitProfile.Reaction.GROUND_KNOCKDOWN:
 		## 普通倒地进入即结束当前连段；倒地处理本身继续独立计时。
 		_end_combo(CombatEvent.ComboEndReason.KNOCKDOWN, events)
@@ -3213,13 +3206,11 @@ func _end_combo(reason: CombatEvent.ComboEndReason, events: Array[CombatEvent]) 
 	combo_active = false
 	## 连段结束清除起手等级与三层累计修正（自然恢复/普通倒地/收尾同口径）；
 	## 下一段连段首击重新锁定。特殊进入资格绑定本次连段，随之清除（I-05.3）；
-	## 命中落地资格与空技延迟连接同样绑定本次连段（票据 08，L-01）；弹地追击
-	## 资格同样绑定本次连段（票据 09，B-03）。
+	## 命中落地资格与空技延迟连接同样绑定本次连段（票据 08，L-01）。
 	combo_starter_grade = MoveData.StarterGrade.UNSET
 	combo_damage_scale = 1.0
 	combo_time_scale = 1.0
 	combo_trajectory_scale = 1.0
-	combo_bounce_followup = 0
 	_close_special_entry()
 	_close_hit_landing()
 	_pending_air_link = false

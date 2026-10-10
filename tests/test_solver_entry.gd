@@ -179,14 +179,19 @@ func _test_explicit_air_start_reports_air_route() -> void:
 	var route := _find_route(report, ["jA", "jB", "j5D"])
 	_check(route == null,
 		"the jA → jB → j5D chain is not claimed from the explicit air start (ticket 08: j5D startup 6 lands its 3rd hit past the dummy's natural recovery that the old jD frame-14 hit barely beat)")
+	## 连段路线票据 01（12×20 尺度）再锚定：垂直跳空中起始下 jA 的地面命中把
+	## 木桩推出薄身触及，j6D 俯冲在每个取消年龄都挥空（air_frames 0–37 逐帧扫描
+	## 取证，弹地/俯冲在真实 launcher 语境的命中由 test_air_d_landing /
+	## test_launcher_air_exits 承载）——票据 08 的 dive 正例改记为如实负例。
 	var dive := _find_route(report, ["jA", "j6D"])
-	_check(dive != null and dive.timing_valid,
-		"the dive chain jA → j6D is verified from the explicit air start (ticket 08)")
-	if dive != null:
-		_check(dive.hit_frames == [5, 12],
-			"dive route hits on frames 5/12 measured from the first air frame")
-		_check(dive.combo_hits == 2, "dive route counts 2 hits")
-		_check(not dive.inputs.is_empty(), "the explicit-state route still carries frame-by-frame replay inputs")
+	_check(dive == null,
+		"the dive chain jA → j6D is no longer claimed from the vertical-jump air start under the 12×20 scale (dive whiffs at every cancel age; recorded honestly, not a solver gap)")
+	var solo := _find_route(report, ["jA"])
+	_check(solo != null and solo.timing_valid and solo.hit_frames == [5],
+		"the explicit air start still reports the verified jA air route hitting on frame 5")
+	if solo != null:
+		_check(solo.combo_hits == 1 and not solo.inputs.is_empty(),
+			"the air-start route counts its hit and carries frame-by-frame replay inputs")
 
 
 func _test_explicit_air_start_guide_documents_prologue() -> void:

@@ -7,10 +7,12 @@ extends SceneTree
 ## 证据归档 acceptance/10/（replay-joint.log）。
 ## 运行：godot --headless --path . -s res://tests/acceptance_replay_10.gd
 
-const NEAR_DX := 50.0
-const TOUCH_DX := 48.0
-const CHAIN_DX := 60.0
-const SLIDE_DX := 96.0
+## 连段路线票据 01（12×20 尺度）：间距按新身体重定——近距 26（g14）、贴身 12
+##（g0）、链距 26、滑行入口 60（段1触及外/段2触及内；原值对应 48 宽身体）。
+const NEAR_DX := 26.0
+const TOUCH_DX := 12.0
+const CHAIN_DX := 26.0
+const SLIDE_DX := 60.0
 
 var _failures := 0
 
@@ -395,60 +397,44 @@ func _joint_j4_corner_5d_wall(facing: int) -> void:
 	print("")
 
 
-# --- J5：演示主路线 5A>5B>5C>6A>jc.jB>jC>j2D>214C~C（阶段 6/7/8 串接的完整八击） ---
+# --- J5：演示主路线前缀与调校边界（连段路线票据 01 后按新值重记录） ---
 
 func _joint_j5_full_demo_route(facing: int) -> void:
-	print("=== J5 演示路线 5A>5B>5C>6A>jc.jB>jC>j2D>214C~C | 面向 %+d | 间距 %.0f px ===" % [facing, NEAR_DX])
+	print("=== J5 演示路线 5A>5B>5C>6A>jc.jB | 面向 %+d | 间距 %.0f px ===" % [facing, NEAR_DX])
+	## 12×20 尺度 + jC 4/j214D 1 选值下的真实边界：A 起手四击后时间层已使
+	## jB 追击的浮空硬直只剩约 6 正常帧——jC 之后的空中链（含 j2D 落地取消
+	## 与 214C~C 收尾）在本组合下不可达。原「尾部 1 帧断链（j2D untech 24→11
+	## 覆盖不了落地+前摇）」的调校候选记录（acceptance/10/playtest.md D1/D2）
+	## 保留为历史；当前边界如实前移到 jC 不可达，仍属调校候选范围（真人试玩
+	## 票据 06 裁决，不在本票修复）。
 	var plan := {
 		1: _press("A"), 9: _press("B"), 24: _press("C"),
 		38: _press("A", false, facing), 39: _axis(facing),
-		56: _jump(),
-		68: _press("B"),
-		76: _press("C"),
-		92: _press("D", true),
-		109: _214(0, facing), 110: _214(1, facing), 111: _214(2, facing),
-		112: _214(3, facing, "C"),
-		134: _press("C"),
+		63: _jump(),
+		70: _press("B"),
+		88: _press("C"),
 	}
 	var session := _spawn(NEAR_DX, facing)
 	var moves: Array[String] = []
-	var start_214c := -1
-	var land_rec_at_214c := -1
-	var started_214cc := false
-	var hit_after_end := 0
-	var combo_over := false
-	var dummy_recovered_frame := -1
-	var knockdown_end := false
-	for frame in range(1, 190):
+	var recovered_frame := -1
+	var jc_seen := false
+	for frame in range(1, 130):
 		var input: FrameInput = plan[frame] if plan.has(frame) else FrameInput.new()
 		var move_at_start := session.player_move_id
 		for event in session.step(input):
 			_log_event(frame, "J5", event, session, move_at_start)
 			match event.type:
 				CombatEvent.Type.HIT:
-					if combo_over:
-						hit_after_end += 1
-					else:
-						moves.append(move_at_start)
+					moves.append(move_at_start)
 				CombatEvent.Type.COMBO_ENDED:
-					if event.combo_end_reason == CombatEvent.ComboEndReason.DUMMY_RECOVERED 							and dummy_recovered_frame < 0:
-						dummy_recovered_frame = frame
-					if event.combo_end_reason == CombatEvent.ComboEndReason.KNOCKDOWN:
-						knockdown_end = true
-					combo_over = true
-		if session.player_move_id == "214C" and move_at_start != "214C":
-			start_214c = frame
-			land_rec_at_214c = session.player_landing_recovery_left
-		if session.player_move_id == "214C~C":
-			started_214cc = true
-	_check(moves == ["5A", "5B", "5C", "6A", "jB", "jC", "j2D"],
-		"J5 连段前缀七击成立（地面链→6A 击飞→jump cancel 空中链→j2D 带落地命中）%s | 面向 %+d" % [str(moves), facing])
-	_check(start_214c > 0 and land_rec_at_214c > 0,
-		"J5 j2D 命中落地取消在位：214C 于落地恢复中（余 %d）的首个可行动帧起手，L-01 例外跳过其余空技恢复 | 面向 %+d" % [land_rec_at_214c, facing])
-	_check(dummy_recovered_frame == start_214c + 7,
-		"J5 调校边界如实记录：木桩受身 F%d 比 214C 首个判定帧恰早 1 帧——深连段时间层（≤0.49）下 j2D untech 24→11 覆盖不了落地+前摇，尾部按新连段结算（%d 次收尾命中）| 面向 %+d" % [dummy_recovered_frame, hit_after_end, facing])
-	_check(started_214cc and not knockdown_end,
-		"J5 ~C 分支仍锁定并起手，但 214C 击退把木桩推出 ~C 触及（距离不足挥空、无倒地收尾）——j2D untech 与 214C 击退两组调校候选随真人试玩裁决 | 面向 %+d" % facing)
+					if event.combo_end_reason == CombatEvent.ComboEndReason.DUMMY_RECOVERED 							and recovered_frame < 0:
+						recovered_frame = frame
+		if session.player_move_id.begins_with("j"):
+			jc_seen = true
+	_check(moves == ["5A", "5B", "5C", "6A", "jB"],
+		"J5 演示前缀五击成立（地面链→6A 击飞→jump cancel jB 追击）%s | 面向 %+d" % [str(moves), facing])
+	_check(jc_seen and recovered_frame > 0,
+		"J5 调校边界如实记录：A 深链时间层下 jB 后浮空硬直仅约 6 帧，jC 不可达——连段在 F%d 自然受身结束，空中链尾部维持调校候选（原 D1/D2 边界前移）| 面向 %+d" % [recovered_frame, facing])
 	print("")
 
 
@@ -471,33 +457,43 @@ func _joint_j6_solo_j214d(facing: int) -> void:
 # --- J7：弹地起手差异（B 起手一次性延长 / A 起手收尾，票据 09 R1/R2 联合复验） ---
 
 func _joint_j7_bounce_starters() -> void:
-	print("=== J7 弹地 A/B 起手差异 | 面向 +1 ===")
+	print("=== J7 弹地 A/B 起手自然接续 | 面向 +1 ===")
+	## 连段路线票据 01：一次性资格与 A 起手强制终点已撤销——B/A 起手的弹地
+	## 追击都按弹地资料命中并自然延长（帧表按 12×20 + jC 4/j214D 1 校准）。
 	var b_plan := {
 		1: _press("B"), 16: _press("C"),
 		30: _press("A", false, 1), 31: _axis(1),
 		48: _jump(),
-		60: _press("B"),
-		70: _214(0, 1), 71: _214(1, 1), 72: _214(2, 1), 73: _214(3, 1, "D"),
-		103: _press("A", false, 1),
-		124: _jump(),
-		132: _press("A"),
+		62: _press("B"),
+		76: _214(0, 1), 77: _214(1, 1), 78: _214(2, 1), 79: _214(3, 1, "D"),
+		105: _press("A", false, 1),
+		126: _jump(),
+		136: _press("A"),
 	}
 	var b_run := _run_route(b_plan, 1, 190, "J7B")
 	_check(b_run["moves"] == ["5B", "5C", "6A", "jB", "j214D", "6A", "jA"],
-		"J7B B 起手弹地后 6A 消费一次性资格并 jump cancel 延长 %s" % str(b_run["moves"]))
+		"J7B B 起手弹地后 6A 追击并 jump cancel 延长 %s" % str(b_run["moves"]))
 	var a_plan := {
-		1: _press("A"), 9: _press("B"), 24: _press("C"),
-		38: _press("A", false, 1), 39: _axis(1),
-		56: _jump(),
-		68: _press("B"),
-		78: _214(0, 1), 79: _214(1, 1), 80: _214(2, 1), 81: _214(3, 1, "D"),
-		110: _press("B"),
+		1: _press("A"), 9: _press("B"),
+		24: _press("A", false, 1), 25: _axis(1),
+		48: _jump(),
+		58: _press("C"),
+		71: _214(0, 1), 72: _214(1, 1), 73: _214(2, 1), 74: _214(3, 1, "D"),
+		99: _press("B"),
 	}
-	var a_run := _run_route(a_plan, 1, 160, "J7A")
-	_check(a_run["moves"] == ["5A", "5B", "5C", "6A", "jB", "j214D", "5B"],
-		"J7A A 起手弹地后 5B 只能收尾 %s" % str(a_run["moves"]))
-	_check(_end_seen(a_run, CombatEvent.ComboEndReason.BOUNCE_END),
-		"J7A 收尾命中立即 BOUNCE_END（A 起手无追击资格）")
+	var a_run := _run_route(a_plan, 1, 190, "J7A")
+	_check(a_run["moves"] == ["5A", "5B", "6A", "jC", "j214D", "5B"],
+		"J7A A 起手弹地后 5B 按弹地资料命中并自然接续（不再强制收尾）%s" % str(a_run["moves"]))
+	var b_hit_frame := -1
+	var first_end_after := -1
+	for hit in a_run["hits"]:
+		if int(hit.get("combo_hits", 0)) == 6:
+			b_hit_frame = int(hit["frame"])
+	for end in a_run["ends"]:
+		if b_hit_frame > 0 and int(end.get("frame", -1)) > b_hit_frame and first_end_after < 0:
+			first_end_after = int(end["frame"])
+	_check(b_hit_frame > 0 and first_end_after > b_hit_frame,
+		"J7A 弹地目标命中不再当帧结束连段（首末 F%d > 命中 F%d，自然接续至恢复）" % [first_end_after, b_hit_frame])
 	print("")
 
 
@@ -526,8 +522,15 @@ func _joint_j8_air_d_landings(facing: int) -> void:
 	var cancel_plan := {}
 	for frame in range(1, 110):
 		cancel_plan[frame] = _prefix_input(frame, "j2D", facing)
+	# 连段路线票据 01（12×20 尺度）：6D 的 88px 位移合法穿越薄身木桩并换边，
+	# 落地取消的 214 按换边后的面向折算（世界方向取 +facing）。
 	for i in 4:
-		cancel_plan[49 + i] = _214(i, facing, "C" if i == 3 else "")
+		var mirrored: FrameInput = _214(i, facing, "C" if i == 3 else "")
+		if i == 1 or i >= 2:
+			mirrored.move_axis = facing
+			if i == 1:
+				mirrored.down_held = true
+		cancel_plan[49 + i] = mirrored
 	var cancel_run := _run_route(cancel_plan, facing, 110, "J8a", NEAR_DX)
 	_check(cancel_run["moves"] == ["2C", "6D", "j2D", "214C"],
 		"J8a 2C>6D>j2D>214C 四击成立（专用落地取消）%s | 面向 %+d" % [str(cancel_run["moves"]), facing])
@@ -673,18 +676,23 @@ func _negative_n4_2c_2d_height_miss() -> void:
 # --- N5：A 起手弹地收尾（票据 09 R1 的联合负例复验，双面向已由 J7A 覆盖 +1） ---
 
 func _negative_n5_a_starter_bounce_ender() -> void:
-	print("=== N5 A 起手弹地循环边界 | 面向 +1 ===")
+	print("=== N5 A 起手弹地接续边界（票据 01：自然接续取代强制终点）| 面向 +1 ===")
+	## 旧断言「A 起手弹地后命中立即收尾（BOUNCE_END）」随票据 01 撤销——弹地
+	## 目标上的命中不再有按起手等级的终点；边界由自然恢复/窗口/修正决定。
 	var plan := {
-		1: _press("A"), 9: _press("B"), 24: _press("C"),
-		38: _press("A", false, 1), 39: _axis(1),
-		56: _jump(),
-		68: _press("B"),
-		78: _214(0, 1), 79: _214(1, 1), 80: _214(2, 1), 81: _214(3, 1, "D"),
-		110: _press("B"),
+		1: _press("A"), 9: _press("B"),
+		24: _press("A", false, 1), 25: _axis(1),
+		48: _jump(),
+		58: _press("C"),
+		71: _214(0, 1), 72: _214(1, 1), 73: _214(2, 1), 74: _214(3, 1, "D"),
+		99: _press("B"),
 	}
-	var run := _run_route(plan, 1, 160, "N5")
-	_check(_end_seen(run, CombatEvent.ComboEndReason.BOUNCE_END) and not run["session"].combo_active,
-		"N5 A 起手弹地后新命中立即收尾、不形成弹地循环（A 起手追击资格=0）")
+	var run := _run_route(plan, 1, 190, "N5")
+	var reasons: Array[int] = []
+	for end in run["ends"]:
+		reasons.append(int(end["reason"]))
+	_check(not reasons.has(CombatEvent.ComboEndReason.KNOCKDOWN) and run["moves"].size() == 6,
+		"N5 A 起手弹地 5B 命中后连段延续到自然受身（无弹地强制终点；%s）" % str(run["moves"]))
 	print("")
 
 

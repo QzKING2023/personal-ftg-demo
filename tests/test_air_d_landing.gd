@@ -5,7 +5,8 @@ extends SceneTree
 ## active 落地截断与既有出口接线。
 ## 运行：godot --headless --path . -s res://tests/test_air_d_landing.gd
 
-const NEAR_DX := 50.0
+## 连段路线票据 01（12×20 尺度）：近距校准 14px（g2，与原 50px@48宽身体同边缘距）。
+const NEAR_DX := 14.0
 
 var _failures := 0
 
@@ -63,15 +64,17 @@ func _input(key: String, down := false, axis := 0) -> FrameInput:
 
 func _214_frame_input(step: int, facing: int) -> FrameInput:
 	## step 0=下(2)，1=下后(1)，2/3=后(4)，step 3 同时按下 C。
+	## 连段路线票据 01（12×20 尺度）：6D 的 88px 计划位移在薄身下合法穿越
+	## 木桩并换边，后续 214 按换边后的面向折算——世界方向取 +facing。
 	var input := FrameInput.new()
 	match step:
 		0:
 			input.down_held = true
 		1:
 			input.down_held = true
-			input.move_axis = -facing
+			input.move_axis = facing
 		_:
-			input.move_axis = -facing
+			input.move_axis = facing
 	if step == 3:
 		input.pressed_action_keys = ["C"]
 		input.held_action_keys = ["C"]
@@ -554,8 +557,9 @@ func _test_jb_cancel_into_j6d() -> void:
 # --- 地空目标：j5D/j6D 的 grounded 资料命中站立木桩 ---
 
 func _test_j5d_j6d_grounded_targets() -> void:
-	## j5D 无向下位移，对地命中取下降段按压（F30）；j6D 斜下速降取上升后段（F14）。
-	for entry in [["j5D", 30, false], ["j6D", 14, true]]:
+	## 连段路线票据 01（12×20 尺度）：站立木桩顶部 400→460，对地接触只剩跳跃
+	## 下降末段——j5D 于 F35（active 落在最后空中帧）、j6D 于 F33（斜下速降扫掠）。
+	for entry in [["j5D", 35, false], ["j6D", 33, true]]:
 		var move_id: String = entry[0]
 		var press_frame: int = entry[1]
 		var forward: bool = entry[2]

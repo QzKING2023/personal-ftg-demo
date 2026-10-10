@@ -36,11 +36,13 @@ const GRAVITY := 1400.0
 const MAX_FALL_SPEED := 1000.0
 
 # --- 角色形状（玩家与木桩共用同一套结构，只换颜色）---
-const BODY_SIZE := Vector2(48, 80)
-const HEAD_SIZE := Vector2(36, 24)
-const HEAD_GAP := 2.0
-const VISOR_SIZE := Vector2(10, 6)
-const VISOR_OFFSET_X := 10.0
+# 连段路线票据 01（D74）：身体/受击轮廓与外观统一缩至 12×20（原 48×80 的 1/4），
+# 头部/眼罩按同比缩放保持可读；攻击框/间距/偏移、投距及未列运动值不随尺度缩放。
+const BODY_SIZE := Vector2(12, 20)
+const HEAD_SIZE := Vector2(9, 6)
+const HEAD_GAP := 0.5
+const VISOR_SIZE := Vector2(2.5, 1.5)
+const VISOR_OFFSET_X := 2.5
 
 # --- 战斗会话（固定 60 物理帧/秒，全部数值以帧为单位）---
 const PHYSICS_FPS := 60.0
@@ -173,19 +175,13 @@ const BOUNCE_HIT_TRAJECTORY_SCALE := 0.93
 const LANDING_LINK_HIT_DAMAGE_SCALE := 0.94
 const LANDING_LINK_HIT_TIME_SCALE := 0.95
 const LANDING_LINK_HIT_TRAJECTORY_SCALE := 0.95
-# 弹地追击资格（票据 09，B-03：GROUND_BOUNCE 进入时按 starter grade 派生的一次性
-# bounce_followup；A 起手为 0——弹地后的新命中只能作为收尾，B/C/D 为一次性 1，
-# 成功追击后消费，不随命中刷新）。
-const STARTER_BOUNCE_FOLLOWUP := {
-	MoveData.StarterGrade.A: 0,
-	MoveData.StarterGrade.B: 1,
-	MoveData.StarterGrade.C: 1,
-	MoveData.StarterGrade.D: 1,
-}
-# 统一弹地流程（票据 09，B-01/B-02）：触地反弹速度与触地后追击窗口——结果状态
-# 统一（grounded/airborne 命中都进入同一 GROUND_BOUNCE），profile 只声明进入运动
-# 与触地前窗口；反弹速度与追击窗口是统一流程参数（调校初值）。窗口按时间层
-# 预先换算、反弹速度按轨迹层换算，一次 j214D 至多一次反弹。
+# 统一弹地流程（票据 09，B-01/B-02；连段路线票据 01 修订）：触地反弹速度与触地后
+# 追击窗口——结果状态统一（grounded/airborne 命中都进入同一 GROUND_BOUNCE），
+# profile 只声明进入运动与触地前窗口；反弹速度与追击窗口是统一流程参数（调校
+# 初值）。窗口按时间层预先换算、反弹速度按轨迹层换算，一次弹地至多一次反弹。
+# 弹地后的接续不再有按起手等级的一次性次数上限（票据 01 撤销 A 起手强制终点
+# 与 B/C/D 一次性资格）：再次有效命中正常产生弹地反应，能否延长由窗口、资料、
+# 累计修正与真实时空决定，不刷新修正或空中资源。
 const GROUND_BOUNCE_REBOUND_SPEED_PX_S := 330.0
 const GROUND_BOUNCE_FOLLOWUP_WINDOW_FRAMES := 16
 # 伤害层底线：累计修正不再低于 10%（只作用伤害层）。

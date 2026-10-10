@@ -73,9 +73,8 @@ func _physics_process(_delta: float) -> void:
 		if event.type == CombatEvent.Type.SLIDE_STARTED:
 			_last_state_note = "击飞触地 → 地面滑行（%d 帧，可被 5D 捞起）" % session.dummy_slide_left
 		if event.type == CombatEvent.Type.BOUNCE_CONTACT:
-			_last_state_note = "弹地触地 → 反弹一次，追击窗口 %d 帧（起手 %s：%s）" % [
-				session.dummy_bounce_left, _starter_grade_text(session.combo_starter_grade),
-				"一次性追击" if session.combo_bounce_followup > 0 else "无追击资格，命中即收尾"]
+			_last_state_note = "弹地触地 → 反弹一次，追击窗口 %d 帧（接续由窗口/资料/修正与真实时空决定）" % [
+				session.dummy_bounce_left]
 		if event.type == CombatEvent.Type.CHARGE_COMMITTED:
 			_last_state_note = "蓄力提交 %s → %s（按住 %d 帧%s）" % [
 				event.charge_from_move_id, event.charge_to_move_id, event.charge_age,
@@ -350,9 +349,10 @@ func _update_dummy_status() -> void:
 			session.combo_time_scale,
 			session.combo_trajectory_scale,
 		]
-		# 弹地追击资格（票据 09）：弹地进入后的一次性继续资格可观察口径。
-		if session.dummy_state == CombatSession.DummyState.GROUND_BOUNCE or session.combo_bounce_followup > 0:
-			combo_text += " 弹地追击%s" % ("可用" if session.combo_bounce_followup > 0 else "已耗尽")
+		# 弹地追击窗口（连段路线票据 01）：一次性资格已随规则撤销，窗口剩余是
+		# 可观察的接续时限（再次有效命中可再次弹地，修正不重置）。
+		if session.dummy_state == CombatSession.DummyState.GROUND_BOUNCE:
+			combo_text += " 弹地窗%d" % session.dummy_bounce_left
 	var link_text := _last_link_fail if _last_link_fail != "" else "—"
 	var state_note := _last_state_note if _last_state_note != "" else "—"
 	# 两行布局：第一行姿态与血量，第二行受击状态与连段；连接失败原因与状态事件第三行。
@@ -427,6 +427,4 @@ func _combo_end_text(reason: CombatEvent.ComboEndReason) -> String:
 			return "木桩自然受身"
 		CombatEvent.ComboEndReason.KNOCKDOWN:
 			return "普通倒地"
-		CombatEvent.ComboEndReason.BOUNCE_END:
-			return "弹地后收尾（无追击资格）"
 	return "未知"

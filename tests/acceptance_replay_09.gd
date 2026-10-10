@@ -1,14 +1,15 @@
 extends SceneTree
-## 票据 09 验收回放：j214D 统一 GROUND_BOUNCE、跨状态修正与 A/B 起手循环边界。
-## 覆盖：R0 独立输入 j214D 对地弹地（双面向）；R1 A 起手 juggle>j214D>5B 弹地后
-## 收尾（BOUNCE_END，双面向）；R2 B 起手 juggle>j214D>6A>jc.jA 一次性追击延长
-## （双面向）；N1 独立输入打不中弹地目标/弹地不是 OTG；N2 A 起手过早输入过期、
-## 不伪造追击；N3 B 起手追击资格不随命中刷新；N4 第二次 j214D 资料缺失
-## （弹地目标键不声明，结构上不可能再次弹地）。修正观测随命中行打印
-## （起手等级与三层累计）。证据归档 acceptance/09/（replay-bounce.log）。
+## 票据 09 验收回放（连段路线票据 01 修订）：j214D 统一 GROUND_BOUNCE、跨状态
+## 修正与 A/B 起手接续边界。票据 01 撤销按起手等级的一次性弹地资格与
+## BOUNCE_END 强制终点：R1 改为 A 起手弹地命中自然接续至自然受身；R2 B 起手
+## 6A 追击 + jc.jA 延长语义不变（不再消费资格）；N3 改为追击命中不重置三层
+## 修正（原「资格不刷新」断言随规则撤销重写）。帧表按 12×20 尺度与
+## jC 4/j214D 1 选值重新校准。修正观测随命中行打印（起手等级与三层累计）。
+## 历史证据归档 acceptance/09/（replay-bounce.log，旧规则口径）。
 ## 运行：godot --headless --path . -s res://tests/acceptance_replay_09.gd
 
-const NEAR_DX := 50.0
+## 连段路线票据 01（12×20 尺度）：近距 26px（g14；原 50px 为 48 宽身体的 g2）。
+const NEAR_DX := 26.0
 
 var _failures := 0
 
@@ -106,11 +107,11 @@ func _grade_label(grade: MoveData.StarterGrade) -> String:
 func _log_event(frame: int, tag: String, event: CombatEvent, session: CombatSession) -> void:
 	match event.type:
 		CombatEvent.Type.HIT:
-			print("  F%-3d %s HIT seg%d 伤%.1f 第%d击 %s | %s起手 修正 伤%.3f/时%.3f/轨%.3f 追击资格%d | 木桩y=%.1f" % [
+			print("  F%-3d %s HIT seg%d 伤%.1f 第%d击 %s | %s起手 修正 伤%.3f/时%.3f/轨%.3f 弹地窗%d | 木桩y=%.1f" % [
 				frame, tag, event.move_segment, event.damage, event.combo_hits, session.player_move_id,
 				_grade_label(session.combo_starter_grade), session.combo_damage_scale,
 				session.combo_time_scale, session.combo_trajectory_scale,
-				session.combo_bounce_followup, session.dummy_position.y])
+				session.dummy_bounce_left, session.dummy_position.y])
 		CombatEvent.Type.HIT_MISS:
 			print("  F%-3d %s HIT_MISS %s（无匹配资料：不造成受击、不取得取消资格）" % [
 				frame, tag, session.player_move_id])
@@ -174,57 +175,69 @@ func _replay_r0_solo_j214d(facing: int) -> void:
 # --- R1：A 起手 juggle → j214D → 弹地后 5B 只能收尾 ---
 
 func _replay_r1_a_starter_ender(facing: int) -> void:
-	print("=== R1 A起手 5A>5B>5C>6A>jc.jB>j214D>5B（收尾）| 面向 %+d | 间距 %.0f px ===" % [facing, NEAR_DX])
+	print("=== R1 A起手 juggle>j214D>弹地5B 自然接续 | 面向 %+d | 间距 %.0f px ===" % [facing, NEAR_DX])
+	## 票据 01：A 起手弹地目标上的 5B 不再强制结束（BOUNCE_END 已撤销）——
+	## 命中按弹地资料结算并自然接续，直至木桩自然受身。5B 的弹地目押窗为 1F
+	##（D72 允许；B@F99 与触地 F100 的组合等待/缓存年龄共同决定）。
 	var plan := {
-		1: _press("A"), 9: _press("B"), 24: _press("C"),
-		38: _press("A", false, facing), 39: _axis(facing),
-		56: _jump(),
-		68: _press("B"),
+		1: _press("A"), 9: _press("B"),
+		24: _press("A", false, facing), 25: _axis(facing),
+		48: _jump(),
+		58: _press("C"),
 		78: _air214d(0, facing), 79: _air214d(1, facing), 80: _air214d(2, facing), 81: _air214d(3, facing),
-		110: _press("B"),
+		99: _press("B"),
 	}
-	var run := _run_route(plan, facing, 160, "R1")
+	var run := _run_route(plan, facing, 200, "R1")
 	var moves: Array[String] = run["moves"]
 	var session: CombatSession = run["session"]
-	_check(moves == ["5A", "5B", "5C", "6A", "jB", "j214D", "5B"],
-		"R1 A起手七击成立：j214D 命中并弹地、落地 5B 经延迟目押命中 %s | 面向 %+d" % [str(moves), facing])
-	_check(session.combo_bounce_followup == 0 and not session.combo_active,
-		"R1 A起手 bounce_followup=0：弹地后新命中只作收尾 | 面向 %+d" % facing)
-	var bounce_end := false
+	_check(moves == ["5A", "5B", "6A", "jC", "j214D", "5B"],
+		"R1 A起手六击成立：juggle 至 j214D 弹地、落地 5B 按弹地资料命中 %s | 面向 %+d" % [str(moves), facing])
+	var b_hit_frame := -1
+	var first_end_after := -1
+	var recovered := false
+	for hit in run["hits"]:
+		if int(hit.get("hits", 0)) == 6:
+			b_hit_frame = int(hit["frame"])
 	for end in run["ends"]:
-		if end["reason"] == CombatEvent.ComboEndReason.BOUNCE_END:
-			bounce_end = true
-	_check(bounce_end and run["contacts"].size() == 1,
-		"R1 收尾命中立即结束连段（BOUNCE_END），不形成弹地后循环 | 面向 %+d" % facing)
+		if b_hit_frame > 0 and int(end.get("frame", -1)) > b_hit_frame:
+			if first_end_after < 0:
+				first_end_after = int(end["frame"])
+			if end.get("reason", -1) == CombatEvent.ComboEndReason.DUMMY_RECOVERED:
+				recovered = true
+	_check(first_end_after > b_hit_frame,
+		"R1 弹地目标命中不再当帧结束连段（首末 F%d > 命中 F%d）| 面向 %+d" % [first_end_after, b_hit_frame, facing])
+	_check(recovered and not session.combo_active,
+		"R1 连段自然接续至木桩自然受身（无强制终点）| 面向 %+d" % facing)
 	print("")
 
 
 # --- R2：B 起手 juggle → j214D → 6A 追击（消费资格）→ jc.jA 延长 ---
 
 func _b6_plan(facing: int) -> Dictionary:
+	## 帧表按 12×20 尺度 + jC 4/j214D 1 校准（与 test_bounce_corrections 同源）。
 	return {
 		1: _press("B"), 16: _press("C"),
 		30: _press("A", false, facing), 31: _axis(facing),
 		48: _jump(),
-		60: _press("B"),
-		70: _air214d(0, facing), 71: _air214d(1, facing), 72: _air214d(2, facing), 73: _air214d(3, facing),
-		103: _press("A", false, facing),
-		124: _jump(),
-		132: _press("A"),
+		62: _press("B"),
+		76: _air214d(0, facing), 77: _air214d(1, facing), 78: _air214d(2, facing), 79: _air214d(3, facing),
+		105: _press("A", false, facing),
+		126: _jump(),
+		136: _press("A"),
 	}
 
 
 func _replay_r2_b_starter_extension(facing: int) -> void:
-	print("=== R2 B起手 5B>5C>6A>jc.jB>j214D>6A>jc.jA（一次性追击延长）| 面向 %+d | 间距 %.0f px ===" % [facing, NEAR_DX])
+	print("=== R2 B起手 5B>5C>6A>jc.jB>j214D>6A>jc.jA（弹地追击延长）| 面向 %+d | 间距 %.0f px ===" % [facing, NEAR_DX])
 	var run := _run_route(_b6_plan(facing), facing, 190, "R2")
 	var moves: Array[String] = run["moves"]
 	var session: CombatSession = run["session"]
 	_check(moves == ["5B", "5C", "6A", "jB", "j214D", "6A", "jA"],
-		"R2 B起手七击：弹地后 6A 追击消费资格、jump cancel jA 真实延长 %s | 面向 %+d" % [str(moves), facing])
+		"R2 B起手七击：弹地后 6A 追击、jump cancel jA 真实延长 %s | 面向 %+d" % [str(moves), facing])
 	_check(session.combo_starter_grade == MoveData.StarterGrade.B or not session.combo_active,
 		"R2 起手等级 B 全程锁定（跨浮空/弹地/落地不重置）| 面向 %+d" % facing)
-	_check(run["contacts"].size() == 1 and session.combo_bounce_followup == 0,
-		"R2 一次弹地触点、追击资格消费后不再持有 | 面向 %+d" % facing)
+	_check(run["contacts"].size() == 1,
+		"R2 一次弹地触点（无资格消费语义；接续由窗口/资料/修正与时空决定）| 面向 %+d" % facing)
 	print("")
 
 
@@ -233,10 +246,10 @@ func _replay_r2_b_starter_extension(facing: int) -> void:
 func _replay_n1_bounce_not_otg() -> void:
 	print("=== N1 弹地目标与独立攻击（非 OTG）| 面向 +1 ===")
 	var plan := _b6_plan(1)
-	plan.erase(103)
-	plan.erase(124)
-	plan.erase(132)
-	plan[110] = _press("A")
+	plan.erase(105)
+	plan.erase(126)
+	plan.erase(136)
+	plan[98] = _press("A")
 	var run := _run_route(plan, 1, 170, "N1")
 	var session: CombatSession = run["session"]
 	_check(run["moves"] == ["5B", "5C", "6A", "jB", "j214D"],
@@ -251,15 +264,15 @@ func _replay_n1_bounce_not_otg() -> void:
 func _replay_n2_expired_input_boundary() -> void:
 	print("=== N2 A起手过早输入边界 | 面向 +1 ===")
 	var plan := {
-		1: _press("A"), 9: _press("B"), 24: _press("C"),
-		38: _press("A", false, 1), 39: _axis(1),
-		56: _jump(),
-		68: _press("B"),
-		78: _air214d(0, 1), 79: _air214d(1, 1), 80: _air214d(2, 1), 81: _air214d(3, 1),
-		99: _press("B"),
+		1: _press("A"), 9: _press("B"),
+		24: _press("A", false, 1), 25: _axis(1),
+		48: _jump(),
+		58: _press("C"),
+		71: _air214d(0, 1), 72: _air214d(1, 1), 73: _air214d(2, 1), 74: _air214d(3, 1),
+		92: _press("B"),
 	}
 	var run := _run_route(plan, 1, 160, "N2")
-	_check(run["moves"] == ["5A", "5B", "5C", "6A", "jB", "j214D"],
+	_check(run["moves"] == ["5A", "5B", "6A", "jC", "j214D"],
 		"N2 过早按下在弹地开窗前过期：追击招不起手、不伪造命中 %s" % str(run["moves"]))
 	var move_recovered := false
 	for end in run["ends"]:
@@ -270,25 +283,28 @@ func _replay_n2_expired_input_boundary() -> void:
 	print("")
 
 
-# --- N3：B 起手追击资格不随命中刷新 ---
+# --- N3：弹地追击命中不重置三层修正（资格语义撤销后重写） ---
 
 func _replay_n3_followup_not_refreshed() -> void:
-	print("=== N3 追击资格一次性（不随命中刷新）| 面向 +1 ===")
+	print("=== N3 弹地追击修正不重置（资格不随命中刷新→修正只降不升）| 面向 +1 ===")
 	var session := _spawn(NEAR_DX, 1)
 	var plan := _b6_plan(1)
-	var refreshed_after_consume := false
-	var consumed_at_hit := -1
+	var scales: Array[float] = []
+	var bounce_pursuit_seen := false
 	for frame in range(1, 190):
 		var input: FrameInput = plan[frame] if plan.has(frame) else FrameInput.new()
 		for event in session.step(input):
 			_log_event(frame, "N3", event, session)
-			if event.type == CombatEvent.Type.HIT and event.combo_hits == 6:
-				consumed_at_hit = frame
-			if event.type == CombatEvent.Type.HIT and consumed_at_hit > 0 \
-					and session.combo_bounce_followup > 0:
-				refreshed_after_consume = true
-	_check(consumed_at_hit > 0 and not refreshed_after_consume,
-		"N3 第 6 击（6A 追击）消费资格后，后续命中（jA）不刷新 bounce_followup")
+			if event.type == CombatEvent.Type.HIT:
+				scales.append(session.combo_time_scale)
+				if event.combo_hits == 6:
+					bounce_pursuit_seen = true
+	var monotone := true
+	for i in range(1, scales.size()):
+		if scales[i] > scales[i - 1] + 0.0001:
+			monotone = false
+	_check(bounce_pursuit_seen and scales.size() == 7 and monotone,
+		"N3 弹地追击（第 6 击）及其后命中不重置/刷新三层修正（时间层只降不升，七击单调）")
 	print("")
 
 
