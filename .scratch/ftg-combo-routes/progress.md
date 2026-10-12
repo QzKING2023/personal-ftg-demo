@@ -12,7 +12,7 @@
 
 ## 2026-10-12 功能交付阶段 E05：票据 05 实施完成
 
-按[功能交付流程](../../docs/combo-route-functional-delivery.md)阶段 E 实施单票 05。审查起点 HEAD `bc948776694678c7bf54f8673a6f0403ce9abd3e`（工作树未提交阶段A–D文档与用户修改保留未触碰）；本轮功能增量基线=bc94877（C6 生产）；历史实施基线 `2eebb17` 不覆盖。前置核对 01–04（c6d21a9/225a4e6/75d467e/9932709 与 full-04/05/07/09 summary）实读通过后开工。
+按[功能交付流程](../../docs/combo-route-functional-delivery.md)阶段 E 实施单票 05。审查起点 HEAD `bc948776694678c7bf54f8673a6f0403ce9abd3e`（工作树未提交阶段A–D文档与用户修改保留未触碰）；本轮功能增量基线=bc94877（C6 生产）；历史实施基线 `2eebb17` 不覆盖。前置核对 01–04（c6d21a9/225a4e6/75d467e/9932709 与 full-04/05/07/09 summary）实读通过后开工。 实现提交 `76cd97b`（代码+测试+文档一体）。
 
 - **唯一功能缺项与实现**：八样本中 R4-A 的合法初态（未受击、普通跳跃轨迹、下落中）此前在训练场**无任何进入途径**（dummy_move_request 仅打击招式且训练场不设置）。最小修复=木桩跳跃训练请求：`frame_input.gd` 新增 `dummy_jump_request`；`combat_session.gd` `_motion_dummy` 顶部空闲守卫（中立/落地/无招式/无防僵/无防御姿态）按普通跳跃速度离地（水平=当帧移动输入×340px/s；请求帧即首个空中帧、当帧不加重力，与玩家离地积分一致；忙碌静默忽略不排队不补发）；`_clone/_restore_frame_input` 序列化补字段；`main.gd` T 键接入+HINT；`project.godot` `dummy_jump=T`。Solver 探针从不设置该请求，求解器行为面零变化。
 - **TDD**：红（输入管道先行：FrameInput 字段+InputMap 动作，会话无响应——15 FAIL/exit 1，`runs/impl05-e01/red-run.*`：木桩永不离地、6A「命中」实为对地、restore 无飞行段）→ 绿 38 PASS/0 FAIL/0 脚本错误（`runs/impl05-e01/green3-run.*`；中间轮保留：滞空与玩家普通跳逐帧一致、±340px/s 水平保持、6A 对未受击下落木桩首击双面向（AIR_HITSTUN、combo 1 hit）、忙碌三态忽略、请求帧/下落段两切点 clone→restore 逐事件与位置等价、主场景 T 键真实适配与带方向变体）。
