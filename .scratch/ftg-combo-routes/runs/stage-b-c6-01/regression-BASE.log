@@ -1,0 +1,13 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+carry_long_B_f1_g2_r666      PASS  击13/13 换边2/2 end=206 reason=0 knock=206 净484.7 抵墙=true 场内=true
+carry_short_B_f1_g2_r100     PASS  击8/8 换边0/0 end=135 reason=0 knock=144 净100.0 抵墙=true 场内=true
+carry_long_B_f-1_g2_r666     PASS  击13/13 换边2/2 end=206 reason=0 knock=206 净484.7 抵墙=true 场内=true
+carry_short_B_f-1_g2_r100    PASS  击8/8 换边0/0 end=135 reason=0 knock=144 净100.0 抵墙=true 场内=true
+carry_long_C_f1_g2_r666      PASS  击12/12 换边2/2 end=202 reason=0 knock=202 净540.4 抵墙=true 场内=true
+carry_short_C_f1_g2_r100     PASS  击7/7 换边0/0 end=124 reason=0 knock=134 净100.0 抵墙=true 场内=true
+carry_long_C_f-1_g2_r666     PASS  击12/12 换边2/2 end=202 reason=0 knock=202 净540.4 抵墙=true 场内=true
+carry_short_C_f-1_g2_r100    PASS  击7/7 换边0/0 end=124 reason=0 knock=134 净100.0 抵墙=true 场内=true
+r4g_f1_g2_r350               PASS  moves=["6A", "jC", "j214D", "5B", "214C", "214C~C"] 首END_reason=0 后命中0 弹地1 换边0 倒地=133(true) miss= 墙限=true
+r4g_f-1_g2_r350              PASS  moves=["6A", "jC", "j214D", "5B", "214C", "214C~C"] 首END_reason=0 后命中0 弹地1 换边0 倒地=133(true) miss= 墙限=true
+regression BASE: 0 FAIL

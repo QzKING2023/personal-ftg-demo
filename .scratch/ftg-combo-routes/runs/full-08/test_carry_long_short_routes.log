@@ -1,0 +1,487 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PASS  普通 5D 恢复 6N（当前 6）
+PASS  蓄力 5[D] 恢复 10N（当前 10）
+PASS  蓄力 5[D] 首次 active 锚点最大计划位移 640px（当前 640.0）
+PASS  普通 5D 位移 72px 保持（当前 72.0）
+PASS  蓄力 5[D] active 仍 4N（当前 4）
+PASS  蓄力 D AIRBORNE×NORMAL 上速 380、水平 80、不可受身 32N 保持
+PASS  普通 5D 空中资料不随蓄力版改写（上速保持 170）
+PASS  236C 第二段 AIRBORNE×NORMAL 水平 3200、上速 180/不可受身 30 不改写
+PASS  236C 第一段空中水平 40 保持
+PASS  236C 第二段对地 slide 资料不改写
+PASS  5B 必杀取消出口包含 6D
+PASS  普通/蓄力 D 声明命中限定普通连接 5B
+PASS  D 系来源限定连接边已由命中限定边取代（不再按 236C 进入来源限制）
+PASS  身后停止声明只在蓄力 D 上
+PASS  hit_link_targets 引用不在表内的目标整表拒绝
+PASS  同一普通连接目标在两类边中重复声明整表拒绝
+PASS  stop_behind_target 只属于 charge_only 蓄力版
+PASS  stop_behind_target 缺少计划位移整表拒绝
+PASS  默认表通过新字段校验（实际：[]）
+PASS  特殊进入蓄力 D 命中并完整恢复（F45 → F65）
+PASS  236C 两段 + 蓄力 D 共 3 击（实际 3）
+PASS  特殊进入蓄力 D 命中后 5B 经普通连接起手（来源开放；当帧起手后的接触由几何另行判定）
+PASS  普通来源蓄力 D 命中并完整恢复（F25 → F42）
+PASS  普通来源：5B + 蓄力 D + 5B 三击（实际 3）
+PASS  普通来源蓄力 D 命中后 5B 经普通连接起手（不再要求 236C 进入来源）
+PASS  236C 两段命中、其后的普通 5D 挥空（HIT 共 2）
+PASS  挥空 D 不产生 5B 普通连接资格
+PASS  挥空后连段按收招/自然恢复结束，combo_hits 停在 2（实际 2）
+PASS  恢复后第 5 帧按 B 仍经 M 普通连接起手（无固定上限）
+PASS  稍晚 5B 为同连段第 4 击（HIT 共 4）
+PASS  M 资格跨walk保留，之后按 B 仍普通连接
+PASS  M 资格跨crouch保留，之后按 B 仍普通连接
+PASS  M 资格跨实际跳跃保留（pre-jump/滞空等待开放，连段结束即清理）
+PASS  等待中的 5C 按独立新动作起手
+PASS  5C 不经普通连接补入旧连段
+PASS  未声明攻击不并入旧连段（无第 4 击计入原连段）
+PASS  旧连段最终按自然恢复结束
+PASS  命中当帧的过早 B 随缓存过期，不形成普通连接
+PASS  无有效接续时连段按自然恢复结束（3）
+PASS  资格清理后的 B 为独立新连段首击（HIT 4，末击计数 1）
+PASS  蓄力 D 单击命中（1）
+PASS  身后停止产生恰一次换边且新面向背向原方向（1 次）
+PASS  停在目标身后身体边缘刚分离处（player=898.000, dummy=886.000）
+PASS  停止后余下 active 不再位移（停止帧 F10）
+PASS  停止后下一帧即进入完整恢复
+PASS  身后停止后完整恢复（接地目标硬直在恢复帧前自然截止，M 由入口用例覆盖；恢复帧 F28）
+PASS  M 等待中的 5B 追加命中（2）
+PASS  目标被后续命中移动后玩家不追随（stop=898.000 → 898.000）
+PASS  贴墙目标仍被蓄力 D 命中（1）
+PASS  场外停点沿原墙分支：零换边
+PASS  玩家留在场内侧贴身（player=918.000, dummy=930.000）
+PASS  交界内侧仍命中（1）
+PASS  2px 余量内正面停止：零换边
+PASS  停在正面贴身位置（player=911.000, 预期 911.000）
+PASS  正面停止后完整恢复（恢复帧 F31）
+PASS  墙钳制的重合分离把玩家放到合法场内侧（918.000）
+PASS  分离不移动目标
+PASS  中场重合不启用场内侧改放（保持原方向推出，492.000）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:659)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g：13/12 击、双换边、倒地与净推进（击 %d、换边 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:661)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g 准确序列与两种侧别（%s）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:659)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g：13/12 击、双换边、倒地与净推进（击 %d、换边 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:661)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g 准确序列与两种侧别（%s）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:659)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g：13/12 击、双换边、倒地与净推进（击 %d、换边 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:661)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g 准确序列与两种侧别（%s）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:659)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g：13/12 击、双换边、倒地与净推进（击 %d、换边 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:661)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g 准确序列与两种侧别（%s）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:659)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g：13/12 击、双换边、倒地与净推进（击 %d、换边 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:661)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g 准确序列与两种侧别（%s）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:659)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g：13/12 击、双换边、倒地与净推进（击 %d、换边 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:661)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g 准确序列与两种侧别（%s）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:659)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g：13/12 击、双换边、倒地与净推进（击 %d、换边 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:661)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g 准确序列与两种侧别（%s）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:659)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g：13/12 击、双换边、倒地与净推进（击 %d、换边 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:661)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g 准确序列与两种侧别（%s）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:659)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g：13/12 击、双换边、倒地与净推进（击 %d、换边 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:661)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g 准确序列与两种侧别（%s）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:659)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g：13/12 击、双换边、倒地与净推进（击 %d、换边 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:661)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g 准确序列与两种侧别（%s）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:659)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g：13/12 击、双换边、倒地与净推进（击 %d、换边 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:661)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g 准确序列与两种侧别（%s）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:659)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g：13/12 击、双换边、倒地与净推进（击 %d、换边 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:661)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g 准确序列与两种侧别（%s）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:659)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g：13/12 击、双换边、倒地与净推进（击 %d、换边 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:661)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g 准确序列与两种侧别（%s）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:659)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g：13/12 击、双换边、倒地与净推进（击 %d、换边 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:661)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g 准确序列与两种侧别（%s）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:659)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g：13/12 击、双换边、倒地与净推进（击 %d、换边 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:661)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g 准确序列与两种侧别（%s）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:659)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g：13/12 击、双换边、倒地与净推进（击 %d、换边 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:661)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 长线 facing=%d g=%g r=%g 准确序列与两种侧别（%s）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+ERROR: String formatting error: unsupported format character.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _test_route_samples (res://tests/test_carry_long_short_routes.gd:665)
+       [1] _initialize (res://tests/test_carry_long_short_routes.gd:31)
+PASS  %s 短线 facing=%d g=%g r=%g：8/7 击、零换边、抵墙倒地（击 %d、净 %.1f）
+PASS  B 交界 facing=1 r=495 短分支恰一成立（击 8/换边 0）
+PASS  B 交界 facing=1 r=496 长分支恰一成立（击 13/换边 2）
+PASS  C 交界 facing=1 r=548 短分支恰一成立（击 7/换边 0）
+PASS  C 交界 facing=1 r=549 长分支恰一成立（击 12/换边 2）
+PASS  B 交界 facing=-1 r=495 短分支恰一成立（击 8/换边 0）
+PASS  B 交界 facing=-1 r=496 长分支恰一成立（击 13/换边 2）
+PASS  C 交界 facing=-1 r=548 短分支恰一成立（击 7/换边 0）
+PASS  C 交界 facing=-1 r=549 长分支恰一成立（击 12/换边 2）
+PASS  整数网格无交界双失败（5396 点，首个失败：无）
+PASS  整数网格长/短不并存成功（首个并存：无）
+PASS  交界带逐 1px 各恰一分支（首个反例：）
+PASS  非整数样点（g×r 18 组双面向）各恰一分支（首个反例：）
+  域扫描覆盖：整数网格 5396 起点（长 1406 / 短 3990）+ 交界带 900 点 + 非整数 72 点；步长 g=1px、r=10px，有限采样非连续穷尽
+PASS  短区强行长后缀不成立（击 7/换边 0/倒地帧 -1）
+PASS  长区强行短后缀不成立（击 8/换边 1）
+PASS  早松 D 提交普通 5D，不构成蓄力样本（序列 ["5B", "5C", "236C", "236C"]）
+PASS  删 jC 的长线不成立（击 8）
+PASS  删 jB 的长线不成立（击 7）
+PASS  缺第二段的 236C 单击诊断对照保留（236C 击数 1）
+PASS  只完成前缀（无 214C~C）不产生规定倒地
+PASS  过晚 B（F130）不构成同连段样本（击 5/换边 0）
+PASS  收尾前额外 5C 破坏准确样本（序列 ["5B", "5C", "236C", "236C", "5[D]", "5B"]）
+PASS  R1-B 逐切点保存续跑与不中断回放逐事件等价（）
+PASS  关键键 236C 成功偏移为连续区间（[-4, -3, -2, -1, 0, 1, 2, 3, 4]）
+  窗口记录 236C: [-4, 4]（其余输入固定，±5F 扫描）
+PASS  关键键 5B_after_D 成功偏移为连续区间（[-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]）
+  窗口记录 5B_after_D: [-5, 5]（其余输入固定，±5F 扫描）
+PASS  关键键 6D 成功偏移为连续区间（[-2, -1, 0, 1, 2, 3]）
+  窗口记录 6D: [-2, 3]（其余输入固定，±5F 扫描）
+PASS  关键键 jC 成功偏移为连续区间（[0]）
+  窗口记录 jC: [0, 0]（其余输入固定，±5F 扫描）
+PASS  关键键 j214D 成功偏移为连续区间（[-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]）
+  窗口记录 j214D: [-5, 5]（其余输入固定，±5F 扫描）
+PASS  关键键 pursuit_5B 成功偏移为连续区间（[-4, -3, -2, -1, 0, 1, 2, 3, 4, 5]）
+  窗口记录 pursuit_5B: [-4, 5]（其余输入固定，±5F 扫描）
+PASS  关键键 214C 成功偏移为连续区间（[-1, 0, 1]）
+  窗口记录 214C: [-1, 1]（其余输入固定，±5F 扫描）
+PASS  关键键 tildeC 成功偏移为连续区间（[-4, -3, -2, -1, 0, 1, 2, 3, 4, 5]）
+  窗口记录 tildeC: [-4, 5]（其余输入固定，±5F 扫描）
+  联合扰动记录：64 向量 ±1 成功 0/64（难度资料，不作准入门槛）
+PASS  联合扰动计划/分母完整（64 向量全部运行）
+
+ALL CARRY LONG SHORT ROUTES TESTS PASSED

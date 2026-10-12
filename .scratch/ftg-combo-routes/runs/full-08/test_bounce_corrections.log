@@ -1,0 +1,91 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PASS  shared manifest loads with j214D present
+PASS  j214D exists in the shared table
+PASS  j214D is the air 214+D special (SPECIAL tier)
+PASS  j214D frame data matches the D74 tuning table (1/4/22, dmg 20, starter D)
+PASS  j214D declares its hitbox and planned dive motion (52×36 gap 4, motion 12/64)
+PASS  j214D declares the post-bounce normal links to 5B/6A/214C
+PASS  j214D grants no cancels, no finisher flag and no landing exception
+PASS  j214D declares GROUND_BOUNCE profiles for grounded and airborne entries with counter pairs
+PASS  grounded entry pops up immediately, airborne entry falls along the profile trajectory
+PASS  j214D declares no bounce-target profile: a second j214D on a bouncing target cannot hit or re-bounce
+PASS  jA cancels into j214D on hit confirm
+PASS  jB cancels into j214D on hit confirm
+PASS  jC cancels into j214D on hit confirm
+PASS  6D declares the air exit into j214D
+PASS  2D declares the air exit into j214D
+PASS  5B declares the bounce-target followup profile (LAUNCH normal+counter)
+PASS  6A declares the bounce-target followup profile (LAUNCH normal+counter)
+PASS  214C declares the bounce-target followup profile (LAUNCH normal+counter)
+PASS  5A declares no bounce-target profile (explicit gate, no fallback)
+PASS  5C declares no bounce-target profile (explicit gate, no fallback)
+PASS  2A declares no bounce-target profile (explicit gate, no fallback)
+PASS  2B declares no bounce-target profile (explicit gate, no fallback)
+PASS  2C declares no bounce-target profile (explicit gate, no fallback)
+PASS  jA declares no bounce-target profile (explicit gate, no fallback)
+PASS  jB declares no bounce-target profile (explicit gate, no fallback)
+PASS  jC declares no bounce-target profile (explicit gate, no fallback)
+PASS  j5D declares no bounce-target profile (explicit gate, no fallback)
+PASS  j6D declares no bounce-target profile (explicit gate, no fallback)
+PASS  j2D declares no bounce-target profile (explicit gate, no fallback)
+PASS  236C declares no bounce-target profile (explicit gate, no fallback)
+PASS  default table validates before injected-rejection probes
+ERROR: String formatting error: not all arguments converted during string formatting.
+   at: validated_evaluate (core/variant/variant_op.h:953)
+   GDScript backtrace (most recent call first):
+       [0] _validate_hit_profiles (res://scripts/combat/move_table.gd:608)
+       [1] _validate_strike_fields (res://scripts/combat/move_table.gd:386)
+       [2] _validate_move (res://scripts/combat/move_table.gd:162)
+       [3] validate (res://scripts/combat/move_table.gd:90)
+       [4] _test_bounce_profile_validation (res://tests/test_bounce_corrections.gd:232)
+       [5] _initialize (res://tests/test_bounce_corrections.gd:20)
+PASS  GROUND_BOUNCE reaction on a bounce-target key is rejected (no re-bounce declaration)
+PASS  grounded bounce entry without a positive pop velocity is rejected
+PASS  foreign knockdown timer on a GROUND_BOUNCE profile is rejected
+PASS  missing pre-touch window on a GROUND_BOUNCE profile is rejected
+PASS  solo jump-in j214D hits the grounded dummy as combo hit 1 (independent input)
+PASS  D starter locks at the solo GROUND_BOUNCE entry (no per-grade followup derivation anymore)
+PASS  j214D grounded entry also zeroes the horizontal hit velocity (ticket-01 D rule, vx=+0.0)
+PASS  exactly one bounce_contact fires in the whole solo flow ([33])
+PASS  the bounced dummy never becomes KNOCKED_DOWN (bounce is not OTG knockdown)
+PASS  without a followup input the combo ends by move-recovered while the bounce continues
+PASS  bounce_contact opens the unified window pre-scaled by the time layer (15) and rebounds at the trajectory-scaled speed (-317 px/s)
+PASS  the bounce flow ends in natural neutral recovery on the ground
+PASS  B-starter route lands 5B>5C>6A>jc.jB>j214D and the 6A bounce followup ["5B", "5C", "6A", "jB", "j214D", "6A"]
+PASS  one bounce contact in the B route
+PASS  the bounce window is pre-scaled at hit time by the time layer (floor(16×0.82×0.94⁴)=10)
+PASS  A-starter route lands the juggle and the post-bounce 5B as hit 6 (["5A", "5B", "6A", "jC", "j214D", "5B"]) | facing +1
+PASS  the bounce-target hit does NOT end the combo itself (first end F125 > hit F108) | facing +1
+PASS  the combo continues to the dummy's natural recovery (DUMMY_RECOVERED) | facing +1
+PASS  A-starter route lands the juggle and the post-bounce 5B as hit 6 (["5A", "5B", "6A", "jC", "j214D", "5B"]) | facing -1
+PASS  the bounce-target hit does NOT end the combo itself (first end F125 > hit F108) | facing -1
+PASS  the combo continues to the dummy's natural recovery (DUMMY_RECOVERED) | facing -1
+PASS  after the natural recovery the next 5C registers as hit 1 of a new combo, never a continuation (["5A", "5B", "6A", "jC", "j214D", "5B", "5C"])
+PASS  an input pressed too early never lands the bounce followup: no hit is fabricated (["5A", "5B", "6A", "jC", "j214D"])
+PASS  the route ends by move-recovered while the single bounce still runs its course
+PASS  B-starter extension lands the bounce followup 6A and jump-cancel jA (7 hits) ["5B", "5C", "6A", "jB", "j214D", "6A", "jA"] | facing +1
+PASS  starter grade B stays locked across float, bounce and landing continuation | facing +1
+PASS  the three layers accumulate per-tier (normal ×4, bounce followup, normal) without resets | facing +1
+PASS  one bounce contact across the extended route | facing +1
+PASS  B-starter extension lands the bounce followup 6A and jump-cancel jA (7 hits) ["5B", "5C", "6A", "jB", "j214D", "6A", "jA"] | facing -1
+PASS  starter grade B stays locked across float, bounce and landing continuation | facing -1
+PASS  the three layers accumulate per-tier (normal ×4, bounce followup, normal) without resets | facing -1
+PASS  one bounce contact across the extended route | facing -1
+PASS  an independent 5A never damages the bouncing dummy and the flow never becomes knockdown (no OTG)
+PASS  the bounce flow keeps exactly one contact and no knockdown conversion
+PASS  a whiffed 5A locks nothing; the next valid 5B hit locks starter B
+PASS  a blocked 5A does not lock the starter; the follow-up 5B hit locks B
+FAIL  the landing-link route replays 2C>6D>j6D>5B (["2C", "6D", "j6D"])
+FAIL  the link-started 5B hit applies the landing-link per-hit tier (0.94/0.95/0.95)
+PASS  slide route replays 236C(whiff seg1)>seg2 slide>5D pickup (["236C", "5D"])
+PASS  starter D stays locked across the slide state transition
+PASS  rekka route replays 2C>214C>~B(airborne)>5B (["2C", "214C", "214C~B", "5B"])
+PASS  starter C (2C opener) stays locked through the Rekka derivation and the delayed link
+PASS  the A-starter loop candidate reaches 5A>236C(2 hits)>charged 5[D] inside one combo (["5A", "236C", "236C", "5[D]", "5B"] / [1, 2, 3, 4, 5])
+PASS  the route closes bounded under the A-starter time layer (no 236C>5D loop; ["5A", "236C", "236C", "5[D]", "5B"])
+PASS  settlement_state carries the bounce/contact/starter/correction keys for solver dedup
+PASS  the bounce-followup hit changes the settlement key via the correction layers (states before/after dedup apart)
+PASS  the contact event flips a settlement key (pre-touch and post-touch are distinct states)
+
+2 TEST(S) FAILED

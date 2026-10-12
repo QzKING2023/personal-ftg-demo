@@ -1,0 +1,99 @@
+=== RV-E02 B 新后缀逐帧（F138–F218，g9.3/r6.7/facing=1）===
+F10   5B      ph2  y=470.0   x=902.0   | dummy st1  y=470.00  x=925.4   stun=11  ch=1  HIT(5B,#1) HS+
+F19   5C      ph1  y=470.0   x=902.0   | dummy st1  y=470.00  x=927.4   stun=10  ch=1  HS-
+F27   5C      ph2  y=470.0   x=902.0   | dummy st1  y=470.00  x=930.0   stun=10  ch=2  HIT(5C,#2) HS+ axis=1 dn
+F36   236C    ph1  y=470.0   x=902.0   | dummy st1  y=470.00  x=930.0   stun=9   ch=2  HS-
+F42   236C    ph2  y=470.0   x=902.0   | dummy st2  y=467.95  x=930.0   stun=23  ch=3  HIT(236C,#3) HS+
+F51   5D      ph1  y=470.0   x=902.0   | dummy st2  y=466.29  x=930.0   stun=22  ch=3  HS-
+F57   5D      ph2  y=470.0   x=902.0   | dummy st2  y=464.49  x=930.0   stun=16  ch=3  E20
+F58   5D      ph2  y=470.0   x=918.0   | dummy st2  y=462.81  x=930.0   stun=21  ch=4  HIT(5D,#4) HS+
+F67   5D      ph2  y=470.0   x=918.0   | dummy st2  y=461.52  x=930.0   stun=20  ch=4  HS-
+F83   5C      ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=8   ch=5  HIT(5B,#5) HS+
+F92   5C      ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=7   ch=5  HS-
+F99   5C      ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=8   ch=6  HIT(5C,#6) HS+ axis=1
+F108  236C    ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=7   ch=6  HS-
+F114  236C    ph2  y=470.0   x=918.0   | dummy st2  y=468.33  x=930.0   stun=18  ch=7  HIT(236C,#7) HS+
+F123  5D      ph1  y=470.0   x=918.0   | dummy st2  y=467.06  x=930.0   stun=17  ch=7  HS-
+F129  5D      ph2  y=470.0   x=918.0   | dummy st2  y=467.56  x=930.0   stun=11  ch=7  E20
+F130  5D      ph2  y=470.0   x=918.0   | dummy st2  y=466.26  x=930.0   stun=17  ch=8  HIT(5D,#8) HS+
+F138  5D      ph2  y=470.0   x=918.0   | dummy st2  y=466.26  x=930.0   stun=17  ch=8 
+F139  5D      ph2  y=470.0   x=918.0   | dummy st2  y=465.36  x=930.0   stun=16  ch=8  HS-
+F140  5D      ph2  y=470.0   x=918.0   | dummy st2  y=464.84  x=930.0   stun=15  ch=8 
+F141  5D      ph3  y=470.0   x=918.0   | dummy st2  y=464.71  x=930.0   stun=14  ch=8 
+F142  5D      ph3  y=470.0   x=918.0   | dummy st2  y=464.97  x=930.0   stun=13  ch=8 
+F143  5D      ph3  y=470.0   x=918.0   | dummy st2  y=465.62  x=930.0   stun=12  ch=8 
+F144  5D      ph3  y=470.0   x=918.0   | dummy st2  y=466.66  x=930.0   stun=11  ch=8  press=["B"]
+F145  5D      ph3  y=470.0   x=918.0   | dummy st2  y=468.09  x=930.0   stun=10  ch=8 
+F146  5D      ph3  y=470.0   x=918.0   | dummy st2  y=469.91  x=930.0   stun=9   ch=8 
+F147  5B      ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=8   ch=8 
+F148  5B      ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=7   ch=8 
+F149  5B      ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=6   ch=8 
+F150  5B      ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=5   ch=8  axis=0 dn
+F151  5B      ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=4   ch=8  axis=-1 dn
+F152  5B      ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=3   ch=8  axis=-1
+F153  5B      ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=6   ch=9  HIT(5B,#9) HS+ press=["C"] axis=-1
+F154  5B      ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=6   ch=9 
+F155  5B      ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=6   ch=9 
+F156  5B      ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=6   ch=9 
+F157  5B      ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=6   ch=9 
+F158  5B      ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=6   ch=9 
+F159  5B      ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=6   ch=9 
+F160  5B      ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=6   ch=9 
+F161  5B      ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=6   ch=9 
+F162  214C    ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=5   ch=9  HS-
+F163  214C    ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=4   ch=9 
+F164  214C    ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=3   ch=9 
+F165  214C    ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=2   ch=9 
+F166  214C    ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=1   ch=9 
+F167  214C    ph1  y=470.0   x=918.0   | dummy st0  y=470.00  x=930.0   stun=0   ch=9  DUMMY_OK END(3)
+F168  214C    ph1  y=470.0   x=918.0   | dummy st0  y=470.00  x=930.0   stun=0   ch=9 
+F169  214C    ph2  y=470.0   x=918.0   | dummy st0  y=470.00  x=930.0   stun=0   ch=9 
+F170  214C    ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=13  ch=1  HIT(214C,#1) HS+
+F171  214C    ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=13  ch=1 
+F172  214C    ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=13  ch=1 
+F173  214C    ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=13  ch=1  REKKA(C>214C~C) press=["C"]
+F174  214C    ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=13  ch=1 
+F175  214C    ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=13  ch=1 
+F176  214C    ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=13  ch=1 
+F177  214C    ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=13  ch=1 
+F178  214C    ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=13  ch=1 
+F179  214C~C  ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=12  ch=1  HS-
+F180  214C~C  ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=11  ch=1 
+F181  214C~C  ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=10  ch=1 
+F182  214C~C  ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=9   ch=1 
+F183  214C~C  ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=8   ch=1 
+F184  214C~C  ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=7   ch=1 
+F185  214C~C  ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=6   ch=1 
+F186  214C~C  ph1  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=5   ch=1 
+F187  214C~C  ph2  y=470.0   x=918.0   | dummy st1  y=470.00  x=930.0   stun=4   ch=1 
+F188  214C~C  ph2  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2  HIT(214C~C,#2) HS+ END(4)
+F189  214C~C  ph2  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F190  214C~C  ph2  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F191  214C~C  ph2  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F192  214C~C  ph2  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F193  214C~C  ph2  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F194  214C~C  ph2  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F195  214C~C  ph2  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F196  214C~C  ph2  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F197  214C~C  ph2  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2  HS-
+F198  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F199  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F200  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F201  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F202  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F203  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F204  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F205  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F206  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F207  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F208  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F209  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F210  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F211  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F212  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F213  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F214  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F215  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F216  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F217  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 
+F218  214C~C  ph3  y=470.0   x=918.0   | dummy st4  y=470.00  x=930.0   stun=4   ch=2 

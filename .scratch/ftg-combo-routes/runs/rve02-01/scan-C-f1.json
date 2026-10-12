@@ -1,0 +1,2765 @@
+{
+  "head": "rve02-scan",
+  "kind": "C",
+  "facing": 1,
+  "placements": [
+    {
+      "g": 0.0,
+      "r": 0.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 0.0,
+      "r": 4.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 0.0,
+      "r": 8.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 0.0,
+      "r": 12.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 2.0,
+      "r": 0.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 2.0,
+      "r": 4.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 2.0,
+      "r": 8.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 2.0,
+      "r": 12.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 4.0,
+      "r": 0.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 4.0,
+      "r": 4.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 4.0,
+      "r": 8.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 4.0,
+      "r": 12.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 9.0,
+      "r": 0.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 9.0,
+      "r": 4.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 9.0,
+      "r": 8.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 9.0,
+      "r": 12.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 13.0,
+      "r": 0.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 13.0,
+      "r": 4.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 13.0,
+      "r": 8.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 13.0,
+      "r": 12.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 18.0,
+      "r": 0.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 18.0,
+      "r": 4.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 18.0,
+      "r": 8.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 18.0,
+      "r": 12.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 9.3,
+      "r": 6.7,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 24.0,
+      "r": 4.0,
+      "zone": "out_of_domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    },
+    {
+      "g": 9.0,
+      "r": 20.0,
+      "zone": "out_of_domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          1
+        ],
+        "m1": [
+          15
+        ],
+        "d1": [
+          31
+        ],
+        "b2": [
+          61
+        ],
+        "c2": [
+          71
+        ],
+        "m2": [
+          89
+        ],
+        "d2": [
+          105
+        ],
+        "b3": [
+          133,
+          132,
+          134,
+          131,
+          135,
+          130,
+          136
+        ],
+        "r2": [
+          139,
+          138
+        ],
+        "tc": []
+      },
+      "break_key": "tc",
+      "break_n": 10,
+      "diag_anchors": {
+        "c1": 1,
+        "m1": 15,
+        "d1": 31,
+        "b2": 61,
+        "c2": 71,
+        "m2": 89,
+        "d2": 105,
+        "b3": 133,
+        "r2": 139,
+        "tc": 159
+      },
+      "diag_hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diag_hit_frames": [
+        12,
+        27,
+        43,
+        70,
+        87,
+        102,
+        118,
+        142,
+        158
+      ],
+      "diag_end_frame": 173,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        176
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 142,
+        "pre_state": 1,
+        "count": 2
+      },
+      "214C_started": {
+        "frame": 143
+      },
+      "214CC_started": {
+        "frame": 168
+      }
+    }
+  ],
+  "summary": {
+    "total": 27,
+    "ok": 0
+  }
+}

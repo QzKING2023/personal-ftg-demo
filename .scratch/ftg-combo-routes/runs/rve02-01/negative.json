@@ -1,0 +1,1036 @@
+{
+  "head": "rve02-negative",
+  "placement": {
+    "g": 9.3,
+    "r": 6.7
+  },
+  "cases": [
+    {
+      "kind": "B",
+      "facing": 1,
+      "case": "r2_early7",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": false,
+        "player_field_side": false,
+        "ok": false
+      },
+      "seq_len": 9,
+      "hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diverge_at": 10,
+      "end_frame": 167,
+      "end_reason": 3,
+      "post_hits": [],
+      "post_hit_frames": [],
+      "link_fails": [],
+      "knock_frame": -1,
+      "knock_wall_dist": -1.0,
+      "extra": {
+        "tweak": {
+          "r2": 143
+        },
+        "g": 9.3,
+        "r": 6.7
+      }
+    },
+    {
+      "kind": "B",
+      "facing": 1,
+      "case": "r2_late6",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": false,
+        "player_field_side": false,
+        "ok": false
+      },
+      "seq_len": 9,
+      "hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diverge_at": 10,
+      "end_frame": 167,
+      "end_reason": 3,
+      "post_hits": [
+        "214C"
+      ],
+      "post_hit_frames": [
+        170
+      ],
+      "link_fails": [],
+      "knock_frame": -1,
+      "knock_wall_dist": -1.0,
+      "extra": {
+        "tweak": {
+          "r2": 156
+        },
+        "g": 9.3,
+        "r": 6.7
+      }
+    },
+    {
+      "kind": "B",
+      "facing": 1,
+      "case": "tc_early6",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": false,
+        "player_field_side": false,
+        "ok": false
+      },
+      "seq_len": 9,
+      "hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diverge_at": 10,
+      "end_frame": 167,
+      "end_reason": 3,
+      "post_hits": [
+        "214C"
+      ],
+      "post_hit_frames": [
+        169
+      ],
+      "link_fails": [],
+      "knock_frame": -1,
+      "knock_wall_dist": -1.0,
+      "extra": {
+        "tweak": {
+          "tc": 164
+        },
+        "g": 9.3,
+        "r": 6.7
+      }
+    },
+    {
+      "kind": "B",
+      "facing": 1,
+      "case": "tc_late14",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": true,
+        "player_field_side": true,
+        "ok": false
+      },
+      "seq_len": 9,
+      "hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diverge_at": 10,
+      "end_frame": 167,
+      "end_reason": 3,
+      "post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "post_hit_frames": [
+        169,
+        193
+      ],
+      "link_fails": [],
+      "knock_frame": 193,
+      "knock_wall_dist": 0.0,
+      "extra": {
+        "tweak": {
+          "tc": 184
+        },
+        "g": 9.3,
+        "r": 6.7
+      }
+    },
+    {
+      "kind": "B",
+      "facing": 1,
+      "case": "tc_late24",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": false,
+        "player_field_side": false,
+        "ok": false
+      },
+      "seq_len": 9,
+      "hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diverge_at": 10,
+      "end_frame": 167,
+      "end_reason": 3,
+      "post_hits": [
+        "214C"
+      ],
+      "post_hit_frames": [
+        169
+      ],
+      "link_fails": [],
+      "knock_frame": -1,
+      "knock_wall_dist": -1.0,
+      "extra": {
+        "tweak": {
+          "tc": 194
+        },
+        "g": 9.3,
+        "r": 6.7
+      }
+    },
+    {
+      "kind": "B",
+      "facing": 1,
+      "case": "b3_late25",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": true,
+        "player_field_side": true,
+        "ok": false
+      },
+      "seq_len": 8,
+      "hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D"
+      ],
+      "diverge_at": 9,
+      "end_frame": 155,
+      "end_reason": 3,
+      "post_hits": [
+        "214C",
+        "214C~B"
+      ],
+      "post_hit_frames": [
+        161,
+        177
+      ],
+      "link_fails": [],
+      "knock_frame": 177,
+      "knock_wall_dist": 0.0,
+      "extra": {
+        "tweak": {
+          "b3": 169
+        },
+        "g": 9.3,
+        "r": 6.7
+      }
+    },
+    {
+      "kind": "B",
+      "facing": 1,
+      "case": "b3_early18",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": true,
+        "player_field_side": true,
+        "ok": false
+      },
+      "seq_len": 8,
+      "hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D"
+      ],
+      "diverge_at": 9,
+      "end_frame": 155,
+      "end_reason": 3,
+      "post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "post_hit_frames": [
+        161,
+        179
+      ],
+      "link_fails": [],
+      "knock_frame": 179,
+      "knock_wall_dist": 0.0,
+      "extra": {
+        "tweak": {
+          "b3": 126
+        },
+        "g": 9.3,
+        "r": 6.7
+      }
+    },
+    {
+      "kind": "B",
+      "facing": 1,
+      "case": "no_b3_no_cancel_source",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": true,
+        "player_field_side": true,
+        "ok": false
+      },
+      "seq_len": 8,
+      "hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D"
+      ],
+      "diverge_at": 9,
+      "end_frame": 155,
+      "end_reason": 3,
+      "post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "post_hit_frames": [
+        161,
+        179
+      ],
+      "link_fails": [],
+      "knock_frame": 179,
+      "knock_wall_dist": 0.0,
+      "extra": {
+
+      }
+    },
+    {
+      "kind": "B",
+      "facing": 1,
+      "case": "post_knockdown_5b_otg",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": true,
+        "player_field_side": true,
+        "ok": false
+      },
+      "seq_len": 9,
+      "hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diverge_at": 10,
+      "end_frame": 167,
+      "end_reason": 3,
+      "post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "post_hit_frames": [
+        169,
+        187
+      ],
+      "link_fails": [],
+      "knock_frame": 187,
+      "knock_wall_dist": 0.0,
+      "extra": {
+        "otg_b_frame": 210,
+        "otg_hit": false
+      }
+    },
+    {
+      "kind": "B",
+      "facing": 1,
+      "case": "out_g24",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": true,
+        "player_field_side": true,
+        "ok": false
+      },
+      "seq_len": 9,
+      "hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diverge_at": 10,
+      "end_frame": 167,
+      "end_reason": 3,
+      "post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "post_hit_frames": [
+        169,
+        187
+      ],
+      "link_fails": [],
+      "knock_frame": 187,
+      "knock_wall_dist": 0.0,
+      "extra": {
+        "tweak": {
+
+        },
+        "g": 24.0,
+        "r": 6.7
+      }
+    },
+    {
+      "kind": "B",
+      "facing": 1,
+      "case": "out_r20",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": true,
+        "player_field_side": true,
+        "ok": false
+      },
+      "seq_len": 9,
+      "hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diverge_at": 10,
+      "end_frame": 167,
+      "end_reason": 3,
+      "post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "post_hit_frames": [
+        169,
+        187
+      ],
+      "link_fails": [],
+      "knock_frame": 187,
+      "knock_wall_dist": 0.0,
+      "extra": {
+        "tweak": {
+
+        },
+        "g": 9.3,
+        "r": 20.0
+      }
+    },
+    {
+      "kind": "C",
+      "facing": 1,
+      "case": "r2_early7",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": false,
+        "player_field_side": false,
+        "ok": false
+      },
+      "seq_len": 8,
+      "hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diverge_at": 9,
+      "end_frame": 158,
+      "end_reason": 3,
+      "post_hits": [],
+      "post_hit_frames": [],
+      "link_fails": [],
+      "knock_frame": -1,
+      "knock_wall_dist": -1.0,
+      "extra": {
+        "tweak": {
+          "r2": 132
+        },
+        "g": 9.3,
+        "r": 6.7
+      }
+    },
+    {
+      "kind": "C",
+      "facing": 1,
+      "case": "r2_late6",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": false,
+        "player_field_side": false,
+        "ok": false
+      },
+      "seq_len": 8,
+      "hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diverge_at": 9,
+      "end_frame": 158,
+      "end_reason": 3,
+      "post_hits": [
+        "214C"
+      ],
+      "post_hit_frames": [
+        159
+      ],
+      "link_fails": [],
+      "knock_frame": -1,
+      "knock_wall_dist": -1.0,
+      "extra": {
+        "tweak": {
+          "r2": 145
+        },
+        "g": 9.3,
+        "r": 6.7
+      }
+    },
+    {
+      "kind": "C",
+      "facing": 1,
+      "case": "tc_early6",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": false,
+        "player_field_side": false,
+        "ok": false
+      },
+      "seq_len": 9,
+      "hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diverge_at": 10,
+      "end_frame": 173,
+      "end_reason": 3,
+      "post_hits": [],
+      "post_hit_frames": [],
+      "link_fails": [],
+      "knock_frame": -1,
+      "knock_wall_dist": -1.0,
+      "extra": {
+        "tweak": {
+          "tc": 153
+        },
+        "g": 9.3,
+        "r": 6.7
+      }
+    },
+    {
+      "kind": "C",
+      "facing": 1,
+      "case": "tc_late14",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": true,
+        "player_field_side": true,
+        "ok": false
+      },
+      "seq_len": 9,
+      "hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diverge_at": 10,
+      "end_frame": 173,
+      "end_reason": 3,
+      "post_hits": [
+        "214C~C"
+      ],
+      "post_hit_frames": [
+        182
+      ],
+      "link_fails": [],
+      "knock_frame": 182,
+      "knock_wall_dist": 0.0,
+      "extra": {
+        "tweak": {
+          "tc": 173
+        },
+        "g": 9.3,
+        "r": 6.7
+      }
+    },
+    {
+      "kind": "C",
+      "facing": 1,
+      "case": "tc_late24",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": false,
+        "player_field_side": false,
+        "ok": false
+      },
+      "seq_len": 9,
+      "hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diverge_at": 10,
+      "end_frame": 173,
+      "end_reason": 3,
+      "post_hits": [],
+      "post_hit_frames": [],
+      "link_fails": [],
+      "knock_frame": -1,
+      "knock_wall_dist": -1.0,
+      "extra": {
+        "tweak": {
+          "tc": 183
+        },
+        "g": 9.3,
+        "r": 6.7
+      }
+    },
+    {
+      "kind": "C",
+      "facing": 1,
+      "case": "b3_late25",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": true,
+        "player_field_side": true,
+        "ok": false
+      },
+      "seq_len": 7,
+      "hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D"
+      ],
+      "diverge_at": 8,
+      "end_frame": 145,
+      "end_reason": 3,
+      "post_hits": [
+        "214C",
+        "214C~B"
+      ],
+      "post_hit_frames": [
+        150,
+        166
+      ],
+      "link_fails": [],
+      "knock_frame": 166,
+      "knock_wall_dist": 0.0,
+      "extra": {
+        "tweak": {
+          "b3": 158
+        },
+        "g": 9.3,
+        "r": 6.7
+      }
+    },
+    {
+      "kind": "C",
+      "facing": 1,
+      "case": "b3_early18",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": true,
+        "player_field_side": true,
+        "ok": false
+      },
+      "seq_len": 7,
+      "hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D"
+      ],
+      "diverge_at": 8,
+      "end_frame": 145,
+      "end_reason": 3,
+      "post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "post_hit_frames": [
+        150,
+        168
+      ],
+      "link_fails": [],
+      "knock_frame": 168,
+      "knock_wall_dist": 0.0,
+      "extra": {
+        "tweak": {
+          "b3": 115
+        },
+        "g": 9.3,
+        "r": 6.7
+      }
+    },
+    {
+      "kind": "C",
+      "facing": 1,
+      "case": "no_b3_no_cancel_source",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": true,
+        "player_field_side": true,
+        "ok": false
+      },
+      "seq_len": 7,
+      "hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D"
+      ],
+      "diverge_at": 8,
+      "end_frame": 145,
+      "end_reason": 3,
+      "post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "post_hit_frames": [
+        150,
+        168
+      ],
+      "link_fails": [],
+      "knock_frame": 168,
+      "knock_wall_dist": 0.0,
+      "extra": {
+
+      }
+    },
+    {
+      "kind": "C",
+      "facing": 1,
+      "case": "post_knockdown_5b_otg",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": true,
+        "player_field_side": true,
+        "ok": false
+      },
+      "seq_len": 9,
+      "hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diverge_at": 10,
+      "end_frame": 173,
+      "end_reason": 3,
+      "post_hits": [
+        "214C~C"
+      ],
+      "post_hit_frames": [
+        176
+      ],
+      "link_fails": [],
+      "knock_frame": 176,
+      "knock_wall_dist": 0.0,
+      "extra": {
+        "otg_b_frame": 199,
+        "otg_hit": false
+      }
+    },
+    {
+      "kind": "C",
+      "facing": 1,
+      "case": "out_g24",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": true,
+        "player_field_side": true,
+        "ok": false
+      },
+      "seq_len": 9,
+      "hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diverge_at": 10,
+      "end_frame": 173,
+      "end_reason": 3,
+      "post_hits": [
+        "214C~C"
+      ],
+      "post_hit_frames": [
+        176
+      ],
+      "link_fails": [],
+      "knock_frame": 176,
+      "knock_wall_dist": 0.0,
+      "extra": {
+        "tweak": {
+
+        },
+        "g": 24.0,
+        "r": 6.7
+      }
+    },
+    {
+      "kind": "C",
+      "facing": 1,
+      "case": "out_r20",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": true,
+        "player_field_side": true,
+        "ok": false
+      },
+      "seq_len": 9,
+      "hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diverge_at": 10,
+      "end_frame": 173,
+      "end_reason": 3,
+      "post_hits": [
+        "214C~C"
+      ],
+      "post_hit_frames": [
+        176
+      ],
+      "link_fails": [],
+      "knock_frame": 176,
+      "knock_wall_dist": 0.0,
+      "extra": {
+        "tweak": {
+
+        },
+        "g": 9.3,
+        "r": 20.0
+      }
+    },
+    {
+      "kind": "C",
+      "facing": -1,
+      "case": "r2_early7",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": false,
+        "player_field_side": false,
+        "ok": false
+      },
+      "seq_len": 8,
+      "hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diverge_at": 9,
+      "end_frame": 158,
+      "end_reason": 3,
+      "post_hits": [],
+      "post_hit_frames": [],
+      "link_fails": [],
+      "knock_frame": -1,
+      "knock_wall_dist": -1.0,
+      "extra": {
+        "tweak": {
+          "r2": 132
+        },
+        "g": 9.3,
+        "r": 6.7
+      }
+    },
+    {
+      "kind": "C",
+      "facing": -1,
+      "case": "post_knockdown_5b_otg",
+      "verdict": {
+        "seq_ok": false,
+        "knock_end": false,
+        "no_swap": true,
+        "retention_ok": true,
+        "player_field_side": true,
+        "ok": false
+      },
+      "seq_len": 9,
+      "hits": [
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "214C"
+      ],
+      "diverge_at": 10,
+      "end_frame": 173,
+      "end_reason": 3,
+      "post_hits": [
+        "214C~C"
+      ],
+      "post_hit_frames": [
+        176
+      ],
+      "link_fails": [],
+      "knock_frame": 176,
+      "knock_wall_dist": 0.0,
+      "extra": {
+        "otg_b_frame": 199,
+        "otg_hit": false
+      }
+    }
+  ]
+}

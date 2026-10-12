@@ -1,0 +1,133 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PASS  main scene spawns Player
+PASS  main scene spawns Dummy
+PASS  main scene drives a combat session
+PASS  dummy starts at full hp
+PASS  dummy starts neutral
+PASS  dummy status display starts neutral
+PASS  player moves right with input held
+PASS  player view follows the session position
+PASS  player stops at the right stage wall
+PASS  player rests against the wall after input released
+PASS  player rises well above the ground on jump
+PASS  player lands back on the ground
+PASS  hint block stays clear of the status column
+PASS  status text fits inside the design viewport width
+PASS  S crouches the player via the real keyboard path
+PASS  crouching squashes the player visuals
+PASS  releasing S stands back up
+PASS  holding the back direction enters the standing guard
+PASS  guarding tints the player visuals
+PASS  the debug line shows the standing guard posture
+PASS  S plus back enters the crouch guard
+PASS  the debug line shows the crouch guard posture
+PASS  S stops an existing backward walk on the first crouch frame
+PASS  holding S plus back stays in place
+PASS  switching to S plus forward stays crouched in place without guarding
+PASS  releasing S while holding forward resumes movement immediately
+PASS  releasing everything returns to plain standing
+PASS  visuals return to normal after the posture clears
+PASS  keyboard I then K within the 3-frame tolerance starts the B+C throw
+PASS  the tech window is observably tracked while the throw runs
+PASS  the un-teched throw result puts the dummy into ground hitstun via the real input path
+PASS  the throw result deals no HP damage
+PASS  the throw never counts as a combo hit
+PASS  the thrown dummy recovers naturally after the throw hitstun
+PASS  the same B+C sequence out of throw range starts nothing and never falls back to a strike
+PASS  the hint line documents the B+C throw input
+PASS  holding the direction key alone never dashes
+PASS  double-tapping the forward key starts the 12-frame dash via the real input path
+PASS  the debug line shows the forward dash (冲) while it runs
+PASS  the forward dash visibly advances the player toward the dummy side
+PASS  double-tapping the back key starts the backdash with the same duration
+PASS  the debug line shows the backdash (撤)
+PASS  the backdash moves the player away from the dummy while facing stays locked toward it
+PASS  facing stays locked toward the dummy through both dashes
+PASS  dummy view follows the session position
+PASS  attack hits once when the dummy is close
+PASS  damage applied exactly once per swing (A-starter scaled 5.8)
+PASS  dummy enters hitstun on hit
+PASS  dummy view shows the trajectory-scaled knockback displacement (120px/s)
+PASS  dummy flashes on the hit event
+PASS  status display shows the hitstun state
+PASS  dummy recovers to neutral after hitstun
+PASS  status display returns to neutral
+PASS  hit flash clears after its duration
+PASS  attack misses when the dummy is far away (hp unchanged from the earlier hit)
+PASS  first attack lands via injected input
+PASS  input right after the hit cancels 5A into 5B via the buffer
+PASS  session tracks two combo hits
+PASS  second hit applies the accumulated-layer damage (12x0.648)
+PASS  status display shows the combo hit count
+PASS  keyboard 236 then C locks the two-segment derivative
+PASS  236C segment 1 launches the dummy into float hitstun via keyboard input
+PASS  status display shows the float hitstun state
+PASS  segment 2's air extension lands into ground hitstun (no mid-air tech on this baseline)
+PASS  dummy returns to neutral after landing
+PASS  both 236C segments apply their own damage (8×1.0 + 12×0.90)
+PASS  keyboard forward + A locks the 6A launcher for the jump cancel route
+PASS  6A lands to open the jump cancel window after the freeze
+PASS  jump cancel request leaves the ground after the four pre-jump frames
+PASS  jump cancel clears the move but keeps the combo alive
+PASS  air action after jump cancel starts the jA pursuit move
+PASS  status display shows the airborne player posture
+PASS  jA pursuit lands as the second combo hit via keyboard input
+PASS  player and dummy both land after the pursuit
+PASS  no extra hits: the pursuit does not refresh the float for another launch
+PASS  route damage is 6A at C-starter scale plus decayed jA
+PASS  5A opens the air route as the first hit via keyboard
+PASS  buffered 5B chain-cancels 5A as the second hit
+PASS  buffered 6A chain-cancels 5B into the launcher
+PASS  launcher puts the dummy into float hitstun
+PASS  space jump-cancels the confirmed launcher into the air after pre-jump
+PASS  air route key A lands as combo hit 4
+PASS  air route key B lands as combo hit 5
+PASS  air route key D lands as combo hit 6
+PASS  j2D closes the air route at six hits (the combo ends via the cancel-window close after the closer)
+PASS  status display shows the airborne posture during the route
+PASS  status display shows the six-hit combo
+PASS  route damage totals 40.5 through the three-layer corrections (j2D base 20, per-hit rounding observed)
+PASS  player lands and the dummy recovers naturally after the air finisher
+PASS  no extra hits land after the route
+PASS  5C startup draws the knife (C-family weapon semantics)
+PASS  5C recovery flashes the sheath snap at the forearm anchor (收刀卡点)
+PASS  idle keeps the knife sheathed along the forearm
+PASS  5A startup raises the bare-hand fist instead of the knife
+PASS  6A renders as a knife move despite the A key (出刀型专用 launcher)
+PASS  keyboard 214 from ground neutral (holding back) locks 214C
+PASS  holding back keeps facing the dummy through the whole keyboard input
+PASS  the keyboard 214C connects on the nearby dummy
+PASS  training ground runs the shared manifest with the air derivative
+PASS  session table contains the shared j214D
+PASS  forward jump lifts the player before the air input
+PASS  air direction release/reversal keeps takeoff momentum and facing +1
+PASS  keyboard air 214 folded by the locked facing starts the configured j214D
+PASS  j214D starts while still airborne via the real input path
+PASS  started-but-whiffed is distinguishable on the real input path
+PASS  training ground runs the shared manifest with the air derivative
+PASS  session table contains the shared j214D
+PASS  forward jump lifts the player before the air input
+PASS  air direction release/reversal keeps takeoff momentum and facing -1
+PASS  keyboard air 214 folded by the locked facing starts the configured j214D
+PASS  j214D starts while still airborne via the real input path
+PASS  started-but-whiffed is distinguishable on the real input path
+PASS  shared manifest loads and validates for the training ground
+PASS  training ground session runs the shared manifest move set
+PASS  session 5A startup comes from the shared resource (frozen baseline 5)
+PASS  session 5A damage comes from the shared resource (frozen baseline 10)
+PASS  derivative moves carry explicit input bindings from the shared resource
+PASS  training ground refuses to run on an invalid move table
+PASS  refusal reason is observable on the training ground
+PASS  training ground shows the same rejection reason as the shared loader
+PASS  rejection reports resource source, move id and field
+PASS  hint label shows the refusal and the offending field
+PASS  solver refuses the same table for the same observable reason
+PASS  dummy damaged before reset
+PASS  scene reloaded on reset
+PASS  reset restores dummy hp
+PASS  reset restores dummy state
+PASS  reset restores player spawn
+
+ACCEPTANCE_SOLVER_METRICS_JSON={"calls":1,"combo_cache":{"bypasses":1,"enabled":true,"entries":188,"hits":0,"misses":0},"elapsed_ms":2369.859,"profile_totals":{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"gap_enum_ms":0.0,"gap_enum_runs":0,"other_ms":2370.06,"other_runs":0,"requests":1,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":2370.06},"profiles":[{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"8ad135fc75568bc54fdfa0b128d60255ce33412a5d7e19d3b8ebc69651713a66","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"analyze-manifest-1","other_ms":2370.06,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":2370.06}],"reports":[{"calls":1,"fingerprint":"8ad135fc75568bc54fdfa0b128d60255ce33412a5d7e19d3b8ebc69651713a66","keys":["analyze-manifest-1"]}],"reuse_enabled":false,"reuse_hit_rate":0.0,"reuse_hits":0,"test":"test_smoke","underlying_calls":1,"unique_reports":1}
+ALL TESTS PASSED

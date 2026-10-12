@@ -1,0 +1,85 @@
+{
+  "head": "rve02-baseline",
+  "placement": {
+    "g": 2.0,
+    "r": 6.0,
+    "facing": 1
+  },
+  "b_wall": {
+    "hits": [
+      "5B",
+      "5C",
+      "236C",
+      "5D",
+      "5B",
+      "5C",
+      "236C",
+      "5D",
+      "5B"
+    ],
+    "hit_frames": [
+      10,
+      27,
+      42,
+      58,
+      83,
+      99,
+      114,
+      130,
+      153
+    ],
+    "post_hits": [
+      "6A"
+    ],
+    "post_hit_frames": [
+      169
+    ],
+    "end_frame": 167,
+    "end_reason": 3,
+    "reproduced": true
+  },
+  "c_wall": {
+    "hits": [
+      "5C",
+      "236C",
+      "5D",
+      "5B",
+      "5C",
+      "236C",
+      "5D",
+      "5B",
+      "6A",
+      "jB",
+      "jC",
+      "j2D"
+    ],
+    "hit_frames": [
+      12,
+      27,
+      43,
+      70,
+      87,
+      102,
+      118,
+      142,
+      158,
+      177,
+      189,
+      206
+    ],
+    "post_hits": [
+      "214C",
+      "214C~C"
+    ],
+    "post_hit_frames": [
+      227,
+      245
+    ],
+    "end_frame": 224,
+    "end_reason": 3,
+    "reproduced": true
+  },
+  "determinism": {
+    "equal": true
+  }
+}

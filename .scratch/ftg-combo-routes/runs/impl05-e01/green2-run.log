@@ -1,0 +1,42 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PASS  jump request itself emits no combat event
+PASS  idle dummy leaves ground on jump request (air frames=37)
+FAIL  dummy airtime equals player normal jump (dummy=37 player=38)
+PASS  dummy stays NEUTRAL (un-hit) through the whole jump
+PASS  dummy reaches a real jump apex (peak=73.9px)
+PASS  dummy lands back to standing neutral
+PASS  axis=1 horizontal speed stays 340 px/s while airborne
+PASS  axis=1 dummy drifts with the jump (drift=221.0px)
+PASS  axis=1 friction stops the dummy after landing
+PASS  axis=-1 horizontal speed stays -340 px/s while airborne
+PASS  axis=-1 dummy drifts with the jump (drift=-221.0px)
+PASS  axis=-1 friction stops the dummy after landing
+PASS  facing=1 dummy reaches descending press band
+PASS  facing=1 6A connects on the descending dummy
+PASS  facing=1 dummy was un-hit airborne right before the first hit
+PASS  facing=1 contact happens clearly airborne (45.2px)
+PASS  facing=1 6A airborne profile applies: AIR_HITSTUN, combo starts at 1 hit
+PASS  facing=-1 dummy reaches descending press band
+PASS  facing=-1 6A connects on the descending dummy
+PASS  facing=-1 dummy was un-hit airborne right before the first hit
+PASS  facing=-1 contact happens clearly airborne (45.2px)
+PASS  facing=-1 6A airborne profile applies: AIR_HITSTUN, combo starts at 1 hit
+PASS  5B grounds the dummy first
+PASS  jump request ignored during hitstun
+PASS  jump request ignored while the dummy holds a guard posture
+PASS  dummy strike request starts 5A
+PASS  jump request ignored while the dummy performs a move
+PASS  split=0 restore_state accepts mid-flight snapshot
+PASS  split=0 event signatures identical after restore
+PASS  split=0 dummy positions identical after restore
+PASS  split=25 restore_state accepts mid-flight snapshot
+PASS  split=25 event signatures identical after restore
+PASS  split=25 dummy positions identical after restore
+PASS  main scene starts with a grounded dummy
+PASS  T key lifts the dummy through the real adapter
+PASS  dummy lands again after the training jump
+PASS  holding a direction with T gives the dummy jump horizontal speed
+
+1 TEST(S) FAILED
+exit=1

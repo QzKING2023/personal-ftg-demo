@@ -1,0 +1,14 @@
+{
+  "canonical": "D:\\Godot\\Program\\ftgdemo\\.cache\\acceptance\\solver-results.cache",
+  "entries_before": 187,
+  "fragments": [
+    {
+      "file": "pool-worker-00-g0.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    }
+  ],
+  "entries_after": 188,
+  "merged_new": 1
+}

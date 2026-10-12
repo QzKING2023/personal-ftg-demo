@@ -1,0 +1,105 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PASS  format: versioned clone format
+PASS  format: includes domain 'player'
+PASS  format: includes domain 'dummy'
+PASS  format: includes domain 'combo'
+PASS  format: includes domain 'player_move'
+PASS  format: includes domain 'input'
+PASS  format: includes domain 'keys'
+PASS  format: includes domain 'action_buffer'
+PASS  format: includes domain 'jump_slot'
+PASS  format: includes domain 'direction'
+PASS  format: includes domain 'cancel'
+PASS  format: includes domain 'rekka'
+PASS  format: includes domain 'special_entry'
+PASS  format: includes domain 'clock'
+PASS  format: includes domain 'flags'
+PASS  format: restores into a differently-configured session of the same table
+PASS  reject: wrong format string returns false
+PASS  reject: unknown move id returns false
+PASS  reject: failed restore leaves session on its original timeline
+PASS  fixed mixed (jump/guard/dummy): splits=73 checks=26691
+PASS  236C two-segment > special-entry 5D > link 5B (facing 1): splits=111 checks=61679
+PASS  236C two-segment > special-entry 5D > link 5B (facing -1): splits=111 checks=61679
+PASS  2C > 214C > ~B extended float > 5B link: splits=96 checks=46144
+PASS  2C > 214C > ~C spike fall: splits=76 checks=28928
+PASS  214C ground > ~B knockdown (facing -1): splits=57 checks=28899
+PASS  throw B+C lands: splits=31 checks=8463
+PASS  throw B+C teched: splits=31 checks=8463
+PASS  236C seg1 whiff > seg2 grounded > GROUND_SLIDE > slide 5D: splits=91 checks=41463
+PASS  5D into slide with no slide profile (HIT_MISS, injected table): splits=91 checks=41463
+PASS  5A > 5B chain > 5D normal source > 5B link gap (LINK_FAILED): splits=81 checks=32859
+PASS  crouch 2C low-float sweep: splits=61 checks=33123
+PASS  6A launcher > dummy air recovers: splits=71 checks=25253
+PASS  player standing guard blocks dummy 5A (+ guard rejects): splits=31 checks=8463
+PASS  dummy 5A hits neutral player: splits=31 checks=8463
+PASS  player 5A/5B blocked by dummy guard (+ link gap): splits=41 checks=14883
+PASS  throw B+C out of range: splits=25 checks=5475
+PASS  throw delayed B..C combination wait: splits=25 checks=5475
+PASS  jump > jC > land > jump > j2D > 214C: splits=81 checks=32859
+PASS  dash 66/44 + crouch 2B: splits=41 checks=14883
+PASS  R4-G 6A>jc.jC>j214D>5B>214C~C (facing 1): splits=150 checks=112600
+PASS  R4-G 6A>jc.jC>j214D>5B>214C~C (facing -1): splits=150 checks=112600
+PASS  rebounce 5B>5C>6A>jc.jB>j214D>6A>jc.jC>j214D: splits=200 checks=200134
+PASS  grounded D zero-horizontal 5D + j214D dive: splits=130 checks=84584
+PASS  dummy attacks vs player guard + dummy guard block branch: splits=51 checks=23103
+PASS  coverage: event 0 observed
+PASS  coverage: event 1 observed
+PASS  coverage: event 2 observed
+PASS  coverage: event 3 observed
+PASS  coverage: event 4 observed
+PASS  coverage: event 5 observed
+PASS  coverage: event 6 observed
+PASS  coverage: event 7 observed
+PASS  coverage: event 8 observed
+PASS  coverage: event 9 observed
+PASS  coverage: event 10 observed
+PASS  coverage: event 11 observed
+PASS  coverage: event 12 observed
+PASS  coverage: event 13 observed
+PASS  coverage: event 14 observed
+PASS  coverage: event 15 observed
+PASS  coverage: event 16 observed
+FAIL  coverage: event 17 observed
+PASS  coverage: event 18 observed
+PASS  coverage: dummy state 1 observed
+PASS  coverage: dummy state 2 observed
+PASS  coverage: dummy state 3 observed
+PASS  coverage: dummy state 4 observed
+PASS  coverage: dummy state 5 observed
+FAIL  coverage: dummy state 6 observed
+PASS  coverage: dummy state 7 observed
+PASS  coverage: dummy state 8 observed
+PASS  coverage: player phase 1 observed
+PASS  coverage: player phase 2 observed
+PASS  coverage: player phase 3 observed
+PASS  coverage: flag hitstop_active observed
+PASS  coverage: flag player_airborne observed
+PASS  coverage: flag player_crouching observed
+PASS  coverage: flag player_guarding observed
+PASS  coverage: flag player_guard_stun observed
+PASS  coverage: flag player_hitstun observed
+PASS  coverage: flag prejump observed
+PASS  coverage: flag landing_recovery observed
+PASS  coverage: flag dash observed
+PASS  coverage: flag combo_active observed
+PASS  coverage: flag dummy_guarding observed
+PASS  coverage: flag dummy_blockstun observed
+PASS  coverage: flag dummy_airborne observed
+PASS  coverage: flag knockdown_timer observed
+PASS  coverage: flag slide_timer observed
+PASS  coverage: flag buffered_key observed
+PASS  coverage: flag jump_slot observed
+PASS  coverage: flag cancel_open observed
+PASS  coverage: flag rekka_window observed
+PASS  coverage: flag special_entry observed
+PASS  coverage: flag direction_history observed
+PASS  coverage: flag starter_grade_set observed
+PASS  coverage: flag damage_scale_below_one observed
+PASS  coverage: flag dummy_move_active observed
+PASS  random seed 0x5EED2026: splits=37 checks=12099
+PASS  random seed 0x7: splits=37 checks=12099
+PASS  random seed 0x4D2: splits=37 checks=12099
+PASS  random seed 0xBEEF: splits=37 checks=12099
+TOTAL failures=2

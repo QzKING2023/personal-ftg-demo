@@ -1,0 +1,306 @@
+{
+  "head": "rve11b-regression",
+  "cand": "C6",
+  "cases": [
+    {
+      "case": "carry_long_B_f1_g2_r666",
+      "ok": true,
+      "note": "击13/13 换边2/2 end=206 reason=0 knock=206 净484.7 抵墙=true 场内=true",
+      "run": {
+        "note": "击13/13 换边2/2 end=206 reason=0 knock=206 净484.7 抵墙=true 场内=true",
+        "hits_before_end": 13,
+        "hit_moves": [
+          "5B",
+          "5C",
+          "236C",
+          "236C",
+          "5[D]",
+          "5B",
+          "6D",
+          "jB",
+          "jC",
+          "j214D",
+          "5B",
+          "214C",
+          "214C~C"
+        ],
+        "swaps": [
+          -1,
+          1
+        ],
+        "end_frame": 206,
+        "end_reason": 0,
+        "knock_frame": 206,
+        "net": 484.689147949219,
+        "want_hits": 13,
+        "want_swaps": 2,
+        "wall_ok": true,
+        "player_in": true
+      }
+    },
+    {
+      "case": "carry_short_B_f1_g2_r100",
+      "ok": true,
+      "note": "击8/8 换边0/0 end=135 reason=0 knock=144 净100.0 抵墙=true 场内=true",
+      "run": {
+        "note": "击8/8 换边0/0 end=135 reason=0 knock=144 净100.0 抵墙=true 场内=true",
+        "hits_before_end": 8,
+        "hit_moves": [
+          "5B",
+          "5C",
+          "236C",
+          "236C",
+          "5[D]",
+          "5B",
+          "214C",
+          "214C~C"
+        ],
+        "swaps": [],
+        "end_frame": 135,
+        "end_reason": 0,
+        "knock_frame": 144,
+        "net": 100.0,
+        "want_hits": 8,
+        "want_swaps": 0,
+        "wall_ok": true,
+        "player_in": true
+      }
+    },
+    {
+      "case": "carry_long_B_f-1_g2_r666",
+      "ok": true,
+      "note": "击13/13 换边2/2 end=206 reason=0 knock=206 净484.7 抵墙=true 场内=true",
+      "run": {
+        "note": "击13/13 换边2/2 end=206 reason=0 knock=206 净484.7 抵墙=true 场内=true",
+        "hits_before_end": 13,
+        "hit_moves": [
+          "5B",
+          "5C",
+          "236C",
+          "236C",
+          "5[D]",
+          "5B",
+          "6D",
+          "jB",
+          "jC",
+          "j214D",
+          "5B",
+          "214C",
+          "214C~C"
+        ],
+        "swaps": [
+          1,
+          -1
+        ],
+        "end_frame": 206,
+        "end_reason": 0,
+        "knock_frame": 206,
+        "net": 484.688934326172,
+        "want_hits": 13,
+        "want_swaps": 2,
+        "wall_ok": true,
+        "player_in": true
+      }
+    },
+    {
+      "case": "carry_short_B_f-1_g2_r100",
+      "ok": true,
+      "note": "击8/8 换边0/0 end=135 reason=0 knock=144 净100.0 抵墙=true 场内=true",
+      "run": {
+        "note": "击8/8 换边0/0 end=135 reason=0 knock=144 净100.0 抵墙=true 场内=true",
+        "hits_before_end": 8,
+        "hit_moves": [
+          "5B",
+          "5C",
+          "236C",
+          "236C",
+          "5[D]",
+          "5B",
+          "214C",
+          "214C~C"
+        ],
+        "swaps": [],
+        "end_frame": 135,
+        "end_reason": 0,
+        "knock_frame": 144,
+        "net": 100.0,
+        "want_hits": 8,
+        "want_swaps": 0,
+        "wall_ok": true,
+        "player_in": true
+      }
+    },
+    {
+      "case": "carry_long_C_f1_g2_r666",
+      "ok": true,
+      "note": "击12/12 换边2/2 end=202 reason=0 knock=202 净540.4 抵墙=true 场内=true",
+      "run": {
+        "note": "击12/12 换边2/2 end=202 reason=0 knock=202 净540.4 抵墙=true 场内=true",
+        "hits_before_end": 12,
+        "hit_moves": [
+          "5C",
+          "236C",
+          "236C",
+          "5[D]",
+          "5B",
+          "6D",
+          "jB",
+          "jC",
+          "j214D",
+          "5B",
+          "214C",
+          "214C~C"
+        ],
+        "swaps": [
+          -1,
+          1
+        ],
+        "end_frame": 202,
+        "end_reason": 0,
+        "knock_frame": 202,
+        "net": 540.388916015625,
+        "want_hits": 12,
+        "want_swaps": 2,
+        "wall_ok": true,
+        "player_in": true
+      }
+    },
+    {
+      "case": "carry_short_C_f1_g2_r100",
+      "ok": true,
+      "note": "击7/7 换边0/0 end=124 reason=0 knock=134 净100.0 抵墙=true 场内=true",
+      "run": {
+        "note": "击7/7 换边0/0 end=124 reason=0 knock=134 净100.0 抵墙=true 场内=true",
+        "hits_before_end": 7,
+        "hit_moves": [
+          "5C",
+          "236C",
+          "236C",
+          "5[D]",
+          "5B",
+          "214C",
+          "214C~C"
+        ],
+        "swaps": [],
+        "end_frame": 124,
+        "end_reason": 0,
+        "knock_frame": 134,
+        "net": 100.0,
+        "want_hits": 7,
+        "want_swaps": 0,
+        "wall_ok": true,
+        "player_in": true
+      }
+    },
+    {
+      "case": "carry_long_C_f-1_g2_r666",
+      "ok": true,
+      "note": "击12/12 换边2/2 end=202 reason=0 knock=202 净540.4 抵墙=true 场内=true",
+      "run": {
+        "note": "击12/12 换边2/2 end=202 reason=0 knock=202 净540.4 抵墙=true 场内=true",
+        "hits_before_end": 12,
+        "hit_moves": [
+          "5C",
+          "236C",
+          "236C",
+          "5[D]",
+          "5B",
+          "6D",
+          "jB",
+          "jC",
+          "j214D",
+          "5B",
+          "214C",
+          "214C~C"
+        ],
+        "swaps": [
+          1,
+          -1
+        ],
+        "end_frame": 202,
+        "end_reason": 0,
+        "knock_frame": 202,
+        "net": 540.389038085938,
+        "want_hits": 12,
+        "want_swaps": 2,
+        "wall_ok": true,
+        "player_in": true
+      }
+    },
+    {
+      "case": "carry_short_C_f-1_g2_r100",
+      "ok": true,
+      "note": "击7/7 换边0/0 end=124 reason=0 knock=134 净100.0 抵墙=true 场内=true",
+      "run": {
+        "note": "击7/7 换边0/0 end=124 reason=0 knock=134 净100.0 抵墙=true 场内=true",
+        "hits_before_end": 7,
+        "hit_moves": [
+          "5C",
+          "236C",
+          "236C",
+          "5[D]",
+          "5B",
+          "214C",
+          "214C~C"
+        ],
+        "swaps": [],
+        "end_frame": 124,
+        "end_reason": 0,
+        "knock_frame": 134,
+        "net": 100.0,
+        "want_hits": 7,
+        "want_swaps": 0,
+        "wall_ok": true,
+        "player_in": true
+      }
+    },
+    {
+      "case": "r4g_f1_g2_r350",
+      "ok": true,
+      "note": "moves=[\"6A\", \"jC\", \"j214D\", \"5B\", \"214C\", \"214C~C\"] 首END_reason=0 后命中0 弹地1 换边0 倒地=133(true) miss= 墙限=true",
+      "run": {
+        "note": "moves=[\"6A\", \"jC\", \"j214D\", \"5B\", \"214C\", \"214C~C\"] 首END_reason=0 后命中0 弹地1 换边0 倒地=133(true) miss= 墙限=true",
+        "ok": true,
+        "moves": [
+          "6A",
+          "jC",
+          "j214D",
+          "5B",
+          "214C",
+          "214C~C"
+        ],
+        "first_end": 0,
+        "hits_after_end": 0,
+        "bounce_contacts": 1,
+        "swaps": 0,
+        "knockdown_frame": 133,
+        "knockdown_state_ok": true,
+        "in_limits": true
+      }
+    },
+    {
+      "case": "r4g_f-1_g2_r350",
+      "ok": true,
+      "note": "moves=[\"6A\", \"jC\", \"j214D\", \"5B\", \"214C\", \"214C~C\"] 首END_reason=0 后命中0 弹地1 换边0 倒地=133(true) miss= 墙限=true",
+      "run": {
+        "note": "moves=[\"6A\", \"jC\", \"j214D\", \"5B\", \"214C\", \"214C~C\"] 首END_reason=0 后命中0 弹地1 换边0 倒地=133(true) miss= 墙限=true",
+        "ok": true,
+        "moves": [
+          "6A",
+          "jC",
+          "j214D",
+          "5B",
+          "214C",
+          "214C~C"
+        ],
+        "first_end": 0,
+        "hits_after_end": 0,
+        "bounce_contacts": 1,
+        "swaps": 0,
+        "knockdown_frame": 133,
+        "knockdown_state_ok": true,
+        "in_limits": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+
+=== whiff 2C per-frame ===
+F2 move= move_frame=0 phase=NEUTRAL
+F3 move= move_frame=0 phase=NEUTRAL
+F4 move=2C move_frame=1 phase=STARTUP
+F5 move=2C move_frame=2 phase=STARTUP
+F6 move=2C move_frame=3 phase=STARTUP
+F7 move=2C move_frame=4 phase=STARTUP
+F8 move=2C move_frame=5 phase=STARTUP
+F9 move=2C move_frame=6 phase=ACTIVE
+F10 move=2C move_frame=7 phase=ACTIVE
+F11 move=2C move_frame=8 phase=ACTIVE
+F12 move=2C move_frame=9 phase=RECOVERY
+F13 move=2C move_frame=10 phase=RECOVERY
+F14 move=2C move_frame=11 phase=RECOVERY
+F15 move=2C move_frame=12 phase=RECOVERY
+F16 move=2C move_frame=13 phase=RECOVERY
+F17 move=2C move_frame=14 phase=RECOVERY
+F18 move=2C move_frame=15 phase=RECOVERY
+F19 move=2C move_frame=16 phase=RECOVERY
+F20 move=2C move_frame=17 phase=RECOVERY
+F21 move=2C move_frame=18 phase=RECOVERY
+F22 move=2C move_frame=19 phase=RECOVERY
+F23 move=2C move_frame=20 phase=RECOVERY
+F24 move=2C move_frame=21 phase=RECOVERY
+F25 move=2C move_frame=22 phase=RECOVERY
+F26 move=2C move_frame=23 phase=RECOVERY
+F27 move=2C move_frame=24 phase=RECOVERY
+F28 move=2C move_frame=25 phase=RECOVERY
+F29 move=2C move_frame=26 phase=RECOVERY
+F30 move= move_frame=0 phase=NEUTRAL
+F31 move= move_frame=0 phase=NEUTRAL
+F32 move= move_frame=0 phase=NEUTRAL
+F33 move= move_frame=0 phase=NEUTRAL
+F34 move= move_frame=0 phase=NEUTRAL
+=== hit 2C per-frame ===
+F1 move= mf=0 ds=NEUTRAL
+F2 move= mf=0 ds=NEUTRAL
+F3 move= mf=0 ds=NEUTRAL
+F4 move=2C mf=1 ds=NEUTRAL
+F5 move=2C mf=2 ds=NEUTRAL
+F6 move=2C mf=3 ds=NEUTRAL
+F7 move=2C mf=4 ds=NEUTRAL
+F8 move=2C mf=5 ds=NEUTRAL
+F9 move=2C mf=6 ds=NEUTRAL
+F10 event HIT
+F10 move=2C mf=7 ds=LOW_FLOAT_SWEEP
+F11 move=2C mf=7 ds=LOW_FLOAT_SWEEP
+F12 move=2C mf=7 ds=LOW_FLOAT_SWEEP
+F13 move=2C mf=7 ds=LOW_FLOAT_SWEEP
+F14 move=2C mf=7 ds=LOW_FLOAT_SWEEP
+F15 move=2C mf=7 ds=LOW_FLOAT_SWEEP
+F16 move=2C mf=7 ds=LOW_FLOAT_SWEEP
+F17 move=2C mf=7 ds=LOW_FLOAT_SWEEP
+F18 move=2C mf=7 ds=LOW_FLOAT_SWEEP
+F19 move=2C mf=8 ds=LOW_FLOAT_SWEEP
+F20 move=2C mf=9 ds=LOW_FLOAT_SWEEP
+F21 move=2C mf=10 ds=LOW_FLOAT_SWEEP
+F22 move=2C mf=11 ds=LOW_FLOAT_SWEEP
+F23 move=2C mf=12 ds=LOW_FLOAT_SWEEP
+F24 move=2C mf=13 ds=LOW_FLOAT_SWEEP
+F25 move=2C mf=14 ds=LOW_FLOAT_SWEEP
+F26 move=2C mf=15 ds=LOW_FLOAT_SWEEP
+F27 event COMBO_ENDED
+F27 move=2C mf=16 ds=LOW_FLOAT_SWEEP
+F28 event LOW_FLOAT_LANDED
+F28 move=2C mf=17 ds=KNOCKED_DOWN
+F29 move=2C mf=18 ds=KNOCKED_DOWN
+F30 move=2C mf=19 ds=KNOCKED_DOWN
+F31 move=2C mf=20 ds=KNOCKED_DOWN
+F32 move=2C mf=21 ds=KNOCKED_DOWN
+=== post-knock B probe ===
+F10 ev HIT reason=0/1
+F27 ev HIT reason=0/1
+F42 ev HIT reason=0/1
+F58 ev HIT reason=0/1
+F83 ev HIT reason=0/1
+F99 ev HIT reason=0/1
+F114 ev HIT reason=0/1
+F130 ev HIT reason=0/1
+F153 ev HIT reason=0/1
+F167 ev HIT reason=0/1
+F181 ev LOW_FLOAT_LANDED reason=0/1
+F181 ev COMBO_ENDED reason=4/1
+F195 ev DUMMY_RECOVERED reason=0/1
+F195 p_move= ds=NEUTRAL
+F196 p_move= ds=NEUTRAL
+F197 p_move= ds=NEUTRAL
+F198 p_move= ds=NEUTRAL
+F199 p_move= ds=NEUTRAL
+F200 p_move= ds=NEUTRAL
+F201 p_move= ds=NEUTRAL
+F202 p_move= ds=NEUTRAL
+F203 p_move=5B ds=NEUTRAL
+F204 p_move=5B ds=NEUTRAL
+F205 p_move=5B ds=NEUTRAL
+F206 p_move=5B ds=NEUTRAL
+F207 p_move=5B ds=NEUTRAL
+F208 p_move=5B ds=NEUTRAL
+F209 ev HIT reason=0/1
+F209 p_move=5B ds=GROUND_HITSTUN
+F210 p_move=5B ds=GROUND_HITSTUN
+F211 p_move=5B ds=GROUND_HITSTUN
+F212 p_move=5B ds=GROUND_HITSTUN
+F213 p_move=5B ds=GROUND_HITSTUN
+F214 p_move=5B ds=GROUND_HITSTUN
+F215 p_move=5B ds=GROUND_HITSTUN
+F216 p_move=5B ds=GROUND_HITSTUN
+F217 p_move=5B ds=GROUND_HITSTUN
+F218 p_move=5B ds=GROUND_HITSTUN
+F219 p_move=5B ds=GROUND_HITSTUN
+F220 p_move=5B ds=GROUND_HITSTUN
+F221 p_move=5B ds=GROUND_HITSTUN
+F222 p_move=5B ds=GROUND_HITSTUN
+F223 p_move=5B ds=GROUND_HITSTUN
+F224 p_move=5B ds=GROUND_HITSTUN
+F225 p_move=5B ds=GROUND_HITSTUN
+F226 p_move=5B ds=GROUND_HITSTUN
+F227 p_move=5B ds=GROUND_HITSTUN
+F228 ev DUMMY_RECOVERED reason=0/1
+F228 ev COMBO_ENDED reason=3/1
+F228 p_move=5B ds=NEUTRAL
+F229 p_move=5B ds=NEUTRAL
+F230 p_move=5B ds=NEUTRAL
+F231 p_move=5B ds=NEUTRAL
+F232 p_move=5B ds=NEUTRAL
+F233 p_move= ds=NEUTRAL
+F234 p_move= ds=NEUTRAL
+F235 p_move= ds=NEUTRAL
+F236 p_move= ds=NEUTRAL
+F237 p_move= ds=NEUTRAL
+F238 p_move= ds=NEUTRAL
+F239 p_move= ds=NEUTRAL

@@ -1,0 +1,36 @@
+{
+  "base_full_successes": 0,
+  "c6_full_successes": 4,
+  "domain.json": {
+    "passed": 384,
+    "total": 384
+  },
+  "spatial-boundaries.json": {
+    "passed": 204,
+    "total": 204
+  },
+  "left-spatial-boundaries.json": {
+    "passed": 102,
+    "total": 102
+  },
+  "disk_restore_suffixes": 56,
+  "deterministic_full_traces": 4,
+  "carry_and_ground_unchanged": 10,
+  "air_fixed_reference_unchanged": 36,
+  "parameter_differences": [
+    {
+      "move": "2C",
+      "field": "startup_frames",
+      "before": 9,
+      "after": 6
+    }
+  ],
+  "effect_cases": {
+    "neutral": 24,
+    "followup_timings": 740,
+    "repeated_D_plans": 48
+  },
+  "negative_cases": 44,
+  "actual_active_OTG_rejections": 4,
+  "final_log_errors": 0
+}

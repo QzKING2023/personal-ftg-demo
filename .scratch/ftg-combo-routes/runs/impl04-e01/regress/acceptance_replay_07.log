@@ -1,0 +1,98 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+=== R1 演示路线 5A>5B>5C>6A>jc.jB>jC | 面向 1 | 起始间距 50 px ===
+  F35  R1 HIT seg1 伤14.9 第1击 玩家y=470.0 木桩y=470.0
+  F52  R1 HIT seg1 伤13.4 第2击 玩家y=470.0 木桩y=461.9
+  F75  R1 HIT seg1 伤9.0 第3击 玩家y=410.1 木桩y=388.4
+  F98  R1 COMBO_ENDED 原因3
+  F104 R1 DUMMY_RECOVERED
+  FAIL  R1 路线按 5A>5B>5C>6A>jc.jB>jC 六击成立（命中帧 [35, 52, 75]）
+  PASS  R1 Space 在 6A 命中确认窗口内进入 pre-jump（F61），4 帧后真实离地（F65）
+
+=== R1 演示路线 5A>5B>5C>6A>jc.jB>jC | 面向 -1 | 起始间距 50 px ===
+  F35  R1 HIT seg1 伤14.9 第1击 玩家y=470.0 木桩y=470.0
+  F52  R1 HIT seg1 伤13.4 第2击 玩家y=470.0 木桩y=461.9
+  F75  R1 HIT seg1 伤9.0 第3击 玩家y=410.1 木桩y=388.4
+  F98  R1 COMBO_ENDED 原因3
+  F104 R1 DUMMY_RECOVERED
+  FAIL  R1 路线按 5A>5B>5C>6A>jc.jB>jC 六击成立（命中帧 [35, 52, 75]）
+  PASS  R1 Space 在 6A 命中确认窗口内进入 pre-jump（F61），4 帧后真实离地（F65）
+
+=== R2 2C>6D>jC 低浮空捞起 + 空中出口 | 面向 1 | 起始间距 50 px ===
+  F10  R2 HIT seg1 伤13.0 第1击 玩家y=470.0 木桩y=468.2
+  F28  R2 HIT seg1 伤15.1 第2击 玩家y=458.0 木桩y=467.5
+  F41  R2 HIT seg1 伤10.5 第3击 玩家y=451.8 木桩y=464.4
+  F57  R2 COMBO_ENDED 原因2
+  F64  R2 DUMMY_RECOVERED
+  PASS  R2 三击成立（命中帧 [10, 28, 41]）
+  PASS  R2 6D 真实上升（峰值 23.6 px，非姿态瞬移）
+  PASS  R2 空中出口在 6D 命中确认窗口内开放（F31）
+  PASS  R2 jC 出口起手时玩家真实滞空
+
+=== R2 2C>6D>jC 低浮空捞起 + 空中出口 | 面向 -1 | 起始间距 50 px ===
+  F10  R2 HIT seg1 伤13.0 第1击 玩家y=470.0 木桩y=468.2
+  F28  R2 HIT seg1 伤15.1 第2击 玩家y=458.0 木桩y=467.5
+  F41  R2 HIT seg1 伤10.5 第3击 玩家y=451.8 木桩y=464.4
+  F57  R2 COMBO_ENDED 原因2
+  F64  R2 DUMMY_RECOVERED
+  PASS  R2 三击成立（命中帧 [10, 28, 41]）
+  PASS  R2 6D 真实上升（峰值 23.6 px，非姿态瞬移）
+  PASS  R2 空中出口在 6D 命中确认窗口内开放（F31）
+  PASS  R2 jC 出口起手时玩家真实滞空
+
+=== R2b 6D 命中后完整位移（M-02 原侧保留） | 面向 1 ===
+  F10  R2b HIT seg1 伤18.0 第1击 玩家y=458.0 木桩y=445.7
+  F20  R2b SWITCHED_SIDES 新面向-1（下一帧生效）
+  F27  R2b COMBO_ENDED 原因1
+  F46  R2b DUMMY_RECOVERED
+  FAIL  R2b 实际 HIT 且 cross_ok 授予，但 88px 终点未越过木桩身位——按 M-02 截原侧、不换边（F10 命中）
+  FAIL  R2b 玩家全程保留原侧（终点 dx=30.3，击退漂移后仍在木桩身后）
+
+=== R2b 6D 命中后完整位移（M-02 原侧保留） | 面向 -1 ===
+  F10  R2b HIT seg1 伤18.0 第1击 玩家y=458.0 木桩y=445.7
+  F20  R2b SWITCHED_SIDES 新面向1（下一帧生效）
+  F27  R2b COMBO_ENDED 原因1
+  F46  R2b DUMMY_RECOVERED
+  FAIL  R2b 实际 HIT 且 cross_ok 授予，但 88px 终点未越过木桩身位——按 M-02 截原侧、不换边（F10 命中）
+  FAIL  R2b 玩家全程保留原侧（终点 dx=-30.3，击退漂移后仍在木桩身后）
+
+=== R3 2C 后 2D 高位挥空 / 5D 时序失败 | 面向 1 ===
+  F10  R3a HIT seg1 伤13.0 第1击 玩家y=470.0 木桩y=468.2
+  F28  R3a COMBO_ENDED 原因4
+  PASS  R3a 只有 2C 命中（2D 无第二次 HIT）
+  PASS  R3a 高度失配可观察：2D 框底 375.8 高于浮空木桩顶 460.0（active 期木桩高度 [2.5, 0.8, 0.0, 0.0] px）
+  F10  R3b HIT seg1 伤13.0 第1击 玩家y=470.0 木桩y=468.2
+  F27  R3b LINK_FAILED 原因4 5D
+  F27  R3b COMBO_ENDED 原因1
+  F55  R3b DUMMY_RECOVERED
+  PASS  R3b 2C 后 5D 报可读 CONFIGURATION_GAP（2C 未声明 5D 边），独立起手落在倒地外
+
+=== R4 6D/2D 对地拒绝 | 面向 1 ===
+  F10  R4a HIT_MISS（无 grounded 资料，不回退）6D
+  F12  R4a SWITCHED_SIDES 新面向-1（下一帧生效）
+  PASS  R4a 6D 对地：MISS_NO_PROFILE 可读、无伤害无连段；挥空仍真实上升
+  PASS  R4b 2D 高位框越过地面木桩（无接触），上升后 F27 物理回落
+
+=== R5 2D 对空命中 + jA 出口 + 有限空中资源 | 面向 1 ===
+  FAIL  R5 2D 命中空中目标后经空中出口进入 jA（[]）
+  FAIL  R5 滞空中 Space 不产生第二次上升冲量（无二段跳）
+  PASS  R5 滞空按物理自然结束（F27 落地），切招不续期空中资源
+
+=== R6 6D 版边墙截断与被防不穿越 | 面向 1 ===
+  PASS  R6a 版边 6D：墙截断标记可观察、不换边
+  PASS  R6a 版边不出界
+  F10  R6b ATTACK_BLOCKED 姿态1 玩家x=262.7 木桩x=290.2
+  F20  R6b SWITCHED_SIDES 新面向-1（下一帧生效）
+  PASS  R6b 被防 6D 无空中出口
+  FAIL  R6b 被防截原侧（无穿越）
+
+=== R6 6D 版边墙截断与被防不穿越 | 面向 -1 ===
+  PASS  R6a 版边 6D：墙截断标记可观察、不换边
+  PASS  R6a 版边不出界
+  F10  R6b ATTACK_BLOCKED 姿态1 玩家x=217.3 木桩x=189.8
+  F20  R6b SWITCHED_SIDES 新面向1（下一帧生效）
+  PASS  R6b 被防 6D 无空中出口
+  FAIL  R6b 被防截原侧（无穿越）
+
+
+10 REPLAY 07 CHECK(S) FAILED

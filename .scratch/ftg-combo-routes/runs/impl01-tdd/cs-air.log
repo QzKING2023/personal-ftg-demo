@@ -1,0 +1,7 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+["5A", "5B", "6A", "jA", "jB"] | hits=[] valid=false count=0 dmg=0.0 inputs=0 note=路线在第 6 招后断开（第 6 招（j5D）已起手但未在预期帧（第 41 帧）命中——挥空），路线在此截断
+["5A", "5B", "6A", "jA", "jB", "j2D"] | hits=[6, 13, 21, 30, 35, 43] valid=true count=6 dmg=40.5 inputs=9 note=
+[inj] ["5A", "5B", "6A", "jA", "jB"] | hits=[] valid=false count=0
+[inj] ["5A", "5B", "6A", "jA", "jB", "j2D"] | hits=[6, 13, 21, 30, 35, 43] valid=true count=6
+EXIT=0 

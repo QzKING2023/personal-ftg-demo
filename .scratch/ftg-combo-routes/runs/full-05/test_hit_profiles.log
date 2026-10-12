@@ -1,0 +1,121 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PASS  fresh profile enums default to UNSET sentinels
+PASS  timer/damage defaults are the undeclared sentinel -1, never 0
+PASS  speed defaults are the undeclared sentinel -1.0
+PASS  TargetState members are UNSET=0, GROUNDED=1, AIRBORNE=2
+PASS  HitContext members are UNSET=0, NORMAL=1, COUNTER=2
+PASS  Reaction members are UNSET=0, GROUND_HITSTUN=1, LAUNCH=2, GROUND_KNOCKDOWN=3
+PASS  reaction_timer_frames reads the timer matching the declared reaction
+PASS  shared manifest loads the migrated profile table
+PASS  5A grounded normal is GROUND_HITSTUN with declared timers and explicit 0 upward speed
+PASS  5A grounded counter is a legal variant observable from normal
+PASS  5A declares no airborne profile (airborne hits must miss, not borrow grounded data)
+PASS  6A is the 6+A forward special listed in the shared manifest
+PASS  6A grounded normal is LAUNCH with positive upward speed
+PASS  6A grounded counter is a LAUNCH variant observable from normal
+PASS  6A airborne normal is the explicit descending anti-air profile (LAUNCH, 30N, 150/460; ticket 02)
+PASS  6A airborne counter is a LAUNCH variant not shorter than normal (36N)
+PASS  6A declares its jump cancel targets into the delivered air normals (ticket 07)
+PASS  5A chains into 5B (ground chain confirm)
+PASS  214C~B grounded normal is GROUND_KNOCKDOWN with an independent timer and 0 upward speed (旧地面 214D 移除后的倒地资料样本)
+PASS  214C~B grounded counter declares the GROUND_KNOCKDOWN pair (normal/counter 同为 30 帧：旧 214D 的 counter 差异计时不随样本迁移)
+PASS  5B keeps an explicitly migrated grounded normal profile
+PASS  5D keeps an explicitly migrated grounded normal profile
+PASS  5C keeps an explicitly migrated grounded normal profile
+PASS  236C keeps an explicitly migrated grounded normal profile
+PASS  jA declares an airborne normal profile for air pursuit routes
+PASS  jB declares an airborne normal profile for air pursuit routes
+PASS  j5D declares an airborne normal profile for air pursuit routes
+PASS  the throw declares no hit profiles
+PASS  mutating one table copy's profile does not leak into other loads
+PASS  GROUND_HITSTUN on grounded target with declared timers validates
+PASS  LAUNCH on grounded target validates
+PASS  LAUNCH on airborne target validates
+PASS  GROUND_KNOCKDOWN on grounded target validates
+PASS  grounded normal/counter plus airborne normal validates together
+PASS  illegal profile data rejects the whole table naming grounded: GROUND_HITSTUN 打空中目标
+PASS  illegal profile data rejects the whole table naming grounded: GROUND_KNOCKDOWN 打空中目标
+PASS  illegal profile data rejects the whole table naming ground_stun_frames: GROUND_HITSTUN 缺硬直计时
+PASS  illegal profile data rejects the whole table naming air_untech_frames: LAUNCH 缺空中受身计时
+PASS  illegal profile data rejects the whole table naming upward_speed_px_s: LAUNCH 垂直速度为 0
+PASS  illegal profile data rejects the whole table naming upward_speed_px_s: GROUND_HITSTUN 保留旧击飞速度
+PASS  illegal profile data rejects the whole table naming upward_speed_px_s: GROUND_KNOCKDOWN 垂直速度非 0
+PASS  illegal profile data rejects the whole table naming ground_stun_frames: LAUNCH 声明地面硬直计时
+PASS  illegal profile data rejects the whole table naming knockdown_frames: GROUND_HITSTUN 声明倒地计时
+PASS  illegal profile data rejects the whole table naming air_untech_frames: GROUND_KNOCKDOWN 声明空中受身计时
+PASS  illegal profile data rejects the whole table naming horizontal_speed_px_s: 水平速度未声明
+PASS  illegal profile data rejects the whole table naming horizontal_speed_px_s: 水平速度为负
+PASS  illegal profile data rejects the whole table naming damage_override: 覆盖伤害为负
+PASS  illegal profile data rejects the whole table naming target_state: 未知 target_state 枚举
+PASS  illegal profile data rejects the whole table naming hit_context: 未知 hit_context 枚举
+PASS  illegal profile data rejects the whole table naming reaction: 未知 reaction 枚举
+PASS  illegal profile data rejects the whole table naming 重复键: 重复 (grounded, normal) 键
+PASS  illegal profile data rejects the whole table naming normal: counter 无同状态 normal
+PASS  a strike without any profile rejects the whole table
+PASS  a throw declaring hit profiles rejects the whole table
+PASS  exact (grounded, normal) key finds its profile
+PASS  airborne lookup does not borrow the grounded profile
+PASS  counter lookup does not fall back to the normal profile
+PASS  neither dimension may fall back in combination
+PASS  selection is by key, not by array order (normal still wins when listed last)
+PASS  5A connects on its first active frame (F6)
+PASS  the grounded normal hit deals the A-starter scaled damage (round0.1(8×0.72)) and reports the normal context
+PASS  the normal ground hit keeps the dummy grounded in ground hitstun
+PASS  ground stun comes from the selected profile at the A-starter time layer (floor(14×0.70))
+PASS  knockback speed comes from the profile at the A-starter trajectory layer (120px/s) with no vertical component
+PASS  no miss is reported against the grounded dummy
+PASS  the injected launcher connects exactly once before the 5A followup
+PASS  5A connecting with the airborne dummy reports HIT_MISS on its first active frame (start F13 + startup 5)
+PASS  the miss deals no damage beyond the launcher's own hit
+PASS  the miss changes no hit state (still air hitstun at the miss frame)
+PASS  the miss does not refresh or extend the air untech timer (exactly one normal frame of decay)
+PASS  the miss grants no hit confirmation, no cancel window, and no hitstop
+PASS  6A connects on its first active frame (F10)
+PASS  6A's grounded normal connects for the C-starter scaled damage (round0.1(16×0.93)) in the normal context
+PASS  6A puts the grounded dummy into air hitstun
+PASS  air untech timer comes from the 6A normal profile at the C-starter time layer (floor(36×0.90))
+PASS  6A applies the trajectory-scaled horizontal speed (138px/s minus same-frame friction) and a strong upward launch (515px/s)
+PASS  jump cancel after 6A's confirmed hit lets jA connect as a pursuit
+PASS  a whiffed 6A never grants jump cancel (Space stays buffered-only while the move runs)
+PASS  the whiff never touches the dummy
+PASS  the knockdown hit connects once and the post-recovery 5A starts a fresh combo hit
+PASS  the knockdown hit puts the dummy into independent knockdown for the D-starter time-scaled 28 frames (floor(30×0.96))
+PASS  knockdown is not disguised as ground hitstun
+PASS  the knockdown hit deals its base damage once
+PASS  entering knockdown ends the combo first with the KNOCKDOWN reason
+PASS  the knockdown timer expires naturally at F47 (8 hitstop + 28 scaled frames); the fresh 5A stun recovers at F74
+PASS  the post-recovery hit opened a fresh combo (count restarted at 1)
+PASS  the knockdown probe hitting the dummy's startup selects the counter profile (reported in the event)
+PASS  the counter knockdown variant uses its own timer at the D-starter time layer (floor(40×0.96) = 38)
+PASS  a hit landing in the dummy's startup window selects the counter profile
+PASS  the counter hit applies the counter stun at the A-starter time layer (floor(18×0.70) = 12) rather than the normal stun (9)
+PASS  a hit landing in the dummy's recovery window selects the counter profile
+PASS  a hit landing while the dummy's move is active stays normal (active is not a counter window)
+PASS  after the whiffed window expires the next hit is normal again
+PASS  a dummy that never attacked is always hit in the normal context
+PASS  the counter context is consumed on hit: the followup in the same combo selects normal (stun 9 at the second-hit time layer)
+PASS  damage_override replaces base damage and then takes the A-starter layer (round0.1(15×0.72) = 10.8)
+PASS  the player hitstun comes from the selected grounded normal profile
+PASS  hitting the player during their own startup selects the counter profile timer
+PASS  a grounded-only strike missing the airborne player reports HIT_MISS with no stun
+PASS  the solver walks the 5A → 5B → 6A (chain cancels) → jump cancel → jA → jB → j2D route on the shared table
+PASS  the runtime replay of the solver inputs matches the solver's damage and hit count
+PASS  editing the 6A normal profile raises the solver route total by (25-16)*0.5832 with per-hit rounding
+PASS  the runtime replay tracks the same edited-profile damage
+PASS  counter-profile edits never leak into the solver's normal-context routes (no fallback)
+PASS  the 236C → 5C edge is excluded with the MISS_NO_PROFILE reason (5C has no airborne profile)
+PASS  the runtime replay of the same seam reports exactly one HIT_MISS
+PASS  route01: shared table loads
+PASS  route01: 5B declares AIRBORNE normal+counter LAUNCH profiles (no fallback)
+PASS  route01: 5B AIRBORNE N/C untech 18/24, horizontal 60, upward 100
+PASS  route01: 5B GROUND_BOUNCE untech 19/25 with LAUNCH and unchanged speeds
+PASS  route01: jC startup 7→4 with recovery unchanged
+PASS  route01: j214D startup 9→1 with recovery unchanged
+PASS  route01: j214D AIRBORNE N/C pre-touch window both 32
+PASS  route01: j214D grounded entry profile unchanged (12, 80/100)
+PASS  route01: 6A declares its AIRBORNE normal profile (ticket 02: LAUNCH 30N, 150/460)
+PASS  route01: 6A AIRBORNE counter declared alongside (36N)
+
+ACCEPTANCE_SOLVER_METRICS_JSON={"calls":6,"combo_cache":{"bypasses":0,"enabled":true,"entries":278,"hits":3,"misses":3},"elapsed_ms":25551.574,"profile_totals":{"delay_leaf_ms":8180.722,"delay_leaf_runs":2651,"edge_probe_ms":2689.319,"edge_probe_runs":419,"gap_enum_ms":5473.373,"gap_enum_runs":738,"other_ms":5471.207,"other_runs":4,"requests":6,"route_walk_ms":3749.688,"route_walk_runs":0,"total_ms":25564.309},"profiles":[{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"3d13577d3034bea88cc1a43b565e1281cdf3f40c20b4e73e58cb8bfee4a286fd","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-1","other_ms":4986.874,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":4986.874},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"23db6062b14f2933655c96d6467f29107499a8d412aac5e9d08b3f7640a23170","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"route-2","other_ms":59.145,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":59.145},{"delay_leaf_ms":8167.46,"delay_leaf_runs":2649,"edge_probe_ms":2607.434,"edge_probe_runs":409,"fingerprint":"2c88bbabdf9086dbfe59cd544be679ea8e6c0dbd10ae3292cb5a0ee4f0adc27a","gap_enum_ms":5473.373,"gap_enum_runs":738,"key":"solve-3","other_ms":219.903,"other_runs":4,"route_walk_ms":3741.914,"route_walk_runs":0,"total_ms":20210.084},{"delay_leaf_ms":7.94,"delay_leaf_runs":1,"edge_probe_ms":25.073,"edge_probe_runs":0,"fingerprint":"d06b5691c6d2ab14699f7951feddb643ab22d99f325da1e8750f7116cf4100d3","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"route-4","other_ms":78.717,"other_runs":0,"route_walk_ms":4.266,"route_walk_runs":0,"total_ms":115.996},{"delay_leaf_ms":5.322,"delay_leaf_runs":1,"edge_probe_ms":56.812,"edge_probe_runs":10,"fingerprint":"d06b5691c6d2ab14699f7951feddb643ab22d99f325da1e8750f7116cf4100d3","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"route-5","other_ms":64.238,"other_runs":0,"route_walk_ms":3.508,"route_walk_runs":0,"total_ms":129.88},{"delay_leaf_ms":0.0,"delay_leaf_runs":0,"edge_probe_ms":0.0,"edge_probe_runs":0,"fingerprint":"6efde425e682dca340df0376dc94959d7e8fb28a8252cfe1001e34666c282a8a","gap_enum_ms":0.0,"gap_enum_runs":0,"key":"solve-6","other_ms":62.33,"other_runs":0,"route_walk_ms":0.0,"route_walk_runs":0,"total_ms":62.33}],"reports":[{"calls":1,"fingerprint":"23db6062b14f2933655c96d6467f29107499a8d412aac5e9d08b3f7640a23170","keys":["route-2"]},{"calls":1,"fingerprint":"2c88bbabdf9086dbfe59cd544be679ea8e6c0dbd10ae3292cb5a0ee4f0adc27a","keys":["solve-3"]},{"calls":1,"fingerprint":"3d13577d3034bea88cc1a43b565e1281cdf3f40c20b4e73e58cb8bfee4a286fd","keys":["solve-1"]},{"calls":1,"fingerprint":"6efde425e682dca340df0376dc94959d7e8fb28a8252cfe1001e34666c282a8a","keys":["solve-6"]},{"calls":2,"fingerprint":"d06b5691c6d2ab14699f7951feddb643ab22d99f325da1e8750f7116cf4100d3","keys":["route-4","route-5"]}],"reuse_enabled":false,"reuse_hit_rate":0.0,"reuse_hits":0,"test":"test_hit_profiles","underlying_calls":6,"unique_reports":5}
+ALL HIT PROFILE TESTS PASSED

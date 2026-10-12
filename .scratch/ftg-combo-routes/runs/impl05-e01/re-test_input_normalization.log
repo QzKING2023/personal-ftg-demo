@@ -1,0 +1,25 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+PASS  held physical keys [32] facing=1 -> 8 (expected 8)
+PASS  held physical keys [4194320] facing=1 -> 8 (expected 8)
+PASS  held physical keys [32, 68] facing=1 -> 9 (expected 9)
+PASS  held physical keys [32, 65] facing=1 -> 7 (expected 7)
+PASS  held physical keys [32, 83] facing=1 ->  (expected )
+PASS  opposite vertical axes cause neither crouch nor jump
+PASS  held physical keys [32, 83, 68] facing=1 -> 6 (expected 6)
+PASS  opposite vertical axes cause neither crouch nor jump
+PASS  held physical keys [65, 68] facing=1 ->  (expected )
+PASS  held physical keys [4194320, 4194322] facing=1 ->  (expected )
+PASS  opposite vertical axes cause neither crouch nor jump
+PASS  held physical keys [32] facing=-1 -> 8 (expected 8)
+PASS  held physical keys [4194320] facing=-1 -> 8 (expected 8)
+PASS  held physical keys [32, 65] facing=-1 -> 9 (expected 9)
+PASS  held physical keys [32, 68] facing=-1 -> 7 (expected 7)
+PASS  held physical keys [32, 83] facing=-1 ->  (expected )
+PASS  opposite vertical axes cause neither crouch nor jump
+PASS  held physical keys [32, 83, 65] facing=-1 -> 6 (expected 6)
+PASS  opposite vertical axes cause neither crouch nor jump
+PASS  held physical keys [65, 68] facing=-1 ->  (expected )
+PASS  held physical keys [4194320, 4194322] facing=-1 ->  (expected )
+PASS  opposite vertical axes cause neither crouch nor jump
+ALL INPUT NORMALIZATION TESTS PASSED

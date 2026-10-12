@@ -1,0 +1,2684 @@
+{
+  "head": "rve02-scan",
+  "kind": "B",
+  "facing": -1,
+  "placements": [
+    {
+      "g": 0.0,
+      "r": 0.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 0.0,
+      "r": 4.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 0.0,
+      "r": 8.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 0.0,
+      "r": 12.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 2.0,
+      "r": 0.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 2.0,
+      "r": 4.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 2.0,
+      "r": 8.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 2.0,
+      "r": 12.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 4.0,
+      "r": 0.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 4.0,
+      "r": 4.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 4.0,
+      "r": 8.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 4.0,
+      "r": 12.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 9.0,
+      "r": 0.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 9.0,
+      "r": 4.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 9.0,
+      "r": 8.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 9.0,
+      "r": 12.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 13.0,
+      "r": 0.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 13.0,
+      "r": 4.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 13.0,
+      "r": 8.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 13.0,
+      "r": 12.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 18.0,
+      "r": 0.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 18.0,
+      "r": 4.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 18.0,
+      "r": 8.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 18.0,
+      "r": 12.0,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 9.3,
+      "r": 6.7,
+      "zone": "domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 24.0,
+      "r": 4.0,
+      "zone": "out_of_domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    },
+    {
+      "g": 9.0,
+      "r": 20.0,
+      "zone": "out_of_domain",
+      "anchors": {
+
+      },
+      "candidates": {
+        "c1": [
+          12
+        ],
+        "m1": [
+          29
+        ],
+        "d1": [
+          45
+        ],
+        "b2": [
+          74
+        ],
+        "c2": [
+          79
+        ],
+        "m2": [
+          100
+        ],
+        "d2": [
+          117
+        ],
+        "b3": [
+          144,
+          143,
+          145,
+          142,
+          146
+        ],
+        "r2": []
+      },
+      "break_key": "r2",
+      "break_n": 10,
+      "diag_anchors": {
+        "b1": 1,
+        "c1": 12,
+        "m1": 29,
+        "d1": 45,
+        "b2": 74,
+        "c2": 79,
+        "m2": 100,
+        "d2": 117,
+        "b3": 144,
+        "r2": 153,
+        "tc": 173
+      },
+      "diag_hits": [
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B",
+        "5C",
+        "236C",
+        "5D",
+        "5B"
+      ],
+      "diag_hit_frames": [
+        10,
+        27,
+        42,
+        58,
+        83,
+        99,
+        114,
+        130,
+        153
+      ],
+      "diag_end_frame": 167,
+      "diag_end_reason": 3,
+      "diag_post_hits": [
+        "214C",
+        "214C~C"
+      ],
+      "diag_post_hit_frames": [
+        170,
+        188
+      ],
+      "diag_link_fails": [],
+      "diag_misses": [],
+      "last_5b": {
+        "frame": 153,
+        "pre_state": 1,
+        "count": 3
+      },
+      "214C_started": {
+        "frame": 163
+      },
+      "214CC_started": {
+        "frame": 180
+      }
+    }
+  ],
+  "summary": {
+    "total": 27,
+    "ok": 0
+  }
+}

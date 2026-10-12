@@ -1,0 +1,6 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+disk-C6-B-f1 true hits=["5B", "5C", "236C", "5D", "5B", "5C", "236C", "5D", "5B", "2C"] end=181 knock=181 rec=[{ "start_F": 51, "exit_F": 75, "normal_recovery_ticks": 6, "before_move_frame": 16, "to": "" }, { "start_F": 123, "exit_F": 147, "normal_recovery_ticks": 6, "before_move_frame": 16, "to": "5B" }] overlaps=[]
+disk-C6-B-f-1 true hits=["5B", "5C", "236C", "5D", "5B", "5C", "236C", "5D", "5B", "2C"] end=181 knock=181 rec=[{ "start_F": 51, "exit_F": 75, "normal_recovery_ticks": 6, "before_move_frame": 16, "to": "" }, { "start_F": 123, "exit_F": 147, "normal_recovery_ticks": 6, "before_move_frame": 16, "to": "5B" }] overlaps=[]
+disk-C6-C-f1 true hits=["5C", "236C", "5D", "5B", "5C", "236C", "5D", "5B", "2C"] end=171 knock=171 rec=[{ "start_F": 36, "exit_F": 60, "normal_recovery_ticks": 6, "before_move_frame": 16, "to": "" }, { "start_F": 111, "exit_F": 135, "normal_recovery_ticks": 6, "before_move_frame": 16, "to": "5B" }] overlaps=[]
+disk-C6-C-f-1 true hits=["5C", "236C", "5D", "5B", "5C", "236C", "5D", "5B", "2C"] end=171 knock=171 rec=[{ "start_F": 36, "exit_F": 60, "normal_recovery_ticks": 6, "before_move_frame": 16, "to": "" }, { "start_F": 111, "exit_F": 135, "normal_recovery_ticks": 6, "before_move_frame": 16, "to": "5B" }] overlaps=[]

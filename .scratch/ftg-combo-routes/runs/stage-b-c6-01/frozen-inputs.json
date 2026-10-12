@@ -1,0 +1,2478 @@
+{
+  "C6-B-f1": {
+    "anchors": {
+      "b1": 1,
+      "c1": 12,
+      "m1": 29,
+      "d1": 45,
+      "b2": 74,
+      "c2": 79,
+      "m2": 100,
+      "d2": 117,
+      "b3": 143,
+      "e3": 149
+    },
+    "input_changes": [
+      {
+        "F": 1,
+        "N_after_step": 1,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "B"
+        ],
+        "held": [
+          "B"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 2,
+        "N_after_step": 2,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "B"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 3,
+        "N_after_step": 3,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 12,
+        "N_after_step": 10,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 13,
+        "N_after_step": 10,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 14,
+        "N_after_step": 10,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 26,
+        "N_after_step": 18,
+        "axis_world": 0,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 27,
+        "N_after_step": 19,
+        "axis_world": 1,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 28,
+        "N_after_step": 19,
+        "axis_world": 1,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 29,
+        "N_after_step": 19,
+        "axis_world": 1,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 30,
+        "N_after_step": 19,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 31,
+        "N_after_step": 19,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 45,
+        "N_after_step": 26,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "D"
+        ],
+        "held": [
+          "D"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 46,
+        "N_after_step": 26,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "D"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 47,
+        "N_after_step": 26,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 74,
+        "N_after_step": 42,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "B"
+        ],
+        "held": [
+          "B"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 75,
+        "N_after_step": 43,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "B"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 76,
+        "N_after_step": 44,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 79,
+        "N_after_step": 47,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 80,
+        "N_after_step": 48,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 81,
+        "N_after_step": 49,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 97,
+        "N_after_step": 57,
+        "axis_world": 0,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 98,
+        "N_after_step": 58,
+        "axis_world": 1,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 99,
+        "N_after_step": 59,
+        "axis_world": 1,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 100,
+        "N_after_step": 59,
+        "axis_world": 1,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 101,
+        "N_after_step": 59,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 102,
+        "N_after_step": 59,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 117,
+        "N_after_step": 66,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "D"
+        ],
+        "held": [
+          "D"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 118,
+        "N_after_step": 66,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "D"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 119,
+        "N_after_step": 66,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 143,
+        "N_after_step": 79,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "B"
+        ],
+        "held": [
+          "B"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 144,
+        "N_after_step": 80,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "B"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 145,
+        "N_after_step": 81,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 149,
+        "N_after_step": 85,
+        "axis_world": 0,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 150,
+        "N_after_step": 86,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 151,
+        "N_after_step": 87,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      }
+    ],
+    "hit_F": [
+      10,
+      27,
+      42,
+      58,
+      83,
+      99,
+      114,
+      130,
+      153,
+      167
+    ],
+    "starts_F_N_move_beforePhase_beforeMoveFrame": [
+      [
+        4,
+        4,
+        "5B",
+        0,
+        0
+      ],
+      [
+        19,
+        11,
+        "5C",
+        2,
+        7
+      ],
+      [
+        36,
+        20,
+        "236C",
+        2,
+        9
+      ],
+      [
+        51,
+        27,
+        "5D",
+        2,
+        7
+      ],
+      [
+        77,
+        45,
+        "5B",
+        0,
+        0
+      ],
+      [
+        83,
+        51,
+        "5C",
+        2,
+        6
+      ],
+      [
+        108,
+        60,
+        "236C",
+        2,
+        9
+      ],
+      [
+        123,
+        67,
+        "5D",
+        2,
+        7
+      ],
+      [
+        147,
+        83,
+        "5B",
+        3,
+        16
+      ],
+      [
+        153,
+        89,
+        "2C",
+        2,
+        6
+      ]
+    ],
+    "D_recovery": [
+      {
+        "start_F": 51,
+        "exit_F": 75,
+        "normal_recovery_ticks": 6,
+        "before_move_frame": 16,
+        "to": ""
+      },
+      {
+        "start_F": 123,
+        "exit_F": 147,
+        "normal_recovery_ticks": 6,
+        "before_move_frame": 16,
+        "to": "5B"
+      }
+    ],
+    "sweep_F": 167,
+    "knockdown_F": 181
+  },
+  "C6-B-f-1": {
+    "anchors": {
+      "b1": 1,
+      "c1": 12,
+      "m1": 29,
+      "d1": 45,
+      "b2": 74,
+      "c2": 79,
+      "m2": 100,
+      "d2": 117,
+      "b3": 143,
+      "e3": 149
+    },
+    "input_changes": [
+      {
+        "F": 1,
+        "N_after_step": 1,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "B"
+        ],
+        "held": [
+          "B"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 2,
+        "N_after_step": 2,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "B"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 3,
+        "N_after_step": 3,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 12,
+        "N_after_step": 10,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 13,
+        "N_after_step": 10,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 14,
+        "N_after_step": 10,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 26,
+        "N_after_step": 18,
+        "axis_world": 0,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 27,
+        "N_after_step": 19,
+        "axis_world": -1,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 28,
+        "N_after_step": 19,
+        "axis_world": -1,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 29,
+        "N_after_step": 19,
+        "axis_world": -1,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 30,
+        "N_after_step": 19,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 31,
+        "N_after_step": 19,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 45,
+        "N_after_step": 26,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "D"
+        ],
+        "held": [
+          "D"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 46,
+        "N_after_step": 26,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "D"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 47,
+        "N_after_step": 26,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 74,
+        "N_after_step": 42,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "B"
+        ],
+        "held": [
+          "B"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 75,
+        "N_after_step": 43,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "B"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 76,
+        "N_after_step": 44,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 79,
+        "N_after_step": 47,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 80,
+        "N_after_step": 48,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 81,
+        "N_after_step": 49,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 97,
+        "N_after_step": 57,
+        "axis_world": 0,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 98,
+        "N_after_step": 58,
+        "axis_world": -1,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 99,
+        "N_after_step": 59,
+        "axis_world": -1,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 100,
+        "N_after_step": 59,
+        "axis_world": -1,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 101,
+        "N_after_step": 59,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 102,
+        "N_after_step": 59,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 117,
+        "N_after_step": 66,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "D"
+        ],
+        "held": [
+          "D"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 118,
+        "N_after_step": 66,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "D"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 119,
+        "N_after_step": 66,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 143,
+        "N_after_step": 79,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "B"
+        ],
+        "held": [
+          "B"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 144,
+        "N_after_step": 80,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "B"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 145,
+        "N_after_step": 81,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 149,
+        "N_after_step": 85,
+        "axis_world": 0,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 150,
+        "N_after_step": 86,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 151,
+        "N_after_step": 87,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      }
+    ],
+    "hit_F": [
+      10,
+      27,
+      42,
+      58,
+      83,
+      99,
+      114,
+      130,
+      153,
+      167
+    ],
+    "starts_F_N_move_beforePhase_beforeMoveFrame": [
+      [
+        4,
+        4,
+        "5B",
+        0,
+        0
+      ],
+      [
+        19,
+        11,
+        "5C",
+        2,
+        7
+      ],
+      [
+        36,
+        20,
+        "236C",
+        2,
+        9
+      ],
+      [
+        51,
+        27,
+        "5D",
+        2,
+        7
+      ],
+      [
+        77,
+        45,
+        "5B",
+        0,
+        0
+      ],
+      [
+        83,
+        51,
+        "5C",
+        2,
+        6
+      ],
+      [
+        108,
+        60,
+        "236C",
+        2,
+        9
+      ],
+      [
+        123,
+        67,
+        "5D",
+        2,
+        7
+      ],
+      [
+        147,
+        83,
+        "5B",
+        3,
+        16
+      ],
+      [
+        153,
+        89,
+        "2C",
+        2,
+        6
+      ]
+    ],
+    "D_recovery": [
+      {
+        "start_F": 51,
+        "exit_F": 75,
+        "normal_recovery_ticks": 6,
+        "before_move_frame": 16,
+        "to": ""
+      },
+      {
+        "start_F": 123,
+        "exit_F": 147,
+        "normal_recovery_ticks": 6,
+        "before_move_frame": 16,
+        "to": "5B"
+      }
+    ],
+    "sweep_F": 167,
+    "knockdown_F": 181
+  },
+  "C6-C-f1": {
+    "anchors": {
+      "c1": 1,
+      "m1": 15,
+      "d1": 31,
+      "b2": 61,
+      "c2": 71,
+      "m2": 89,
+      "d2": 105,
+      "b3": 132,
+      "e3": 143
+    },
+    "input_changes": [
+      {
+        "F": 1,
+        "N_after_step": 1,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 2,
+        "N_after_step": 2,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 3,
+        "N_after_step": 3,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 12,
+        "N_after_step": 12,
+        "axis_world": 0,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 13,
+        "N_after_step": 12,
+        "axis_world": 1,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 14,
+        "N_after_step": 12,
+        "axis_world": 1,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 15,
+        "N_after_step": 12,
+        "axis_world": 1,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 16,
+        "N_after_step": 12,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 17,
+        "N_after_step": 12,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 31,
+        "N_after_step": 19,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "D"
+        ],
+        "held": [
+          "D"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 32,
+        "N_after_step": 19,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "D"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 33,
+        "N_after_step": 19,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 61,
+        "N_after_step": 37,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "B"
+        ],
+        "held": [
+          "B"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 62,
+        "N_after_step": 38,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "B"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 63,
+        "N_after_step": 39,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 71,
+        "N_after_step": 46,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 72,
+        "N_after_step": 46,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 73,
+        "N_after_step": 46,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 86,
+        "N_after_step": 54,
+        "axis_world": 0,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 87,
+        "N_after_step": 55,
+        "axis_world": 1,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 88,
+        "N_after_step": 55,
+        "axis_world": 1,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 89,
+        "N_after_step": 55,
+        "axis_world": 1,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 90,
+        "N_after_step": 55,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 91,
+        "N_after_step": 55,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 105,
+        "N_after_step": 62,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "D"
+        ],
+        "held": [
+          "D"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 106,
+        "N_after_step": 62,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "D"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 107,
+        "N_after_step": 62,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 132,
+        "N_after_step": 76,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "B"
+        ],
+        "held": [
+          "B"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 133,
+        "N_after_step": 77,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "B"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 134,
+        "N_after_step": 78,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 143,
+        "N_after_step": 85,
+        "axis_world": 0,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 144,
+        "N_after_step": 85,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 145,
+        "N_after_step": 85,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      }
+    ],
+    "hit_F": [
+      12,
+      27,
+      43,
+      70,
+      87,
+      102,
+      118,
+      141,
+      156
+    ],
+    "starts_F_N_move_beforePhase_beforeMoveFrame": [
+      [
+        4,
+        4,
+        "5C",
+        0,
+        0
+      ],
+      [
+        21,
+        13,
+        "236C",
+        2,
+        9
+      ],
+      [
+        36,
+        20,
+        "5D",
+        2,
+        7
+      ],
+      [
+        64,
+        40,
+        "5B",
+        0,
+        0
+      ],
+      [
+        79,
+        47,
+        "5C",
+        2,
+        7
+      ],
+      [
+        96,
+        56,
+        "236C",
+        2,
+        9
+      ],
+      [
+        111,
+        63,
+        "5D",
+        2,
+        7
+      ],
+      [
+        135,
+        79,
+        "5B",
+        3,
+        16
+      ],
+      [
+        150,
+        86,
+        "2C",
+        2,
+        7
+      ]
+    ],
+    "D_recovery": [
+      {
+        "start_F": 36,
+        "exit_F": 60,
+        "normal_recovery_ticks": 6,
+        "before_move_frame": 16,
+        "to": ""
+      },
+      {
+        "start_F": 111,
+        "exit_F": 135,
+        "normal_recovery_ticks": 6,
+        "before_move_frame": 16,
+        "to": "5B"
+      }
+    ],
+    "sweep_F": 156,
+    "knockdown_F": 171
+  },
+  "C6-C-f-1": {
+    "anchors": {
+      "c1": 1,
+      "m1": 15,
+      "d1": 31,
+      "b2": 61,
+      "c2": 71,
+      "m2": 89,
+      "d2": 105,
+      "b3": 132,
+      "e3": 143
+    },
+    "input_changes": [
+      {
+        "F": 1,
+        "N_after_step": 1,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 2,
+        "N_after_step": 2,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 3,
+        "N_after_step": 3,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 12,
+        "N_after_step": 12,
+        "axis_world": 0,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 13,
+        "N_after_step": 12,
+        "axis_world": -1,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 14,
+        "N_after_step": 12,
+        "axis_world": -1,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 15,
+        "N_after_step": 12,
+        "axis_world": -1,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 16,
+        "N_after_step": 12,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 17,
+        "N_after_step": 12,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 31,
+        "N_after_step": 19,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "D"
+        ],
+        "held": [
+          "D"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 32,
+        "N_after_step": 19,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "D"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 33,
+        "N_after_step": 19,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 61,
+        "N_after_step": 37,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "B"
+        ],
+        "held": [
+          "B"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 62,
+        "N_after_step": 38,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "B"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 63,
+        "N_after_step": 39,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 71,
+        "N_after_step": 46,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 72,
+        "N_after_step": 46,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 73,
+        "N_after_step": 46,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 86,
+        "N_after_step": 54,
+        "axis_world": 0,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 87,
+        "N_after_step": 55,
+        "axis_world": -1,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 88,
+        "N_after_step": 55,
+        "axis_world": -1,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 89,
+        "N_after_step": 55,
+        "axis_world": -1,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 90,
+        "N_after_step": 55,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 91,
+        "N_after_step": 55,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 105,
+        "N_after_step": 62,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "D"
+        ],
+        "held": [
+          "D"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 106,
+        "N_after_step": 62,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "D"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 107,
+        "N_after_step": 62,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 132,
+        "N_after_step": 76,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "B"
+        ],
+        "held": [
+          "B"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 133,
+        "N_after_step": 77,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "B"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 134,
+        "N_after_step": 78,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 143,
+        "N_after_step": 85,
+        "axis_world": 0,
+        "down": true,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [
+          "C"
+        ],
+        "held": [
+          "C"
+        ],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 144,
+        "N_after_step": 85,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [
+          "C"
+        ],
+        "dummy_move": "",
+        "dummy_guard": 0
+      },
+      {
+        "F": 145,
+        "N_after_step": 85,
+        "axis_world": 0,
+        "down": false,
+        "up": false,
+        "jump_pressed": false,
+        "pressed": [],
+        "held": [],
+        "released": [],
+        "dummy_move": "",
+        "dummy_guard": 0
+      }
+    ],
+    "hit_F": [
+      12,
+      27,
+      43,
+      70,
+      87,
+      102,
+      118,
+      141,
+      156
+    ],
+    "starts_F_N_move_beforePhase_beforeMoveFrame": [
+      [
+        4,
+        4,
+        "5C",
+        0,
+        0
+      ],
+      [
+        21,
+        13,
+        "236C",
+        2,
+        9
+      ],
+      [
+        36,
+        20,
+        "5D",
+        2,
+        7
+      ],
+      [
+        64,
+        40,
+        "5B",
+        0,
+        0
+      ],
+      [
+        79,
+        47,
+        "5C",
+        2,
+        7
+      ],
+      [
+        96,
+        56,
+        "236C",
+        2,
+        9
+      ],
+      [
+        111,
+        63,
+        "5D",
+        2,
+        7
+      ],
+      [
+        135,
+        79,
+        "5B",
+        3,
+        16
+      ],
+      [
+        150,
+        86,
+        "2C",
+        2,
+        7
+      ]
+    ],
+    "D_recovery": [
+      {
+        "start_F": 36,
+        "exit_F": 60,
+        "normal_recovery_ticks": 6,
+        "before_move_frame": 16,
+        "to": ""
+      },
+      {
+        "start_F": 111,
+        "exit_F": 135,
+        "normal_recovery_ticks": 6,
+        "before_move_frame": 16,
+        "to": "5B"
+      }
+    ],
+    "sweep_F": 156,
+    "knockdown_F": 171
+  }
+}

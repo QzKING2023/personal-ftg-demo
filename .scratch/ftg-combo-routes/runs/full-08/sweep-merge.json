@@ -1,0 +1,56 @@
+{
+  "canonical": "D:\\Godot\\Program\\ftgdemo\\.cache\\acceptance\\solver-results.cache",
+  "entries_before": 374,
+  "fragments": [
+    {
+      "file": "pool-worker-00-g0.fragment",
+      "entries": 5,
+      "merged_new": 5,
+      "bad_lines": 0
+    },
+    {
+      "file": "pool-worker-01-g0.fragment",
+      "entries": 10,
+      "merged_new": 10,
+      "bad_lines": 0
+    },
+    {
+      "file": "pool-worker-02-g0.fragment",
+      "entries": 4,
+      "merged_new": 4,
+      "bad_lines": 0
+    },
+    {
+      "file": "pool-worker-03-g0.fragment",
+      "entries": 8,
+      "merged_new": 8,
+      "bad_lines": 0
+    },
+    {
+      "file": "pool-worker-04-g0.fragment",
+      "entries": 4,
+      "merged_new": 4,
+      "bad_lines": 0
+    },
+    {
+      "file": "pool-worker-05-g0.fragment",
+      "entries": 9,
+      "merged_new": 9,
+      "bad_lines": 0
+    },
+    {
+      "file": "pool-worker-06-g0.fragment",
+      "entries": 6,
+      "merged_new": 6,
+      "bad_lines": 0
+    },
+    {
+      "file": "pool-worker-07-g0.fragment",
+      "entries": 7,
+      "merged_new": 7,
+      "bad_lines": 0
+    }
+  ],
+  "entries_after": 427,
+  "merged_new": 53
+}

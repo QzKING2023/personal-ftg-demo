@@ -1,0 +1,43 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+FAIL  route lands six hits across the jc chain (facing 1): [35, 52, 75]
+FAIL  the jump cancel route reads 5A > 5B > 5C > 6A > jc.jB > jC (facing 1): ["5C", "6A", "jB"]
+PASS  Space during 6A's hit-confirm window enters pre-jump (facing 1, F61)
+FAIL  combo counts six hits in one unbroken chain (facing 1)
+FAIL  route lands six hits across the jc chain (facing -1): [35, 52, 75]
+FAIL  the jump cancel route reads 5A > 5B > 5C > 6A > jc.jB > jC (facing -1): ["5C", "6A", "jB"]
+PASS  Space during 6A's hit-confirm window enters pre-jump (facing -1, F61)
+FAIL  combo counts six hits in one unbroken chain (facing -1)
+PASS  blocked 6A denies jump cancel: Space starts no pre-jump and no air pursuit opens
+PASS  player stays grounded after Space on a blocked 6A
+PASS  whiffed 6A never opens the jump cancel window (Space during the whiffed move starts no pre-jump)
+PASS  2C chains into 6D which air-exits into jC (facing 1): hits [13, 31, 44]
+PASS  6D's planned motion lifts the player for real before the exit (facing 1, peak 12.0 px)
+PASS  the air exit opens inside 6D's hit-confirm window while airborne (facing 1, F31)
+PASS  jC starts while the player is genuinely airborne after 6D's rise (facing 1)
+PASS  route counts three hits (facing 1)
+PASS  2C chains into 6D which air-exits into jC (facing -1): hits [13, 31, 44]
+PASS  6D's planned motion lifts the player for real before the exit (facing -1, peak 12.0 px)
+PASS  the air exit opens inside 6D's hit-confirm window while airborne (facing -1, F31)
+PASS  jC starts while the player is genuinely airborne after 6D's rise (facing -1)
+PASS  route counts three hits (facing -1)
+PASS  6D against a grounded target reports MISS_NO_PROFILE (hitbox touches, no grounded profile): 1 miss events
+PASS  no combo starts and no damage lands from grounded 6D
+PASS  2D's raised hitbox passes over the grounded dummy without contact (silent whiff, no profile consumed)
+PASS  2D on a grounded target starts no combo
+PASS  only 2C connects; 2D whiffs over the low float (hits=1)
+PASS  height mismatch is observable: 2D box bottom 375.8 stays above the floating dummy's top 460.0
+PASS  the dummy is still airborne across 2D's active frames (failure is height, not timing): [2.5, 0.8, 0.0, 0.0]
+PASS  5D after 2C reports a readable CONFIGURATION_GAP (no edge declared) and never connects during the float
+FAIL  2D intercepts a genuinely airborne target and air-exits into jA: []
+FAIL  the jA exit starts while airborne (2D's vertical rise is the real airtime)
+FAIL  2D > jA counts two hits
+PASS  the rise itself is planned motion, not an upward velocity impulse (23.3)
+FAIL  air Space presses never grant a second upward impulse (no double jump)
+PASS  the airtime after 2D's rise ends by physics alone (landing F27), switching moves does not renew it
+PASS  blocked 6D opens no air exit (contact without a HIT)
+FAIL  blocked 6D stays on its original side (crossing denied)
+PASS  session: 6D with only a grounded profile reports HIT_MISS on an airborne target (no fallback)
+PASS  solver: the same grounded-only table reports the 2C -> 6D air-chase seam broken by MISS_NO_PROFILE, matching the session
+
+11 TEST(S) FAILED

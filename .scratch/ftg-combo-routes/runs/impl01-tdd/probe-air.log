@@ -1,0 +1,37 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+refused=false
+--- routes (1) ---
+  ["jA"] | hits=[5] valid=true dmg=5.8
+--- jA/j6D/j5D/j2D/j214D related edges ---
+  2D -> j5D kind=9 valid=false age=-1 无法从起始状态构造到达 2D 的合法上下文（起始姿态 / jump cancel / 取消 / 落地接续 / Rekka 派生链不可达）
+  2D -> j6D kind=9 valid=false age=-1 无法从起始状态构造到达 2D 的合法上下文（起始姿态 / jump cancel / 取消 / 落地接续 / Rekka 派生链不可达）
+  6D -> j5D kind=9 valid=false age=-1 无法从起始状态构造到达 6D 的合法上下文（起始姿态 / jump cancel / 取消 / 落地接续 / Rekka 派生链不可达）
+  6D -> j6D kind=9 valid=false age=-1 无法从起始状态构造到达 6D 的合法上下文（起始姿态 / jump cancel / 取消 / 落地接续 / Rekka 派生链不可达）
+  j214D -> 214C kind=5 valid=false age=-1 空技延迟普通连接未成立：全部进入上下文的目标都未在落地恢复后的消费帧以合法接续起手或命中（剩余受身/落地节拍不满足）
+  j214D -> 5B kind=5 valid=false age=-1 空技延迟普通连接未成立：全部进入上下文的目标都未在落地恢复后的消费帧以合法接续起手或命中（剩余受身/落地节拍不满足）
+  j214D -> 6A kind=5 valid=false age=-1 空技延迟普通连接未成立：全部进入上下文的目标都未在落地恢复后的消费帧以合法接续起手或命中（剩余受身/落地节拍不满足）
+  j2D -> 214C kind=10 valid=false age=-1 无法从起始状态构造到达 j2D 的合法上下文（空中取消 / jump cancel / 空中出口链不可达）
+  j6D -> 5B kind=5 valid=false age=-1 空技延迟普通连接未成立：全部进入上下文的目标都未在落地恢复后的消费帧以合法接续起手或命中（剩余受身/落地节拍不满足）
+  jA -> j214D kind=0 valid=false age=-1 取消未成立：目标招式已起手但判定未在预期帧连接（挥空）
+  jA -> j2D kind=0 valid=false age=-1 取消未成立：目标招式已起手但判定未在预期帧连接（挥空）
+  jA -> j5D kind=0 valid=false age=-1 取消未成立：目标招式已起手但判定未在预期帧连接（挥空）
+  jA -> j6D kind=0 valid=false age=-1 取消未成立：目标招式已起手但判定未在预期帧连接（挥空）
+  jA -> jB kind=0 valid=false age=-1 取消未成立：目标招式已起手但判定未在预期帧连接（挥空）
+  jA -> jC kind=0 valid=false age=-1 取消未成立：目标招式已起手但判定未在预期帧连接（挥空）
+  jB -> 5D kind=4 valid=false age=-1 落地恢复首帧及空技恢复全程不可取消；空中招式落地作废，显式 landing_cancel_targets 不能绕过状态锁
+  jB -> 5[D] kind=4 valid=false age=-1 落地恢复首帧及空技恢复全程不可取消；空中招式落地作废，显式 landing_cancel_targets 不能绕过状态锁
+  jB -> j214D kind=0 valid=false age=-1 起手招式未在首个判定帧命中（探针几何假设被打破）
+  jB -> j2D kind=0 valid=false age=-1 起手招式未在首个判定帧命中（探针几何假设被打破）
+  jB -> j5D kind=0 valid=false age=-1 起手招式未在首个判定帧命中（探针几何假设被打破）
+  jB -> j6D kind=0 valid=false age=-1 起手招式未在首个判定帧命中（探针几何假设被打破）
+  jB -> jC kind=0 valid=false age=-1 起手招式未在首个判定帧命中（探针几何假设被打破）
+  jC -> j214D kind=0 valid=false age=-1 起手招式未在首个判定帧命中（探针几何假设被打破）
+  jC -> j2D kind=0 valid=false age=-1 起手招式未在首个判定帧命中（探针几何假设被打破）
+  jC -> j5D kind=0 valid=false age=-1 起手招式未在首个判定帧命中（探针几何假设被打破）
+  jC -> j6D kind=0 valid=false age=-1 起手招式未在首个判定帧命中（探针几何假设被打破）
+--- precise route_report probes ---
+SCRIPT ERROR: Invalid type in function 'route_report' in base 'GDScript'. The array of argument 1 (Array) does not have the same element type as the expected typed array argument.
+   at: _initialize (res://.scratch/ftg-combo-routes/runs/impl01-tdd/probe_air_routes.gd:23)
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://.scratch/ftg-combo-routes/runs/impl01-tdd/probe_air_routes.gd:23)

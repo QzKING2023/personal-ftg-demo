@@ -1,0 +1,34 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+=== R4-A 参考路线 k=24 vx=0 g=2 r=350 | 面向 +1（探针定档 + 固定计划）===
+PASS  probe: 6A reaches a descending un-hit airborne target ({ "contact": true, "frame": 10, "h": 38.5, "front_gap": 1.27777099609375, "airborne": true, "descending": true, "crossed": false })
+PASS  R4-A reference six-hit + first knockdown lands exactly (facing +1, tier G, contact h=38.500 F10, KD F134)
+=== R4-A 参考路线 k=24 vx=0 g=2 r=350 | 面向 -1（探针定档 + 固定计划）===
+PASS  probe: 6A reaches a descending un-hit airborne target ({ "contact": true, "frame": 10, "h": 38.5, "front_gap": 1.27777099609375, "airborne": true, "descending": true, "crossed": false })
+PASS  R4-A reference six-hit + first knockdown lands exactly (facing -1, tier G, contact h=38.500 F10, KD F134)
+=== R4-A 三档参考：G 迟接触（δ=+4）、H38、H21（含最低档）===
+PASS  tier G: k20 f+1 completes exactly (contact h=38.500 F14 tier G, KD F138)
+PASS  tier H38: k26 f+1 completes exactly (contact h=33.056 F9 tier H38, KD F130)
+PASS  tier H38: k26 f-1 completes exactly (contact h=33.056 F9 tier H38, KD F130)
+PASS  tier H21: k27 f+1 completes exactly (contact h=27.222 F9 tier H21, KD F126)
+PASS  tier H21: k29 f+1 completes exactly (contact h=14.389 F9 tier H21, KD F125)
+=== R4-A 28px 方向分界：front gap 27.99 用 8 / 28.0 用 9 ===
+PASS  front-gap boundary gap<28→8 (gap=27.9476, vx=177.8) completes the exact route
+PASS  front-gap boundary gap≥28→9 (gap=28.0377, vx=178.4) completes the exact route
+PASS  plan generation picks 8 below 28px and 9 at/above (axis 0 vs 1)
+=== 保存/续跑等价：对空参考路线逐切点 clone→restore→续算 ===
+PASS  save/restore: 37 cut points reproduce the uninterrupted replay event-for-event and endpoint-exact
+=== R4-A 负例：错档 / 错方向 / 早晚输入 / 对地接触 / 范围外对照 ===
+PASS  negative: wrong tier (G timing on an H38 contact) breaks the route honestly (["6A", "jC", "j214D"])
+PASS  negative: forward jump cancel on a close contact breaks the exact route (["6A", "jC", "j6D"])
+PASS  observation: 8 on a far contact (gap≈28) may still complete legally (T28 is a reference, not a feasibility boundary)
+PASS  negative: jump cancel 10F early breaks the route honestly (["6A"])
+PASS  negative: jump cancel 25F late breaks the route honestly (["6A"])
+PASS  negative: 5B pressed 12F early never lands in-combo (["6A", "jC", "j214D"])
+PASS  negative: 5B pressed 8F late does not complete the six-hit route (["6A", "jC", "j214D"])
+PASS  negative: j214D final key 7F late breaks the route honestly (["6A", "jC", "j214D"])
+PASS  negative: a start that lands before contact is probed as a grounded contact (对地), not anti-air ({ "contact": true, "frame": 11, "h": 0.0, "front_gap": 66.5001831054688, "airborne": false, "descending": true, "crossed": false })
+PASS  negative: the strict judge refuses the grounded-contact start as an anti-air route (moves=["6A"] | hits_after_end=[{ "frame": 81, "order": 0, "move": "5B", "action": 0, "segment": 1, "combo_hits": 1 }] | 6A_target_grounded)
+PASS  contrast: a rising start (k19, out of domain) whiffs honestly (no fabricated contact)
+PASS  contrast: an out-of-domain gap (g=140 > 120) whiffs honestly
+R4A ADAPTER FAILURES=0

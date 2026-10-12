@@ -1,0 +1,56 @@
+{
+  "canonical": "D:\\Godot\\Program\\ftgdemo\\.cache\\acceptance\\solver-results.cache",
+  "entries_before": 181,
+  "fragments": [
+    {
+      "file": "test_hit_profiles.fragment",
+      "entries": 3,
+      "merged_new": 3,
+      "bad_lines": 0
+    },
+    {
+      "file": "test_move_table.fragment",
+      "entries": 2,
+      "merged_new": 2,
+      "bad_lines": 0
+    },
+    {
+      "file": "test_replay_acceptance.fragment",
+      "entries": 1,
+      "merged_new": 1,
+      "bad_lines": 0
+    },
+    {
+      "file": "test_solver_cache.fragment",
+      "entries": 16,
+      "merged_new": 0,
+      "bad_lines": 0
+    },
+    {
+      "file": "test_solver_growth.fragment",
+      "entries": 4,
+      "merged_new": 0,
+      "bad_lines": 0
+    },
+    {
+      "file": "test_solver_index_equiv.fragment",
+      "entries": 6,
+      "merged_new": 0,
+      "bad_lines": 0
+    },
+    {
+      "file": "test_solver_perf_profile.fragment",
+      "entries": 5,
+      "merged_new": 0,
+      "bad_lines": 0
+    },
+    {
+      "file": "test_solver_routes_cycles_refactor.fragment",
+      "entries": 5,
+      "merged_new": 0,
+      "bad_lines": 0
+    }
+  ],
+  "entries_after": 187,
+  "merged_new": 6
+}

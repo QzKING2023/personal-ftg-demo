@@ -1,0 +1,33 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+LANDING facing=1 physical=43 move= recovery=4 hits=[43]
+PASS  real input route hits jB before landing
+PASS  landing recovery rejects configured cancel facing=1 F43
+PASS  landing recovery rejects configured cancel facing=1 F44
+PASS  landing recovery rejects configured cancel facing=1 F45
+PASS  landing recovery rejects configured cancel facing=1 F46
+PASS  landing recovery rejects configured cancel facing=1 F47
+PASS  landing recovery rejects configured cancel facing=1 F48
+PASS  landing recovery rejects configured cancel facing=1 F49
+PASS  landing recovery rejects configured cancel facing=1 F50
+PASS  landing recovery rejects configured cancel facing=1 F51
+PASS  landing recovery rejects configured cancel facing=1 F52
+PASS  landing recovery rejects configured cancel facing=1 F53
+PASS  landing recovery rejects configured cancel facing=1 F54
+PASS  forbidden landing followup never becomes a second hit
+LANDING facing=-1 physical=43 move= recovery=4 hits=[43]
+PASS  real input route hits jB before landing
+PASS  landing recovery rejects configured cancel facing=-1 F43
+PASS  landing recovery rejects configured cancel facing=-1 F44
+PASS  landing recovery rejects configured cancel facing=-1 F45
+PASS  landing recovery rejects configured cancel facing=-1 F46
+PASS  landing recovery rejects configured cancel facing=-1 F47
+PASS  landing recovery rejects configured cancel facing=-1 F48
+PASS  landing recovery rejects configured cancel facing=-1 F49
+PASS  landing recovery rejects configured cancel facing=-1 F50
+PASS  landing recovery rejects configured cancel facing=-1 F51
+PASS  landing recovery rejects configured cancel facing=-1 F52
+PASS  landing recovery rejects configured cancel facing=-1 F53
+PASS  landing recovery rejects configured cancel facing=-1 F54
+PASS  forbidden landing followup never becomes a second hit
+ALL JOINT ACCEPTANCE TESTS PASSED

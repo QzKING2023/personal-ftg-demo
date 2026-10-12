@@ -1,0 +1,6 @@
+Godot Engine v4.5.1.stable.mono.official.f62fdbde1 - https://godotengine.org
+
+SCRIPT ERROR: Invalid access to property or key 'fail_reason' on a base object of type 'RefCounted (SolverRoute)'.
+   at: _initialize (res://.scratch/ftg-combo-routes/runs/impl01-tdd/probe_air_routes.gd:17)
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://.scratch/ftg-combo-routes/runs/impl01-tdd/probe_air_routes.gd:17)

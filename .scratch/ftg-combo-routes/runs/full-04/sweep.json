@@ -1,0 +1,843 @@
+﻿{
+    "mode": "acceptance-sweep",
+    "concurrency": 8,
+    "cache": "D:\\Godot\\Program\\ftgdemo\\.cache\\acceptance\\solver-results.cache",
+    "enumerate": {
+        "wall_seconds": 116.98,
+        "jobs": {
+            "test_acceptance_combo_boundary": {
+                "exit": 0,
+                "seconds": 1.63,
+                "requests": 0
+            },
+            "test_air_d_landing": {
+                "exit": 0,
+                "seconds": 1.81,
+                "requests": 0
+            },
+            "test_bounce_corrections": {
+                "exit": 0,
+                "seconds": 2.01,
+                "requests": 0
+            },
+            "test_charge_motion_sideswap": {
+                "exit": 0,
+                "seconds": 6.86,
+                "requests": 0
+            },
+            "test_combat_session": {
+                "exit": 0,
+                "seconds": 8.78,
+                "requests": 0
+            },
+            "test_combat_session_restore": {
+                "exit": 0,
+                "seconds": 116.96,
+                "requests": 0
+            },
+            "test_combo_solver": {
+                "exit": 1,
+                "seconds": 11.77,
+                "requests": 1
+            },
+            "test_crouch_stationary": {
+                "exit": 0,
+                "seconds": 1.73,
+                "requests": 0
+            },
+            "test_delay_prefix_restore": {
+                "exit": 0,
+                "seconds": 7.46,
+                "requests": 0
+            },
+            "test_ground_bounce_finish": {
+                "exit": 0,
+                "seconds": 96.01,
+                "requests": 0
+            },
+            "test_hit_profiles": {
+                "exit": 0,
+                "seconds": 7.13,
+                "requests": 0
+            },
+            "test_input_normalization": {
+                "exit": 0,
+                "seconds": 1.86,
+                "requests": 0
+            },
+            "test_joint_acceptance": {
+                "exit": 0,
+                "seconds": 1.08,
+                "requests": 0
+            },
+            "test_launcher_air_exits": {
+                "exit": 0,
+                "seconds": 6.23,
+                "requests": 0
+            },
+            "test_move_table": {
+                "exit": 0,
+                "seconds": 7.39,
+                "requests": 0
+            },
+            "test_replay_acceptance": {
+                "exit": 0,
+                "seconds": 18.68,
+                "requests": 0
+            },
+            "test_smoke": {
+                "exit": 0,
+                "seconds": 26.56,
+                "requests": 0
+            },
+            "test_solver_cache": {
+                "exit": 1,
+                "seconds": 6.84,
+                "requests": 34
+            },
+            "test_solver_checkpoint_trie": {
+                "exit": 0,
+                "seconds": 29.44,
+                "requests": 0
+            },
+            "test_solver_cycle_invariant": {
+                "exit": 0,
+                "seconds": 6.33,
+                "requests": 0
+            },
+            "test_solver_cycle_restore_alias": {
+                "exit": 0,
+                "seconds": 2.42,
+                "requests": 0
+            },
+            "test_solver_cycles": {
+                "exit": 0,
+                "seconds": 7.25,
+                "requests": 0
+            },
+            "test_solver_delay_dp": {
+                "exit": 0,
+                "seconds": 55.81,
+                "requests": 0
+            },
+            "test_solver_edge_cache_equivalence": {
+                "exit": 1,
+                "seconds": 6.8,
+                "requests": 28
+            },
+            "test_solver_entry": {
+                "exit": 0,
+                "seconds": 8.28,
+                "requests": 0
+            },
+            "test_solver_growth": {
+                "exit": 1,
+                "seconds": 6.47,
+                "requests": 8
+            },
+            "test_solver_index_equiv": {
+                "exit": 0,
+                "seconds": 6.94,
+                "requests": 12
+            },
+            "test_solver_perf_profile": {
+                "exit": 1,
+                "seconds": 6.13,
+                "requests": 7
+            },
+            "test_solver_restore_schedule_scope": {
+                "exit": 0,
+                "seconds": 1.54,
+                "requests": 0
+            },
+            "test_solver_route": {
+                "exit": 0,
+                "seconds": 8.8,
+                "requests": 0
+            },
+            "test_solver_routes_cycles_refactor": {
+                "exit": 1,
+                "seconds": 7.04,
+                "requests": 8
+            },
+            "test_solver_spatial": {
+                "exit": 0,
+                "seconds": 7.89,
+                "requests": 0
+            },
+            "diagnose_inputs": {
+                "exit": 0,
+                "seconds": 2.75,
+                "requests": 0
+            },
+            "main-smoke": {
+                "exit": 0,
+                "seconds": 3.32,
+                "requests": 0
+            }
+        },
+        "requests_total": 98,
+        "unique_descriptors": 35
+    },
+    "stage_walls": {
+        "import": 14.03,
+        "enumerate": 116.98,
+        "sweep": 3.48,
+        "warm": 86.72,
+        "total": 221.21
+    },
+    "sweep": {
+        "mode": "pool",
+        "wall_seconds": 3.48,
+        "lanes": 8,
+        "tasks": 35,
+        "task_busy_seconds": 2.61,
+        "lane_busy_ratio": 0.0937,
+        "covered": 35,
+        "gaps": [],
+        "status_counts": {
+            "complete": 35
+        },
+        "quarantined": [],
+        "task_rows": [
+            {
+                "digest": "02744395b227d7b3924844ed51e02fbf3393ce8914781765abd4933935c9c155",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "1333e6a80ac3ebd62b103579690fa91e98051a7353e9ead5906462a7ee59c9f1",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "1585ce2d8cc4939e9c275fa4f16385aa0177a756252fb78907a27fdc3991ec7e",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 2.61,
+                "replay_ok": true,
+                "attempts": 1,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": false,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "1c45d40192b152bb77e5f37856deb981da48dd7d6d15153ba8feaac126a52442",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "1d3eb4ac49e229da2b4a9c790700538b507823a92b145f9b0c405cae67dc1c88",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "2a611e1bef831aebdc5b355e7138002eb08e47a93b3ec1adfd4eb617581832fa",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "33869fff1e951f86dc9b243c620dc90be8b556ceb685d7ae030d0d21a56a662a",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "33905b5c3a7520173cc065c61439c644569108f141c81bcbfd819c384bdaa269",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "352d42dedcf86d12a8bbf1292c61a422f6e56ee9a648b25f5befa495eebfde96",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "376eb34b58ada18e09ae360771687b462dd35d7c499a0785bc1396b7e9e0cd96",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "3b41d9522a85ec28b442a19e379cc5bd5d2c9f32fff5b56eeb4442121509f8dd",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "55d3ee2788f84c69c8c128189643e49774582fd569499de4cd626e58ec07dc4d",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "5c3cf13cc1e3a49c1c20c812b4d9f1d358f40c05b9d43405973cfc2b1e525a14",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "71566e5febc7cca9a7003ab690085c31741ba68ef3d076a572fffa287553022d",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "7158996ea38aa3e5a374937d62a373629bd2e28498e870a0b8b92dd1b70eb5c6",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "78cda9d0ea986f6a6d21bfb0e81a1513044510fced85740be899478dc60c2361",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "7bdb2a7a1677b6c38b5fad45d5ca98756c99a48ebd57795a495c1165a2d33669",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "8f812c9cf272603f696a645978ce36f51e342c93c772beac4d0ae1a793cac755",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "90bf4327ab99b30ff7649bbe56f9e077419410c58bea396873364130b739ec94",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "a889f156d98f59706ee2e8e7cf20fd6a9b03345d1c35056f19339fb5ac279efa",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "aab9c0d84227e249e5f4aeedb3042a672f05be4bee68ebce4559fc9e1be3bef1",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "adc3cc4b132a90b3b8133c7c90a5f3117cbc40c4dfbaadc97c372d8cd6677a12",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "bb14279cae0a06c1fd2250d1d151a7acc594bdcba8be02129bafab7f08a4d52d",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "cd1b27163c08a1c21b853b581d5e2e742e92f02b47258bbaefd10b6344350c94",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "d9a0015f18850cbea183ffd75b076c4d9ab5054ec0194eb419eefd49eb211742",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "dc23f9f87bfb9e900d76e5ca03fe27b93af2baf445ed1de73967423b7369c6e8",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "dc9f5ae9e308e7d57ae125033086341e88dbf71341041a2cc6573a846a30b7b8",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "e2e6e545a72881e9c15028e1ae97aa26b38a449d51ba5a1498a8480aad3073da",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "e93b2d3f36427d59fc2b5287a8b9c4f70692e3bd824eb3158e51e78c9188c148",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "f32b33dd29adb82a42a2c912f05beaccddd700df9c4c51933b2075400399112b",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "f568644fcb330d015bb6809a7d4c2c3e3aee11ced64976038083fb05070a815b",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "f6be4cc7cef67d13866f4c175b0c0b1e7d86c3d592051a9177837e9c715c5cb4",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "fdab2b28ec046698a8e0829ac8c4d5082bc8670c861eb0d67917df78b3bf88f7",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "fe2c958260586d4653f63b4c060dbecad77542f1d3c64693670ba7d95e5593f5",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            },
+            {
+                "digest": "ffb33e5d3f6cdca45e78c1bff7879b5ee9f046c8ec9aef006addded952925df0",
+                "status": "complete",
+                "exit": 0,
+                "seconds": 0.0,
+                "replay_ok": true,
+                "attempts": 0,
+                "restarts": 0,
+                "killed": false,
+                "kill_reasons": [],
+                "worker_exits": [],
+                "cache_hit": true,
+                "resumed": false,
+                "pauses": 0,
+                "error": ""
+            }
+        ],
+        "pool": {
+            "lanes": 8,
+            "watchdog_ms": 30000,
+            "stall_limit": 900.0,
+            "restarts_max": 2,
+            "budget_seconds": 3600.0,
+            "cache_hit_skips": 34,
+            "wall_seconds": 3.22,
+            "kills": 0,
+            "workers": [
+                {
+                    "slot": 0,
+                    "generations": 1,
+                    "served": 1,
+                    "kills": 0
+                },
+                {
+                    "slot": 1,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                },
+                {
+                    "slot": 2,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                },
+                {
+                    "slot": 3,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                },
+                {
+                    "slot": 4,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                },
+                {
+                    "slot": 5,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                },
+                {
+                    "slot": 6,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                },
+                {
+                    "slot": 7,
+                    "generations": 1,
+                    "served": 0,
+                    "kills": 0
+                }
+            ]
+        },
+        "merge": {
+            "canonical": "D:\\Godot\\Program\\ftgdemo\\.cache\\acceptance\\solver-results.cache",
+            "entries_before": 187,
+            "fragments": [
+                {
+                    "file": "pool-worker-00-g0.fragment",
+                    "entries": 1,
+                    "merged_new": 1,
+                    "bad_lines": 0
+                }
+            ],
+            "entries_after": 188,
+            "merged_new": 1
+        }
+    },
+    "warm": {
+        "wall_seconds": 86.72,
+        "misses_total": 1
+    }
+}
