@@ -28,9 +28,13 @@ var dummy_move_request := ""
 ## 仍受地面/空中状态、受击/倒地与木桩招式阶段限制，不成立时给出可观察失败，
 ## 不自动改成另一种防御。测试/验证与训练设置驱动；木桩无自主决策。
 var dummy_guard_request := 0
+## 木桩跳跃训练请求（票据 05）：空闲木桩按请求以普通跳跃速度离地，水平
+## 方向取本帧移动输入（与玩家跳同速）。对空练习初态的进入途径；训练设置
+## 驱动，木桩无自主决策，忙碌时忽略、不排队不补发。
+var dummy_jump_request := false
 
 
-static func make(move_axis: int = 0, jump_pressed: bool = false, action_key: String = "", down_held: bool = false, dummy_move_request: String = "", dummy_guard_request: int = 0) -> FrameInput:
+static func make(move_axis: int = 0, jump_pressed: bool = false, action_key: String = "", down_held: bool = false, dummy_move_request: String = "", dummy_guard_request: int = 0, dummy_jump_request: bool = false) -> FrameInput:
 	var input := FrameInput.new()
 	input.move_axis = move_axis
 	input.jump_pressed = jump_pressed
@@ -39,6 +43,7 @@ static func make(move_axis: int = 0, jump_pressed: bool = false, action_key: Str
 	input.down_held = down_held
 	input.dummy_move_request = dummy_move_request
 	input.dummy_guard_request = dummy_guard_request
+	input.dummy_jump_request = dummy_jump_request
 	return input
 
 

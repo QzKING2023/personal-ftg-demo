@@ -7,7 +7,7 @@ const PlayerScene: PackedScene = preload("res://scenes/player.tscn")
 const DummyScene: PackedScene = preload("res://scenes/dummy.tscn")
 
 const HINT_TEXT := "移动 A/D 或 ←/→    下 S/↓ 蹲下    防御 按住后方向 4/1    跳跃 Space    重置 R\n动作 U/I/K/J = A/B/C/D    派生 236+C / 214+C（方向按面向折算）
-236C 两段判定：命中当下按 J 经来源资格进入 5D（窗口 16 帧，被防不开放）\n214+C 分支：命中或被防后首按 I/K 锁定 ~B/~C（同帧 I+K 固定 ~C）\n冲刺 双击 →/←（66/44，中间松开一帧）    投 I+K = B+C（≤3帧内同按，投距内成立）\n木桩防御 G 循环：无 → 站防 → 蹲防 → 空防（逐帧确定性请求，木桩无自主决策）\n短刀/徒手：C/D 系与 6A 出刀（刀姿+收刀卡点），A/B 系拳形，位移残影"
+236C 两段判定：命中当下按 J 经来源资格进入 5D（窗口 16 帧，被防不开放）\n214+C 分支：命中或被防后首按 I/K 锁定 ~B/~C（同帧 I+K 固定 ~C）\n冲刺 双击 →/←（66/44，中间松开一帧）    投 I+K = B+C（≤3帧内同按，投距内成立）\n木桩防御 G 循环：无 → 站防 → 蹲防 → 空防（逐帧确定性请求，木桩无自主决策）\n木桩跳跃 T（可按住 ←/→ 带水平）：空闲木桩按普通跳离地，对空练习初态\n短刀/徒手：C/D 系与 6A 出刀（刀姿+收刀卡点），A/B 系拳形，位移残影"
 
 ## 动作键 A/B/C/D 对应的输入动作名（物理键 U/I/K/J）；C/D 配合方向序列触发派生。
 const ACTION_KEYS: Array[String] = ["A", "B", "C", "D"]
@@ -112,6 +112,10 @@ func _read_frame_input() -> FrameInput:
 			input.held_action_keys.append(key)
 	# 木桩防御训练模式：当前模式作为逐帧确定性请求喂给会话（票据 03）。
 	input.dummy_guard_request = _dummy_guard_mode
+	# 木桩跳跃训练请求（票据 05）：T 使空闲木桩按普通跳跃离地，按住 ←/→ 时
+	# 带水平方向（与玩家跳同速）——R4-A 对空练习初态的进入途径；木桩无自主
+	# 决策，忙碌时忽略。
+	input.dummy_jump_request = Input.is_action_just_pressed("dummy_jump")
 	return input
 
 

@@ -1,4 +1,4 @@
-> 最新：2026-10-12 功能交付阶段 E04 已完成——[04](issues/04-corner-two-d-finish.md) C6（仅 2C 前摇 9→6）正式落表，R3-B/C 冻结参考全链/域扫描/三尾段/D-loop/保存恢复全绿（实现 `9932709`，full-09 全量 38 job/4201 断言/0 脚本错误，诊断与 03 台账一致零新增）。05 解除阻塞为下一票（E05→F→G），按流程不自动接票。
+> 最新：2026-10-12 功能交付阶段 E05 已完成——[05](issues/05-training-feedback-and-practice.md) 交付八样本可复现操作说明与真实反馈（[acceptance/playtest.md](acceptance/playtest.md)：分步/镜像/按住松开/节拍/首断点分类/帧表附录/D114-D115 已确认协议与空表/原分母），唯一真实功能缺项 R4-A 初态进入以木桩跳跃训练请求（T 键）修复（红 15 FAIL→绿 38 PASS）；full-10 全量 39 job/4239 断言/0 脚本错误（语义签名按设计轮换、~100 请求冷算），impl05-diag-01 与 03 台账一致零新增。下一步 F 综合审查（固定起点覆盖 04/05 实际修改），按流程不自动接票。
 
 ## 2026-10-12 功能交付阶段 E04：票据 04 实施完成
 
@@ -9,6 +9,19 @@
 - **验收**：红阶段 9N 症状与阶段B BASE 逐字吻合（含接续窗 [8,22]/[8,20] 交叉验证）；`run_acceptance.py --sweep` 首跑 full-08（新表冷跑 1025.48s、427 条缓存、请求签名随新表轮换、暴露 4 编排内回归并修复）→ 终跑 [full-09](runs/full-09/summary.json) 38 job/4201 断言/0 失败/0 脚本错误/855.29s；`run_combo_route_diagnostics.py` → [impl04-diag-01](runs/impl04-diag-01/summary.json)：boundary 10/0、replay10 99/2（J3b=BL01–02）、symptoms 24/13，与 03 唯一台账一致零新增。
 - **历史非零分列**（与 9N 生产一致、非本票新增）：replay_07 共 11 处（01–03 参数后未再锚定旧脚本）、replay_08 R5×2、replay_10 J3b×2、symptoms 13——归 03 台账/历史在途，不在本票修复面。
 - **后置**：D112/D113 宽度与联合按 D122 归后续优化；D76/D85 其余连续域点维持既有补验安排；0/609 限代表点与时序盒；≥3 轮固定节拍断开不证明无循环；真人验收全归 06；Solver R3 全序列钉位查询 refused（D→5B 命中限定边不适用钉位探针，已知边界）。05 依赖解除，E05→F→G。
+
+## 2026-10-12 功能交付阶段 E05：票据 05 实施完成
+
+按[功能交付流程](../../docs/combo-route-functional-delivery.md)阶段 E 实施单票 05。审查起点 HEAD `bc948776694678c7bf54f8673a6f0403ce9abd3e`（工作树未提交阶段A–D文档与用户修改保留未触碰）；本轮功能增量基线=bc94877（C6 生产）；历史实施基线 `2eebb17` 不覆盖。前置核对 01–04（c6d21a9/225a4e6/75d467e/9932709 与 full-04/05/07/09 summary）实读通过后开工。
+
+- **唯一功能缺项与实现**：八样本中 R4-A 的合法初态（未受击、普通跳跃轨迹、下落中）此前在训练场**无任何进入途径**（dummy_move_request 仅打击招式且训练场不设置）。最小修复=木桩跳跃训练请求：`frame_input.gd` 新增 `dummy_jump_request`；`combat_session.gd` `_motion_dummy` 顶部空闲守卫（中立/落地/无招式/无防僵/无防御姿态）按普通跳跃速度离地（水平=当帧移动输入×340px/s；请求帧即首个空中帧、当帧不加重力，与玩家离地积分一致；忙碌静默忽略不排队不补发）；`_clone/_restore_frame_input` 序列化补字段；`main.gd` T 键接入+HINT；`project.godot` `dummy_jump=T`。Solver 探针从不设置该请求，求解器行为面零变化。
+- **TDD**：红（输入管道先行：FrameInput 字段+InputMap 动作，会话无响应——15 FAIL/exit 1，`runs/impl05-e01/red-run.*`：木桩永不离地、6A「命中」实为对地、restore 无飞行段）→ 绿 38 PASS/0 FAIL/0 脚本错误（`runs/impl05-e01/green3-run.*`；中间轮保留：滞空与玩家普通跳逐帧一致、±340px/s 水平保持、6A 对未受击下落木桩首击双面向（AIR_HITSTUN、combo 1 hit）、忙碌三态忽略、请求帧/下落段两切点 clone→restore 逐事件与位置等价、主场景 T 键真实适配与带方向变体）。
+- **受影响面回归**（`runs/impl05-e01/re-*.log`，均 exit 0/0 脚本错误）：test_smoke 128/0、test_input_normalization 22/0、test_descending_antiair_finish 44/0、test_combat_session 852/0、test_combat_session_restore 102/0、test_replay_acceptance 123/0。
+- **完整验收**：`python tools/run_acceptance.py --sweep --output .scratch/ftg-combo-routes/runs/full-10` → **39 job/4239 断言/0 失败/0 脚本错误/876.72s**（含新套件 test_dummy_jump_practice 38 断言/1.71s；源码文本变更使语义签名按设计轮换，~100 唯一 Solver 请求冷算——94 条清扫期入缓存+6 条 job 片段，519→525 条，无旧参数缓存复用）。未编排诊断 `python tools/run_combo_route_diagnostics.py --output .scratch/ftg-combo-routes/runs/impl05-diag-01` → boundary 10/0、replay10 99/2（J3b×双面向=BL01–02）、symptoms 24/13——与 03 唯一台账一致零新增。
+- **练习交付**：[acceptance/playtest.md](acceptance/playtest.md)——八样本各含完整分步操作（实际物理键/按住松开/镜像与两轮换边后方向/可观察节拍/准确动作与 HIT 计数/终点核对）、初态进入（站位目测、推送调位、T 键）、首断点表（识别/提示/时机/距离高度/资格状态/路线设计/未知分类）、参考帧表附录（R1/R2 沿用票据03、R3 冻结参考 v1、R4 三档+δ+8/9）、§0.4 M/完整恢复/身后停止/首END边界区分、§9 同C6表三尾段条件（与04一致）、§10 D114/D115 已确认协议+未执行、§11 空记录表、§12 窗口/联合欠项原分母（jC 1F/0-64、jC[0,3]/5B[-2,0]/64-128、R3 单组窗+窗外一步）。HUD 状态/事件/诊断行全部复用，未新增舒适度设施/代按/自动选路。training-guide.md 同步（T 行、R4-A 入口指针、真人反馈双表指针、头部说明）。
+- **自审**：代码 diff 全量复核；playtest 全文通读与 spec/票据03/04 数值逐项对照（修正三处：5[D] 后各步 hit 计数曾系统性少 1、R3 段1→J 为 16 帧窗口而非「立刻」、~C 前计数标注补齐）；无省略号/「同上」交接、无内部答案预告。
+- **后置**：真人可读性/成功率/混合判断全部归 06（空表不填成绩）；D112/D113 归后续优化（原分母原样引用）；T 键自然度与断点提示可读性归 06 定性观察。下一步 F 综合审查，按流程不自动接票。
+
 
 
 

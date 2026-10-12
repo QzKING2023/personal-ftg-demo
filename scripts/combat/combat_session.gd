@@ -812,6 +812,7 @@ func _clone_frame_input(input: FrameInput) -> Dictionary:
 		"dummy_tech_request": input.dummy_tech_request,
 		"dummy_move_request": input.dummy_move_request,
 		"dummy_guard_request": input.dummy_guard_request,
+		"dummy_jump_request": input.dummy_jump_request,
 	}
 
 
@@ -826,6 +827,7 @@ func _restore_frame_input(state: Dictionary) -> FrameInput:
 	input.dummy_tech_request = bool(state.get("dummy_tech_request", false))
 	input.dummy_move_request = String(state.get("dummy_move_request", ""))
 	input.dummy_guard_request = int(state.get("dummy_guard_request", 0))
+	input.dummy_jump_request = bool(state.get("dummy_jump_request", false))
 	return input
 
 
@@ -2629,6 +2631,18 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 			or dummy_state == DummyState.SPIKE_FALL or dummy_state == DummyState.LOW_FLOAT_TO_SLIDE \
 			or dummy_state == DummyState.GROUND_SLIDE or dummy_state == DummyState.GROUND_BOUNCE:
 		friction = GameParams.DUMMY_HITSTUN_FRICTION
+	## 木桩跳跃训练请求（票据 05）：空闲（中立、落地、无进行中招式、不在被防
+	## 硬直、未保持防御姿态）时按请求以普通跳跃速度离地，水平方向取本帧移动
+	## 输入（与玩家跳同速）——R4-A 对空练习初态的唯一进入途径。请求帧即首个
+	## 空中帧，当帧不加重力（与玩家离地积分一致）；离地后进入下方未受击跳跃
+	## 者运动。忙碌状态静默忽略，不排队、不补发（与木桩攻击请求同一口径）。
+	var jump_takeoff := false
+	if _frame_input.dummy_jump_request and dummy_state == DummyState.NEUTRAL \
+			and dummy_on_ground and _dummy_move == null and dummy_blockstun_left == 0 \
+			and dummy_guard == GuardPosture.NONE:
+		dummy_velocity.y = -GameParams.jump_velocity()
+		dummy_velocity.x = _frame_input.move_axis * GameParams.PLAYER_MOVE_SPEED
+		jump_takeoff = true
 	## 未受击且真正离地的木桩按跳跃者运动（票据 02，D84）：对空初态来自普通
 	## 跳跃的成对状态，其空中段保持水平速度（与真实跳跃一致，E45 jumps 记录
 	## 为常 vx），重力、墙限与落地照常；首次被命中或被防后回到标准木桩物理。
@@ -2636,7 +2650,7 @@ func _motion_dummy(events: Array[CombatEvent]) -> void:
 	## 组成，保存/续跑无需新增字段）。
 	var unhit_airborne := dummy_state == DummyState.NEUTRAL and dummy_blockstun_left == 0 \
 		and dummy_position.y < GameParams.ground_stand_y() - 0.001
-	if not unhit_airborne:
+	if not (unhit_airborne or jump_takeoff):
 		dummy_velocity.x = move_toward(dummy_velocity.x, 0.0, friction * GameParams.PHYSICS_TICK)
 	if not dummy_on_ground:
 		dummy_velocity.y = minf(dummy_velocity.y + GameParams.GRAVITY * GameParams.PHYSICS_TICK, GameParams.MAX_FALL_SPEED)
