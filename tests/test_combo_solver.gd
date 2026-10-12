@@ -373,14 +373,13 @@ func _test_crouch_moves_and_low_float() -> void:
 	var crouch_route := _query_route(["2A", "2B", "5C", "5D", "5B"])
 	_check(crouch_route != null and not crouch_route.timing_valid and crouch_route.move_ids.size() == 4 		and "在此截断" in crouch_route.note,
 		"the 2A > 2B > 5C > 5D walk is recorded truncated at the source-limited 5B extension (normal-source 5D keeps no reverse link)")
-	## A 起手时间层衰减的诚实截断：2A > 2B 后接 2C 的第三击因 2B 受击窗口
-	## （floor(14×0.658)=9）短于 2C 前摇到达而不成立——按截断路线如实报告，
-	## 不伪装成时序成立。
-	## 精确路线查询带入接不上的第 3 招（2C）：逐帧模拟在 2C 处断链并截断。
-	var truncated := _query_route(["2A", "2B", "2C"])
-	if truncated != null:
-		_check(not truncated.timing_valid and "断开" in truncated.note,
-			"the truncated 2A -> 2B entry (2C too slow behind the A-starter-decayed 2B stun) is honestly reported as broken")
+	## A 起手时间层衰减下的第三击：连段路线票据 04（C6：2C 前摇 9→6）后，
+	## 2C 到达时间落入 2B 受击窗口（floor(14×0.658)=9）内——原 9N 表的
+	## 「2C 太慢而诚实截断」不再是当前事实，三击路线现经逐帧模拟成立。
+	var c6_route := _query_route(["2A", "2B", "2C"])
+	if c6_route != null:
+		_check(c6_route.timing_valid and c6_route.combo_hits == 3 and c6_route.hit_frames == [6, 14, 21],
+			"the 2A -> 2B -> 2C third hit now lands inside the A-decayed 2B stun (C6 startup 6; 9N table truncated honestly at 2C)")
 	# 2C 的有效出边只有声明的 214C 必杀取消（票据 04）与 6D 链式（票据 07；
 	# 2D 链式在钉位下按高度失配挥空排除）：报告不得发明其他接续。
 	for edge in report.edges:

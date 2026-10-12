@@ -532,9 +532,10 @@ func _test_blocked_and_miss_do_not_lock_starter() -> void:
 func _test_landing_link_tier() -> void:
 	## 2C>6D>j6D>5B（票据 08 R2 输入编排）：5B 经空技延迟普通连接起手，
 	## 其命中使用落地连接分层（0.94/0.95/0.95），不是普通命中（0.90/0.94/0.95）。
+	## 连段路线票据 04（C6：2C 前摇 9→6）后落地 F53/可行动 F57，B 自 57 前移 54。
 	var plan := {
 		1: _press("C", true), 17: _press("D", false, 1), 35: _press("D", false, 1),
-		57: _press("B"),
+		54: _press("B"),
 	}
 	var run := _run_plan(plan, 1, 110)
 	var moves := _hit_moves(run)

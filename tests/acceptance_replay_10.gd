@@ -324,11 +324,13 @@ func _joint_j1_ground_chain(facing: int) -> void:
 
 func _joint_j2_2c_rekka_link(facing: int) -> void:
 	print("=== J2 2C>214C(空中)>~B(延长)>5B(目押) | 面向 %+d | 间距 %.0f px ===" % [facing, TOUCH_DX])
+	# 连段路线票据 04（C6：2C 前摇 9→6）：2C 命中 F10、停顿至 F18，214 紧邻
+	# 方向块（F13–15）+C F16 于停顿内提交，取消于首个正常帧 F19 消费。
 	var plan := {
 		1: _digit(facing, 2, "C"),
-		15: _digit(facing, 2), 16: _digit(facing, 1), 17: _digit(facing, 4),
-		19: _press("C"),
-		32: _press("B"), 70: _press("B"),
+		13: _digit(facing, 2), 14: _digit(facing, 1), 15: _digit(facing, 4),
+		16: _press("C"),
+		29: _press("B"), 67: _press("B"),
 	}
 	var run := _run_route(plan, facing, 95, "J2", TOUCH_DX)
 	_check(run["moves"] == ["2C", "214C", "214C~B", "5B"],
@@ -541,7 +543,7 @@ func _joint_j8_air_d_landings(facing: int) -> void:
 	var link_plan := {}
 	for frame in range(1, 110):
 		link_plan[frame] = _prefix_input(frame, "j6D", facing)
-	link_plan[57] = _press("B")
+	link_plan[54] = _press("B")
 	var link_run := _run_route(link_plan, facing, 110, "J8b", NEAR_DX)
 	_check(link_run["moves"] == ["2C", "6D", "j6D", "5B"],
 		"J8b 2C>6D>j6D>5B 四击成立（无落地特权、普通连接）%s | 面向 %+d" % [str(link_run["moves"]), facing])

@@ -129,9 +129,10 @@ func _test_air_d_entries_in_shared_table() -> void:
 # --- 正例 1：2C > 6D > j2D 命中 > Hitstop 输入 214C > 落地首帧锁 > 首个可行动帧 214C ---
 
 func _run_air_d_route(dx: float, facing: int, j_move: String, extra_inputs := {}, horizon := 110) -> Dictionary:
-	## 复用票据 07 的锚点：2C@F1（下+C）命中 F13；6D 于停顿中 F17 按下、F22 起手、
-	## F31 命中（12px 离地）；出口键于 6D 停顿中 F35 按下（j2D 按住下、j6D 前方向、
-	## j5D 无方向）、F40 空中起手。extra_inputs: frame -> FrameInput 覆盖追加。
+	## 复用票据 07 的锚点（连段路线票据 04 C6 后整体前移 3F）：2C@F1（下+C）
+	## 命中 F10（原 F13）；6D 于停顿中 F17 按下、F19 起手、F28 命中（12px 离地）；
+	## 出口键于 6D 停顿中 F35 按下（j2D 按住下、j6D 前方向、j5D 无方向）、
+	## F37 空中起手。extra_inputs: frame -> FrameInput 覆盖追加。
 	var session := _spawn(dx, facing)
 	var hits: Array[Dictionary] = []
 	var starts: Array[Dictionary] = []
@@ -424,8 +425,9 @@ func _test_j2d_qualification_bound_to_combo() -> void:
 
 func _test_j6d_hit_normal_recovery_then_link() -> void:
 	for facing in [1, -1]:
-		## 5B 于落地恢复中按下（B 组合等待 3 帧恰好落在首个可行动帧前解除）。
-		var extra := {57: _input("B")}
+		## 5B 于落地恢复中按下（B 组合等待 3 帧恰好落在首个可行动帧前解除；
+		## 连段路线票据 04 C6 后落地 F53/可行动 F57，按帧自 57 前移至 54）。
+		var extra := {54: _input("B")}
 		var run := _run_air_d_route(NEAR_DX, facing, "j6D", extra)
 		var session: CombatSession = run["session"]
 		var hit_moves: Array[String] = []

@@ -68,11 +68,11 @@ func _test_default_manifest_loads_shared_table() -> void:
 
 func _test_default_table_entries_match_manifest() -> void:
 	# 新基线调校初值（frame-data.md v0.2 TUNING_INITIAL；连段路线票据 01 起
-	# jC 7→4、j214D 9→1，D74 选值）：startup/active/recovery 与基础伤害。
+	# jC 7→4、j214D 9→1，D74 选值；票据 04 起 2C 前摇 9→6，C6/D120）：startup/active/recovery 与基础伤害。
 	var result := MoveTable.load_default()
 	var expected := {
 		"5A": [5, 4, 10, 8], "2A": [5, 4, 10, 8], "5B": [6, 5, 12, 12], "2B": [7, 5, 12, 11],
-		"5C": [8, 5, 16, 16], "2C": [9, 3, 18, 14], "236C": [6, 2, 22, 8],
+		"5C": [8, 5, 16, 16], "2C": [6, 3, 18, 14], "236C": [6, 2, 22, 8],
 		"5D": [7, 4, 6, 18],  # 连段路线票据 03：普通 D 恢复 18→6（蓄力版另行校验）
 		"jA": [4, 6, 10, 8], "jB": [4, 6, 12, 12], "jC": [4, 5, 14, 14],
 		"j5D": [6, 4, 16, 16], "j6D": [7, 4, 18, 17], "j2D": [8, 4, 20, 18],

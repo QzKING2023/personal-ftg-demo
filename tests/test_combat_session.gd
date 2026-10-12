@@ -2860,10 +2860,10 @@ func _test_stand_chains_into_crouch_5A_2B_5B_2C() -> void:
 
 
 func _test_2C_low_float_sweep_lifecycle() -> void:
-	# 单招 2C：F1 ↓+C（组合等待）F4 起手、F13 命中（C 起手 0.90/0.92）——
-	# 低浮空受击计时 floor(20×0.90)=18、触地速度 round(120×0.92)=110、
-	# 倒地计时 floor(30×0.90)=27。F14–F21 停顿（计时冻结）后浮空 F22–F30、
-	# F31 触地转 GROUND_KNOCKDOWN，F58 自然恢复。
+	# 单招 2C（票据 04 C6：前摇 9→6，整体前移 3F）：F1 ↓+C（组合等待）F4 起手、
+	# F10 命中（C 起手 0.90/0.92）——低浮空受击计时 floor(20×0.90)=18、触地速度
+	# round(120×0.92)=110、倒地计时 floor(30×0.90)=27。F11–F18 停顿（计时冻结）
+	# 后浮空 F19–F27、F28 触地转 GROUND_KNOCKDOWN，F55 自然恢复。
 	var session := CombatSession.new()
 	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
@@ -2879,14 +2879,14 @@ func _test_2C_low_float_sweep_lifecycle() -> void:
 		timer_after_frame[frame] = [session.dummy_hitstun_left, session.dummy_knockdown_left, session.dummy_on_ground]
 	_check(move_after_frame[4] == "2C", "2C starts after the combination wait resolves")
 	_check(_count_events(events, CombatEvent.Type.HIT) == 1, "solo 2C lands exactly one hit")
-	_check(state_after_frame[13] == CombatSession.DummyState.LOW_FLOAT_SWEEP and not timer_after_frame[13][2],
+	_check(state_after_frame[10] == CombatSession.DummyState.LOW_FLOAT_SWEEP and not timer_after_frame[10][2],
 		"the 2C hit switches the grounded dummy into the airborne LOW_FLOAT_SWEEP state")
-	_check(timer_after_frame[13][0] == 18, "the low-float hit window is the C-starter-scaled floor(20×0.90)=18 frames")
-	_check(timer_after_frame[21][0] == 18, "the low-float timer stays frozen through the 8 hitstop frames")
-	_check(timer_after_frame[25][0] < 18, "the low-float timer ticks down on normal frames once the freeze ends")
+	_check(timer_after_frame[10][0] == 18, "the low-float hit window is the C-starter-scaled floor(20×0.90)=18 frames")
+	_check(timer_after_frame[18][0] == 18, "the low-float timer stays frozen through the 8 hitstop frames")
+	_check(timer_after_frame[22][0] < 18, "the low-float timer ticks down on normal frames once the freeze ends")
 	var landed := _events_of(events, CombatEvent.Type.LOW_FLOAT_LANDED)
 	_check(landed.size() == 1, "the low float emits exactly one touch-down event")
-	_check(state_after_frame[31] == CombatSession.DummyState.KNOCKED_DOWN and timer_after_frame[31][1] == 27,
+	_check(state_after_frame[28] == CombatSession.DummyState.KNOCKED_DOWN and timer_after_frame[28][1] == 27,
 		"touching the ground converts LOW_FLOAT_SWEEP into the plain knockdown with the scaled 27-frame timer")
 	_check(_count_events(events, CombatEvent.Type.DUMMY_RECOVERED) == 1 and session.dummy_state == CombatSession.DummyState.NEUTRAL,
 		"the knockdown recovers naturally back to neutral (no OTG, no tech)")
@@ -2895,8 +2895,8 @@ func _test_2C_low_float_sweep_lifecycle() -> void:
 
 func _test_2C_low_float_corrections_and_combo_end() -> void:
 	# 5B > 2C：B 起手三层修正跨低浮空保留（伤 0.756/时 0.7708/轨 0.8075），
-	# 触地转倒地（F45，与取消窗口关闭同帧时运动阶段先行）清除修正与起手等级；
-	# 触地当帧 COMBO_ENDED(KNOCKDOWN)，F68 自然恢复。
+	# 触地转倒地（C6 后 F42，与取消窗口关闭同帧时运动阶段先行）清除修正与
+	# 起手等级；触地当帧 COMBO_ENDED(KNOCKDOWN)，F65 自然恢复。
 	var session := CombatSession.new()
 	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
@@ -2915,12 +2915,12 @@ func _test_2C_low_float_corrections_and_combo_end() -> void:
 			session.dummy_state]
 	_check(_count_events(events, CombatEvent.Type.HIT) == 2, "5B > 2C lands both hits")
 	_check(_approx(session.combo_total_damage, 20.7), "route damage is 10.1 + 10.6 with the B-starter layers")
-	var float_state: Array = combo_state_after_frame[44]
+	var float_state: Array = combo_state_after_frame[41]
 	_check(float_state[0] and float_state[1] == MoveData.StarterGrade.B
 		and _approx(float_state[2], 0.756) and _approx(float_state[3], 0.7708) and _approx(float_state[4], 0.8075),
 		"the starter grade and all three correction layers persist through the low float")
 	_check(float_state[5] == CombatSession.DummyState.LOW_FLOAT_SWEEP, "the dummy is still in the low float on the frame before touchdown")
-	var knockdown_state: Array = combo_state_after_frame[45]
+	var knockdown_state: Array = combo_state_after_frame[42]
 	_check(knockdown_state[5] == CombatSession.DummyState.KNOCKED_DOWN and not knockdown_state[0]
 		and knockdown_state[1] == MoveData.StarterGrade.UNSET
 		and knockdown_state[2] == 1.0 and knockdown_state[3] == 1.0 and knockdown_state[4] == 1.0,
@@ -2984,10 +2984,11 @@ func _test_2C_airborne_target_miss_no_profile() -> void:
 
 
 func _test_2C_then_5D_fails_and_no_otg() -> void:
-	# 2C 命中后缓存的 5D 在取消窗口关闭当帧（F30）按 CONFIGURATION_GAP 报告
-	# （2C 未声明到 5D 的普通连接边）；停顿顺延使 2C 完全恢复落在 F41，F38 重按的
-	# D 以独立招式起手（F42），判定窗口 F49–F52 全部落在普通倒地上——不命中、
-	# 不刷新倒地计时（F58 恢复不受影响）。
+	# 2C 命中后缓存的 5D 在取消窗口关闭时（C6 后命中 F10/停顿至 F18，窗口
+	# F19–F26，F24 按下、F27 关闭）按 CONFIGURATION_GAP 报告（2C 未声明到 5D
+	# 的普通连接边）；停顿顺延使 2C 完全恢复落在 F38，F35 重按的 D 以独立招式
+	# 起手（F39），判定窗口 F46–F49 全部落在普通倒地上——不命中、不刷新倒地
+	# 计时（F55 恢复不受影响）。
 	var session := CombatSession.new()
 	session.dummy_position = session.player_position + Vector2(26, 0)
 	var events: Array[CombatEvent] = []
@@ -2997,7 +2998,7 @@ func _test_2C_then_5D_fails_and_no_otg() -> void:
 		var key := ""
 		if frame == 1:
 			key = "C"
-		elif frame == 30 or frame == 38:
+		elif frame == 24 or frame == 35:
 			key = "D"
 		var frame_events := session.step(FrameInput.make(0, false, key, frame == 1))
 		events.append_array(frame_events)
@@ -3010,9 +3011,9 @@ func _test_2C_then_5D_fails_and_no_otg() -> void:
 	_check(gaps.size() == 1 and gaps[0].link_fail_reason == CombatEvent.LinkFailReason.CONFIGURATION_GAP
 		and gaps[0].link_move_id == "5D",
 		"the buffered 5D after 2C is reported as an undeclared link edge when the cancel window closes")
-	_check(move_after_frame[42] == "5D", "the 5D still starts independently after the sweep recovery")
-	_check(_count_events(events, CombatEvent.Type.HIT) == 1 and recovered_frame == 58,
-		"the independent 5D cannot hit the knocked-down dummy and never refreshes the knockdown timer (recovery stays at F58)")
+	_check(move_after_frame[39] == "5D", "the 5D still starts independently after the sweep recovery")
+	_check(_count_events(events, CombatEvent.Type.HIT) == 1 and recovered_frame == 55,
+		"the independent 5D cannot hit the knocked-down dummy and never refreshes the knockdown timer (recovery stays at F55)")
 	_check(session.dummy_state == CombatSession.DummyState.NEUTRAL and not session.combo_active,
 		"the session settles back to neutral after the failed pursuit")
 
@@ -5200,9 +5201,10 @@ func _test_rekka_b_ground_knockdown_airborne_extension_and_link() -> void:
 		"the knockdown ends the combo and clears the starter and corrections")
 	# 空中（正例路线 2C > 214C > ~B > 5B）：~B 命中 airborne → 延长浮空而非倒地，
 	# 触地转地面硬直保剩余计时，~B 完全恢复后普通连接 5B 命中。
-	# 时间轴：2C F1=F4、接触 F12、停顿 F13–F20；停顿中 F15–F17 喂 214、F18 按 C、
-	# 214C F1=F21、接触 F28（空中）、停顿 F29–F36；F30 按 B、~B F1=F37、接触 F43、
-	# 停顿 F44–F51；~B 收招 F72、F68 缓存 B、5B 起手 F72、命中 F78。
+	# 时间轴（票据 04 C6 前移）：2C F1=F4、接触 F10、停顿 F11–F18；停顿中
+	# F13–F15 喂 214、F16 按 C、214C F1=F19、接触 F27（空中）、停顿 F28–F35；
+	# F29 按 B、~B 接触 F43、停顿 F44–F51；~B 收招 F69、F67 缓存 B、5B 起手
+	# F69、命中 F77。
 	var session2 := CombatSession.new()
 	session2.dummy_position = session2.player_position + Vector2(12, 0)
 	var events2: Array[CombatEvent] = []
@@ -5213,13 +5215,13 @@ func _test_rekka_b_ground_knockdown_airborne_extension_and_link() -> void:
 		if frame == 1:
 			digit = 2
 			key = "C"
-		elif frame in [15, 16, 17]:
-			digit = [2, 1, 4][frame - 15]
-		elif frame == 19:
+		elif frame in [13, 14, 15]:
+			digit = [2, 1, 4][frame - 13]
+		elif frame == 16:
 			key = "C"
-		elif frame == 32:
+		elif frame == 29:
 			key = "B"
-		elif frame == 70:
+		elif frame == 67:
 			key = "B"
 		events2.append_array(session2.step(_rekka_input(session2, digit, key)))
 		if frame == 48:
@@ -5255,8 +5257,8 @@ func _test_rekka_c_ground_knockdown_and_airborne_spike() -> void:
 		"a grounded ~C hit does not go through the spike fall")
 	# 空中：~C 命中 airborne 使用独立向下击落资料——先坠落（SPIKE_FALL），
 	# 触地同帧转普通倒地并发出 SPIKE_LANDED；收尾在命中当帧结束连段。
-	# 时间轴：同上正例路线，F30 按 C、~C F1=F37、接触 F45（空中）、停顿 F46–F53、
-	# 触地转倒地约 F55。
+	# 时间轴（票据 04 C6 前移）：同上正例路线，F29 按 C、~C 接触约 F39（空中）、
+	# 坠落约 F42–F51、触地转倒地约 F52。
 	var session2 := CombatSession.new()
 	session2.dummy_position = session2.player_position + Vector2(12, 0)
 	var events2: Array[CombatEvent] = []
@@ -5267,14 +5269,14 @@ func _test_rekka_c_ground_knockdown_and_airborne_spike() -> void:
 		if frame == 1:
 			digit = 2
 			key = "C"
-		elif frame in [15, 16, 17]:
-			digit = [2, 1, 4][frame - 15]
-		elif frame == 19:
+		elif frame in [13, 14, 15]:
+			digit = [2, 1, 4][frame - 13]
+		elif frame == 16:
 			key = "C"
-		elif frame == 32:
+		elif frame == 29:
 			key = "C"
 		events2.append_array(session2.step(_rekka_input(session2, digit, key)))
-		if frame >= 49 and frame <= 58:
+		if frame >= 42 and frame <= 51:
 			spike_states.append(session2.dummy_state)
 	_check(_count_events(events2, CombatEvent.Type.HIT) == 3,
 		"2C > 214C > 214C~C lands three hits before the spike conversion")
@@ -5291,7 +5293,8 @@ func _test_rekka_c_ground_knockdown_and_airborne_spike() -> void:
 
 func _test_rekka_starter_and_corrections_across_rekka() -> void:
 	# 2C(C 起手) > 214C > 214C~B：起手等级锁定 C，三层修正跨 Rekka 每击累计保留。
-	# 接触帧：2C F12、214C F28、~B F43；停顿冻结期字段稳定，采样点取接触后。
+	# 接触帧（票据 04 C6 前移）：2C F10、214C F27、~B F43；停顿冻结期字段稳定，
+	# 采样点取接触后。
 	var session := CombatSession.new()
 	session.dummy_position = session.player_position + Vector2(12, 0)
 	var events: Array[CombatEvent] = []
@@ -5302,16 +5305,16 @@ func _test_rekka_starter_and_corrections_across_rekka() -> void:
 		if frame == 1:
 			digit = 2
 			key = "C"
-		elif frame in [15, 16, 17]:
-			digit = [2, 1, 4][frame - 15]
-		elif frame == 19:
+		elif frame in [13, 14, 15]:
+			digit = [2, 1, 4][frame - 13]
+		elif frame == 16:
 			key = "C"
-		elif frame == 32:
+		elif frame == 29:
 			key = "B"
 		events.append_array(session.step(_rekka_input(session, digit, key)))
-		if frame == 15:
+		if frame == 12:
 			scales["after_2c"] = [session.combo_starter_grade, session.combo_time_scale]
-		elif frame == 32:
+		elif frame == 29:
 			scales["after_214c"] = [session.combo_starter_grade, session.combo_time_scale]
 		elif frame == 48:
 			scales["after_b"] = [session.combo_starter_grade, session.combo_time_scale]

@@ -114,8 +114,9 @@ func _log_event(frame: int, tag: String, event: CombatEvent, session: CombatSess
 			print("  F%-3d %s HITSTOP_ENDED（恢复首个正常帧）" % [frame, tag])
 
 
-## 空中 D 系进入前缀：2C@F1 命中 F13；6D 停顿中 F17 按下、F22 起手、F31 命中；
-## 出口键 6D 停顿中 F35 按下、F40 空中起手。返回逐帧输入（可被 extra 覆盖追加）。
+## 空中 D 系进入前缀（连段路线票据 04 C6 后整体前移 3F）：2C@F1 命中 F10
+## （原 F13）；6D 停顿中 F17 按下、F19 起手、F28 命中；出口键 6D 停顿中 F35
+## 按下、F37 空中起手。返回逐帧输入（可被 extra 覆盖追加）。
 func _prefix_input(frame: int, j_move: String, facing: int) -> FrameInput:
 	match frame:
 		1:
@@ -240,7 +241,9 @@ func _replay_r1b_landing_frame_input(facing: int) -> void:
 
 func _replay_r2_j6d_normal_recovery_link(facing: int) -> void:
 	print("=== R2 2C>6D>j6D>5B（普通落地恢复 + 延迟普通连接）| 面向 %d | 起始间距 %.0f px ===" % [facing, NEAR_DX])
-	var run := _run_route(NEAR_DX, facing, "j6D", {57: _press("B")})
+	# 连段路线票据 04（C6：2C 前摇 9→6）：落地 F53、首个可行动帧 F57；B 组合
+	# 等待 3 帧自 F54 起恰好落在可行动帧解除（原 9N 锚 F57）。
+	var run := _run_route(NEAR_DX, facing, "j6D", {54: _press("B")})
 	var hit_moves: Array[String] = []
 	var hit_frames: Array[int] = []
 	for hit in run["hits"]:

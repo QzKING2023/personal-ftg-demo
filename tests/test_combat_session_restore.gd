@@ -358,6 +358,8 @@ func _seq_236c_entry(facing: int) -> Array[FrameInput]:
 
 ## 2C 起手 → 214C → 接续窗口内按 branch 键（~B 延长浮空 / ~C 向下击落）→ 尾段目押。
 func _seq_rekka(branch: String, length: int) -> Array[FrameInput]:
+	# 连段路线票据 04（C6：2C 前摇 9→6）后 2C 命中 F10、停顿至 F18：214 紧邻
+	# 方向块（F13–15）+C F16 停顿内提交，派生 29、5B 67（原 15–17/19/32/70）。
 	var inputs: Array[FrameInput] = []
 	for frame in range(1, length + 1):
 		var digit := 5
@@ -365,13 +367,13 @@ func _seq_rekka(branch: String, length: int) -> Array[FrameInput]:
 		if frame == 1:
 			digit = 2
 			key = "C"
-		elif frame == 15 or frame == 16 or frame == 17:
-			digit = [2, 1, 4][frame - 15]
-		elif frame == 19:
+		elif frame == 13 or frame == 14 or frame == 15:
+			digit = [2, 1, 4][frame - 13]
+		elif frame == 16:
 			key = "C"
-		elif frame == 32:
+		elif frame == 29:
 			key = branch
-		elif frame == 70:
+		elif frame == 67:
 			key = "B"
 		inputs.append(_rel(digit, key, 1))
 	return inputs
