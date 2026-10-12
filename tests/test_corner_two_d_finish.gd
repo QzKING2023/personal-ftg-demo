@@ -519,11 +519,6 @@ func _test_r3_negatives() -> void:
 		"浅层 2C 倒地后 5B 与 KNOCKED_DOWN 重叠期间无 HIT（重叠 %s、倒地期间命中 %s）" % [str(otg_overlap), str(otg_hit)])
 
 
-func session_state_knocked(res: Dictionary, frame: int) -> bool:
-	# 保留的逐帧倒地查询：以 runner 记录的 dummy_states 为准。
-	return int((res["dummy_states"] as Array)[frame - 1]) == CombatSession.DummyState.KNOCKED_DOWN
-
-
 # --- 6. 同表三收尾条件（固定点：准确计数、实际倒地/保位、正确/错误形态）---
 
 func _tail_expected(kind: String, depth: int) -> Array:
