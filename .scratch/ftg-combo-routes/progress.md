@@ -1,3 +1,17 @@
+> 最新：2026-10-12 功能交付阶段 E04 已完成——[04](issues/04-corner-two-d-finish.md) C6（仅 2C 前摇 9→6）正式落表，R3-B/C 冻结参考全链/域扫描/三尾段/D-loop/保存恢复全绿（实现 `9932709`，full-09 全量 38 job/4201 断言/0 脚本错误，诊断与 03 台账一致零新增）。05 解除阻塞为下一票（E05→F→G），按流程不自动接票。
+
+## 2026-10-12 功能交付阶段 E04：票据 04 实施完成
+
+按[功能交付流程](../../docs/combo-route-functional-delivery.md)阶段 E 实施单票 04，$tdd 先红后绿。审查起点 HEAD `df6110333418ecc8b923dbff21c3cf23d1f677c8`（工作树未提交阶段A–D文档与用户修改保留未触碰）；本轮功能增量基线=生产 2C 9N 的 `df61103`；历史实施基线 `2eebb17` 与历史两次启动记录不覆盖。
+
+- **实现**（`99327090a4b1`）：`data/moves/2C.tres` startup 9→6 唯一参数改动；新套件 `tests/test_corner_two_d_finish.gd` 164 断言——R3-B/C 冻结参考 v1 双面向 10/9 HIT 命中帧逐字复现（B F[10…167]/C F[12…156]）、两轮 5D 完整恢复（51→75/123→147、36→60/111→135）后 5B 命中限定连接、零换边、首END=实际倒地 F181/F171 同帧 KNOCKDOWN+LOW_FLOAT_LANDED、原墙 0px 场内侧、保证域 96 站位×4=384+触墙邻点、单组平移窗与阶段B区间逐键相等、9N 旧表对照（B F167 仅 9 HIT/2C F170 另账）、窗外/规则负例与浅/深两组 OTG、三尾段固定点+两轮 ~B/~C 搜索盒双面向 0/609（B 首缝断/C 派生断）+错误形态、18 切点保存续跑等价、2C 攻防与接续窗（F5–19/F5–17）、D-loop 1–4 轮自然断点+三轮时移小扫描、Solver 5B>2C 精确查询 F10/17。
+- **C6 波及再锚定 9 处**：replay_10 J2（214 紧邻方向块 F13–15+C F16 停顿内提交）/J8b、replay_08 R2、air_d_landing j6D（目押 F54）、combat_session（低浮空生命周期 F10/F18/F28、5D 非OTG F24/F35/F39/F55、三组 Rekka 时间轴 13–16/29/67）、combat_session_restore `_seq_rekka`、bounce_corrections 落地分层、combo_solver（2A>2B>2C 由「诚实截断」变三击成立 F6/14/21——C6 接受的整招加快影响）、move_table 期望值、docs（move-data/training-guide R3 行/solver-guide 帧表）。
+- **验收**：红阶段 9N 症状与阶段B BASE 逐字吻合（含接续窗 [8,22]/[8,20] 交叉验证）；`run_acceptance.py --sweep` 首跑 full-08（新表冷跑 1025.48s、427 条缓存、请求签名随新表轮换、暴露 4 编排内回归并修复）→ 终跑 [full-09](runs/full-09/summary.json) 38 job/4201 断言/0 失败/0 脚本错误/855.29s；`run_combo_route_diagnostics.py` → [impl04-diag-01](runs/impl04-diag-01/summary.json)：boundary 10/0、replay10 99/2（J3b=BL01–02）、symptoms 24/13，与 03 唯一台账一致零新增。
+- **历史非零分列**（与 9N 生产一致、非本票新增）：replay_07 共 11 处（01–03 参数后未再锚定旧脚本）、replay_08 R5×2、replay_10 J3b×2、symptoms 13——归 03 台账/历史在途，不在本票修复面。
+- **后置**：D112/D113 宽度与联合按 D122 归后续优化；D76/D85 其余连续域点维持既有补验安排；0/609 限代表点与时序盒；≥3 轮固定节拍断开不证明无循环；真人验收全归 06；Solver R3 全序列钉位查询 refused（D→5B 命中限定边不适用钉位探针，已知边界）。05 依赖解除，E05→F→G。
+
+
+
 ## 2026-10-11 阶段 6（票据 04 第二次启动）：设计已改线但未回流，按票返回未实施
 
 - **本票审查起点**：`e48911e`（票据05返回提交后 HEAD；实施阶段基线仍为 `2eebb17`，见票据01记录）。**无实现提交**：未修改任何正式资源/代码/测试/正式文档；工作树用户改动（CONTEXT.md、design.md/results.md/handoff 及本文件上方阶段 2 回访记录）保留未触碰、未纳入本次提交。
