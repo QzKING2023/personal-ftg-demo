@@ -3,17 +3,52 @@
 用 Godot 4.5 原生形状绘制的横向格斗手感验证 Demo：单训练场、一名玩家、一个木桩。
 启动即进入训练场，可移动、冲刺、跳跃、出招、防御、投与命中木桩观察受击反馈，随时重置。
 
-## 本轮联合验收（2026-09-17）
+## 当前交付状态（2026-10-12）
 
-自动化与确定性训练场结果见 [联合验收报告](.scratch/ftg-combat-foundation/acceptance-2026-09-17/report.md)。2026-09-18 用户反馈真人手感可接受、测试条目通过，另发现蹲姿移动问题；现已修复并通过 12 套件、1504 条自动化断言，见 [修复记录](.scratch/ftg-combat-foundation/crouch-2026-09-18/diagnosis.md)。修复后真人复玩及报告中的其他实现/规则缺口仍分别跟踪。
+这个 Demo 以训练场为载体，目标是把招式帧数据、输入识别、取消、受击、倒地、位置收益和反馈表现做成可复现、可审计的战斗规则。当前交付仍定位为训练场/MVP。
 
-- [操作与真人试玩记录单](docs/training-guide.md)
+2026-10-12 阶段 G 已完成八个连段样本的功能交付。结论只覆盖声明条件、固定参考和有限工程采样；操作宽容度与真人体验待后续验收。
+
+### 八样本路线功能交付
+
+| 样本 | 路线 | 功能重点 |
+| --- | --- | --- |
+| R1-B | `5B > 5C > 236C(2) > 5[D], 5B > 6D > jB > jC > j214D, 5B > 214C~C` | 搬运长线，13 HIT，双换边，满足净推进 |
+| R1-C | `5C > 236C(2) > 5[D], 5B > 6D > jB > jC > j214D, 5B > 214C~C` | 搬运长线，12 HIT，C 起手变体 |
+| R2-B | `5B > 5C > 236C(2) > 5[D], 5B > 214C~C` | 抵墙短线，8 HIT，零换边 |
+| R2-C | `5C > 236C(2) > 5[D], 5B > 214C~C` | 抵墙短线，7 HIT，C 起手变体 |
+| R3-B | `5B > 5C > 236C(1) > 5D, 5B > 5C > 236C(1) > 5D, 5B > 2C` | 原版边两轮普通 D，10 HIT，零换边并自然倒地 |
+| R3-C | `5C > 236C(1) > 5D, 5B > 5C > 236C(1) > 5D, 5B > 2C` | 原版边两轮普通 D，9 HIT，C 起手变体 |
+| R4-G | `6A > jc > jC > j214D, 5B > 214C~C` | 对地六击，真实弹地、落地恢复后追击 |
+| R4-A | `6A > jc > jC > j214D, 5B > 214C~C` | 下落对空六击，6 HIT，按接触档位选择参考节奏 |
+
+### 三类证据如何解读
+
+- **自动化窗口/功能回归**：`full-10` 覆盖脚本、CombatSession、Solver、固定输入重放、有限域/固定参考采样、八样本路线、倒地、换边、保位、净推进、负例、保存恢复和跨路线回归。结果为 **39 suites、4,239 assertions、0 failures、0 script errors**。这些结果证明声明域和固定参考下的确定性行为，不证明连续域或所有场景。
+- **联合输入覆盖**：报告保留已有真实分母和代表点：R1/R2 长线 jC 单窗 1F、联合 **0/64**；R4-A 代表点联合 **64/128**；票据 01 另有 64 个向量。旧 C6 居中组 **256/256×8**、scan anchor 的 B **128/256** 与 C **192/256** 仍是代表性历史结果，且存在 b2 漏测；R3 本轮没有新增 256 组。D113 的 244/256 与 231/256 目标尚未完成，因此不能把这些结果写成完整联合输入鲁棒性。
+- **真人体验**：2026-10-12 报告明确记载真人 playtest 尚未执行；[playtest 表](https://github.com/QzKING2023/personal-ftg-demo/blob/main/.scratch/ftg-combo-routes/acceptance/playtest.md) §11 为空，未填写尝试次数、成功数、手感或结论。操作宽容度、手感、成功率和可读性仍待真人验收，自动化不能替代真人。
+
+### 证据与资料
+
+- [连段路线功能交付报告](https://github.com/QzKING2023/personal-ftg-demo/blob/main/.scratch/ftg-combo-routes/acceptance/functional-report.md)
+- [full-10 自动化汇总](https://github.com/QzKING2023/personal-ftg-demo/blob/main/.scratch/ftg-combo-routes/runs/full-10/summary.json)
+- [八样本练习步骤与真人空记录表](https://github.com/QzKING2023/personal-ftg-demo/blob/main/.scratch/ftg-combo-routes/acceptance/playtest.md)
+- [当前进度索引](https://github.com/QzKING2023/personal-ftg-demo/blob/main/.scratch/ftg-combo-routes/progress.md)
+- [功能交付工作流](https://github.com/QzKING2023/personal-ftg-demo/blob/main/docs/combo-route-functional-delivery.md)
+- [训练场操作与联合验收](https://github.com/QzKING2023/personal-ftg-demo/blob/main/docs/training-guide.md)
 - [招式与行为数据](docs/move-data.md)
 - [Solver 独立入口、帧表与空间范围](docs/solver-guide.md)
 - [武器型刺客角色研究](docs/weapon-assassin-character-research.md)
-- 全量检查：项目目录运行 `./tools/run_acceptance.ps1`（包含脚本错误检查和项目内临时用户目录）。
+- 推荐全量检查：`python tools/run_acceptance.py --sweep --output <新目录>`；`./tools/run_acceptance.ps1` 保留为兼容入口。
 
-旧 jB→5D 落地首帧接续已按最新规格移除；历史输入保留作负例。`spatial-valid` 仅为固定间距钉位网格证明，真实击退需独立回放。空中路线48px两侧五击通过，70px两侧仅三击。
+## 历史基线（2026-09-17）
+
+早期训练场验收与修复记录仍保留，作为项目历史上下文：
+
+- [历史联合验收报告](.scratch/ftg-combat-foundation/acceptance-2026-09-17/report.md)
+- [蹲姿修复记录](.scratch/ftg-combat-foundation/crouch-2026-09-18/diagnosis.md)
+
+这部分历史记录不作为 2026-10-12 八样本路线的当前指标，也不替代当前真人试玩记录。
 
 ## 运行
 
@@ -137,6 +172,8 @@ Godot_v4.5.1-stable_mono_win64_console.exe --headless --path . -s res://tests/di
 
 ## 已知限制（按规划暂不决策）
 
+- 八样本证据来自声明保证域、固定参考和有限工程采样；连续域未采样部分、全部走位、墙边、跨身和中立场景仍未由本轮结果覆盖。
+- Solver 的循环结果是实际搜索范围内的结果，不构成全域无循环证明。
 - 木桩血量归零后不会消失或重生，仍可继续受击（训练桩行为）。
 - 木桩无 AI、无回合计时与胜负流程；high-jump、二段跳与空中特殊追击窗口
   属首版范围外，未定义输入或参数。
